@@ -1,0 +1,12 @@
+/*
+
+!/config/
+!/controllers/
+!/db/
+!/http/
+!/lib/
+!/model/
+!/pages
+!/repository/
+!/services/
+!/.gitignore

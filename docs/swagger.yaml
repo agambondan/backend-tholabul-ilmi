@@ -1,0 +1,908 @@
+basePath: /api/v1/
+definitions:
+  lib.Response:
+    properties:
+      message:
+        description: response message
+        type: string
+      status:
+        description: http status
+        type: integer
+    type: object
+  model.City:
+    properties:
+      code:
+        description: City Code
+        example: JakTim
+        type: string
+      name:
+        description: City Name
+        example: Jakarta Timur
+        type: string
+      created_at:
+        description: created at automatically inserted on post
+        format: date-time
+        type: string
+      id:
+        description: model ID
+        format: uuid
+        type: string
+      sort:
+        description: sort (increment)
+        example: 1
+        type: integer
+      province:
+        $ref: '#/definitions/model.Province'
+        description: state province
+      province_id:
+        description:  Province ID
+        format: uuid
+        type: string
+      status:
+        description: 'status (0: deleted, 1: active, 2: draft. 3: blocked, 4: canceled)'
+        example: 1
+        type: integer
+      updated_at:
+        description: updated at automatically changed on put or add on post
+        format: date-time
+        type: string
+    type: object
+  model.CityAPI:
+    properties:
+      code:
+        description: City Code
+        example: JakTim
+        type: string
+      name:
+        description: City Name
+        example: Jakarta Timur
+        type: string
+      province_id:
+        description:  Province ID
+        format: uuid
+        type: string
+    type: object
+  model.Email:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  model.ForgotPassword:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      reset_password_code:
+        type: string
+      reset_password_expiration:
+        format: date-time
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  model.Login:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  model.ResetPassword:
+    properties:
+      email:
+        type: string
+      reset_password_code:
+        type: string
+      reset_password_expiration:
+        format: date-time
+        type: string
+    required:
+    - email
+    type: object
+  model.Province:
+    properties:
+      created_at:
+        description: created at automatically inserted on post
+        format: date-time
+        type: string
+      id:
+        description: model ID
+        format: uuid
+        type: string
+      sort:
+        description: sort (increment)
+        example: 1
+        type: integer
+      province_code:
+        description:  Province Code
+        example: JOG
+        type: string
+      province_name:
+        description:  Province Name
+        example: Jogjakarta
+        type: string
+      status:
+        description: 'status (0: deleted, 1: active, 2: draft. 3: blocked, 4: canceled)'
+        example: 1
+        type: integer
+      updated_at:
+        description: updated at automatically changed on put or add on post
+        format: date-time
+        type: string
+    type: object
+  model.User:
+    properties:
+      access_code:
+        type: string
+      activated_at:
+        format: date-time
+        type: string
+      activation_code:
+        type: string
+      created_at:
+        description: created at automatically inserted on post
+        format: date-time
+        type: string
+      email:
+        type: string
+      id:
+        description: model ID
+        format: uuid
+        type: string
+      invited_at:
+        format: date-time
+        type: string
+      is_activated:
+        type: boolean
+      is_anonymous:
+        type: boolean
+      is_api:
+        type: boolean
+      is_password_system_generated:
+        type: boolean
+      is_superuser:
+        type: boolean
+      last_access:
+        format: date-time
+        type: string
+      last_login:
+        format: date-time
+        type: string
+      last_page:
+        type: string
+      login:
+        type: string
+      otp_code:
+        type: string
+      otp_enabled:
+        type: boolean
+      otp_expiration:
+        format: date-time
+        type: string
+      password:
+        type: string
+      password_expiration:
+        format: date-time
+        type: string
+      password_last_change:
+        format: date-time
+        type: string
+      persist_code:
+        type: string
+      person_id:
+        type: string
+      picture_id:
+        type: string
+      reset_password_code:
+        type: string
+      reset_password_expiration:
+        format: date-time
+        type: string
+      role_id:
+        type: string
+      salt:
+        type: string
+      session_persistence_expiration:
+        format: date-time
+        type: string
+      sort:
+        description: sort (increment)
+        example: 1
+        type: integer
+      status:
+        description: 'status (0: deleted, 1: active, 2: draft. 3: blocked, 4: canceled)'
+        example: 1
+        type: integer
+      updated_at:
+        description: updated at automatically changed on put or add on post
+        format: date-time
+        type: string
+    required:
+    - email
+    - login
+    - password
+    type: object
+  model.UserAPI:
+    properties:
+      access_code:
+        type: string
+      activated_at:
+        format: date-time
+        type: string
+      activation_code:
+        type: string
+      email:
+        type: string
+      invited_at:
+        format: date-time
+        type: string
+      is_activated:
+        type: boolean
+      is_anonymous:
+        type: boolean
+      is_api:
+        type: boolean
+      is_password_system_generated:
+        type: boolean
+      is_superuser:
+        type: boolean
+      last_access:
+        format: date-time
+        type: string
+      last_login:
+        format: date-time
+        type: string
+      last_page:
+        type: string
+      login:
+        type: string
+      otp_code:
+        type: string
+      otp_enabled:
+        type: boolean
+      otp_expiration:
+        format: date-time
+        type: string
+      password:
+        type: string
+      password_expiration:
+        format: date-time
+        type: string
+      password_last_change:
+        format: date-time
+        type: string
+      persist_code:
+        type: string
+      person_id:
+        type: string
+      picture_id:
+        type: string
+      reset_password_code:
+        type: string
+      reset_password_expiration:
+        format: date-time
+        type: string
+      role_id:
+        type: string
+      salt:
+        type: string
+      session_persistence_expiration:
+        format: date-time
+        type: string
+    required:
+    - email
+    - login
+    - password
+    type: object
+  model.UserCode:
+    properties:
+      access_code:
+        type: string
+      activated_at:
+        format: date-time
+        type: string
+      activation_code:
+        type: string
+      email:
+        type: string
+      is_activated:
+        type: boolean
+      otp_code:
+        type: string
+      otp_expiration:
+        format: date-time
+        type: string
+      reset_password_code:
+        type: string
+      reset_password_expiration:
+        format: date-time
+        type: string
+    required:
+    - email
+    type: object
+host: localhost:9999
+info:
+  contact:
+    email: e-invitation@gmail.com
+    name: Developer
+  description: API Documentation
+  termsOfService: https://e-invitation.com/tnc.html
+  title: Master API
+  version: 1.0.0
+paths:
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Update password
+      parameters:
+      - description: Forgot Password Code Data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.ForgotPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Update password
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login to get credentials
+      parameters:
+      - description: User login
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.Login'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Login to get credentials
+      tags:
+      - Auth
+  /auth/logout:
+    get:
+      consumes:
+      - application/json
+      description: Logout to destroy credentials
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Logout to destroy credentials
+      tags:
+      - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Generate random password and send password to email
+      parameters:
+      - description: Reset Password Code Data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.ResetPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Generate random password and send password to email
+      tags:
+      - Auth
+  /auth/send-code/{typeCode}:
+    post:
+      consumes:
+      - application/json
+      description: Send Code to email
+      parameters:
+      - description: Email
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.Email'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Send Code to email
+      tags:
+      - Auth
+  /auth/sign-up:
+    post:
+      consumes:
+      - application/json
+      description: Create new User
+      parameters:
+      - description: User data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserAPI'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User data
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Create new User
+      tags:
+      - Auth
+  /auth/verify-code/{typeCode}:
+    post:
+      consumes:
+      - application/json
+      description: Verify Code from email
+      parameters:
+      - description: User Code
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.UserCode'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Verify Code from email
+      tags:
+      - Auth
+  /auth/verify-role/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Check if credentials is existing user and what is role
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Check if credentials is existing user and what is role
+      tags:
+      - Auth
+  /auth/verify-token:
+    get:
+      consumes:
+      - application/json
+      description: Check if credentials is correct
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Check if credentials is correct
+      tags:
+      - Auth
+  /auth/verify-user:
+    get:
+      consumes:
+      - application/json
+      description: Check if credentials is existing user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Check if credentials is existing user
+      tags:
+      - Auth
+  /master/:
+    get:
+      consumes:
+      - application/json
+      description: show basic response
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "409":
+          description: conflict
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: internal error
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: show basic response
+      tags:
+      - API
+  /master/cities:
+    get:
+      consumes:
+      - application/json
+      description: Find All City
+      parameters:
+      - description: Page number start from zero
+        in: query
+        name: page
+        type: integer
+      - description: Size per page, default `0`
+        in: query
+        name: size
+        type: integer
+      - description: Sort by field, adding dash (`-`) at the beginning means descending
+          and vice versa
+        in: query
+        name: sort
+        type: string
+      - description: Select specific fields with comma separated
+        in: query
+        name: fields
+        type: string
+      - description: custom filters, see [more details](https://github.com/morkid/paginate#filter-format)
+        in: query
+        name: filters
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Find All City
+      tags:
+      - City
+  /master/cities/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a City by id
+      parameters:
+      - description: City ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: City Data
+          schema:
+            $ref: '#/definitions/model.City'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Get a City by id
+      tags:
+      - City
+    put:
+      consumes:
+      - application/json
+      description: Update City by id
+      parameters:
+      - description: City ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: City data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.CityAPI'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: City data
+          schema:
+            $ref: '#/definitions/model.City'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/lib.Response'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: Update City by id
+      tags:
+      - City
+  /master/info.json:
+    get:
+      consumes:
+      - application/json
+      description: show info response
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: bad request
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "404":
+          description: not found
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "409":
+          description: conflict
+          schema:
+            $ref: '#/definitions/lib.Response'
+        "500":
+          description: internal error
+          schema:
+            $ref: '#/definitions/lib.Response'
+      summary: show info response
+      tags:
+      - API
+schemes:
+- https
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
