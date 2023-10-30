@@ -13,12 +13,13 @@ type Surah struct {
 	StartJuz        *Juz         `json:"start_juz,omitempty" gorm:"foreignKey:StartSurahID"`
 	EndJuz          *Juz         `json:"end_juz,omitempty" gorm:"foreignKey:EndSurahID"`
 	Ayahs           []*Ayah      `json:"ayahs,omitempty"`
+	Media           []SurahAsset `json:"media,omitempty"`
 }
 
-// type SurahTranslation struct {
-// 	BaseID
-// 	SurahId       *int
-// 	TranslationId *int
-// 	Translation   *Translation
-// 	Surah         *Surah
-// }
+type SurahAsset struct {
+	BaseID
+	SurahID      *int        `json:"surah_id,omitempty"`
+	MultimediaID *int        `json:"multimedia_id,omitempty"`
+	Surah        *Surah      `json:"-"`
+	Multimedia   *Multimedia `json:"multimedia"`
+}

@@ -7,28 +7,37 @@ import (
 
 type Book struct {
 	BaseID
-	Slug            *string `gorm:"type:varchar(256);not null;index:,unique,where:deleted_at is null"`
-	DefaultLanguage *string `gorm:"default:Idn"`
-	TranslationID   *int
-	Translation     *Translation
-	Themes          []Theme `gorm:"many2many:book_themes;"`
-	Hadith          []Hadith
+	Slug            *string      `json:"slug" gorm:"type:varchar(256);not null;index:,unique,where:deleted_at is null"`
+	DefaultLanguage *string      `gorm:"default:Idn"`
+	TranslationID   *int         `json:"translation_id,omitempty"`
+	Translation     *Translation `json:"translation,omitempty"`
+	Themes          []Theme      `json:"-" gorm:"many2many:book_themes"`
+	Hadith          []Hadith     `json:"hadith,omitempty"`
+	Media           []BookAsset  `json:"media,omitempty"`
+}
+
+type BookAsset struct {
+	BaseID
+	AyahID       *int        `json:"book_id,omitempty"`
+	MultimediaID *int        `json:"multimedia_id,omitempty"`
+	Book         *Book       `json:"-"`
+	Multimedia   *Multimedia `json:"multimedia"`
 }
 
 type BookThemes struct {
 	BaseID
-	BookID  *int
-	ThemeID *int
-	Book    *Book
-	Theme   *Theme
+	BookID  *int   `json:"-"`
+	ThemeID *int   `json:"-"`
+	Book    *Book  `json:"-"`
+	Theme   *Theme `json:"-"`
 }
 
 func (b *Book) Seed(db *gorm.DB) []Book {
 	var books []Book
-	var booksString = []string{"Shahih Bukhari", "Shahih Muslim", "Sunan Abu Daud", "Sunan Tirmidzi", "Sunan Nasa'i", "Sunan Ibnu Majah", "Muwatha' Malik", "Musnad Ahmad", "Sunan Darimi"}
-	var booksSlug = []string{"bukhari", "muslim", "abudaud", "tirmidzi", "nasai", "ibnumajah", "malik", "ahmad", "darimi"}
+	booksString := []string{"Shahih Bukhari", "Shahih Muslim", "Sunan Abu Daud", "Sunan Tirmidzi", "Sunan Nasa'i", "Sunan Ibnu Majah", "Muwatha' Malik", "Musnad Ahmad", "Sunan Darimi"}
+	booksSlug := []string{"bukhari", "muslim", "abudaud", "tirmidzi", "nasai", "ibnumajah", "malik", "ahmad", "darimi"}
 	for i, v := range booksString {
-		var book = new(Book)
+		book := new(Book)
 		err := db.First(&book).Error
 		if err != nil || book == nil {
 			book.Translation = &Translation{

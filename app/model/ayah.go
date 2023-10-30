@@ -2,8 +2,6 @@ package model
 
 type Ayah struct {
 	BaseID
-	ArabFormat      *string      `json:"arab_format,omitempty"`
-	ArabHtml        *string      `json:"arab_html,omitempty"`
 	Number          *int         `json:"number,omitempty"`
 	DefaultLanguage *string      `json:"default_language,omitempty" gorm:"default:Ar"`
 	SurahID         *int         `json:"surah_id,omitempty" gorm:"not null;"`
@@ -11,12 +9,13 @@ type Ayah struct {
 	JuzID           *int         `json:"juz_id,omitempty"`
 	Translation     *Translation `json:"translation,omitempty"`
 	Surah           *Surah       `json:"surah,omitempty"`
+	Media           []AyahAsset  `json:"media,omitempty"`
 }
 
-// type AyahTranslation struct {
-// 	BaseID
-// 	AyahID        *int
-// 	TranslationID *int
-// 	Translation   *Translation
-// 	Ayah          *Ayah
-// }
+type AyahAsset struct {
+	BaseID
+	AyahID       *int        `json:"ayah_id,omitempty"`
+	MultimediaID *int        `json:"multimedia_id,omitempty"`
+	Ayah         *Ayah       `json:"-"`
+	Multimedia   *Multimedia `json:"multimedia"`
+}
