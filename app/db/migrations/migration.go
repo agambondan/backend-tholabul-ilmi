@@ -14,5 +14,4 @@ var ModelMigrations []interface{} = []interface{}{
 	model.Ayah{},
 	model.Juz{},
 	model.Tafsir{},
-	model.Language{},
 }

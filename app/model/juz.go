@@ -7,23 +7,30 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	ayahCounts = map[int]int{}
-)
+var ayahCounts = map[int]int{}
 
 type Juz struct {
 	BaseID
-	Number       *int    `json:"number,omitempty" gorm:"uniqueIndex;not null;"`
-	TotalAyah    *int    `json:"total_ayah,omitempty"`
-	StartSurahID *int    `json:"start_surah_id,omitempty"`
-	EndSurahID   *int    `json:"end_surah_id,omitempty"`
-	StartAyahID  *int    `json:"start_ayah_id,omitempty"`
-	EndAyahID    *int    `json:"end_ayah_id,omitempty"`
-	StartSurah   *Surah  `json:"start_surah,omitempty" gorm:"foreignKey:StartSurahID"`
-	EndSurah     *Surah  `json:"end_surah,omitempty" gorm:"foreignKey:EndSurahID"`
-	StartAyah    *Ayah   `json:"start_ayah,omitempty" gorm:"foreignKey:StartAyahID"`
-	EndAyah      *Ayah   `json:"end_ayah,omitempty" gorm:"foreignKey:EndAyahID"`
-	Ayahs        []*Ayah `json:"ayahs,omitempty"`
+	Number       *int       `json:"number,omitempty" gorm:"uniqueIndex;not null;"`
+	TotalAyah    *int       `json:"total_ayah,omitempty"`
+	StartSurahID *int       `json:"start_surah_id,omitempty"`
+	EndSurahID   *int       `json:"end_surah_id,omitempty"`
+	StartAyahID  *int       `json:"start_ayah_id,omitempty"`
+	EndAyahID    *int       `json:"end_ayah_id,omitempty"`
+	StartSurah   *Surah     `json:"start_surah,omitempty" gorm:"foreignKey:StartSurahID"`
+	EndSurah     *Surah     `json:"end_surah,omitempty" gorm:"foreignKey:EndSurahID"`
+	StartAyah    *Ayah      `json:"start_ayah,omitempty" gorm:"foreignKey:StartAyahID"`
+	EndAyah      *Ayah      `json:"end_ayah,omitempty" gorm:"foreignKey:EndAyahID"`
+	Ayahs        []*Ayah    `json:"ayahs,omitempty"`
+	Media        []JuzAsset `json:"media,omitempty"`
+}
+
+type JuzAsset struct {
+	BaseID
+	JuzID        *int        `json:"juz_id,omitempty"`
+	MultimediaID *int        `json:"multimedia_id,omitempty"`
+	Juz          *Juz        `json:"-"`
+	Multimedia   *Multimedia `json:"multimedia"`
 }
 
 type SurahAyah struct {
@@ -84,11 +91,11 @@ func (j *Juz) Seeder(db *gorm.DB) []*Juz {
 				}
 			}
 		}
-		var startAyah = new(Ayah)
-		var endAyah = new(Ayah)
+		startAyah := new(Ayah)
+		endAyah := new(Ayah)
 		db.First(&startAyah, `number = ? AND surah_id = ?`, v.StartAyahNumber, v.StartSurahNumber)
 		db.First(&endAyah, `number = ? AND surah_id = ?`, v.EndAyahNumber, v.EndSurahNumber)
-		var mod = new(Juz)
+		mod := new(Juz)
 		mod.BaseID.ID = lib.Intptr(k)
 		mod.Number = lib.Intptr(k)
 		mod.StartSurahID = v.StartSurahNumber
