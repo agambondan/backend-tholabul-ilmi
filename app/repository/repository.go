@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"log"
 	"time"
 
 	"github.com/agambondan/islamic-explorer/app/db/migrations"
@@ -31,9 +32,10 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 			ExpiresIn: time.Duration(cacheSeconds) * time.Second,
 		})
 	}
+	log.Println(cache)
 
 	pg := paginate.New(&paginate.Config{
-		CacheAdapter:         cache,
+		// CacheAdapter:         cache,
 		FieldSelectorEnabled: true,
 	})
 

@@ -18,10 +18,10 @@ type Book struct {
 
 type BookAsset struct {
 	BaseID
-	AyahID       *int        `json:"book_id,omitempty"`
+	BookID       *int        `json:"book_id,omitempty"`
 	MultimediaID *int        `json:"multimedia_id,omitempty"`
-	Book         *Book       `json:"-"`
-	Multimedia   *Multimedia `json:"multimedia"`
+	Book         *Book       `json:"book,omitempty"`
+	Multimedia   *Multimedia `json:"multimedia,omitempty"`
 }
 
 type BookThemes struct {

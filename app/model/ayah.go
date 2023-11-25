@@ -4,6 +4,8 @@ type Ayah struct {
 	BaseID
 	Number          *int         `json:"number,omitempty"`
 	DefaultLanguage *string      `json:"default_language,omitempty" gorm:"default:Ar"`
+	ArabFormat      *string      `json:"arab_format,omitempty" gorm:"type:text"`
+	ArabHtml        *string      `json:"arab_html,omitempty" gorm:"type:text"`
 	SurahID         *int         `json:"surah_id,omitempty" gorm:"not null;"`
 	TranslationID   *int         `json:"translation_id,omitempty" gorm:"not null;"`
 	JuzID           *int         `json:"juz_id,omitempty"`

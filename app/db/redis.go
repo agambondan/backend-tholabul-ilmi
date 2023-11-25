@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"log"
 
 	"github.com/agambondan/islamic-explorer/app/config"
 	"github.com/go-redis/redis/v8"
@@ -21,7 +20,6 @@ func NewRedisDB(env *config.Environment) (*RedisService, error) {
 	})
 	_, err := redisService.Client.Ping(context.Background()).Result()
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	return &redisService, nil

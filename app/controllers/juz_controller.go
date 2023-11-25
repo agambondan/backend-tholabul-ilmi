@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"log"
+	"net/url"
 	"strconv"
 
 	"github.com/agambondan/islamic-explorer/app/lib"
@@ -56,7 +58,12 @@ func (c *juzController) FindById(ctx *fiber.Ctx) error {
 }
 
 func (c *juzController) FindBySurahName(ctx *fiber.Ctx) error {
-	data, err := c.juz.FindBySurahName(ctx, lib.Strptr(ctx.Params("name")))
+	decodedString, err := url.QueryUnescape(ctx.Params("name"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, err)
+	}
+	log.Println(decodedString)
+	data, err := c.juz.FindBySurahName(ctx, lib.Strptr(decodedString))
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}

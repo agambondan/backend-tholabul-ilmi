@@ -13,7 +13,7 @@ var (
 // DataSeeds data to seeds
 func DataSeeds(db *gorm.DB) []interface{} {
 	return []interface{}{
-		book.Seed(db),
-		juz.Seeder(db),
+		// book.Seed(db),
+		// juz.Seeder(db),
 	}
 }

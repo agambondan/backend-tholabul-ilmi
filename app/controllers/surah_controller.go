@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"log"
+	"net/url"
 	"strconv"
 
 	"github.com/agambondan/islamic-explorer/app/lib"
@@ -69,7 +71,12 @@ func (c *surahController) FindByNumber(ctx *fiber.Ctx) error {
 }
 
 func (c *surahController) FindByName(ctx *fiber.Ctx) error {
-	data, err := c.surah.FindByName(ctx, lib.Strptr(ctx.Params("name")))
+	decodedString, err := url.QueryUnescape(ctx.Params("name"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, err)
+	}
+	log.Println(decodedString)
+	data, err := c.surah.FindByName(ctx, lib.Strptr(decodedString))
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}

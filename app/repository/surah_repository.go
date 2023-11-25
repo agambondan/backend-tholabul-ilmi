@@ -37,23 +37,19 @@ func (c *surahRepo) Save(Surah *model.Surah) (*model.Surah, error) {
 
 func (c *surahRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	var surah []*model.Surah
-	mod := c.db.Model(&model.Surah{}).
-		Joins("StartJuz").
-		Joins("EndJuz").
-		Joins("Translation")
+	mod := c.db.Model(&model.Surah{}).Joins("Translation")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&surah)
-
 	return &page
 }
 
 func (c *surahRepo) FindById(ctx *fiber.Ctx, id *int) (*model.Surah, error) {
 	var surah *model.Surah
-	if err := c.db.Joins("StartJuz").
-		Joins("EndJuz").
-		Joins("Translation").
+	if err := c.db.Joins("Translation").
 		First(&surah, `surah.id = ?`, id).Error; err != nil {
 		return nil, err
 	}
+	c.db.Joins("Translation").First(&surah.NextSurah, `number = ?`, *surah.Number+1)
+	c.db.Joins("Translation").First(&surah.PrevSurah, `number = ?`, *surah.Number-1)
 	if ctx != nil {
 		limit, offset := lib.GetLimitOffset(ctx)
 		c.db.Where(`surah_id = ?`, surah.Number).Offset(offset).Limit(limit).Order("number").Joins("Translation").Find(&surah.Ayahs)
@@ -63,12 +59,12 @@ func (c *surahRepo) FindById(ctx *fiber.Ctx, id *int) (*model.Surah, error) {
 
 func (c *surahRepo) FindByNumber(ctx *fiber.Ctx, number *int) (*model.Surah, error) {
 	var surah *model.Surah
-	if err := c.db.Joins("StartJuz").
-		Joins("EndJuz").
-		Joins("Translation").
+	if err := c.db.Joins("Translation").
 		First(&surah, `surah.number = ?`, number).Error; err != nil {
 		return nil, err
 	}
+	c.db.Joins("Translation").First(&surah.NextSurah, `number = ?`, *surah.Number+1)
+	c.db.Joins("Translation").First(&surah.PrevSurah, `number = ?`, *surah.Number-1)
 	if ctx != nil {
 		limit, offset := lib.GetLimitOffset(ctx)
 		c.db.Where(`surah_id = ?`, surah.Number).Offset(offset).Limit(limit).Order("number").Joins("Translation").Find(&surah.Ayahs)
@@ -78,12 +74,13 @@ func (c *surahRepo) FindByNumber(ctx *fiber.Ctx, number *int) (*model.Surah, err
 
 func (c *surahRepo) FindByName(ctx *fiber.Ctx, name *string) (*model.Surah, error) {
 	var surah *model.Surah
-	if err := c.db.Omit("created_at", "updated_at", "deleted_at").Joins("StartJuz").
-		Joins("EndJuz").
-		Joins("Translation").
-		First(&surah, `"Translation".idn = ? OR "Translation".en = ? OR "Translation".ar = ?`, name, name, name).Error; err != nil {
+	if err := c.db.Joins("Translation").
+		First(&surah, `"Translation".latin_idn = ? OR "Translation".latin_en = ? OR 
+		"Translation".idn = ? OR "Translation".en = ? OR "Translation".ar = ?`, name, name, name, name, name).Error; err != nil {
 		return nil, err
 	}
+	c.db.Joins("Translation").First(&surah.NextSurah, `number = ?`, *surah.Number+1)
+	c.db.Joins("Translation").First(&surah.PrevSurah, `number = ?`, *surah.Number-1)
 	if ctx != nil {
 		limit, offset := lib.GetLimitOffset(ctx)
 		c.db.Where(`surah_id = ?`, surah.Number).Offset(offset).Limit(limit).Order("number").Joins("Translation").Find(&surah.Ayahs)
