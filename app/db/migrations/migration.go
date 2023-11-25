@@ -22,5 +22,4 @@ var ModelMigrations []interface{} = []interface{}{
 	model.SurahAsset{},
 	model.AyahAsset{},
 	model.JuzAsset{},
-	model.Tafsir{},
 }
