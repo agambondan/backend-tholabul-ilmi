@@ -8,6 +8,8 @@ type Services struct {
 	Ayah  AyahService
 	Surah SurahService
 	Juz   JuzService
+	Book  BookService
+	Theme ThemeService
 }
 
 func NewServices(repo *repository.Repositories) *Services {
@@ -15,5 +17,7 @@ func NewServices(repo *repository.Repositories) *Services {
 		Ayah:  NewAyahService(repo.Ayah),
 		Surah: NewSurahService(repo.Surah),
 		Juz:   NewJuzService(repo.Juz),
+		Book:  NewBookService(repo.Book),
+		Theme: NewThemeService(repo.Theme),
 	}
 }

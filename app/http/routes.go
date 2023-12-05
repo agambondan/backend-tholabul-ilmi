@@ -19,7 +19,7 @@ import (
 // Handle all request to route to controller
 func Handle(app *fiber.App, repo *repository.Repositories) {
 	// recover panic
-	app.Use(recover.New())
+	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
 	// for logger in cmd
 	app.Use(logger.New())
 	// Security Headers like xhr, csrf and many things
@@ -31,6 +31,8 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newAyahController := controllers.NewAyahController(newServices)
 	newSurahController := controllers.NewSurahController(newServices)
 	newJuzController := controllers.NewJuzController(newServices)
+	newBookController := controllers.NewBookController(newServices)
+	newThemeController := controllers.NewThemeController(newServices)
 
 	master := app.Group(viper.GetString("ENDPOINT"))
 	master.Get("/", controllers.GetAPIIndex)
@@ -74,4 +76,31 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/juz/surah/:name", newJuzController.FindBySurahName)
 	master.Put("/juz/:id", newJuzController.UpdateById)
 	master.Delete("/juz/:id/:scoped", newJuzController.DeleteById)
+
+	// Book
+	master.Post("/books", newBookController.Create)
+	master.Get("/books", newBookController.FindAll)
+	master.Get("/books/:id", newBookController.FindById)
+	master.Get("/books/slug/:slug", newBookController.FindBySlug)
+	master.Put("/books/:id", newBookController.UpdateById)
+	master.Delete("/books/:id", newBookController.DeleteById)
+
+	master.Post("/themes", newThemeController.Create)
+	master.Get("/themes", newThemeController.FindAll)
+	master.Get("/themes/:id", newThemeController.FindById)
+	master.Get("/themes/book/:slug", newThemeController.FindByBookSlug)
+	master.Put("/themes/:id", newThemeController.UpdateById)
+	master.Delete("/themes/:id", newThemeController.DeleteById)
+
+	// master.Post("/chapters", chapter.PostChapter)
+	// master.Get("/chapters", chapter.GetChapter)
+	// master.Get("/chapters/:id", chapter.GetChapterID)
+	// master.Put("/chapters/:id", chapter.PutChapter)
+	// master.Delete("/chapters/:id", chapter.DeleteChapter)
+
+	// master.Post("/hadiths", hadith.PostHadith)
+	// master.Get("/hadiths", hadith.GetHadith)
+	// master.Get("/hadiths/:id", hadith.GetHadithID)
+	// master.Put("/hadiths/:id", hadith.PutHadith)
+	// master.Delete("/hadiths/:id", hadith.DeleteHadith)
 }

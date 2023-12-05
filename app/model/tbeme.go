@@ -6,7 +6,7 @@ type Theme struct {
 	TranslationID   *int         `json:"translation_id,omitempty"`
 	Translation     *Translation `json:"translation,omitempty"`
 	Chapters        []Chapter    `json:"chapters,omitempty"`
-	Hadith          []Hadith     `json:"hadith,omitempty"`
+	Hadiths         []Hadith     `json:"hadiths,omitempty"`
 	Books           []Book       `gorm:"many2many:book_themes;"`
 	Media           []ThemeAsset `json:"media,omitempty"`
 }

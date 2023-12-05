@@ -4,7 +4,6 @@ type Surah struct {
 	BaseID
 	Slug            *string      `json:"slug,omitempty" gorm:"type:varchar(36)"`
 	Identifier      *string      `json:"identifier,omitempty" gorm:"type:varchar(256)"`
-	Description     *string      `json:"description,omitempty" gorm:"type:text"`
 	Number          *int         `json:"number,omitempty" gorm:"uniqueIndex;not null;"`
 	NumberOfAyahs   *int         `json:"number_of_ayahs,omitempty"`
 	RevelationType  *string      `json:"revelation_type,omitempty"`

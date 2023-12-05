@@ -7,6 +7,7 @@ import (
 
 type Book struct {
 	BaseID
+	Count           *int64       `json:"count,omitempty" gorm:"-"`
 	Slug            *string      `json:"slug" gorm:"type:varchar(256);not null;index:,unique,where:deleted_at is null"`
 	DefaultLanguage *string      `gorm:"default:Idn"`
 	TranslationID   *int         `json:"translation_id,omitempty"`
@@ -28,8 +29,8 @@ type BookThemes struct {
 	BaseID
 	BookID  *int   `json:"-"`
 	ThemeID *int   `json:"-"`
-	Book    *Book  `json:"-"`
-	Theme   *Theme `json:"-"`
+	Book    *Book  `json:"book,omitempty"`
+	Theme   *Theme `json:"theme,omitempty"`
 }
 
 func (b *Book) Seed(db *gorm.DB) []Book {

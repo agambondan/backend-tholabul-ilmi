@@ -100,6 +100,6 @@ func (c *juzRepo) DeleteById(id *int, scoped *string) error {
 
 func (c *juzRepo) Count() (*int64, error) {
 	var count int64
-	c.db.Table("Juz").Select("id").Count(&count)
+	c.db.Table("juz").Select("id").Count(&count)
 	return &count, nil
 }

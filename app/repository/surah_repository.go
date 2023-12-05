@@ -113,6 +113,6 @@ func (c *surahRepo) DeleteById(id *int, scoped *string) error {
 
 func (c *surahRepo) Count() (*int64, error) {
 	var count int64
-	c.db.Table("Surah").Select("id").Count(&count)
+	c.db.Table("surah").Select("id").Count(&count)
 	return &count, nil
 }
