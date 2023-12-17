@@ -11,7 +11,7 @@ type ThemeRepository interface {
 	Save(*model.Theme) (*model.Theme, error)
 	FindAll(*fiber.Ctx) *paginate.Page
 	FindById(*int) (*model.Theme, error)
-	FindByBookSlug(*fiber.Ctx, *string) (*model.BookThemes, error)
+	FindByBookSlug(*fiber.Ctx, *string) (*[]model.BookThemes, error)
 	UpdateById(*int, *model.Theme) (*model.Theme, error)
 	DeleteById(*int, *string) error
 	Count() (*int64, error)
@@ -50,15 +50,14 @@ func (c *themeRepo) FindById(id *int) (*model.Theme, error) {
 	return theme, nil
 }
 
-func (c *themeRepo) FindByBookSlug(ctx *fiber.Ctx, slug *string) (*model.BookThemes, error) {
-	var theme *model.BookThemes
+func (c *themeRepo) FindByBookSlug(ctx *fiber.Ctx, slug *string) (*[]model.BookThemes, error) {
+	var theme *[]model.BookThemes
 	if err := c.db.Joins("Theme").Joins("Theme.Translation").
-		Preload("Theme.Chapters").Preload("Theme.Chapters.Translation").
-		Preload("Theme.Hadiths").Preload("Theme.Hadiths.Translation").
-		Joins("Book").First(&theme, `"Book".slug = ?`, slug).Error; err != nil {
+		// Preload("Theme.Chapters").Preload("Theme.Chapters.Translation").
+		// Preload("Theme.Hadiths").Preload("Theme.Hadiths.Translation").
+		Joins("Book").Find(&theme, `"Book".slug = ?`, slug).Error; err != nil {
 		return nil, err
 	}
-	// c.db.Preload("").fi
 	return theme, nil
 }
 

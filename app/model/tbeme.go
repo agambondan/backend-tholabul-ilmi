@@ -7,7 +7,7 @@ type Theme struct {
 	Translation     *Translation `json:"translation,omitempty"`
 	Chapters        []Chapter    `json:"chapters,omitempty"`
 	Hadiths         []Hadith     `json:"hadiths,omitempty"`
-	Books           []Book       `gorm:"many2many:book_themes;"`
+	Books           []Book       `json:"-" gorm:"many2many:book_themes;"`
 	Media           []ThemeAsset `json:"media,omitempty"`
 }
 

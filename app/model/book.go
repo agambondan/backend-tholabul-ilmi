@@ -13,6 +13,7 @@ type Book struct {
 	TranslationID   *int         `json:"translation_id,omitempty"`
 	Translation     *Translation `json:"translation,omitempty"`
 	Themes          []Theme      `json:"-" gorm:"many2many:book_themes"`
+	Theme           []Theme      `json:"theme" gorm:"-"`
 	Hadith          []Hadith     `json:"hadith,omitempty"`
 	Media           []BookAsset  `json:"media,omitempty"`
 }

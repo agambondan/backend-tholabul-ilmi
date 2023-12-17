@@ -3,6 +3,7 @@ package model
 type Hadith struct {
 	BaseID
 	DefaultLanguage *string       `gorm:"default:Ar"`
+	Number          *int          `json:"number,omitempty"`
 	BookID          *int          `json:"book_id,omitempty"`
 	ThemeID         *int          `json:"theme_id,omitempty"`
 	ChapterID       *int          `json:"chapter_id,omitempty"`

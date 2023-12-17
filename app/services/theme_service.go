@@ -11,7 +11,7 @@ type ThemeService interface {
 	Create(*model.Theme) (*model.Theme, error)
 	FindAll(*fiber.Ctx) *paginate.Page
 	FindById(*int) (*model.Theme, error)
-	FindByBookSlug(*fiber.Ctx, *string) (*model.BookThemes, error)
+	FindByBookSlug(*fiber.Ctx, *string) (*[]model.BookThemes, error)
 	UpdateById(*int, *model.Theme) (*model.Theme, error)
 	DeleteById(*int, *string) error
 	Count() (*int64, error)
@@ -38,7 +38,7 @@ func (b *themeService) FindById(id *int) (*model.Theme, error) {
 	return b.theme.FindById(id)
 }
 
-func (b *themeService) FindByBookSlug(ctx *fiber.Ctx, slug *string) (*model.BookThemes, error) {
+func (b *themeService) FindByBookSlug(ctx *fiber.Ctx, slug *string) (*[]model.BookThemes, error) {
 	return b.theme.FindByBookSlug(ctx, slug)
 }
 

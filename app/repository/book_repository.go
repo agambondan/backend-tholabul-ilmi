@@ -48,19 +48,28 @@ func (c *bookRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 
 func (c *bookRepo) FindById(id *int) (*model.Book, error) {
 	var book *model.Book
-	if err := c.db.Joins("Translation").Preload("Themes").Preload("Media").
+	if err := c.db.Joins("Translation").Preload("Media").
 		First(&book, `book.id = ?`, id).Error; err != nil {
 		return nil, err
 	}
+	c.db.Joins(`JOIN book_themes "bt" on bt.theme_id = theme.id AND bt.book_id = ?`, book.ID).Joins("Theme.Translation").Find(&book.Theme)
 	return book, nil
 }
 
 func (c *bookRepo) FindBySlug(ctx *fiber.Ctx, slug *string) (*model.Book, error) {
 	var book *model.Book
-	if err := c.db.Joins("Translation").Preload("Themes").Preload("Media").
+	if err := c.db.Joins("Translation").Preload("Media").
 		First(&book, `book.slug = ?`, slug).Error; err != nil {
 		return nil, err
 	}
+	var themeIds []int
+	c.db.Raw(`select distinct(theme_id) from hadith h where book_id = ? order by theme_id `, book.ID).Scan(&themeIds)
+	for _, v := range themeIds {
+		var theme model.Theme
+		c.db.Joins("Translation").Where(`"theme".id = ?`, v).First(&theme)
+		book.Theme = append(book.Theme, theme)
+	}
+	// c.db.Joins(`JOIN book_themes "bt" on bt.theme_id = theme.id AND bt.book_id = ?`, book.ID).Joins("Translation").Find(&book.Theme)
 	return book, nil
 }
 
