@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"net/url"
 	"strconv"
 
 	"github.com/agambondan/islamic-explorer/app/lib"
@@ -15,6 +16,7 @@ type HadithController interface {
 	FindById(ctx *fiber.Ctx) error
 	FindByBookSlug(ctx *fiber.Ctx) error
 	FindByThemeId(ctx *fiber.Ctx) error
+	FindByThemeName(ctx *fiber.Ctx) error
 	FindByBookSlugThemeId(ctx *fiber.Ctx) error
 	FindByChapterId(ctx *fiber.Ctx) error
 	FindByBookSlugChapterId(ctx *fiber.Ctx) error
@@ -76,6 +78,18 @@ func (c *hadithController) FindByThemeId(ctx *fiber.Ctx) error {
 		return lib.ErrorBadRequest(ctx, err)
 	}
 	data, err := c.hadith.FindByThemeId(ctx, &themeId)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, data)
+}
+
+func (c *hadithController) FindByThemeName(ctx *fiber.Ctx) error {
+	name, err := url.QueryUnescape(ctx.Params("slug"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx)
+	}
+	data, err := c.hadith.FindByThemeName(ctx, &name)
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}

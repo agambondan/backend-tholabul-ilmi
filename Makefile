@@ -1,3 +1,9 @@
+run-local:
+	go run main.go
+	
+run-dev:
+	go run main.go -environment development
+
 build:
 	go build main.go -o weddinggo
 

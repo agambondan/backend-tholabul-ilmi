@@ -13,6 +13,7 @@ type ChapterController interface {
 	Create(ctx *fiber.Ctx) error
 	FindAll(ctx *fiber.Ctx) error
 	FindById(ctx *fiber.Ctx) error
+	FindByBookSlugThemeId(ctx *fiber.Ctx) error
 	FindByThemeId(ctx *fiber.Ctx) error
 	UpdateById(ctx *fiber.Ctx) error
 	DeleteById(ctx *fiber.Ctx) error
@@ -49,6 +50,19 @@ func (c *chapterController) FindById(ctx *fiber.Ctx) error {
 		return lib.ErrorBadRequest(ctx, err)
 	}
 	data, err := c.chapter.FindById(&id)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, data)
+}
+
+func (c *chapterController) FindByBookSlugThemeId(ctx *fiber.Ctx) error {
+	bookSlug := ctx.Params("slug")
+	themeId, err := strconv.Atoi(ctx.Params("themeId"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, err)
+	}
+	data, err := c.chapter.FindByBookSlugThemeId(ctx, &bookSlug, &themeId)
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}

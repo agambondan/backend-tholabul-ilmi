@@ -62,14 +62,22 @@ func (c *bookRepo) FindBySlug(ctx *fiber.Ctx, slug *string) (*model.Book, error)
 		First(&book, `book.slug = ?`, slug).Error; err != nil {
 		return nil, err
 	}
-	var themeIds []int
-	c.db.Raw(`select distinct(theme_id) from hadith h where book_id = ? order by theme_id `, book.ID).Scan(&themeIds)
-	for _, v := range themeIds {
+	// var themeIds []int
+	// c.db.Table("(?) as subquery", c.db.Model(&model.Hadith{}).Where("book_id = ?", book.ID).Order("number")).
+	// 	Distinct().Pluck("theme_id", &themeIds)
+	var hadiths []model.Hadith
+	c.db.Table("(?) as sub", c.db.
+		Model(&model.Hadith{}).
+		Select("DISTINCT ON (theme_id) theme_id, number").
+		Where("book_id = ?", book.ID).
+		Order("theme_id, number")).
+		Order("number").Find(&hadiths)
+
+	for _, v := range hadiths {
 		var theme model.Theme
-		c.db.Joins("Translation").Where(`"theme".id = ?`, v).First(&theme)
+		c.db.Joins("Translation").Where(`"theme".id = ?`, v.ThemeID).First(&theme)
 		book.Theme = append(book.Theme, theme)
 	}
-	// c.db.Joins(`JOIN book_themes "bt" on bt.theme_id = theme.id AND bt.book_id = ?`, book.ID).Joins("Translation").Find(&book.Theme)
 	return book, nil
 }
 

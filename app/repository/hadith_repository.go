@@ -13,6 +13,7 @@ type HadithRepository interface {
 	FindById(*int) (*model.Hadith, error)
 	FindByBookSlug(*fiber.Ctx, *string) (*paginate.Page, error)
 	FindByThemeId(*fiber.Ctx, *int) (*paginate.Page, error)
+	FindByThemeName(*fiber.Ctx, *string) (*paginate.Page, error)
 	FindByBookSlugThemeId(*fiber.Ctx, *string, *int) (*paginate.Page, error)
 	FindByChapterId(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindByBookSlugChapterId(*fiber.Ctx, *string, *int) (*paginate.Page, error)
@@ -73,10 +74,21 @@ func (c *hadithRepo) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, err
 	return &page, nil
 }
 
+func (c *hadithRepo) FindByThemeName(ctx *fiber.Ctx, name *string) (*paginate.Page, error) {
+	var hadiths []model.Hadith
+	mod := c.db.Model(&model.Hadith{}).Joins("Translation").Joins("Theme").
+		Joins("Theme.Translation").
+		Where(`LOWER("Theme__Translation".idn) = ?`, name).
+		Preload("Media").Order("id")
+	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
+
+	return &page, nil
+}
+
 func (c *hadithRepo) FindByBookSlugThemeId(ctx *fiber.Ctx, bookSlug *string, themeId *int) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.db.Model(&model.Hadith{}).Joins("Translation").Joins("JOIN book on book.id = hadith.book_id AND book.slug = ?", bookSlug).
-		Where("theme_id = ?", themeId).Preload("Media").Order("id")
+	mod := c.db.Model(&model.Hadith{}).Joins("Translation").Joins(`LEFT JOIN book b on b.id = hadith.book_id`).
+		Where(`hadith.theme_id = ? AND b.slug = ?`, themeId, bookSlug).Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
 
 	return &page, nil
@@ -92,8 +104,8 @@ func (c *hadithRepo) FindByChapterId(ctx *fiber.Ctx, id *int) (*paginate.Page, e
 
 func (c *hadithRepo) FindByBookSlugChapterId(ctx *fiber.Ctx, bookSlug *string, chapterId *int) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.db.Model(&model.Hadith{}).Joins("Translation").Joins("JOIN book on book.id = hadith.book_id AND book.slug = ?", bookSlug).
-		Where("chapter_id = ?", chapterId).Preload("Media").Order("id")
+	mod := c.db.Model(&model.Hadith{}).Joins("Translation").Joins(`LEFT JOIN book b on b.id = hadith.book_id`).
+		Where(`hadith.chapter_id = ? AND b.slug = ?`, chapterId, bookSlug).Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
 
 	return &page, nil

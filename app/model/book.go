@@ -8,12 +8,12 @@ import (
 type Book struct {
 	BaseID
 	Count           *int64       `json:"count,omitempty" gorm:"-"`
-	Slug            *string      `json:"slug" gorm:"type:varchar(256);not null;index:,unique,where:deleted_at is null"`
-	DefaultLanguage *string      `gorm:"default:Idn"`
+	Slug            *string      `json:"slug,omitempty" gorm:"type:varchar(256);not null;index:,unique,where:deleted_at is null"`
+	DefaultLanguage *string      `json:"default_language,omitempty" gorm:"default:Idn"`
 	TranslationID   *int         `json:"translation_id,omitempty"`
 	Translation     *Translation `json:"translation,omitempty"`
 	Themes          []Theme      `json:"-" gorm:"many2many:book_themes"`
-	Theme           []Theme      `json:"theme" gorm:"-"`
+	Theme           []Theme      `json:"theme,omitempty" gorm:"-"`
 	Hadith          []Hadith     `json:"hadith,omitempty"`
 	Media           []BookAsset  `json:"media,omitempty"`
 }

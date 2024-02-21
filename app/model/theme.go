@@ -9,6 +9,8 @@ type Theme struct {
 	Hadiths         []Hadith     `json:"hadiths,omitempty"`
 	Books           []Book       `json:"-" gorm:"many2many:book_themes;"`
 	Media           []ThemeAsset `json:"media,omitempty"`
+	Book            []Book       `json:"books,omitempty" gorm:"-"`
+	TotalHadith     *int64       `json:"total_hadith,omitempty"`
 }
 
 type ThemeAsset struct {

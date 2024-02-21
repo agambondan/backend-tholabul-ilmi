@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"sync"
+
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/morkid/paginate"
@@ -34,9 +36,39 @@ func (c *themeRepo) Save(Theme *model.Theme) (*model.Theme, error) {
 }
 
 func (c *themeRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
-	var themes []model.Theme
-	mod := c.db.Model(&model.Theme{}).Joins("Translation").Preload("Media").Preload("Chapters").Order("id")
+	var themes []*model.Theme
+	mod := c.db.Model(&model.Theme{}).Joins("Translation").
+		Preload("Media").
+		// Preload("Chapters").
+		Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&themes)
+
+	var wg sync.WaitGroup
+	wg.Add(len(themes))
+
+	for _, v := range themes {
+		go func(theme *model.Theme) {
+			defer wg.Done()
+			var totalHadith int64
+			var bookIDs []*int
+			c.db.Model(&model.Hadith{}).Joins("Theme").
+				Joins("Theme.Translation").
+				Where(`"Theme__Translation".idn = ?`, theme.Translation.Idn).
+				Count(&totalHadith).
+				// Pluck(`"hadith".id`, &totalHadith).
+				Distinct("book_id").Pluck("book_id", &bookIDs)
+			theme.TotalHadith = &totalHadith
+			for _, v := range bookIDs {
+				theme.Book = append(theme.Book, model.Book{
+					BaseID: model.BaseID{
+						ID: v,
+					},
+				})
+			}
+		}(v)
+	}
+
+	wg.Wait()
 
 	return &page
 }

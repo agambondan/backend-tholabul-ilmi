@@ -13,6 +13,7 @@ type HadithService interface {
 	FindById(*int) (*model.Hadith, error)
 	FindByBookSlug(*fiber.Ctx, *string) (*paginate.Page, error)
 	FindByThemeId(*fiber.Ctx, *int) (*paginate.Page, error)
+	FindByThemeName(*fiber.Ctx, *string) (*paginate.Page, error)
 	FindByBookSlugThemeId(*fiber.Ctx, *string, *int) (*paginate.Page, error)
 	FindByChapterId(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindByBookSlugChapterId(*fiber.Ctx, *string, *int) (*paginate.Page, error)
@@ -50,6 +51,10 @@ func (b *hadithService) FindByBookSlug(ctx *fiber.Ctx, bookSlug *string) (*pagin
 
 func (b *hadithService) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, error) {
 	return b.hadith.FindByThemeId(ctx, id)
+}
+
+func (b *hadithService) FindByThemeName(ctx *fiber.Ctx, name *string) (*paginate.Page, error) {
+	return b.hadith.FindByThemeName(ctx, name)
 }
 
 func (b *hadithService) FindByBookSlugThemeId(ctx *fiber.Ctx, bookSlug *string, themeId *int) (*paginate.Page, error) {

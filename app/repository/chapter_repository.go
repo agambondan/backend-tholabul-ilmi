@@ -11,6 +11,7 @@ type ChapterRepository interface {
 	Save(*model.Chapter) (*model.Chapter, error)
 	FindAll(*fiber.Ctx) *paginate.Page
 	FindById(*int) (*model.Chapter, error)
+	FindByBookSlugThemeId(*fiber.Ctx, *string, *int) (*paginate.Page, error)
 	FindByThemeId(*fiber.Ctx, *int) (*paginate.Page, error)
 	UpdateById(*int, *model.Chapter) (*model.Chapter, error)
 	DeleteById(*int, *string) error
@@ -48,6 +49,40 @@ func (c *chapterRepo) FindById(id *int) (*model.Chapter, error) {
 		return nil, err
 	}
 	return chapter, nil
+}
+
+func (c *chapterRepo) FindByBookSlugThemeId(ctx *fiber.Ctx, bookSlug *string, themeId *int) (*paginate.Page, error) {
+	var chapters []model.Chapter
+	var chaptersId []int
+
+	var hadiths []model.Hadith
+	c.db.Table("(?) as sub", c.db.
+		Model(&model.Hadith{}).
+		Select("DISTINCT ON (chapter_id) chapter_id, number").
+		Joins(`LEFT JOIN book b on b.id = hadith.book_id`).
+		Where(`hadith.theme_id = ? AND b.slug = ?`, themeId, bookSlug).
+		Order("hadith.chapter_id, hadith.number")).
+		Order("number").Find(&hadiths)
+
+	for _, v := range hadiths {
+		chaptersId = append(chaptersId, *v.ChapterID)
+	}
+
+	mod := c.db.Model(&model.Chapter{}).Joins("Translation").Where("chapter.id IN ?", chaptersId)
+	page := c.pg.With(mod).Request(ctx.Request()).Response(&chapters)
+
+	newChapters := []model.Chapter{}
+	for _, v := range chaptersId {
+		for _, v1 := range chapters {
+			if v == *v1.ID {
+				newChapters = append(newChapters, v1)
+				break
+			}
+		}
+	}
+	page.Items = newChapters
+
+	return &page, nil
 }
 
 func (c *chapterRepo) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, error) {
