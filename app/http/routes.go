@@ -18,16 +18,13 @@ import (
 
 // Handle all request to route to controller
 func Handle(app *fiber.App, repo *repository.Repositories) {
-	// recover panic
 	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
-	// for logger in cmd
 	app.Use(logger.New())
-	// Security Headers like xhr, csrf and many things
 	app.Use(middlewares.SecurityHeaders())
-	// middleware for resource sharing to public
 	app.Use(middlewares.Cors())
 
 	newServices := service.NewServices(repo)
+	newUserController := controllers.NewUserController(newServices)
 	newAyahController := controllers.NewAyahController(newServices)
 	newSurahController := controllers.NewSurahController(newServices)
 	newJuzController := controllers.NewJuzController(newServices)
@@ -35,6 +32,11 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newThemeController := controllers.NewThemeController(newServices)
 	newChapterController := controllers.NewChapterController(newServices)
 	newHadithController := controllers.NewHadithController(newServices)
+	newBookmarkController := controllers.NewBookmarkController(newServices)
+	newReadingProgressController := controllers.NewReadingProgressController(newServices)
+	newHafalanController := controllers.NewHafalanController(newServices)
+	newStreakController := controllers.NewStreakController(newServices)
+	newSearchController := controllers.NewSearchController(newServices)
 
 	master := app.Group(viper.GetString("ENDPOINT"))
 	master.Get("/", controllers.GetAPIIndex)
@@ -52,6 +54,13 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 		return c.JSON(response)
 	})
 	master.Get("/swagger/*", swagger.HandlerDefault)
+
+	// Auth (public)
+	master.Post("/auth/register", newUserController.Register)
+	master.Post("/auth/login", newUserController.Login)
+
+	// Search (public)
+	master.Get("/search", newSearchController.Search)
 
 	// Ayah
 	master.Post("/ayah", newAyahController.Create)
@@ -87,6 +96,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Put("/books/:id", newBookController.UpdateById)
 	master.Delete("/books/:id", newBookController.DeleteById)
 
+	// Theme
 	master.Post("/themes", newThemeController.Create)
 	master.Get("/themes", newThemeController.FindAll)
 	master.Get("/themes/:id", newThemeController.FindById)
@@ -94,6 +104,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Put("/themes/:id", newThemeController.UpdateById)
 	master.Delete("/themes/:id", newThemeController.DeleteById)
 
+	// Chapter
 	master.Post("/chapters", newChapterController.Create)
 	master.Get("/chapters", newChapterController.FindAll)
 	master.Get("/chapters/:id", newChapterController.FindById)
@@ -102,6 +113,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Put("/chapters/:id", newChapterController.UpdateById)
 	master.Delete("/chapters/:id", newChapterController.DeleteById)
 
+	// Hadith
 	master.Post("/hadiths", newHadithController.Create)
 	master.Get("/hadiths", newHadithController.FindAll)
 	master.Get("/hadiths/:id", newHadithController.FindById)
@@ -115,4 +127,37 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/hadiths/book/:slug/theme/:themeId/chapter/:chapterId", newHadithController.FindByBookSlugThemeIdChapterId)
 	master.Put("/hadiths/:id", newHadithController.UpdateById)
 	master.Delete("/hadiths/:id", newHadithController.DeleteById)
+
+	// Protected routes (JWT required)
+	jwt := middlewares.JWTAuth()
+
+	// Auth & Users
+	master.Get("/auth/me", jwt, newUserController.Me)
+	master.Put("/auth/password", jwt, newUserController.UpdatePassword)
+	master.Get("/users", jwt, newUserController.FindAll)
+	master.Get("/users/:id", jwt, newUserController.FindById)
+	master.Put("/users/:id", jwt, newUserController.UpdateById)
+	master.Delete("/users/:id", jwt, newUserController.DeleteById)
+
+	// Bookmark
+	master.Post("/bookmarks", jwt, newBookmarkController.Add)
+	master.Get("/bookmarks", jwt, newBookmarkController.FindAll)
+	master.Delete("/bookmarks/:id", jwt, newBookmarkController.Delete)
+
+	// Reading Progress
+	master.Put("/progress/quran", jwt, newReadingProgressController.UpdateQuran)
+	master.Get("/progress/quran", jwt, newReadingProgressController.GetQuran)
+	master.Put("/progress/hadith", jwt, newReadingProgressController.UpdateHadith)
+	master.Get("/progress/hadith", jwt, newReadingProgressController.GetHadith)
+	master.Get("/progress", jwt, newReadingProgressController.GetAll)
+
+	// Hafalan
+	master.Put("/hafalan/surah/:surahId", jwt, newHafalanController.Update)
+	master.Get("/hafalan", jwt, newHafalanController.FindAll)
+	master.Get("/hafalan/summary", jwt, newHafalanController.Summary)
+
+	// Streak & Activity
+	master.Post("/activity", jwt, newStreakController.Record)
+	master.Get("/streak", jwt, newStreakController.GetStreak)
+	master.Get("/streak/weekly", jwt, newStreakController.GetWeekly)
 }
