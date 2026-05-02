@@ -4,6 +4,7 @@ import "github.com/agambondan/islamic-explorer/app/model"
 
 // ModelMigrations models to migrate
 var ModelMigrations []interface{} = []interface{}{
+	model.User{},
 	model.Multimedia{},
 	model.Translation{},
 	model.Theme{},
@@ -22,4 +23,8 @@ var ModelMigrations []interface{} = []interface{}{
 	model.SurahAsset{},
 	model.AyahAsset{},
 	model.JuzAsset{},
+	model.Bookmark{},
+	model.ReadingProgress{},
+	model.HafalanProgress{},
+	model.UserActivity{},
 }

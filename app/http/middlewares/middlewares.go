@@ -44,6 +44,10 @@ func IsTokenValid() fiber.Handler {
 	}
 }
 
+func JWTAuth() fiber.Handler {
+	return IsTokenValid()
+}
+
 func UserMiddleware() {
 
 }

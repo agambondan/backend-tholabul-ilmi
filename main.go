@@ -82,6 +82,9 @@ func init() {
 		if err := lib.LoadEnvironmentLocalFlag(".env.production"); err != nil {
 			panic(err)
 		}
+	case "container":
+		// Baca langsung dari OS env vars (docker-compose / k8s)
+		viper.AutomaticEnv()
 	default:
 		if err := lib.LoadEnvironmentLocalFlag(".env.local"); err != nil {
 			panic(err)

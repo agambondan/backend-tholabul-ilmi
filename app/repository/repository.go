@@ -15,15 +15,21 @@ import (
 )
 
 type Repositories struct {
-	Ayah    AyahRepository
-	Surah   SurahRepository
-	Juz     JuzRepository
-	Book    BookRepository
-	Theme   ThemeRepository
-	Chapter ChapterRepository
-	Hadith  HadithRepository
-	db      *gorm.DB
-	pg      *paginate.Pagination
+	User            UserRepository
+	Ayah            AyahRepository
+	Surah           SurahRepository
+	Juz             JuzRepository
+	Book            BookRepository
+	Theme           ThemeRepository
+	Chapter         ChapterRepository
+	Hadith          HadithRepository
+	Bookmark        BookmarkRepository
+	ReadingProgress ReadingProgressRepository
+	Hafalan         HafalanRepository
+	UserActivity    UserActivityRepository
+	Search          SearchRepository
+	db              *gorm.DB
+	pg              *paginate.Pagination
 }
 
 func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
@@ -44,15 +50,21 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 	})
 
 	return &Repositories{
-		Ayah:    NewAyahRepository(db, pg),
-		Surah:   NewSurahRepository(db, pg),
-		Juz:     NewJuzRepository(db, pg),
-		Book:    NewBookRepository(db, pg),
-		Theme:   NewThemeRepository(db, pg),
-		Chapter: NewChapterRepository(db, pg),
-		Hadith:  NewHadithRepository(db, pg),
-		db:      db,
-		pg:      pg,
+		User:            NewUserRepository(db, pg),
+		Ayah:            NewAyahRepository(db, pg),
+		Surah:           NewSurahRepository(db, pg),
+		Juz:             NewJuzRepository(db, pg),
+		Book:            NewBookRepository(db, pg),
+		Theme:           NewThemeRepository(db, pg),
+		Chapter:         NewChapterRepository(db, pg),
+		Hadith:          NewHadithRepository(db, pg),
+		Bookmark:        NewBookmarkRepository(db),
+		ReadingProgress: NewReadingProgressRepository(db),
+		Hafalan:         NewHafalanRepository(db),
+		UserActivity:    NewUserActivityRepository(db),
+		Search:          NewSearchRepository(db),
+		db:              db,
+		pg:              pg,
 	}, nil
 }
 

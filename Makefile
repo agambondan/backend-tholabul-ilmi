@@ -1,8 +1,14 @@
 run-local:
 	go run main.go
-	
+
 run-dev:
 	go run main.go -environment development
+
+seed-quran:
+	go run ./scripts/seed_quran/main.go
+
+seed-quran-dev:
+	go run ./scripts/seed_quran/main.go -environment development
 
 build:
 	go build main.go -o weddinggo

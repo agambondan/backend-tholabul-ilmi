@@ -1,6 +1,6 @@
 module github.com/agambondan/islamic-explorer
 
-go 1.19
+go 1.26
 
 require (
 	github.com/AfterShip/email-verifier v1.3.3

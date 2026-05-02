@@ -33,7 +33,7 @@ func NewPostgresql(env *config.Environment) *gorm.DB {
 			TablePrefix:   viper.GetString("DB_TABLE_PREFIX"),
 			SingularTable: true,
 		},
-		DisableForeignKeyConstraintWhenMigrating: false,
+		DisableForeignKeyConstraintWhenMigrating: true,
 	}
 
 	var dsn string

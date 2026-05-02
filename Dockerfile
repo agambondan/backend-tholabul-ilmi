@@ -1,23 +1,16 @@
 # syntax=docker/dockerfile:1
-#FROM golang:alpine
-FROM golang:latest
-
-RUN go env -w GO111MODULE=on
-#RUN go env -w GOCACHE=OFF
-#RUN go env -w GOPRIVATE=github.com/agambondan
-RUN go env
-
+FROM golang:1.26-alpine AS builder
+RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
-
-COPY . .
-
-#RUN apk add git
-#RUN git config --global url."https://agambondan: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@github.com".insteadOf / "https://github.com"
-#RUN go get github.com/agambondan/islamic-explorer
-
+COPY go.mod go.sum ./
 RUN go mod download
-#RUN go get github.com/agambondan/islamic-explorer
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -o ./build/main main.go
 
-RUN go build -o ./build/main main.go
-
-CMD ./build/main -environment production
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /app/build/main /app/main
+ENV TZ=Asia/Jakarta
+EXPOSE 9900
+CMD ["/app/main", "-environment", "container"]
