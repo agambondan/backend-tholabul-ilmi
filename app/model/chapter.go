@@ -5,6 +5,7 @@ type Chapter struct {
 	ThemeID         *int           `json:"theme_id,omitempty"`
 	DefaultLanguage *string        `gorm:"default:Idn"`
 	TranslationID   *int           `json:"translation_id,omitempty"`
+	Theme           *Theme         `json:"theme,omitempty"`
 	Translation     *Translation   `json:"translation,omitempty"`
 	Media           []ChapterAsset `json:"media,omitempty"`
 }

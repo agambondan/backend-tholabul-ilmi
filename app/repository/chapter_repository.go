@@ -36,7 +36,9 @@ func (c *chapterRepo) Save(Chapter *model.Chapter) (*model.Chapter, error) {
 
 func (c *chapterRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	var chapters []model.Chapter
-	mod := c.db.Model(&model.Chapter{}).Joins("Translation").Preload("Media").Order("id")
+	mod := c.db.Model(&model.Chapter{}).
+		Joins("Theme").Joins("Theme.Translation").
+		Joins("Translation").Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&chapters)
 
 	return &page
@@ -44,7 +46,9 @@ func (c *chapterRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 
 func (c *chapterRepo) FindById(id *int) (*model.Chapter, error) {
 	var chapter *model.Chapter
-	if err := c.db.Joins("Translation").Preload("Media").
+	if err := c.db.
+		Joins("Theme").Joins("Theme.Translation").
+		Joins("Translation").Preload("Media").
 		First(&chapter, `chapter.id = ?`, id).Error; err != nil {
 		return nil, err
 	}
@@ -87,7 +91,9 @@ func (c *chapterRepo) FindByBookSlugThemeId(ctx *fiber.Ctx, bookSlug *string, th
 
 func (c *chapterRepo) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, error) {
 	var chapters []model.Chapter
-	mod := c.db.Model(&model.Chapter{}).Joins("Translation").Where("theme_id = ?", id).Preload("Media").Order(`"Translation".idn`)
+	mod := c.db.Model(&model.Chapter{}).
+		Joins("Theme").Joins("Theme.Translation").
+		Joins("Translation").Where("chapter.theme_id = ?", id).Preload("Media").Order(`"Translation".idn`)
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&chapters)
 
 	return &page, nil

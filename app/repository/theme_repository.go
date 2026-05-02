@@ -75,7 +75,7 @@ func (c *themeRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 
 func (c *themeRepo) FindById(id *int) (*model.Theme, error) {
 	var theme *model.Theme
-	if err := c.db.Joins("Translation").Preload("Chapters").Preload("Media").
+	if err := c.db.Joins("Translation").Preload("Chapters.Translation").Preload("Media").
 		First(&theme, `theme.id = ?`, id).Error; err != nil {
 		return nil, err
 	}

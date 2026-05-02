@@ -41,7 +41,11 @@ func (c *bookRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 		var count int64
 		c.db.Table("hadith").Select("id").Where("book_id = ?", v.ID).Count(&count)
 		books[i].Count = &count
+		c.db.Joins("Translation").
+			Joins(`JOIN book_themes bt ON bt.theme_id = theme.id AND bt.book_id = ?`, v.ID).
+			Find(&books[i].Theme)
 	}
+	page.Items = books
 
 	return &page
 }
