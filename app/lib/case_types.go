@@ -9,7 +9,11 @@ import (
 
 // SnakeCase converts a string into snake case.
 func SnakeCase(s string, keepUnderscores ...bool) string {
-	snake := strings.ToLower(strcase.ToSnake(s))
+	segments := strings.Split(s, ".")
+	for i := range segments {
+		segments[i] = strings.ToLower(strcase.ToSnake(segments[i]))
+	}
+	snake := strings.Join(segments, ".")
 	if len(keepUnderscores) == 0 || !keepUnderscores[0] {
 		re := regexp.MustCompile(`[_]+`)
 		snake = re.ReplaceAllString(snake, "_")
@@ -24,7 +28,11 @@ func UpperSnakeCase(s string, keepUnderscores ...bool) string {
 
 // KebabCase converts a string into kebab case.
 func KebabCase(s string, keepDashes ...bool) string {
-	kebab := strings.ToLower(strcase.ToKebab(s))
+	segments := strings.Split(s, ".")
+	for i := range segments {
+		segments[i] = strings.ToLower(strcase.ToKebab(segments[i]))
+	}
+	kebab := strings.Join(segments, ".")
 	if len(keepDashes) == 0 || !keepDashes[0] {
 		re := regexp.MustCompile(`[-]+`)
 		kebab = re.ReplaceAllString(kebab, "-")
