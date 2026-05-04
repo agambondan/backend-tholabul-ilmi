@@ -3,6 +3,7 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
+import { useLocale } from '@/context/Locale';
 import { tafsirApi } from '@/lib/api';
 import Link from 'next/link';
 import { use, useEffect, useState } from 'react';
@@ -17,6 +18,7 @@ import { MdOutlineAutoStories } from 'react-icons/md';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const TafsirSurahPage = ({ params }) => {
+    const { t } = useLocale();
     const { slug } = use(params);
     const decodedSlug = decodeURIComponent(slug);
 
@@ -121,11 +123,12 @@ const TafsirSurahPage = ({ params }) => {
                                 <h1 className='text-xl font-bold text-emerald-900 dark:text-white'>
                                     {surah
                                         ? `${surah.translation?.latin_en ?? decodedSlug} — Tafsir`
-                                        : 'Tafsir Surah'}
+                                        : t('tafsir.surah_title')}
                                 </h1>
                                 {surah && (
                                     <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                        Surah ke-{surah.number} · {surah.number_of_ayahs ?? ayahs.length} ayat
+                                        {t('tafsir.surah_number_prefix')}{surah.number} ·{' '}
+                                        {surah.number_of_ayahs ?? ayahs.length} {t('common.verse')}
                                     </p>
                                 )}
                             </div>
@@ -144,20 +147,20 @@ const TafsirSurahPage = ({ params }) => {
                             onClick={() => setShowTranslation((v) => !v)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${showTranslation ? 'bg-emerald-700 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
                         >
-                            Terjemahan
+                            {t('tafsir.translation_toggle')}
                         </button>
                         <div className='ml-auto flex gap-2'>
                             <button
                                 onClick={expandAll}
                                 className='text-xs text-emerald-600 dark:text-emerald-400 hover:underline'
                             >
-                                Buka semua
+                                {t('tafsir.expand_all')}
                             </button>
                             <button
                                 onClick={collapseAll}
                                 className='text-xs text-gray-400 dark:text-gray-500 hover:underline'
                             >
-                                Tutup semua
+                                {t('tafsir.collapse_all')}
                             </button>
                         </div>
                     </div>
@@ -168,7 +171,7 @@ const TafsirSurahPage = ({ params }) => {
                             type='text'
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder='Cari ayat, terjemahan, atau tafsir...'
+                            placeholder={t('tafsir.surah_search_placeholder')}
                             className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
                         />
                         {search && (
@@ -177,7 +180,7 @@ const TafsirSurahPage = ({ params }) => {
                                 onClick={() => setSearch('')}
                                 className='text-xs font-medium text-emerald-600 dark:text-emerald-400'
                             >
-                                Hapus
+                                {t('common.clear')}
                             </button>
                         )}
                     </div>
@@ -185,7 +188,8 @@ const TafsirSurahPage = ({ params }) => {
                     {!isLoading && ayahs.length > 0 && (
                         <div className='mb-3 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>
                             <span>
-                                Menampilkan {visibleAyahs.length} dari {ayahs.length} ayat
+                                {t('common.showing')} {visibleAyahs.length} {t('common.of')}{' '}
+                                {ayahs.length} {t('common.verse')}
                             </span>
                             {search && (
                                 <button
@@ -193,7 +197,7 @@ const TafsirSurahPage = ({ params }) => {
                                     onClick={() => setSearch('')}
                                     className='font-medium text-emerald-600 dark:text-emerald-400'
                                 >
-                                    Reset pencarian
+                                    {t('common.reset_search')}
                                 </button>
                             )}
                         </div>
@@ -203,8 +207,7 @@ const TafsirSurahPage = ({ params }) => {
                     {!isLoadingTafsir && !hasTafsirData && ayahs.length > 0 && (
                         <div className='bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 rounded-xl px-4 py-3 mb-5'>
                             <p className='text-xs text-amber-700 dark:text-amber-400'>
-                                Tafsir untuk surah ini belum tersedia. Tim kami sedang mempersiapkan
-                                data tafsir dari sumber terpercaya.
+                                {t('tafsir.surah_unavailable')}
                             </p>
                         </div>
                     )}
@@ -225,12 +228,14 @@ const TafsirSurahPage = ({ params }) => {
                     {!isLoading && ayahs.length === 0 && (
                         <div className='text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700'>
                             <MdOutlineAutoStories className='text-5xl text-gray-200 dark:text-slate-600 mx-auto mb-3' />
-                            <p className='text-gray-500 dark:text-gray-400 mb-1'>Surah tidak ditemukan</p>
+                            <p className='text-gray-500 dark:text-gray-400 mb-1'>
+                                {t('quran.not_found')}
+                            </p>
                             <Link
                                 href='/tafsir'
                                 className='mt-3 inline-block text-sm text-emerald-600 dark:text-emerald-400 hover:underline'
                             >
-                                ← Kembali ke daftar surah
+                                {t('tafsir.back_to_surah_list')}
                             </Link>
                         </div>
                     )}
@@ -301,7 +306,7 @@ const TafsirSurahPage = ({ params }) => {
                                                 {tafsir ? (
                                                     <div className='bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-4 py-3 space-y-1'>
                                                         <p className='text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide'>
-                                                            Tafsir{tafsir.source ? ` — ${tafsir.source}` : ''}
+                                                            {t('tafsir.title')}{tafsir.source ? ` - ${tafsir.source}` : ''}
                                                         </p>
                                                         <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
                                                             {tafsir.content ?? tafsir.text ?? tafsir.description}
@@ -310,7 +315,7 @@ const TafsirSurahPage = ({ params }) => {
                                                 ) : (
                                                     <div className='bg-gray-50 dark:bg-slate-700/40 rounded-lg px-4 py-3'>
                                                         <p className='text-xs text-gray-400 dark:text-gray-500 italic'>
-                                                            Tafsir untuk ayah ini belum tersedia.
+                                                            {t('ayah.tafsir_empty')}
                                                         </p>
                                                     </div>
                                                 )}
@@ -320,7 +325,7 @@ const TafsirSurahPage = ({ params }) => {
                                                     href={`/quran/surah/${encodeURIComponent(decodedSlug)}#${ayah.number}`}
                                                     className='text-xs text-emerald-600 dark:text-emerald-400 hover:underline'
                                                 >
-                                                    Baca di halaman Quran →
+                                                    {t('tafsir.read_in_quran')}
                                                 </Link>
                                             </div>
                                         )}
@@ -334,14 +339,14 @@ const TafsirSurahPage = ({ params }) => {
                         <div className='text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700'>
                             <BsSearch className='text-5xl text-gray-200 dark:text-slate-600 mx-auto mb-3' />
                             <p className='text-gray-500 dark:text-gray-400 mb-1'>
-                                Tidak ada ayat atau tafsir yang cocok dengan pencarian
+                                {t('tafsir.no_search_match')}
                             </p>
                             <button
                                 type='button'
                                 onClick={() => setSearch('')}
                                 className='mt-3 inline-block text-sm text-emerald-600 dark:text-emerald-400 hover:underline'
                             >
-                                Hapus pencarian
+                                {t('common.clear_search')}
                             </button>
                         </div>
                     )}

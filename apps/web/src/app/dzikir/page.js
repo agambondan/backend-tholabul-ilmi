@@ -4,18 +4,19 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
+import { useLocale } from '@/context/Locale';
 import { dzikirApi } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 
 const CATEGORIES = [
-    { value: '', label: 'Semua' },
-    { value: 'pagi', label: 'Pagi' },
-    { value: 'petang', label: 'Petang' },
-    { value: 'setelah_sholat', label: 'Setelah Sholat' },
-    { value: 'tidur', label: 'Tidur' },
-    { value: 'safar', label: 'Safar' },
-    { value: 'dzikir_umum', label: 'Umum' },
+    { value: '', labelKey: 'common.all' },
+    { value: 'pagi', labelKey: 'dzikir.category_morning' },
+    { value: 'petang', labelKey: 'dzikir.category_evening' },
+    { value: 'setelah_sholat', labelKey: 'dzikir.category_after_prayer' },
+    { value: 'tidur', labelKey: 'dzikir.category_sleep' },
+    { value: 'safar', labelKey: 'dzikir.category_travel' },
+    { value: 'dzikir_umum', labelKey: 'dzikir.category_general' },
 ];
 
 const PAGE_SIZE = 20;
@@ -39,6 +40,7 @@ const FALLBACK_DZIKIR = [
 ];
 
 const DzikirPage = () => {
+    const { t } = useLocale();
     const [dzikirList, setDzikirList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -61,7 +63,7 @@ const DzikirPage = () => {
             : dzikirApi.list(pageNum, PAGE_SIZE);
         req
             .then((r) => {
-                if (!r.ok) throw new Error('Gagal memuat data');
+                if (!r.ok) throw new Error(t('common.network_error'));
                 return r.json();
             })
             .then((data) => {
@@ -149,11 +151,10 @@ const DzikirPage = () => {
                             الذِّكْر
                         </p>
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>
-                            Dzikir & Wirid
+                            {t('dzikir.public_title')}
                         </h1>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            Kumpulan dzikir pagi-petang, wirid harian, dan dzikir situasional dari
-                            Hisnul Muslim
+                            {t('dzikir.public_subtitle')}
                         </p>
                     </div>
 
@@ -163,7 +164,7 @@ const DzikirPage = () => {
                             type='text'
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder='Cari dzikir...'
+                            placeholder={t('dzikir.search_placeholder')}
                             className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
                         />
                     </div>
@@ -179,14 +180,15 @@ const DzikirPage = () => {
                                         : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-slate-600'
                                 }`}
                             >
-                                {c.label}
+                                {t(c.labelKey)}
                             </button>
                         ))}
                     </div>
 
                     <div className='mb-3 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>
                         <span>
-                            Menampilkan {filtered.length} dari {dzikirList.length} dzikir
+                            {t('common.showing')} {filtered.length} {t('common.of')} {dzikirList.length}{' '}
+                            {t('dzikir.unit')}
                         </span>
                         {search && (
                             <button
@@ -194,7 +196,7 @@ const DzikirPage = () => {
                                 onClick={() => setSearch('')}
                                 className='font-medium text-emerald-600 dark:text-emerald-400'
                             >
-                                Reset pencarian
+                                {t('common.reset_search')}
                             </button>
                         )}
                     </div>
@@ -211,8 +213,8 @@ const DzikirPage = () => {
                         <div className='text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700'>
                             <p className='text-gray-500 dark:text-gray-400'>
                                 {dzikirList.length === 0
-                                    ? 'Data belum tersedia saat ini.'
-                                    : 'Tidak ada dzikir yang cocok dengan filter saat ini.'}
+                                    ? t('dzikir.unavailable')
+                                    : t('dzikir.no_match')}
                             </p>
                         </div>
                     )}
@@ -268,7 +270,7 @@ const DzikirPage = () => {
                                         {dzikir.fadhilah && (
                                             <div className='bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2'>
                                                 <p className='text-xs font-medium text-amber-700 dark:text-amber-400 mb-0.5'>
-                                                    Fadhilah
+                                                    {t('dzikir.fadhilah')}
                                                 </p>
                                                 <p className='text-xs text-amber-600 dark:text-amber-300'>
                                                     {dzikir.fadhilah}
@@ -277,7 +279,7 @@ const DzikirPage = () => {
                                         )}
                                         {dzikir.source && (
                                             <p className='text-xs text-gray-400 dark:text-gray-500'>
-                                                Sumber: {dzikir.source}
+                                                {t('common.source')}: {dzikir.source}
                                             </p>
                                         )}
                                     </div>
@@ -296,7 +298,7 @@ const DzikirPage = () => {
 
                     {!hasMore && dzikirList.length > 0 && !isLoading && (
                         <p className='text-center text-xs text-gray-400 dark:text-gray-600 py-4'>
-                            Semua dzikir sudah ditampilkan
+                            {t('dzikir.all_displayed')}
                         </p>
                     )}
                 </div>

@@ -4,18 +4,19 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
+import { useLocale } from '@/context/Locale';
 import { doaApi } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 
 const CATEGORIES = [
-    { value: '', label: 'Semua' },
-    { value: 'pagi', label: 'Pagi' },
-    { value: 'petang', label: 'Petang' },
-    { value: 'makan', label: 'Makan' },
-    { value: 'tidur', label: 'Tidur' },
-    { value: 'safar', label: 'Safar' },
-    { value: 'ibadah', label: 'Ibadah' },
+    { value: '', labelKey: 'common.all' },
+    { value: 'pagi', labelKey: 'doa.cat.morning' },
+    { value: 'petang', labelKey: 'doa.cat.evening' },
+    { value: 'makan', labelKey: 'doa.cat.eating' },
+    { value: 'tidur', labelKey: 'doa.cat.sleeping' },
+    { value: 'safar', labelKey: 'doa.cat.travel' },
+    { value: 'ibadah', labelKey: 'doa.cat.worship' },
 ];
 
 const PAGE_SIZE = 20;
@@ -44,6 +45,7 @@ const FALLBACK_DOAS = [
 ];
 
 const DoaPage = () => {
+    const { t } = useLocale();
     const [doas, setDoas] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -146,10 +148,10 @@ const DoaPage = () => {
                             الدُّعَاء
                         </p>
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>
-                            Kumpulan Doa
+                            {t('doa.title')}
                         </h1>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            Doa harian dan doa situasional berdasarkan Al-Quran & Sunnah
+                            {t('doa.subtitle')}
                         </p>
                     </div>
 
@@ -159,7 +161,7 @@ const DoaPage = () => {
                             type='text'
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder='Cari doa...'
+                            placeholder={t('doa.search_placeholder')}
                             className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
                         />
                     </div>
@@ -175,14 +177,14 @@ const DoaPage = () => {
                                         : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-slate-600'
                                 }`}
                             >
-                                {c.label}
+                                {t(c.labelKey)}
                             </button>
                         ))}
                     </div>
 
                     <div className='mb-3 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>
                         <span>
-                            Menampilkan {filtered.length} dari {doas.length} doa
+                            {t('common.showing')} {filtered.length} {t('common.of')} {doas.length} {t('doa.unit')}
                         </span>
                         {search && (
                             <button
@@ -190,7 +192,7 @@ const DoaPage = () => {
                                 onClick={() => setSearch('')}
                                 className='font-medium text-emerald-600 dark:text-emerald-400'
                             >
-                                Reset pencarian
+                                {t('common.reset_search')}
                             </button>
                         )}
                     </div>
@@ -201,8 +203,8 @@ const DoaPage = () => {
                         <div className='text-center py-16'>
                             <p className='text-gray-500 dark:text-gray-400'>
                                 {doas.length === 0
-                                    ? 'Data belum tersedia saat ini.'
-                                    : 'Tidak ada doa yang cocok.'}
+                                    ? t('doa.empty_unavailable')
+                                    : t('doa.no_match')}
                             </p>
                         </div>
                     )}
@@ -225,7 +227,7 @@ const DoaPage = () => {
                                         </span>
                                         {doa.category && (
                                             <span className='ml-2 text-xs px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full'>
-                                                {doa.category}
+                                                {t(CATEGORIES.find((item) => item.value === doa.category)?.labelKey) || doa.category}
                                             </span>
                                         )}
                                     </div>
@@ -252,7 +254,7 @@ const DoaPage = () => {
                                         </p>
                                         {doa.source && (
                                             <p className='text-xs text-gray-400 dark:text-gray-500'>
-                                                Sumber: {doa.source}
+                                                {t('common.source')}: {doa.source}
                                             </p>
                                         )}
                                     </div>
@@ -271,7 +273,7 @@ const DoaPage = () => {
 
                     {!hasMore && doas.length > 0 && !isLoading && (
                         <p className='text-center text-xs text-gray-400 dark:text-gray-600 py-4'>
-                            Semua doa sudah ditampilkan
+                            {t('doa.all_shown')}
                         </p>
                     )}
                 </div>

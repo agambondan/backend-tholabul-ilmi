@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonProfile } from '@/components/skeleton/Skeleton';
+import { useLocale } from '@/context/Locale';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { hafalanApi, progressApi, streakApi, userApi } from '@/lib/api';
 import Link from 'next/link';
@@ -31,6 +32,7 @@ const inputCls =
     'w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500';
 
 const ProfilePage = () => {
+    const { t } = useLocale();
     const { user, isAuthenticated, isLoading: authLoading, logout, refetchUser } = useRequireAuth();
     const [streak, setStreak] = useState(null);
     const [quranProgress, setQuranProgress] = useState(null);
@@ -85,10 +87,10 @@ const ProfilePage = () => {
             const res = await userApi.updateMe(user.id, { name: editName.trim() });
             if (!res.ok) throw new Error();
             refetchUser();
-            setEditMsg({ type: 'success', text: 'Profil berhasil diperbarui.' });
+            setEditMsg({ type: 'success', text: t('profile.update_success') });
             setEditOpen(false);
         } catch {
-            setEditMsg({ type: 'error', text: 'Gagal memperbarui profil.' });
+            setEditMsg({ type: 'error', text: t('profile.update_error') });
         } finally {
             setEditLoading(false);
         }
@@ -97,11 +99,11 @@ const ProfilePage = () => {
     const handleChangePassword = async (e) => {
         e.preventDefault();
         if (newPwd !== confirmPwd) {
-            setPwdMsg({ type: 'error', text: 'Password baru tidak cocok.' });
+            setPwdMsg({ type: 'error', text: t('profile.password_mismatch') });
             return;
         }
         if (newPwd.length < 8) {
-            setPwdMsg({ type: 'error', text: 'Password baru minimal 8 karakter.' });
+            setPwdMsg({ type: 'error', text: t('profile.password_min') });
             return;
         }
         setPwdLoading(true);
@@ -110,15 +112,15 @@ const ProfilePage = () => {
             const res = await userApi.changePassword(oldPwd, newPwd);
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                throw new Error(data.message || 'Password lama salah.');
+                throw new Error(data.message || t('profile.old_password_wrong'));
             }
-            setPwdMsg({ type: 'success', text: 'Password berhasil diubah.' });
+            setPwdMsg({ type: 'success', text: t('profile.password_success') });
             setOldPwd('');
             setNewPwd('');
             setConfirmPwd('');
             setPwdOpen(false);
         } catch (err) {
-            setPwdMsg({ type: 'error', text: err.message || 'Gagal mengubah password.' });
+            setPwdMsg({ type: 'error', text: err.message || t('profile.password_error') });
         } finally {
             setPwdLoading(false);
         }
@@ -132,9 +134,9 @@ const ProfilePage = () => {
             if (!res.ok) throw new Error();
             setSelectedLang(lang);
             refetchUser();
-            setLangMsg({ type: 'success', text: 'Preferensi bahasa disimpan.' });
+            setLangMsg({ type: 'success', text: t('profile.lang_success') });
         } catch {
-            setLangMsg({ type: 'error', text: 'Gagal menyimpan preferensi.' });
+            setLangMsg({ type: 'error', text: t('profile.lang_error') });
         } finally {
             setLangLoading(false);
         }
@@ -155,7 +157,7 @@ const ProfilePage = () => {
                             </div>
                             <div>
                                 <h1 className='text-lg font-bold text-emerald-900 dark:text-white'>
-                                    {user?.name ?? 'Pengguna'}
+                                    {user?.name ?? t('common.user')}
                                 </h1>
                                 <p className='text-sm text-gray-500 dark:text-gray-400'>
                                     {user?.email}
@@ -166,7 +168,7 @@ const ProfilePage = () => {
                             onClick={logout}
                             className='text-sm text-red-500 dark:text-red-400 hover:underline'
                         >
-                            Keluar
+                            {t('nav.logout')}
                         </button>
                     </div>
 
@@ -175,16 +177,16 @@ const ProfilePage = () => {
                         <div className='bg-gradient-to-r from-emerald-700 to-emerald-600 rounded-2xl p-5 mb-4 text-white'>
                             <div className='flex items-center gap-2 mb-3'>
                                 <BsFire className='text-orange-300 text-xl' />
-                                <span className='font-semibold'>Streak Membaca</span>
+                                <span className='font-semibold'>{t('profile.reading_streak')}</span>
                             </div>
                             <div className='flex gap-6'>
                                 <div>
                                     <p className='text-3xl font-extrabold'>{streak.current ?? 0}</p>
-                                    <p className='text-xs text-emerald-200 mt-1'>Hari berturut</p>
+                                    <p className='text-xs text-emerald-200 mt-1'>{t('profile.consecutive_days')}</p>
                                 </div>
                                 <div>
                                     <p className='text-3xl font-extrabold'>{streak.longest ?? 0}</p>
-                                    <p className='text-xs text-emerald-200 mt-1'>Terpanjang</p>
+                                    <p className='text-xs text-emerald-200 mt-1'>{t('profile.longest')}</p>
                                 </div>
                             </div>
                         </div>
@@ -204,15 +206,15 @@ const ProfilePage = () => {
                                 <div className='flex items-center gap-2 mb-2'>
                                     <BsBook className='text-emerald-600 dark:text-emerald-400' />
                                     <span className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase'>
-                                        Terakhir Baca Quran
+                                        {t('profile.last_quran')}
                                     </span>
                                 </div>
                                 <p className='text-sm font-bold text-emerald-900 dark:text-white'>
-                                    {quranProgress.surah_latin ?? 'Belum mulai'}
+                                    {quranProgress.surah_latin ?? t('profile.not_started')}
                                 </p>
                                 {quranProgress.ayah_number && (
                                     <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                        Ayat {quranProgress.ayah_number}
+                                        {t('profile.ayah')} {quranProgress.ayah_number}
                                     </p>
                                 )}
                             </Link>
@@ -229,11 +231,11 @@ const ProfilePage = () => {
                                 <div className='flex items-center gap-2 mb-2'>
                                     <BsBook className='text-emerald-600 dark:text-emerald-400' />
                                     <span className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase'>
-                                        Terakhir Baca Hadith
+                                        {t('profile.last_hadith')}
                                     </span>
                                 </div>
                                 <p className='text-sm font-bold text-emerald-900 dark:text-white'>
-                                    {hadithProgress.book_slug ?? 'Belum mulai'}
+                                    {hadithProgress.book_slug ?? t('profile.not_started')}
                                 </p>
                                 {hadithProgress.hadith_id && (
                                     <p className='text-xs text-gray-500 dark:text-gray-400'>
@@ -266,7 +268,7 @@ const ProfilePage = () => {
                                 </span>
                                 {hafalanSummary && (
                                     <span className='text-xs text-gray-500 dark:text-gray-400'>
-                                        {hafalanSummary.memorized ?? 0} hafal
+                                        {hafalanSummary.memorized ?? 0} {t('hafalan.memorized').toLowerCase()}
                                     </span>
                                 )}
                             </div>
@@ -286,7 +288,7 @@ const ProfilePage = () => {
                         >
                             <MdFormatListBulleted className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Amalan
+                                {t('link.deeds')}
                             </span>
                         </Link>
                         <Link
@@ -304,7 +306,7 @@ const ProfilePage = () => {
                         >
                             <BsStickyFill className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Catatan
+                                {t('link.notes')}
                             </span>
                         </Link>
                         <Link
@@ -313,7 +315,7 @@ const ProfilePage = () => {
                         >
                             <MdAccessTime className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Jadwal Sholat
+                                {t('link.prayer_schedule')}
                             </span>
                         </Link>
                         <Link
@@ -340,7 +342,7 @@ const ProfilePage = () => {
                         >
                             <BsBook className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Kamus Arab
+                                {t('link.arabic_dict')}
                             </span>
                         </Link>
                         <Link
@@ -367,7 +369,7 @@ const ProfilePage = () => {
                         >
                             <MdFlag className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Target Belajar
+                                {t('link.goals')}
                             </span>
                         </Link>
                         <Link
@@ -376,7 +378,7 @@ const ProfilePage = () => {
                         >
                             <MdOutlinePlayLesson className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Kajian Islam
+                                {t('link.kajian')}
                             </span>
                         </Link>
                         <Link
@@ -385,7 +387,7 @@ const ProfilePage = () => {
                         >
                             <BsBell className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Notifikasi
+                                {t('link.notifications')}
                             </span>
                         </Link>
                     </div>
@@ -401,7 +403,7 @@ const ProfilePage = () => {
                         >
                             <span className='flex items-center gap-2'>
                                 <BsPencil className='text-emerald-600 dark:text-emerald-400' />
-                                Edit Profil
+                                {t('profile.edit_profile')}
                             </span>
                             {editOpen ? <BsChevronUp /> : <BsChevronDown />}
                         </button>
@@ -419,7 +421,7 @@ const ProfilePage = () => {
                                 )}
                                 <div>
                                     <label className='block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>
-                                        Nama
+                                        {t('auth.name')}
                                     </label>
                                     <input
                                         value={editName}
@@ -443,7 +445,7 @@ const ProfilePage = () => {
                                     disabled={editLoading}
                                     className='px-5 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors'
                                 >
-                                    {editLoading ? 'Menyimpan...' : 'Simpan'}
+                                    {editLoading ? t('common.saving') : t('common.save')}
                                 </button>
                             </form>
                         )}
@@ -460,7 +462,7 @@ const ProfilePage = () => {
                         >
                             <span className='flex items-center gap-2'>
                                 <BsTranslate className='text-emerald-600 dark:text-emerald-400' />
-                                Preferensi Bahasa Terjemahan
+                                {t('profile.translation_language')}
                             </span>
                             {langOpen ? <BsChevronUp /> : <BsChevronDown />}
                         </button>
@@ -474,7 +476,7 @@ const ProfilePage = () => {
                                     </p>
                                 )}
                                 <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                    Pilih bahasa terjemahan yang ditampilkan di Quran dan Hadith.
+                                    {t('profile.translation_language_desc')}
                                 </p>
                                 <div className='flex gap-2'>
                                     {[
@@ -511,7 +513,7 @@ const ProfilePage = () => {
                         >
                             <span className='flex items-center gap-2'>
                                 <BsLock className='text-emerald-600 dark:text-emerald-400' />
-                                Ganti Password
+                                {t('profile.change_password')}
                             </span>
                             {pwdOpen ? <BsChevronUp /> : <BsChevronDown />}
                         </button>
@@ -529,7 +531,7 @@ const ProfilePage = () => {
                                 )}
                                 <div>
                                     <label className='block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>
-                                        Password Lama
+                                        {t('profile.old_password')}
                                     </label>
                                     <input
                                         type='password'
@@ -542,7 +544,7 @@ const ProfilePage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>
-                                        Password Baru
+                                        {t('profile.new_password')}
                                     </label>
                                     <input
                                         type='password'
@@ -551,12 +553,12 @@ const ProfilePage = () => {
                                         required
                                         minLength={8}
                                         className={inputCls}
-                                        placeholder='Min. 8 karakter'
+                                        placeholder={t('auth.min_chars')}
                                     />
                                 </div>
                                 <div>
                                     <label className='block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>
-                                        Konfirmasi Password Baru
+                                        {t('profile.confirm_new_password')}
                                     </label>
                                     <input
                                         type='password'
@@ -564,7 +566,7 @@ const ProfilePage = () => {
                                         onChange={(e) => setConfirmPwd(e.target.value)}
                                         required
                                         className={inputCls}
-                                        placeholder='Ulangi password baru'
+                                        placeholder={t('profile.repeat_new_password')}
                                     />
                                 </div>
                                 <button
@@ -572,7 +574,7 @@ const ProfilePage = () => {
                                     disabled={pwdLoading}
                                     className='px-5 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors'
                                 >
-                                    {pwdLoading ? 'Menyimpan...' : 'Ubah Password'}
+                                    {pwdLoading ? t('common.saving') : t('profile.change_password_btn')}
                                 </button>
                             </form>
                         )}

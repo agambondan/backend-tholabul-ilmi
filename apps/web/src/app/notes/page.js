@@ -42,7 +42,7 @@ const COLORS = [
 ];
 
 export default function NotesPage() {
-    const { t } = useLocale();
+    const { lang, t } = useLocale();
     const { user } = useAuth();
     const [notes, setNotes] = useState([]);
     const [search, setSearch] = useState('');
@@ -184,16 +184,16 @@ export default function NotesPage() {
                 <div className='max-w-xl flex-1 w-full flex-1 w-full mx-auto px-4 pt-24 pb-8 text-center'>
                     <MdOutlineStickyNote2 className='text-6xl text-emerald-400 mx-auto mb-4' />
                     <h1 className='text-2xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-3'>
-                        Catatan Pribadi
+                        {t('notes.private_title')}
                     </h1>
                     <p className='text-gray-500 dark:text-gray-400 mb-6 text-sm'>
-                        Catat ilmu, pelajaran, dan renungan Islam kamu. Login untuk mengakses.
+                        {t('notes.login_desc')}
                     </p>
                     <Link
                         href='/auth/login'
                         className='bg-emerald-600 text-white px-8 py-3 rounded-full font-bold hover:bg-emerald-700 transition-colors'
                     >
-                        Login
+                        {t('nav.login')}
                     </Link>
                 </div>
                 <Footer />
@@ -213,11 +213,11 @@ export default function NotesPage() {
                         </div>
                         <div>
                             <h1 className='text-2xl font-extrabold text-emerald-900 dark:text-emerald-100'>
-                                Catatan
+                                {t('notes.title')}
                             </h1>
                             <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                {notes.length} catatan
-                                {!backendAvail && ' • Tersimpan lokal'}
+                                {notes.length} {t('notes.unit')}
+                                {!backendAvail && ` • ${t('notes.local_saved')}`}
                             </p>
                         </div>
                     </div>
@@ -225,7 +225,7 @@ export default function NotesPage() {
                         onClick={openNew}
                         className='flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm'
                     >
-                        <BsPlus className='text-lg' /> Tambah
+                        <BsPlus className='text-lg' /> {t('common.add')}
                     </button>
                 </div>
 
@@ -237,7 +237,7 @@ export default function NotesPage() {
                             type='text'
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder='Cari catatan…'
+                            placeholder={t('notes.search_placeholder')}
                             className='w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-400'
                         />
                     </div>
@@ -278,7 +278,7 @@ export default function NotesPage() {
                             </p>
                             <div className='flex items-center justify-between mt-3'>
                                 <p className='text-[10px] text-gray-400 dark:text-gray-500'>
-                                    {new Date(note.updated_at ?? note.created_at).toLocaleDateString('id-ID')}
+                                    {new Date(note.updated_at ?? note.created_at).toLocaleDateString(lang === 'EN' ? 'en-US' : 'id-ID')}
                                 </p>
                                 <div className='flex gap-1'>
                                     <button
@@ -307,7 +307,7 @@ export default function NotesPage() {
                     <div className='w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6'>
                         <div className='flex items-center justify-between mb-4'>
                             <h2 className='font-extrabold text-gray-900 dark:text-white'>
-                                {isNew ? 'Catatan Baru' : 'Edit Catatan'}
+                                {isNew ? t('notes.new') : t('notes.edit')}
                             </h2>
                             <button
                                 onClick={closeEdit}
@@ -332,14 +332,14 @@ export default function NotesPage() {
                             type='text'
                             value={editing.title}
                             onChange={(e) => setEditing((prev) => ({ ...prev, title: e.target.value }))}
-                            placeholder='Judul (opsional)…'
+                            placeholder={t('notes.title_placeholder')}
                             className='w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 mb-3'
                         />
                         <textarea
                             ref={bodyRef}
                             value={editing.body}
                             onChange={(e) => setEditing((prev) => ({ ...prev, body: e.target.value }))}
-                            placeholder='Tulis catatan kamu di sini…'
+                            placeholder={t('notes.body_placeholder')}
                             rows={6}
                             className='w-full border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-none mb-4'
                         />
@@ -348,14 +348,14 @@ export default function NotesPage() {
                                 onClick={closeEdit}
                                 className='flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Batal
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
                                 className='flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors'
                             >
-                                {saving ? 'Menyimpan…' : 'Simpan'}
+                                {saving ? t('common.saving') : t('common.save')}
                             </button>
                         </div>
                     </div>

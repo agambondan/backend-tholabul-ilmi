@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
+import { useLocale } from '@/context/Locale';
 import { useEffect, useState } from 'react';
 import { BsCalendar3, BsSearch } from 'react-icons/bs';
 
@@ -56,6 +57,7 @@ const parseAladhanHijri = (data) => ({
 });
 
 const HijriPage = () => {
+    const { lang, t } = useLocale();
     const [todayHijri, setTodayHijri] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -83,7 +85,7 @@ const HijriPage = () => {
                     setTodayHijri(parseAladhanHijri(json.data));
                 }
             } catch {
-                setError('Gagal memuat data. Coba lagi nanti.');
+                setError(t('hijri.load_error'));
             } finally {
                 setIsLoading(false);
             }
@@ -104,10 +106,10 @@ const HijriPage = () => {
             if (json.code === 200 && json.data) {
                 setConvertResult(parseAladhanHijri(json.data));
             } else {
-                setConvertResult({ error: 'Gagal mengkonversi tanggal.' });
+                setConvertResult({ error: t('hijri.convert_error') });
             }
         } catch {
-            setConvertResult({ error: 'Terjadi kesalahan jaringan.' });
+            setConvertResult({ error: t('common.network_error') });
         } finally {
             setConverting(false);
         }
@@ -134,10 +136,10 @@ const HijriPage = () => {
                     <div className='text-center mb-8'>
                         <BsCalendar3 className='text-4xl text-emerald-600 dark:text-emerald-400 mx-auto mb-2' />
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>
-                            Kalender Hijriah
+                            {t('hijri.title')}
                         </h1>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            Tanggal Hijriah hari ini, konversi, dan hari-hari penting Islam
+                            {t('hijri.subtitle')}
                         </p>
                     </div>
 
@@ -154,7 +156,7 @@ const HijriPage = () => {
                             {todayHijri ? (
                                 <div className='bg-emerald-700 dark:bg-emerald-900 rounded-2xl p-6 text-center mb-6 text-white'>
                                     <p className='text-xs uppercase tracking-wider text-emerald-200 mb-2'>
-                                        Hari Ini
+                                        {t('hijri.today')}
                                     </p>
                                     <p
                                         className='text-3xl mb-1'
@@ -170,7 +172,7 @@ const HijriPage = () => {
                                         {todayHijri.hijri_year ?? todayHijri.year} H
                                     </p>
                                     <p className='text-sm text-emerald-200 mt-1'>
-                                        {new Date().toLocaleDateString('id-ID', {
+                                        {new Date().toLocaleDateString(lang === 'EN' ? 'en-US' : 'id-ID', {
                                             weekday: 'long',
                                             day: 'numeric',
                                             month: 'long',
@@ -181,14 +183,14 @@ const HijriPage = () => {
                             ) : (
                                 !error && (
                                     <div className='bg-gray-100 dark:bg-slate-800 rounded-2xl p-6 text-center mb-6 text-gray-500'>
-                                        Data tanggal Hijriah belum tersedia.
+                                        {t('hijri.empty_today')}
                                     </div>
                                 )
                             )}
 
                             <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 mb-6'>
                                 <h2 className='text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4'>
-                                    Konversi Tanggal Masehi ke Hijriah
+                                    {t('hijri.convert_title')}
                                 </h2>
                                 <form
                                     onSubmit={handleConvert}
@@ -207,7 +209,7 @@ const HijriPage = () => {
                                         disabled={!convertDate || converting}
                                         className='px-4 py-2 rounded-lg bg-emerald-700 text-white text-sm font-medium hover:bg-emerald-800 disabled:opacity-50 transition-colors'
                                     >
-                                        {converting ? '...' : 'Konversi'}
+                                        {converting ? '...' : t('hijri.convert_btn')}
                                     </button>
                                 </form>
                                 {convertResult && (
@@ -230,11 +232,11 @@ const HijriPage = () => {
                             <div>
                                 <div className='flex items-center justify-between gap-3 mb-3'>
                                     <h2 className='text-sm font-semibold text-gray-700 dark:text-gray-300'>
-                                        Hari-hari Penting Islam
+                                        {t('hijri.events_title')}
                                     </h2>
                                     {events.length > 0 && (
                                         <span className='text-xs text-gray-400 dark:text-gray-500'>
-                                            {visibleEvents.length} dari {events.length} event
+                                            {t('common.showing')} {visibleEvents.length} {t('common.of')} {events.length} {t('hijri.events_unit')}
                                         </span>
                                     )}
                                 </div>
@@ -247,7 +249,7 @@ const HijriPage = () => {
                                                 type='text'
                                                 value={eventSearch}
                                                 onChange={(e) => setEventSearch(e.target.value)}
-                                                placeholder='Cari nama atau keterangan event...'
+                                                placeholder={t('hijri.search_placeholder')}
                                                 className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
                                             />
                                             {eventSearch && (
@@ -256,7 +258,7 @@ const HijriPage = () => {
                                                     onClick={() => setEventSearch('')}
                                                     className='text-xs font-medium text-emerald-600 dark:text-emerald-400'
                                                 >
-                                                    Hapus
+                                                    {t('common.clear')}
                                                 </button>
                                             )}
                                         </div>
@@ -272,7 +274,7 @@ const HijriPage = () => {
                                                             : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-slate-600'
                                                     }`}
                                                 >
-                                                    Semua bulan
+                                                    {t('hijri.all_months')}
                                                 </button>
                                                 {HIJRI_MONTHS.map((month, idx) => {
                                                     const value = String(idx + 1);
@@ -302,11 +304,11 @@ const HijriPage = () => {
 
                                 {events.length === 0 ? (
                                     <p className='text-center py-8 text-gray-400 dark:text-gray-600 text-sm'>
-                                        Data hari penting belum tersedia.
+                                        {t('hijri.events_empty')}
                                     </p>
                                 ) : visibleEvents.length === 0 ? (
                                     <p className='text-center py-8 text-gray-400 dark:text-gray-600 text-sm'>
-                                        Tidak ada event Hijriah yang cocok dengan filter.
+                                        {t('hijri.events_no_match')}
                                     </p>
                                 ) : (
                                     <div className='space-y-2'>

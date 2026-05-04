@@ -2,6 +2,7 @@
 
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
+import { useLocale } from '@/context/Locale';
 import { useMemo, useState } from 'react';
 import { BsChevronDown, BsSearch } from 'react-icons/bs';
 import { MdOutlineAutoStories } from 'react-icons/md';
@@ -178,6 +179,7 @@ const FIQH_DATA = [
 ];
 
 export default function FiqhPage() {
+    const { t } = useLocale();
     const [openCategory, setOpenCategory] = useState(null);
     const [openItem, setOpenItem] = useState({});
     const [search, setSearch] = useState('');
@@ -220,10 +222,10 @@ export default function FiqhPage() {
                         <MdOutlineAutoStories className='text-3xl text-teal-600 dark:text-teal-400' />
                     </div>
                     <h1 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-2'>
-                        Fiqh Ringkas
+                        {t('fiqh.title')}
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        Panduan praktis hukum Islam sehari-hari
+                        {t('fiqh.subtitle')}
                     </p>
                 </div>
 
@@ -233,7 +235,7 @@ export default function FiqhPage() {
                         type='text'
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder='Cari topik, dalil, atau penjelasan...'
+                        placeholder={t('fiqh.search_placeholder')}
                         className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
                     />
                     {search && (
@@ -242,14 +244,14 @@ export default function FiqhPage() {
                             onClick={() => setSearch('')}
                             className='text-xs font-medium text-emerald-600 dark:text-emerald-400'
                         >
-                            Hapus
+                            {t('common.clear')}
                         </button>
                     )}
                 </div>
 
                 <div className='mb-4 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>
                     <span>
-                        Menampilkan {visibleTopics} dari {totalTopics} topik
+                        {t('common.showing')} {visibleTopics} {t('common.of')} {totalTopics} {t('fiqh.topic_unit')}
                     </span>
                     {search && (
                         <button
@@ -257,7 +259,7 @@ export default function FiqhPage() {
                             onClick={() => setSearch('')}
                             className='font-medium text-emerald-600 dark:text-emerald-400'
                         >
-                            Reset pencarian
+                            {t('common.reset_search')}
                         </button>
                     )}
                 </div>
@@ -266,7 +268,7 @@ export default function FiqhPage() {
                 <div className='space-y-3'>
                     {filteredData.length === 0 ? (
                         <div className='text-center py-16 text-gray-400 dark:text-gray-500 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700'>
-                            Tidak ada topik fiqh yang cocok dengan pencarian.
+                            {t('fiqh.no_match')}
                         </div>
                     ) : (
                         filteredData.map((cat, ci) => (
@@ -294,7 +296,7 @@ export default function FiqhPage() {
                                     </div>
                                     <div className='flex items-center gap-2'>
                                         <span className='text-xs text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-full'>
-                                            {cat.items.length} topik
+                                            {cat.items.length} {t('fiqh.topic_unit')}
                                         </span>
                                         <BsChevronDown
                                             className={`text-gray-400 transition-transform ${openCategory === ci ? 'rotate-180' : ''}`}
@@ -327,7 +329,7 @@ export default function FiqhPage() {
                                                             </p>
                                                             {item.dalil && (
                                                                 <p className='text-xs text-emerald-600 dark:text-emerald-400 font-medium'>
-                                                                    Dalil: {item.dalil}
+                                                                    {t('fiqh.evidence')}: {item.dalil}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -343,8 +345,7 @@ export default function FiqhPage() {
                 </div>
 
                 <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-8'>
-                    Konten merupakan ringkasan. Untuk masalah detail, konsultasikan dengan
-                    ulama atau ahli fiqh.
+                    {t('fiqh.disclaimer')}
                 </p>
             </div>
             <Footer />

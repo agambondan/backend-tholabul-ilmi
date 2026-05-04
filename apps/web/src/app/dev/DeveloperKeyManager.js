@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/context/Auth';
+import { useLocale } from '@/context/Locale';
 import { developerApi } from '@/lib/api';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -9,11 +10,11 @@ import { BsArrowClockwise, BsCheckCircle, BsCopy, BsKey, BsTrash } from 'react-i
 const cardCls =
     'rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm';
 
-const formatDate = (value) => {
-    if (!value) return 'Belum pernah dipakai';
+const formatDate = (value, lang, fallback) => {
+    if (!value) return fallback;
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Belum pernah dipakai';
-    return date.toLocaleString('id-ID', {
+    if (Number.isNaN(date.getTime())) return fallback;
+    return date.toLocaleString(lang === 'EN' ? 'en-US' : 'id-ID', {
         dateStyle: 'medium',
         timeStyle: 'short',
     });
@@ -21,6 +22,7 @@ const formatDate = (value) => {
 
 const DeveloperKeyManager = () => {
     const { isAuthenticated, isLoading: authLoading, user } = useAuth();
+    const { lang, t } = useLocale();
     const [keys, setKeys] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -36,16 +38,16 @@ const DeveloperKeyManager = () => {
         setError('');
         try {
             const res = await developerApi.listKeys();
-            if (!res.ok) throw new Error('Gagal memuat API key');
+            if (!res.ok) throw new Error(t('dev.keys.load_error'));
             const data = await res.json();
             const items = Array.isArray(data) ? data : data?.items ?? data?.data ?? [];
             setKeys(items);
         } catch (err) {
-            setError(err.message || 'Gagal memuat API key');
+            setError(err.message || t('dev.keys.load_error'));
         } finally {
             setIsLoading(false);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, t]);
 
     useEffect(() => {
         if (!authLoading && isAuthenticated) {
@@ -74,7 +76,7 @@ const DeveloperKeyManager = () => {
         setCopyMessage('');
         try {
             const res = await developerApi.createKey(name);
-            if (!res.ok) throw new Error('Gagal membuat API key');
+            if (!res.ok) throw new Error(t('dev.keys.create_error'));
             const data = await res.json();
             if (data?.key) {
                 setCreatedKey(data.key);
@@ -82,22 +84,22 @@ const DeveloperKeyManager = () => {
             }
             await loadKeys();
         } catch (err) {
-            setError(err.message || 'Gagal membuat API key');
+            setError(err.message || t('dev.keys.create_error'));
         } finally {
             setCreating(false);
         }
     };
 
     const handleRevoke = async (id) => {
-        if (!confirm('Revoke API key ini? Key lama tidak bisa dipakai lagi.')) return;
+        if (!confirm(t('dev.keys.confirm_revoke'))) return;
         setRevokingId(id);
         setError('');
         try {
             const res = await developerApi.revokeKey(id);
-            if (!res.ok) throw new Error('Gagal mencabut API key');
+            if (!res.ok) throw new Error(t('dev.keys.revoke_error'));
             setKeys((prev) => prev.filter((item) => item.id !== id));
         } catch (err) {
-            setError(err.message || 'Gagal mencabut API key');
+            setError(err.message || t('dev.keys.revoke_error'));
         } finally {
             setRevokingId(null);
         }
@@ -107,9 +109,9 @@ const DeveloperKeyManager = () => {
         if (!createdKey) return;
         try {
             await navigator.clipboard.writeText(createdKey);
-            setCopyMessage('API key disalin ke clipboard.');
+            setCopyMessage(t('dev.keys.copy_success'));
         } catch {
-            setCopyMessage('Gagal menyalin key. Salin manual dari kotak di atas.');
+            setCopyMessage(t('dev.keys.copy_error'));
         }
     };
 
@@ -134,16 +136,16 @@ const DeveloperKeyManager = () => {
                     </div>
                     <div className='flex-1'>
                         <h2 className='text-lg font-semibold text-gray-900 dark:text-white'>
-                            Kelola API key kamu
+                            {t('dev.keys.guest_title')}
                         </h2>
                         <p className='mt-1 text-sm text-gray-500 dark:text-gray-400'>
-                            Login dulu untuk melihat, membuat, dan mencabut API key pribadi.
+                            {t('dev.keys.guest_desc')}
                         </p>
                         <Link
                             href='/auth/login'
                             className='mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-800'
                         >
-                            Login
+                            {t('nav.login')}
                             <BsArrowClockwise />
                         </Link>
                     </div>
@@ -162,16 +164,15 @@ const DeveloperKeyManager = () => {
                             Developer Access
                         </div>
                         <h2 className='mt-3 text-xl font-bold text-gray-900 dark:text-white'>
-                            Kelola API key
+                            {t('dev.keys.title')}
                         </h2>
                         <p className='mt-2 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400'>
-                            Buat API key untuk integrasi aplikasi pihak ketiga. Nama key membantu
-                            kamu membedakan pemakaian di perangkat atau project yang berbeda.
+                            {t('dev.keys.desc')}
                         </p>
                     </div>
                     <div className='rounded-2xl bg-slate-50 px-4 py-3 text-right dark:bg-slate-900/60'>
                         <p className='text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500'>
-                            Total request
+                            {t('dev.keys.total_request')}
                         </p>
                         <p className='text-2xl font-extrabold text-emerald-700 dark:text-emerald-400'>
                             {totalRequestCount}
@@ -181,7 +182,7 @@ const DeveloperKeyManager = () => {
 
                 {user?.name && (
                     <p className='mt-4 text-xs text-gray-400 dark:text-gray-500'>
-                        Masuk sebagai {user.name}
+                        {t('dev.keys.signed_in_as')} {user.name}
                     </p>
                 )}
             </div>
@@ -192,10 +193,10 @@ const DeveloperKeyManager = () => {
                         <BsCheckCircle className='mt-0.5 text-emerald-600 dark:text-emerald-400' />
                         <div className='flex-1'>
                             <p className='text-sm font-semibold text-emerald-800 dark:text-emerald-300'>
-                                API key baru berhasil dibuat
+                                {t('dev.keys.created_title')}
                             </p>
                             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
-                                Ini hanya ditampilkan sekali. Salin key ini sekarang.
+                                {t('dev.keys.created_desc')}
                             </p>
                             <div className='mt-3 flex flex-col gap-3 sm:flex-row sm:items-center'>
                                 <code className='block flex-1 rounded-xl bg-slate-950 px-4 py-3 font-mono text-sm text-emerald-300 break-all'>
@@ -207,7 +208,7 @@ const DeveloperKeyManager = () => {
                                     className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-800'
                                 >
                                     <BsCopy />
-                                    Copy
+                                    {t('common.copy')}
                                 </button>
                             </div>
                             {copyMessage && (
@@ -225,7 +226,7 @@ const DeveloperKeyManager = () => {
                     <input
                         value={createName}
                         onChange={(e) => setCreateName(e.target.value)}
-                        placeholder='Nama API key, misal: Mobile App atau Vercel Preview'
+                        placeholder={t('dev.keys.name_placeholder')}
                         className='flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white'
                     />
                     <button
@@ -234,7 +235,7 @@ const DeveloperKeyManager = () => {
                         className='inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60'
                     >
                         <BsKey />
-                        {creating ? 'Membuat...' : 'Buat API Key'}
+                        {creating ? t('dev.keys.creating') : t('dev.keys.create_btn')}
                     </button>
                 </form>
             </div>
@@ -248,7 +249,7 @@ const DeveloperKeyManager = () => {
             <div className={`${cardCls} overflow-hidden`}>
                 <div className='border-b border-gray-100 px-5 py-4 dark:border-slate-700'>
                     <h3 className='text-sm font-semibold text-gray-900 dark:text-white'>
-                        API key aktif
+                        {t('dev.keys.active_title')}
                     </h3>
                 </div>
 
@@ -263,7 +264,7 @@ const DeveloperKeyManager = () => {
                     </div>
                 ) : keys.length === 0 ? (
                     <div className='p-6 text-center text-sm text-gray-500 dark:text-gray-400'>
-                        Belum ada API key. Buat key pertama untuk mulai integrasi.
+                        {t('dev.keys.empty')}
                     </div>
                 ) : (
                     <div className='divide-y divide-gray-100 dark:divide-slate-700'>
@@ -284,15 +285,15 @@ const DeveloperKeyManager = () => {
                                                     : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-gray-400'
                                             }`}
                                         >
-                                            {item.is_active ? 'Aktif' : 'Nonaktif'}
+                                            {item.is_active ? t('common.active') : t('common.inactive')}
                                         </span>
                                     </div>
                                     <p className='text-xs text-gray-500 dark:text-gray-400'>
                                         Prefix: <span className='font-mono'>{item.key_prefix}</span>
                                     </p>
                                     <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                        Request: {item.request_count ?? 0} · Last used:{' '}
-                                        {formatDate(item.last_used_at)}
+                                        {t('dev.keys.request_count')}: {item.request_count ?? 0} · {t('dev.keys.last_used')}:{' '}
+                                        {formatDate(item.last_used_at, lang, t('dev.keys.never_used'))}
                                     </p>
                                 </div>
 
@@ -304,7 +305,7 @@ const DeveloperKeyManager = () => {
                                         className='inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/40 dark:text-red-300 dark:hover:bg-red-900/20'
                                     >
                                         <BsTrash />
-                                        {revokingId === item.id ? 'Mencabut...' : 'Revoke'}
+                                        {revokingId === item.id ? t('dev.keys.revoking') : t('dev.keys.revoke')}
                                     </button>
                                 </div>
                             </div>

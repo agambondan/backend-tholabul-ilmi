@@ -3,17 +3,18 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
+import { useLocale } from '@/context/Locale';
 import { useState } from 'react';
 import { BsChevronDown, BsChevronUp, BsSearch } from 'react-icons/bs';
 import { MdTimeline } from 'react-icons/md';
 
 const CATEGORIES = [
-    { key: 'semua', label: 'Semua' },
-    { key: 'nabi', label: 'Nabi & Sahabat' },
-    { key: 'khulafa', label: 'Khulafaur Rasyidin' },
-    { key: 'dinasti', label: 'Dinasti' },
-    { key: 'ulama', label: 'Ulama' },
-    { key: 'peristiwa', label: 'Peristiwa' },
+    { key: 'semua', labelKey: 'common.all' },
+    { key: 'nabi', labelKey: 'history.cat.prophet' },
+    { key: 'khulafa', labelKey: 'history.cat.khulafa' },
+    { key: 'dinasti', labelKey: 'history.cat.dynasty' },
+    { key: 'ulama', labelKey: 'history.cat.scholar' },
+    { key: 'peristiwa', labelKey: 'history.cat.event' },
 ];
 
 const CAT_COLOR = {
@@ -213,6 +214,7 @@ const TIMELINE = [
 ];
 
 const SejarahPage = () => {
+    const { t } = useLocale();
     const [activeCategory, setActiveCategory] = useState('semua');
     const [search, setSearch] = useState('');
     const [openId, setOpenId] = useState(null);
@@ -244,10 +246,10 @@ const SejarahPage = () => {
                         </div>
                         <div>
                             <h1 className='text-xl font-bold text-emerald-900 dark:text-white'>
-                                Sejarah Islam
+                                {t('history.title')}
                             </h1>
                             <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                Garis waktu peristiwa penting dari era kenabian hingga modern
+                                {t('history.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -259,7 +261,7 @@ const SejarahPage = () => {
                             type='text'
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder='Cari peristiwa, tokoh, atau tahun...'
+                            placeholder={t('history.search_placeholder')}
                             className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
                         />
                         {search && (
@@ -268,7 +270,7 @@ const SejarahPage = () => {
                                 onClick={() => setSearch('')}
                                 className='text-xs font-medium text-emerald-600 dark:text-emerald-400'
                             >
-                                Hapus
+                                {t('common.clear')}
                             </button>
                         )}
                     </div>
@@ -285,20 +287,20 @@ const SejarahPage = () => {
                                         : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-slate-600'
                                 }`}
                             >
-                                {cat.label}
+                                {t(cat.labelKey)}
                             </button>
                         ))}
                     </div>
 
                     <p className='text-xs text-gray-400 dark:text-gray-500 mb-4'>
-                        {filtered.length} peristiwa
+                        {filtered.length} {t('history.event_unit')}
                     </p>
 
                     {/* Timeline */}
                     {filtered.length === 0 ? (
                         <div className='text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700'>
                             <p className='text-gray-500 dark:text-gray-400 text-sm'>
-                                Tidak ada peristiwa yang cocok.
+                                {t('history.no_match')}
                             </p>
                         </div>
                     ) : (
@@ -346,9 +348,11 @@ const SejarahPage = () => {
                                                                 className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${CAT_COLOR[ev.category] ?? 'bg-gray-100 text-gray-600'}`}
                                                             >
                                                                 {
-                                                                    CATEGORIES.find(
-                                                                        (c) => c.key === ev.category,
-                                                                    )?.label
+                                                                    t(
+                                                                        CATEGORIES.find(
+                                                                            (c) => c.key === ev.category,
+                                                                        )?.labelKey,
+                                                                    )
                                                                 }
                                                             </span>
                                                         </div>

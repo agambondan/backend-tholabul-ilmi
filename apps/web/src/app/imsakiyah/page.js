@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale } from '@/context/Locale';
 import { useEffect, useState } from 'react';
 import { BsCalendar3, BsGeoAlt } from 'react-icons/bs';
 import { MdAccessTime } from 'react-icons/md';
@@ -23,14 +24,20 @@ const CITIES = [
 ];
 
 const DAYS_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const DAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS_ID = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+];
+const MONTHS_EN = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
 const stripTz = (t) => (t ? t.split(' ')[0] : '-');
 
 export default function ImsakiyahPage() {
+    const { lang, t } = useLocale();
     const now = new Date();
     const [year, setYear] = useState(now.getFullYear());
     const [month, setMonth] = useState(now.getMonth() + 1);
@@ -44,16 +51,16 @@ export default function ImsakiyahPage() {
 
     const fetchGps = () => {
         if (!navigator.geolocation) {
-            setError('GPS tidak tersedia di browser ini.');
+            setError(t('imsakiyah.gps_unavailable'));
             return;
         }
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                setGpsLabel('Lokasi GPS');
+                setGpsLabel(t('imsakiyah.gps_location'));
                 setUseGps(true);
             },
-            () => setError('Gagal mendapatkan lokasi GPS.'),
+            () => setError(t('imsakiyah.gps_error')),
         );
     };
 
@@ -74,10 +81,10 @@ export default function ImsakiyahPage() {
                 if (json.code === 200 && json.data) {
                     setSchedule(json.data);
                 } else {
-                    setError('Gagal memuat jadwal. Coba lagi.');
+                    setError(t('imsakiyah.load_error'));
                 }
             } catch {
-                setError('Terjadi kesalahan saat memuat data.');
+                setError(t('imsakiyah.load_exception'));
             } finally {
                 setLoading(false);
             }
@@ -96,6 +103,8 @@ export default function ImsakiyahPage() {
     };
 
     const cityName = useGps ? gpsLabel : CITIES[cityIndex].label;
+    const monthNames = lang === 'EN' ? MONTHS_EN : MONTHS_ID;
+    const dayNames = lang === 'EN' ? DAYS_EN : DAYS_ID;
 
     return (
         <main className='min-h-screen bg-parchment-50 dark:bg-slate-900 pb-12'>
@@ -105,13 +114,13 @@ export default function ImsakiyahPage() {
                     <div className='flex items-center gap-2 mb-1'>
                         <BsCalendar3 className='text-emerald-300' />
                         <span className='text-xs font-semibold uppercase tracking-widest text-emerald-300'>
-                            Jadwal
+                            {t('imsakiyah.schedule_label')}
                         </span>
                     </div>
                     <h1 className='text-2xl font-bold mb-1'>Imsakiyah</h1>
                     <p className='text-sm text-emerald-200'>
-                        Jadwal waktu sholat dan imsak bulanan — {cityName},{' '}
-                        {MONTHS_ID[month - 1]} {year}
+                        {t('imsakiyah.subtitle')} — {cityName},{' '}
+                        {monthNames[month - 1]} {year}
                     </p>
                 </div>
             </div>
@@ -128,7 +137,7 @@ export default function ImsakiyahPage() {
                             ‹
                         </button>
                         <span className='flex-1 text-center font-semibold text-gray-800 dark:text-white text-sm'>
-                            {MONTHS_ID[month - 1]} {year}
+                            {monthNames[month - 1]} {year}
                         </span>
                         <button
                             onClick={nextMonth}
@@ -179,7 +188,7 @@ export default function ImsakiyahPage() {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-12 text-center'>
                         <MdAccessTime className='text-4xl text-emerald-400 mx-auto mb-3 animate-spin' />
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            Memuat jadwal…
+                            {t('imsakiyah.loading')}
                         </p>
                     </div>
                 ) : schedule.length > 0 ? (
@@ -189,31 +198,31 @@ export default function ImsakiyahPage() {
                                 <thead>
                                     <tr className='bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'>
                                         <th className='px-3 py-3 text-left font-semibold whitespace-nowrap'>
-                                            Tgl
+                                            {t('common.date_short')}
                                         </th>
                                         <th className='px-3 py-3 text-left font-semibold whitespace-nowrap'>
-                                            Hari
+                                            {t('common.day')}
                                         </th>
                                         <th className='px-3 py-3 text-center font-semibold whitespace-nowrap bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'>
                                             Imsak
                                         </th>
                                         <th className='px-3 py-3 text-center font-semibold whitespace-nowrap'>
-                                            Subuh
+                                            {t('prayer.fajr')}
                                         </th>
                                         <th className='px-3 py-3 text-center font-semibold whitespace-nowrap text-gray-400 dark:text-gray-500'>
-                                            Syuruq
+                                            {t('prayer.sunrise')}
                                         </th>
                                         <th className='px-3 py-3 text-center font-semibold whitespace-nowrap'>
-                                            Dzuhur
+                                            {t('prayer.dhuhr')}
                                         </th>
                                         <th className='px-3 py-3 text-center font-semibold whitespace-nowrap'>
-                                            Ashar
+                                            {t('prayer.asr')}
                                         </th>
                                         <th className='px-3 py-3 text-center font-semibold whitespace-nowrap bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'>
                                             Maghrib
                                         </th>
                                         <th className='px-3 py-3 text-center font-semibold whitespace-nowrap'>
-                                            Isya
+                                            {t('prayer.isha')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -226,10 +235,10 @@ export default function ImsakiyahPage() {
                                             ? new Date(`${parts[2]}-${parts[1]}-${parts[0]}`)
                                             : null;
                                         const dayName = dateObj
-                                            ? DAYS_ID[dateObj.getDay()]
+                                            ? dayNames[dateObj.getDay()]
                                             : '-';
                                         const dayNum = parts[0] ?? String(idx + 1);
-                                        const isJumat = dayName === 'Jumat';
+                                        const isJumat = dateObj?.getDay() === 5;
                                         const isToday =
                                             dateObj &&
                                             dateObj.getDate() === now.getDate() &&
@@ -293,7 +302,7 @@ export default function ImsakiyahPage() {
                             </table>
                         </div>
                         <div className='px-4 py-3 border-t border-gray-100 dark:border-slate-700 text-[11px] text-gray-400 dark:text-gray-500'>
-                            Sumber: aladhan.com · Metode: Kemenag RI (11) · {cityName}
+                            {t('common.source')}: aladhan.com · {t('imsakiyah.method')}: Kemenag RI (11) · {cityName}
                         </div>
                     </div>
                 ) : null}

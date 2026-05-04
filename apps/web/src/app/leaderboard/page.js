@@ -6,19 +6,21 @@ import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useAuth } from '@/context/Auth';
+import { useLocale } from '@/context/Locale';
 import { leaderboardApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsFire, BsSearch, BsTrophyFill } from 'react-icons/bs';
 import { MdBookmark } from 'react-icons/md';
 
 const TABS = [
-    { key: 'streak', label: 'Streak Terbaik', icon: <BsFire /> },
-    { key: 'hafalan', label: 'Hafalan Terbanyak', icon: <MdBookmark /> },
+    { key: 'streak', labelKey: 'leaderboard.streak_tab', icon: <BsFire /> },
+    { key: 'hafalan', labelKey: 'leaderboard.hafalan', icon: <MdBookmark /> },
 ];
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
 const LeaderboardPage = () => {
+    const { t } = useLocale();
     const { isAuthenticated } = useAuth();
     const [tab, setTab] = useState('streak');
     const [streakData, setStreakData] = useState([]);
@@ -49,7 +51,7 @@ const LeaderboardPage = () => {
                     setMyRank(await results[2].value.json());
                 }
             } catch {
-                setError('Gagal memuat data leaderboard');
+                setError(t('leaderboard.load_error'));
             } finally {
                 setIsLoading(false);
             }
@@ -85,7 +87,7 @@ const LeaderboardPage = () => {
                             Leaderboard
                         </h1>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            Ranking hafalan dan streak di antara pengguna
+                            {t('leaderboard.subtitle')}
                         </p>
                     </div>
 
@@ -93,37 +95,37 @@ const LeaderboardPage = () => {
                         <div className='mb-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800 px-4 py-3 flex items-center justify-between'>
                             <div>
                                 <p className='text-xs text-emerald-600 dark:text-emerald-400 font-medium'>
-                                    Posisi Kamu
+                                    {t('leaderboard.your_rank')}
                                 </p>
                                 <p className='text-sm font-bold text-emerald-900 dark:text-white mt-0.5'>
-                                    #{myRank.streak_rank ?? '—'} Streak ·{' '}
-                                    #{myRank.hafalan_rank ?? '—'} Hafalan
+                                    #{myRank.streak_rank ?? '—'} {t('leaderboard.streak_tab')} ·{' '}
+                                    #{myRank.hafalan_rank ?? '—'} {t('leaderboard.hafalan')}
                                 </p>
                             </div>
                             <div className='text-right'>
                                 <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                    {myRank.streak ?? 0} hari streak
+                                    {myRank.streak ?? 0} {t('leaderboard.days_unit')} streak
                                 </p>
                                 <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                    {myRank.hafalan_count ?? 0} surah hafal
+                                    {myRank.hafalan_count ?? 0} {t('stats.surah_unit')} {t('hafalan.memorized').toLowerCase()}
                                 </p>
                             </div>
                         </div>
                     )}
 
                     <div className='flex gap-2 mb-6'>
-                        {TABS.map((t) => (
+                        {TABS.map((tabItem) => (
                             <button
-                                key={t.key}
-                                onClick={() => setTab(t.key)}
+                                key={tabItem.key}
+                                onClick={() => setTab(tabItem.key)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                    tab === t.key
+                                    tab === tabItem.key
                                         ? 'bg-emerald-700 text-white'
                                         : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-slate-600'
                                 }`}
                             >
-                                {t.icon}
-                                {t.label}
+                                {tabItem.icon}
+                                {t(tabItem.labelKey)}
                             </button>
                         ))}
                     </div>
@@ -134,7 +136,7 @@ const LeaderboardPage = () => {
                             type='text'
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder='Cari nama pengguna...'
+                            placeholder={t('leaderboard.search_placeholder')}
                             className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
                         />
                         {search && (
@@ -143,7 +145,7 @@ const LeaderboardPage = () => {
                                 onClick={() => setSearch('')}
                                 className='text-xs font-medium text-emerald-600 dark:text-emerald-400'
                             >
-                                Hapus
+                                {t('common.clear')}
                             </button>
                         )}
                     </div>
@@ -157,7 +159,7 @@ const LeaderboardPage = () => {
                     {!isLoading && currentData.length > 0 && (
                         <div className='mb-3 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>
                             <span>
-                                Menampilkan {visibleData.length} dari {currentData.length} pengguna
+                                {t('common.showing')} {visibleData.length} {t('common.of')} {currentData.length} {t('common.users')}
                             </span>
                             {search && (
                                 <button
@@ -165,7 +167,7 @@ const LeaderboardPage = () => {
                                     onClick={() => setSearch('')}
                                     className='font-medium text-emerald-600 dark:text-emerald-400'
                                 >
-                                    Reset pencarian
+                                    {t('common.reset_search')}
                                 </button>
                             )}
                         </div>
@@ -176,8 +178,8 @@ const LeaderboardPage = () => {
                     ) : visibleData.length === 0 ? (
                         <div className='text-center py-16 text-gray-400 dark:text-gray-600 text-sm'>
                             {currentData.length === 0
-                                ? 'Data leaderboard belum tersedia.'
-                                : 'Tidak ada pengguna yang cocok dengan pencarian.'}
+                                ? t('leaderboard.empty')
+                                : t('leaderboard.no_match')}
                         </div>
                     ) : (
                         <div className='space-y-2'>
@@ -216,7 +218,7 @@ const LeaderboardPage = () => {
 
                                     <div className='flex-1 min-w-0'>
                                         <p className='text-sm font-medium text-gray-800 dark:text-white truncate'>
-                                            {entry.name ?? 'Anonim'}
+                                            {entry.name ?? t('common.anonymous')}
                                         </p>
                                     </div>
 
@@ -224,11 +226,11 @@ const LeaderboardPage = () => {
                                         {tab === 'streak' ? (
                                             <p className='text-sm font-bold text-orange-500 flex items-center gap-1'>
                                                 <BsFire />
-                                                {entry.streak ?? entry.current_streak ?? 0} hari
+                                                {entry.streak ?? entry.current_streak ?? 0} {t('leaderboard.days_unit')}
                                             </p>
                                         ) : (
                                             <p className='text-sm font-bold text-emerald-600 dark:text-emerald-400'>
-                                                {entry.hafalan_count ?? entry.count ?? 0} surah
+                                                {entry.hafalan_count ?? entry.count ?? 0} {t('stats.surah_unit')}
                                             </p>
                                         )}
                                     </div>

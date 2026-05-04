@@ -2,17 +2,18 @@
 
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
+import { useLocale } from '@/context/Locale';
 import { useEffect, useState } from 'react';
 import { BsGeoAlt } from 'react-icons/bs';
 import { MdAccessTime } from 'react-icons/md';
 
 const PRAYERS = [
-    { key: 'Fajr', label: 'Subuh', arabic: 'الفجر' },
-    { key: 'Sunrise', label: 'Syuruq', arabic: 'الشروق', info: true },
-    { key: 'Dhuhr', label: 'Dzuhur', arabic: 'الظهر' },
-    { key: 'Asr', label: 'Ashar', arabic: 'العصر' },
-    { key: 'Maghrib', label: 'Maghrib', arabic: 'المغرب' },
-    { key: 'Isha', label: 'Isya', arabic: 'العشاء' },
+    { key: 'Fajr', labelKey: 'prayer.fajr', arabic: 'الفجر' },
+    { key: 'Sunrise', labelKey: 'prayer.sunrise', arabic: 'الشروق', info: true },
+    { key: 'Dhuhr', labelKey: 'prayer.dhuhr', arabic: 'الظهر' },
+    { key: 'Asr', labelKey: 'prayer.asr', arabic: 'العصر' },
+    { key: 'Maghrib', labelKey: 'prayer.maghrib', arabic: 'المغرب' },
+    { key: 'Isha', labelKey: 'prayer.isha', arabic: 'العشاء' },
 ];
 
 const WAJIB_KEYS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -46,6 +47,7 @@ const parseTimeStr = (str) => {
 const cleanTime = (str) => (str ? str.replace(/ \(.*?\)$/, '') : '');
 
 export default function JadwalSholatPage() {
+    const { lang, t } = useLocale();
     const [city, setCity] = useState(CITIES[0]);
     const [timings, setTimings] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -73,11 +75,11 @@ export default function JadwalSholatPage() {
                     setDate(d.data.date?.readable ?? '');
                     setGeoLabel(label);
                 } else {
-                    setError('Gagal mengambil jadwal sholat.');
+                    setError(t('prayer_schedule.load_error'));
                 }
             })
             .catch(() =>
-                setError('Gagal terhubung. Periksa koneksi internet kamu.'),
+                setError(t('prayer_schedule.network_error')),
             )
             .finally(() => setLoading(false));
     };
@@ -88,17 +90,17 @@ export default function JadwalSholatPage() {
 
     const handleGeo = () => {
         if (!navigator.geolocation) {
-            setError('Browser tidak mendukung geolokasi.');
+            setError(t('geo.unsupported'));
             return;
         }
         setLoading(true);
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                fetchByCoords(pos.coords.latitude, pos.coords.longitude, 'Lokasi Saya');
+                fetchByCoords(pos.coords.latitude, pos.coords.longitude, t('geo.my_location'));
             },
             () => {
                 setLoading(false);
-                setError('Tidak dapat mengakses lokasi. Aktifkan izin lokasi di browser.');
+                setError(t('geo.permission_error'));
             },
         );
     };
@@ -112,7 +114,7 @@ export default function JadwalSholatPage() {
         return 'Fajr';
     })();
 
-    const todayStr = now.toLocaleDateString('id-ID', {
+    const todayStr = now.toLocaleDateString(lang === 'EN' ? 'en-US' : 'id-ID', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
@@ -129,7 +131,7 @@ export default function JadwalSholatPage() {
                         <MdAccessTime className='text-3xl text-emerald-600 dark:text-emerald-400' />
                     </div>
                     <h1 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-1'>
-                        Jadwal Sholat
+                        {t('prayer_schedule.title')}
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>{todayStr}</p>
                 </div>
@@ -137,7 +139,7 @@ export default function JadwalSholatPage() {
                 {/* Location picker */}
                 <div className='bg-white dark:bg-slate-800 rounded-2xl p-4 mb-4 shadow-sm border border-gray-100 dark:border-slate-700'>
                     <p className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3'>
-                        Pilih Kota
+                        {t('prayer_schedule.pick_city')}
                     </p>
                     <div className='flex gap-2'>
                         <button
@@ -145,7 +147,7 @@ export default function JadwalSholatPage() {
                             className='flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors whitespace-nowrap'
                         >
                             <BsGeoAlt />
-                            Lokasi Saya
+                            {t('geo.my_location')}
                         </button>
                         <select
                             value={city.name}
@@ -175,7 +177,7 @@ export default function JadwalSholatPage() {
                 {/* Current time display */}
                 <div className='text-center mb-4'>
                     <span className='text-4xl font-extrabold text-emerald-800 dark:text-emerald-200 tabular-nums'>
-                        {now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        {now.toLocaleTimeString(lang === 'EN' ? 'en-US' : 'id-ID', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                 </div>
 
@@ -183,7 +185,7 @@ export default function JadwalSholatPage() {
                 {loading && (
                     <div className='text-center py-12'>
                         <div className='w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3' />
-                        <p className='text-sm text-gray-500 dark:text-gray-400'>Memuat jadwal…</p>
+                        <p className='text-sm text-gray-500 dark:text-gray-400'>{t('prayer_schedule.loading')}</p>
                     </div>
                 )}
                 {error && !loading && (
@@ -210,14 +212,14 @@ export default function JadwalSholatPage() {
                                     <div className='flex items-center gap-3'>
                                         {isNext && (
                                             <span className='text-[10px] font-bold bg-white/25 text-white px-2 py-0.5 rounded-full'>
-                                                berikutnya
+                                                {t('prayer_schedule.next')}
                                             </span>
                                         )}
                                         <div>
                                             <p
                                                 className={`font-bold text-sm ${isNext ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`}
                                             >
-                                                {p.label}
+                                                {t(p.labelKey)}
                                             </p>
                                             <p
                                                 className={`text-xs ${isNext ? 'text-emerald-200' : 'text-gray-400 dark:text-gray-500'}`}
@@ -243,7 +245,7 @@ export default function JadwalSholatPage() {
                 )}
 
                 <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-6'>
-                    Data dari Aladhan.com • Metode Kemenag RI
+                    {t('prayer_schedule.source_note')}
                 </p>
             </div>
             <Footer />

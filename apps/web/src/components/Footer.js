@@ -79,9 +79,9 @@ const Footer = () => {
                             طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ
                         </p>
                         <p className='text-xs text-emerald-500 italic'>
-                            &quot;Menuntut ilmu adalah kewajiban bagi setiap Muslim&quot;
+                            &quot;{t('footer.quote')}&quot;
                             <br />
-                            &mdash; HR. Ibnu Majah
+                            &mdash; {t('footer.quote_source')}
                         </p>
                     </div>
 
@@ -113,8 +113,8 @@ const Footer = () => {
                 </div>
 
                 <p className='text-xs text-emerald-600 text-center'>
-                    &copy; {new Date().getFullYear()} Thullaabul &apos;Ilmi &middot; Share For
-                    Amal Jariyah
+                    &copy; {new Date().getFullYear()} Thullaabul &apos;Ilmi &middot;{' '}
+                    {t('footer.tagline')}
                 </p>
             </div>
         </footer>

@@ -2,6 +2,7 @@
 
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
+import { useLocale } from '@/context/Locale';
 import { useEffect, useRef, useState } from 'react';
 import { BsGeoAlt } from 'react-icons/bs';
 
@@ -34,6 +35,7 @@ const calcDistance = (lat1, lng1, lat2, lng2) => {
 };
 
 export default function KiblatPage() {
+    const { lang, t } = useLocale();
     const [coords, setCoords] = useState(null);
     const [qiblaAngle, setQiblaAngle] = useState(null);
     const [compassHeading, setCompassHeading] = useState(null);
@@ -46,7 +48,7 @@ export default function KiblatPage() {
 
     const getLocation = () => {
         if (!navigator.geolocation) {
-            setError('Geolokasi tidak didukung browser ini.');
+            setError(t('geo.unsupported'));
             return;
         }
         setLoading(true);
@@ -62,7 +64,7 @@ export default function KiblatPage() {
                 setLoading(false);
             },
             () => {
-                setError('Tidak dapat mengakses lokasi. Aktifkan izin lokasi di browser.');
+                setError(t('geo.permission_error'));
                 setPermissionDenied(true);
                 setLoading(false);
             },
@@ -135,10 +137,10 @@ export default function KiblatPage() {
                         <span className='text-3xl'>🕋</span>
                     </div>
                     <h1 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-2'>
-                        Arah Kiblat
+                        {t('qibla.title')}
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        Temukan arah Ka&apos;bah dari lokasi kamu
+                        {t('qibla.subtitle')}
                     </p>
                 </div>
 
@@ -146,7 +148,7 @@ export default function KiblatPage() {
                     <div className='text-center py-12'>
                         <div className='w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3' />
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            Mendeteksi lokasi…
+                            {t('qibla.detecting')}
                         </p>
                     </div>
                 )}
@@ -158,7 +160,7 @@ export default function KiblatPage() {
                             onClick={getLocation}
                             className='bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700'
                         >
-                            Coba Lagi
+                            {t('common.try_again')}
                         </button>
                     </div>
                 )}
@@ -172,10 +174,10 @@ export default function KiblatPage() {
                                 <div className='absolute inset-0 rounded-full border-4 border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-800 shadow-xl'>
                                     {/* Cardinal points */}
                                     {[
-                                        { label: 'U', angle: 0 },
-                                        { label: 'T', angle: 90 },
-                                        { label: 'S', angle: 180 },
-                                        { label: 'B', angle: 270 },
+                                        { label: t('qibla.north_short'), angle: 0 },
+                                        { label: t('qibla.east_short'), angle: 90 },
+                                        { label: t('qibla.south_short'), angle: 180 },
+                                        { label: t('qibla.west_short'), angle: 270 },
                                     ].map(({ label, angle }) => (
                                         <div
                                             key={label}
@@ -233,7 +235,7 @@ export default function KiblatPage() {
 
                             {isPointing && (
                                 <div className='mt-4 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 px-4 py-2 rounded-xl text-sm font-bold'>
-                                    ✅ Menghadap Kiblat!
+                                    ✅ {t('qibla.facing_qibla')}
                                 </div>
                             )}
                         </div>
@@ -242,19 +244,19 @@ export default function KiblatPage() {
                         <div className='grid grid-cols-2 gap-4 mb-6'>
                             <div className='bg-white dark:bg-slate-800 rounded-2xl p-4 text-center border border-gray-100 dark:border-slate-700 shadow-sm'>
                                 <p className='text-xs text-gray-400 dark:text-gray-500 mb-1'>
-                                    Sudut Kiblat
+                                    {t('qibla.angle')}
                                 </p>
                                 <p className='text-2xl font-extrabold text-emerald-700 dark:text-emerald-300'>
                                     {Math.round(qiblaAngle)}°
                                 </p>
-                                <p className='text-xs text-gray-400 dark:text-gray-500'>dari Utara</p>
+                                <p className='text-xs text-gray-400 dark:text-gray-500'>{t('qibla.from_north')}</p>
                             </div>
                             <div className='bg-white dark:bg-slate-800 rounded-2xl p-4 text-center border border-gray-100 dark:border-slate-700 shadow-sm'>
                                 <p className='text-xs text-gray-400 dark:text-gray-500 mb-1'>
-                                    Jarak ke Ka&apos;bah
+                                    {t('qibla.distance_to_kaaba')}
                                 </p>
                                 <p className='text-2xl font-extrabold text-emerald-700 dark:text-emerald-300'>
-                                    {distance?.toLocaleString('id-ID')}
+                                    {distance?.toLocaleString(lang === 'EN' ? 'en-US' : 'id-ID')}
                                 </p>
                                 <p className='text-xs text-gray-400 dark:text-gray-500'>km</p>
                             </div>
@@ -263,7 +265,7 @@ export default function KiblatPage() {
                         {coords && (
                             <div className='bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-100 dark:border-slate-700 shadow-sm mb-4'>
                                 <p className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1'>
-                                    <BsGeoAlt /> Lokasi Kamu
+                                    <BsGeoAlt /> {t('geo.your_location')}
                                 </p>
                                 <p className='text-sm text-gray-700 dark:text-gray-300'>
                                     {coords.lat.toFixed(4)}° LU, {coords.lng.toFixed(4)}° BT
@@ -273,29 +275,26 @@ export default function KiblatPage() {
 
                         {!orientationSupported && (
                             <div className='bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 text-sm text-amber-800 dark:text-amber-300'>
-                                ⚠️ Sensor kompas tidak tersedia di perangkat ini. Sudut kiblat
-                                ditampilkan relatif terhadap Utara geografis.
+                                {t('qibla.no_compass')}
                             </div>
                         )}
 
                         {orientationSupported && compassHeading !== null && (
                             <div className='bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-3 text-sm text-emerald-800 dark:text-emerald-300 text-center'>
-                                🧭 Kompas aktif — Heading saat ini: {Math.round(compassHeading)}°
+                                {t('qibla.compass_active')} {Math.round(compassHeading)}°
                             </div>
                         )}
 
                         {orientationSupported && compassHeading === null && (
                             <div className='bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 text-sm text-blue-800 dark:text-blue-300'>
-                                📱 Putar perangkat untuk mengaktifkan kompas. Panah hijau
-                                menunjukkan arah kiblat dari posisi kamu.
+                                {t('qibla.rotate_device')}
                             </div>
                         )}
                     </>
                 )}
 
                 <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-6'>
-                    Arah dihitung menggunakan koordinat GPS. Untuk akurasi tertinggi, pastikan
-                    GPS aktif.
+                    {t('qibla.gps_note')}
                 </p>
             </div>
             <Footer />

@@ -3,19 +3,20 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
+import { useLocale } from '@/context/Locale';
 import { kajianApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsPlayCircle, BsSearch, BsYoutube } from 'react-icons/bs';
 import { MdOutlinePlayLesson } from 'react-icons/md';
 
 const CATEGORIES = [
-    { key: 'semua', label: 'Semua' },
-    { key: 'aqidah', label: 'Aqidah' },
-    { key: 'fiqh', label: 'Fiqh' },
-    { key: 'tazkiyah', label: 'Tazkiyah' },
-    { key: 'sirah', label: 'Sirah' },
-    { key: 'tafsir', label: 'Tafsir' },
-    { key: 'hadith', label: 'Hadith' },
+    { key: 'semua', labelKey: 'common.all' },
+    { key: 'aqidah', labelKey: 'kajian.category_aqidah' },
+    { key: 'fiqh', labelKey: 'kajian.category_fiqh' },
+    { key: 'tazkiyah', labelKey: 'kajian.category_tazkiyah' },
+    { key: 'sirah', labelKey: 'kajian.category_sirah' },
+    { key: 'tafsir', labelKey: 'kajian.category_tafsir' },
+    { key: 'hadith', labelKey: 'kajian.category_hadith' },
 ];
 
 const FALLBACK_KAJIAN = [
@@ -163,6 +164,7 @@ const catColor = {
 };
 
 const KajianPage = () => {
+    const { t } = useLocale();
     const [kajian, setKajian] = useState(FALLBACK_KAJIAN);
     const [activeCategory, setActiveCategory] = useState('semua');
     const [search, setSearch] = useState('');
@@ -205,10 +207,10 @@ const KajianPage = () => {
                         </div>
                         <div>
                             <h1 className='text-xl font-bold text-emerald-900 dark:text-white'>
-                                Koleksi Kajian
+                                {t('kajian.public_title')}
                             </h1>
                             <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                Ceramah & kajian Islam dari ustadz terpercaya
+                                {t('kajian.public_subtitle')}
                             </p>
                         </div>
                     </div>
@@ -218,7 +220,7 @@ const KajianPage = () => {
                         <BsSearch className='text-gray-400 shrink-0' />
                         <input
                             type='text'
-                            placeholder='Cari judul, ustadz, atau kategori...'
+                            placeholder={t('kajian.public_search_placeholder')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
@@ -229,7 +231,7 @@ const KajianPage = () => {
                                 onClick={() => setSearch('')}
                                 className='text-xs font-medium text-emerald-600 dark:text-emerald-400'
                             >
-                                Hapus
+                                {t('common.clear')}
                             </button>
                         )}
                     </div>
@@ -237,7 +239,7 @@ const KajianPage = () => {
                     <div className='grid grid-cols-3 gap-3 mb-4'>
                         <div className='rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3'>
                             <p className='text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500'>
-                                Total Kajian
+                                {t('kajian.total_label')}
                             </p>
                             <p className='text-lg font-bold text-emerald-700 dark:text-emerald-400'>
                                 {totalKajian}
@@ -245,7 +247,7 @@ const KajianPage = () => {
                         </div>
                         <div className='rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3'>
                             <p className='text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500'>
-                                Platform YouTube
+                                {t('kajian.youtube_label')}
                             </p>
                             <p className='text-lg font-bold text-emerald-700 dark:text-emerald-400'>
                                 {youtubeCount}
@@ -253,7 +255,7 @@ const KajianPage = () => {
                         </div>
                         <div className='rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3'>
                             <p className='text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500'>
-                                Kategori
+                                {t('kajian.categories_label')}
                             </p>
                             <p className='text-lg font-bold text-emerald-700 dark:text-emerald-400'>
                                 {categoryCount}
@@ -273,21 +275,23 @@ const KajianPage = () => {
                                         : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-slate-600'
                                 }`}
                             >
-                                {cat.label}
+                                {t(cat.labelKey)}
                             </button>
                         ))}
                     </div>
 
                     {/* Results count */}
                     <div className='mb-4 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>
-                        <span>{filtered.length} kajian ditemukan</span>
+                        <span>
+                            {filtered.length} {t('kajian.results_found')}
+                        </span>
                         {search && (
                             <button
                                 type='button'
                                 onClick={() => setSearch('')}
                                 className='font-medium text-emerald-600 dark:text-emerald-400'
                             >
-                                Reset pencarian
+                                {t('common.reset_search')}
                             </button>
                         )}
                     </div>
@@ -296,7 +300,7 @@ const KajianPage = () => {
                     {filtered.length === 0 ? (
                         <div className='text-center py-16 text-gray-400 dark:text-gray-500'>
                             <BsPlayCircle className='text-4xl mx-auto mb-3' />
-                            <p className='text-sm'>Kajian tidak ditemukan</p>
+                            <p className='text-sm'>{t('kajian.not_found')}</p>
                         </div>
                     ) : (
                         <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
@@ -313,7 +317,7 @@ const KajianPage = () => {
                                         <span
                                             className={`text-xs px-2 py-0.5 rounded-full font-medium ${catColor[k.category] ?? 'bg-gray-100 text-gray-600'}`}
                                         >
-                                            {k.category}
+                                            {t(CATEGORIES.find((cat) => cat.key === k.category)?.labelKey) || k.category}
                                         </span>
                                         {k.platform === 'youtube' && (
                                             <BsYoutube className='text-red-500 text-lg' />
@@ -341,7 +345,7 @@ const KajianPage = () => {
                                             {k.duration}
                                         </span>
                                         <span className='text-xs text-emerald-600 dark:text-emerald-400 font-medium group-hover:underline'>
-                                            Tonton →
+                                            {t('kajian.watch')}
                                         </span>
                                     </div>
                                 </a>
@@ -350,8 +354,7 @@ const KajianPage = () => {
                     )}
 
                     <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-8'>
-                        Konten kajian mengarah ke platform eksternal (YouTube). Thullaabul Ilmi tidak
-                        menghosting konten video.
+                        {t('kajian.external_note')}
                     </p>
                 </div>
             </Section>
