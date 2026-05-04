@@ -41,6 +41,7 @@ services/api/scrape_ibnukatsir
 services/api/scrape_tafsir
 services/api/scrape_tafsirweb
 services/api/seed_quran
+services/api/seed_tajweed
 services/api/translate_i18n
 services/api/update_sources
 
