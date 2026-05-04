@@ -10,7 +10,7 @@ const SuratPage = ({ params, searchParams }) => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='dark:text-white'>
+                <div className='px-4'>
                     <InfiniteScrollAyahPage params={params} searchParams={searchParams} />
                 </div>
             </Section>

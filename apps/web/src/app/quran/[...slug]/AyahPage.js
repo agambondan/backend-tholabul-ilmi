@@ -156,10 +156,10 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
 
             <ul
                 className={classNames({
-                    'flex flex-row justify-between font-kitab p-4 border-b border-emerald-100 dark:border-slate-700': true,
-                    'bg-parchment-50 dark:bg-slate-800': ayah.number % 2 === 1,
+                    'flex flex-row justify-between font-kitab p-4 border-b border-gray-100 dark:border-slate-800': true,
+                    'bg-gray-50/60 dark:bg-slate-800/35': ayah.number % 2 === 1,
                     'bg-white dark:bg-slate-900': ayah.number % 2 === 0,
-                    'text-emerald-900 dark:text-white': true,
+                    'text-gray-900 dark:text-white': true,
                 })}
             >
                 <ul className='flex flex-col p-2 space-y-1' style={{ direction: 'ltr' }}>

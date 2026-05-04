@@ -140,27 +140,29 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 		: '';
 
 	return (
-		<div className={isWide ? 'w-full' : 'max-w-4xl mx-auto'}>
-			<div className='text-center py-6 px-4 border-b border-emerald-100 dark:border-slate-700'>
-				<p className='text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1'>
-					Surah {surah?.number ?? '-'}
-				</p>
-				<h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-0.5'>
-					{surahTitle}
-				</h1>
-				<p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>
-					{surah?.translation?.idn ?? ''} &middot; {surah?.number_of_ayahs ?? ayahs.length} Ayat &middot;{' '}
-					{surah?.revelation_type ?? ''}
-				</p>
-				<p
-					className='font-kitab text-5xl leading-[2] text-emerald-900 dark:text-white'
-					style={{ direction: 'rtl' }}
-				>
-					{surah?.translation?.ar?.replace('سُورَةُ', '').trim() ?? ''}
-				</p>
-			</div>
+		<div className={isWide ? 'w-full max-w-7xl mx-auto' : 'max-w-3xl mx-auto'}>
+			<div className='overflow-hidden rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm'>
+				<div className='sticky top-20 z-10 text-center py-6 px-4 border-b border-gray-100 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur'>
+					<p className='text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1'>
+						Surah {surah?.number ?? '-'}
+					</p>
+					<h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-0.5'>
+						{surahTitle}
+					</h1>
+					<p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>
+						{surah?.translation?.idn ?? ''} &middot;{' '}
+						{surah?.number_of_ayahs ?? ayahs.length} Ayat &middot;{' '}
+						{surah?.revelation_type ?? ''}
+					</p>
+					<p
+						className='font-kitab text-5xl leading-[2] text-gray-900 dark:text-white'
+						style={{ direction: 'rtl' }}
+					>
+						{surah?.translation?.ar?.replace('سُورَةُ', '').trim() ?? ''}
+					</p>
+				</div>
 
-			<div className='flex justify-between items-center px-4 py-3 text-sm border-b border-emerald-50 dark:border-slate-800'>
+				<div className='flex justify-between items-center px-4 py-3 text-sm border-b border-gray-100 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/40'>
 				<div
 					className={classNames({
 						'flex items-center': true,
@@ -191,22 +193,23 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 						<TbPlayerTrackNext size={14} />
 					</Link>
 				</div>
-			</div>
+				</div>
 
-			<ul
-				key={`${surahTitle}-${surah?.number ?? ''}`}
-				id={`${surahTitle}-${surah?.number ?? ''}`}
-			>
-				{ayahs.map((ayah, index) => (
-					<AyahPage
-						surah={surah}
-						key={ayah.number}
-						ayah={ayah}
-						newLimit={loadMoreAyah}
-						isLast={index === ayahs.length - 2}
-					/>
-				))}
-			</ul>
+				<ul
+					key={`${surahTitle}-${surah?.number ?? ''}`}
+					id={`${surahTitle}-${surah?.number ?? ''}`}
+				>
+					{ayahs.map((ayah, index) => (
+						<AyahPage
+							surah={surah}
+							key={ayah.number}
+							ayah={ayah}
+							newLimit={loadMoreAyah}
+							isLast={index === ayahs.length - 2}
+						/>
+					))}
+				</ul>
+			</div>
 
 			{isFetchingMore && (
 				<div className='py-4'>
