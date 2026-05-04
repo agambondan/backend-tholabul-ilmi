@@ -106,8 +106,8 @@ const AdminManasikPage = () => {
                 <div>
                     <h1 className='text-xl font-bold text-gray-900 dark:text-white'>Manasik</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.filter((i) => i.type === 'haji').length} langkah haji ·{' '}
-                        {items.filter((i) => i.type === 'umrah').length} langkah umrah
+                        {items.filter((i) => i.type === 'haji').length} hajj steps ·{' '}
+                        {items.filter((i) => i.type === 'umrah').length} umrah steps
                     </p>
                 </div>
                 <button
@@ -115,7 +115,7 @@ const AdminManasikPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Tambah Langkah
+                    Add Step
                 </button>
             </div>
 
@@ -136,7 +136,7 @@ const AdminManasikPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Memuat...</p>
+                <p className='text-sm text-gray-500'>Loading...</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
@@ -146,10 +146,10 @@ const AdminManasikPage = () => {
                                     Langkah
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Judul
+                                    Title
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell'>
-                                    Deskripsi
+                                    Description
                                 </th>
                                 <th className='px-4 py-3 w-20'></th>
                             </tr>
@@ -195,7 +195,7 @@ const AdminManasikPage = () => {
                                         colSpan={4}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        Belum ada data untuk {filter}
+                                        No data yet untuk {filter}
                                     </td>
                                 </tr>
                             )}
@@ -209,7 +209,7 @@ const AdminManasikPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Langkah' : 'Tambah Langkah'}
+                                {editId ? 'Edit Step' : 'Add Step'}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -256,7 +256,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Judul
+                                    Title
                                 </label>
                                 <input
                                     type='text'
@@ -269,7 +269,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Arab (opsional)
+                                    Arabic (opsional)
                                 </label>
                                 <textarea
                                     value={form.arabic}
@@ -296,7 +296,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Terjemahan
+                                    Translation
                                 </label>
                                 <textarea
                                     value={form.translation}
@@ -309,7 +309,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Deskripsi
+                                    Description
                                 </label>
                                 <textarea
                                     value={form.description}
@@ -339,14 +339,14 @@ const AdminManasikPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.title}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Menyimpan...' : 'Simpan'}
+                                {saving ? 'Saving...' : 'Save'}
                             </button>
                         </div>
                     </div>
@@ -357,23 +357,23 @@ const AdminManasikPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Hapus langkah ini?
+                            Delete this step?
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Data yang dihapus tidak dapat dikembalikan.
+                            Deleted data cannot be restored.
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Hapus
+                                Delete
                             </button>
                         </div>
                     </div>

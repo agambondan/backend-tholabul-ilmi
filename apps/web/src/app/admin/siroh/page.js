@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BsPencil, BsPlus, BsTrash, BsX } from 'react-icons/bs';
 
-const AdminSirohPage = () => {
+const AdminSirahPage = () => {
     const [categories, setCategories] = useState([]);
     const [contents, setContents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +30,7 @@ const AdminSirohPage = () => {
             setCategories(catsRes?.items ?? catsRes ?? []);
             setContents(contentsRes?.items ?? contentsRes ?? []);
         } catch {
-            setError('Gagal memuat data siroh.');
+            setError('Failed to load sirah data.');
         } finally {
             setIsLoading(false);
         }
@@ -62,7 +62,7 @@ const AdminSirohPage = () => {
     };
 
     const handleDeleteCategory = async (id) => {
-        if (!confirm('Hapus kategori ini? Konten di dalamnya juga akan terhapus.')) return;
+        if (!confirm('Delete this category? Content di dalamnya juga akan terhapus.')) return;
         const prev = categories;
         setCategories((c) => c.filter((x) => x.id !== id));
         try {
@@ -95,7 +95,7 @@ const AdminSirohPage = () => {
     };
 
     const handleDeleteContent = async (id) => {
-        if (!confirm('Hapus konten siroh ini?')) return;
+        if (!confirm('Delete this sirah content?')) return;
         const prev = contents;
         setContents((c) => c.filter((x) => x.id !== id));
         try {
@@ -112,10 +112,10 @@ const AdminSirohPage = () => {
             <div className='flex items-center justify-between mb-8'>
                 <div>
                     <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>
-                        Siroh Nabawiyah
+                        Prophet&apos;s Biography
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-                        {categories.length} kategori · {contents.length} konten
+                        {categories.length} categories · {contents.length} contents
                     </p>
                 </div>
                 <Link
@@ -123,7 +123,7 @@ const AdminSirohPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors'
                 >
                     <BsPlus className='text-lg' />
-                    Konten Baru
+                    Content Baru
                 </Link>
             </div>
 
@@ -135,7 +135,7 @@ const AdminSirohPage = () => {
                 {/* Categories */}
                 <div>
                     <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>
-                        Kategori / Bab
+                        Category / Bab
                     </h2>
 
                     <form
@@ -145,13 +145,13 @@ const AdminSirohPage = () => {
                         <input
                             value={newCatTitle}
                             onChange={(e) => setNewCatTitle(e.target.value)}
-                            placeholder='Judul kategori baru...'
+                            placeholder='New category title...'
                             className='flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                         />
                         <input
                             value={newCatOrder}
                             onChange={(e) => setNewCatOrder(e.target.value)}
-                            placeholder='Urutan'
+                            placeholder='Order'
                             type='number'
                             className='w-20 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                         />
@@ -167,7 +167,7 @@ const AdminSirohPage = () => {
                     <div className='space-y-2'>
                         {categories.length === 0 && (
                             <p className='text-sm text-gray-400 dark:text-gray-500'>
-                                Belum ada kategori.
+                                No categories yet.
                             </p>
                         )}
                         {categories.map((cat) => (
@@ -192,7 +192,7 @@ const AdminSirohPage = () => {
                                             onClick={() => handleUpdateCategory(cat.id)}
                                             className='px-3 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs'
                                         >
-                                            Simpan
+                                            Save
                                         </button>
                                         <button
                                             onClick={() => setEditingCat(null)}
@@ -208,7 +208,7 @@ const AdminSirohPage = () => {
                                                 {cat.title}
                                             </p>
                                             <p className='text-xs text-gray-400 dark:text-gray-500'>
-                                                Urutan: {cat.order ?? 0} · {cat.slug}
+                                                Order: {cat.order ?? 0} · {cat.slug}
                                             </p>
                                         </div>
                                         <div className='flex gap-1'>
@@ -235,12 +235,12 @@ const AdminSirohPage = () => {
                 {/* Contents */}
                 <div>
                     <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>
-                        Konten
+                        Content
                     </h2>
                     <div className='space-y-2'>
                         {contents.length === 0 && (
                             <p className='text-sm text-gray-400 dark:text-gray-500'>
-                                Belum ada konten. Buat konten baru.
+                                No content yet. Create new content.
                             </p>
                         )}
                         {contents.map((item) => (
@@ -254,8 +254,8 @@ const AdminSirohPage = () => {
                                     </p>
                                     <p className='text-xs text-gray-400 dark:text-gray-500'>
                                         {categories.find((c) => c.id === item.category_id)?.title ??
-                                            `Kategori #${item.category_id}`}{' '}
-                                        · Urutan {item.order ?? 0}
+                                            `Category #${item.category_id}`}{' '}
+                                        · Order {item.order ?? 0}
                                     </p>
                                 </div>
                                 <div className='flex gap-1 ml-3 shrink-0'>
@@ -281,4 +281,4 @@ const AdminSirohPage = () => {
     );
 };
 
-export default AdminSirohPage;
+export default AdminSirahPage;

@@ -1,16 +1,16 @@
 'use client';
 
-import SirohForm from '../_SirohForm';
+import SirahForm from '../_SirohForm';
 
-const NewSirohPage = () => {
+const NewSirahPage = () => {
     return (
         <div className='p-8'>
             <h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-6'>
-                Konten Siroh Baru
+                New Sirah Content
             </h1>
-            <SirohForm />
+            <SirahForm />
         </div>
     );
 };
 
-export default NewSirohPage;
+export default NewSirahPage;

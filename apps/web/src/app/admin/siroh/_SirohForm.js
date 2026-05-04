@@ -13,7 +13,7 @@ const slugify = (str) =>
         .replace(/[\s_-]+/g, '-')
         .replace(/^-+|-+$/g, '');
 
-const SirohForm = ({ initialData = null, contentId = null }) => {
+const SirahForm = ({ initialData = null, contentId = null }) => {
     const router = useRouter();
     const isEdit = !!contentId;
 
@@ -46,7 +46,7 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!categoryId) {
-            setError('Pilih kategori terlebih dahulu.');
+            setError('Select a category first.');
             return;
         }
         setError('');
@@ -66,7 +66,7 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
             }
             router.push('/admin/siroh');
         } catch {
-            setError('Gagal menyimpan. Cek koneksi atau data yang diisi.');
+            setError('Failed to save. Check the connection or submitted data.');
         } finally {
             setIsLoading(false);
         }
@@ -86,7 +86,7 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
             <div className='grid sm:grid-cols-2 gap-4'>
                 <div>
                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                        Kategori / Bab <span className='text-red-500'>*</span>
+                        Category / Bab <span className='text-red-500'>*</span>
                     </label>
                     <select
                         value={categoryId}
@@ -94,7 +94,7 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
                         className={inputCls}
                         required
                     >
-                        <option value=''>— Pilih Kategori —</option>
+                        <option value=''>— Select Category —</option>
                         {categories.map((cat) => (
                             <option key={cat.id} value={cat.id}>
                                 {cat.title}
@@ -103,9 +103,9 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
                     </select>
                     {categories.length === 0 && (
                         <p className='text-xs text-amber-500 mt-1'>
-                            Buat kategori dulu di halaman{' '}
+                            Create a category first on the{' '}
                             <Link href='/admin/siroh' className='underline'>
-                                Kelola Siroh
+                                Manage Sirah
                             </Link>
                             .
                         </p>
@@ -114,7 +114,7 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
 
                 <div>
                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                        Urutan
+                        Order
                     </label>
                     <input
                         type='number'
@@ -129,14 +129,14 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Judul <span className='text-red-500'>*</span>
+                    Title <span className='text-red-500'>*</span>
                 </label>
                 <input
                     required
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
                     className={inputCls}
-                    placeholder='Judul bab siroh...'
+                    placeholder='Sirah chapter title...'
                 />
             </div>
 
@@ -160,7 +160,7 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Konten <span className='text-red-500'>*</span>
+                    Content <span className='text-red-500'>*</span>
                 </label>
                 <textarea
                     required
@@ -168,10 +168,10 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
                     onChange={(e) => setContent(e.target.value)}
                     rows={18}
                     className={`${inputCls} font-mono leading-relaxed`}
-                    placeholder='Tulis konten siroh di sini. Gunakan baris baru untuk memisahkan paragraf...'
+                    placeholder='Write sirah content here. Use new lines to separate paragraphs...'
                 />
                 <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                    {content.length.toLocaleString()} karakter
+                    {content.length.toLocaleString()} characters
                 </p>
             </div>
 
@@ -181,17 +181,17 @@ const SirohForm = ({ initialData = null, contentId = null }) => {
                     disabled={isLoading}
                     className='px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors'
                 >
-                    {isLoading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Buat Konten'}
+                    {isLoading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Content'}
                 </button>
                 <Link
                     href='/admin/siroh'
                     className='px-6 py-2.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium transition-colors'
                 >
-                    Batal
+                    Cancel
                 </Link>
             </div>
         </form>
     );
 };
 
-export default SirohForm;
+export default SirahForm;

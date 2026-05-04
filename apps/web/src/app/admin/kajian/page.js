@@ -27,7 +27,7 @@ const EMPTY_FORM = {
     thumbnail: '',
 };
 
-const AdminKajianPage = () => {
+const AdminStudiesPage = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -111,7 +111,7 @@ const AdminKajianPage = () => {
         <div className='p-6'>
             <div className='flex items-center justify-between mb-6'>
                 <div>
-                    <h1 className='text-xl font-bold text-gray-900 dark:text-white'>Kajian</h1>
+                    <h1 className='text-xl font-bold text-gray-900 dark:text-white'>Studies</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
                         {items.length} video
                     </p>
@@ -121,14 +121,14 @@ const AdminKajianPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Tambah Kajian
+                    Add Study
                 </button>
             </div>
 
             <div className='mb-4'>
                 <input
                     type='text'
-                    placeholder='Cari judul, ustadz, atau kategori...'
+                    placeholder='Search title, teacher, or category...'
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -136,14 +136,14 @@ const AdminKajianPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Memuat...</p>
+                <p className='text-sm text-gray-500'>Loading...</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-700'>
                             <tr>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Judul
+                                    Title
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell'>
                                     Ustadz
@@ -152,7 +152,7 @@ const AdminKajianPage = () => {
                                     Platform
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-24 hidden lg:table-cell'>
-                                    Kategori
+                                    Category
                                 </th>
                                 <th className='px-4 py-3 w-24'></th>
                             </tr>
@@ -213,7 +213,7 @@ const AdminKajianPage = () => {
                                         colSpan={5}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        Belum ada data
+                                        No data yet
                                     </td>
                                 </tr>
                             )}
@@ -227,7 +227,7 @@ const AdminKajianPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Kajian' : 'Tambah Kajian'}
+                                {editId ? 'Edit Study' : 'Add Study'}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -239,7 +239,7 @@ const AdminKajianPage = () => {
                         <div className='p-5 space-y-4'>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Judul
+                                    Title
                                 </label>
                                 <input
                                     type='text'
@@ -274,7 +274,7 @@ const AdminKajianPage = () => {
                                         onChange={(e) =>
                                             setForm({ ...form, duration: e.target.value })
                                         }
-                                        placeholder='cth. 01:23:45'
+                                        placeholder='e.g. 01:23:45'
                                         className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
                                     />
                                 </div>
@@ -300,7 +300,7 @@ const AdminKajianPage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Kategori
+                                        Category
                                     </label>
                                     <select
                                         value={form.category}
@@ -347,7 +347,7 @@ const AdminKajianPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Deskripsi
+                                    Description
                                 </label>
                                 <textarea
                                     value={form.description}
@@ -364,14 +364,14 @@ const AdminKajianPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.title}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Menyimpan...' : 'Simpan'}
+                                {saving ? 'Saving...' : 'Save'}
                             </button>
                         </div>
                     </div>
@@ -382,23 +382,23 @@ const AdminKajianPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Hapus Kajian?
+                            Delete Study?
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Data yang dihapus tidak dapat dikembalikan.
+                            Deleted data cannot be restored.
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Hapus
+                                Delete
                             </button>
                         </div>
                     </div>
@@ -408,4 +408,4 @@ const AdminKajianPage = () => {
     );
 };
 
-export default AdminKajianPage;
+export default AdminStudiesPage;

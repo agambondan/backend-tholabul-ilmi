@@ -5,9 +5,9 @@ export const dynamic = 'force-dynamic';
 import { Spinner3 } from '@/components/spinner/Spinner';
 import { adminSirohApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
-import SirohForm from '../../_SirohForm';
+import SirahForm from '../../_SirohForm';
 
-const EditSirohPage = ({ params }) => {
+const EditSirahPage = ({ params }) => {
     const [item, setItem] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -31,7 +31,7 @@ const EditSirohPage = ({ params }) => {
     if (error) {
         return (
             <div className='p-8'>
-                <p className='text-red-500 dark:text-red-400'>Konten tidak ditemukan.</p>
+                <p className='text-red-500 dark:text-red-400'>Content not found.</p>
             </div>
         );
     }
@@ -39,11 +39,11 @@ const EditSirohPage = ({ params }) => {
     return (
         <div className='p-8'>
             <h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-6'>
-                Edit Konten Siroh
+                Edit Sirah Content
             </h1>
-            <SirohForm initialData={item} contentId={params.id} />
+            <SirahForm initialData={item} contentId={params.id} />
         </div>
     );
 };
 
-export default EditSirohPage;
+export default EditSirahPage;

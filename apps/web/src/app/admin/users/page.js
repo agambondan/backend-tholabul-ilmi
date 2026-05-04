@@ -33,11 +33,11 @@ const AdminUsersPage = () => {
         const load = async () => {
             try {
                 const res = await adminUserApi.list();
-                if (!res.ok) throw new Error('Gagal memuat daftar user');
+                if (!res.ok) throw new Error('Failed to load user list');
                 const data = await res.json();
                 setUsers(Array.isArray(data) ? data : data.data ?? []);
             } catch (err) {
-                setError(err.message || 'Terjadi kesalahan saat memuat data');
+                setError(err.message || 'An error occurred while loading data');
             } finally {
                 setIsLoading(false);
             }
@@ -55,33 +55,33 @@ const AdminUsersPage = () => {
         setChangingId(target.id);
         try {
             const res = await adminUserApi.update(target.id, { role: newRole });
-            if (!res.ok) throw new Error('Gagal mengubah role');
+            if (!res.ok) throw new Error('Failed to change role');
         } catch (err) {
             setUsers(prev);
-            setActionError(err.message || 'Gagal mengubah role user');
+            setActionError(err.message || 'Failed to change role user');
         } finally {
             setChangingId(null);
         }
     };
 
     const handleDelete = async (target) => {
-        if (!confirm(`Hapus user "${target.name}"? Tindakan ini tidak dapat dibatalkan.`)) return;
+        if (!confirm(`Delete user "${target.name}"? This action cannot be undone.`)) return;
         const prev = users;
         setUsers((u) => u.filter((x) => x.id !== target.id));
         setActionError('');
         try {
             const res = await adminUserApi.delete(target.id);
-            if (!res.ok) throw new Error('Gagal menghapus user');
+            if (!res.ok) throw new Error('Failed to delete user');
         } catch (err) {
             setUsers(prev);
-            setActionError(err.message || 'Gagal menghapus user');
+            setActionError(err.message || 'Failed to delete user');
         }
     };
 
     if (isLoading) {
         return (
             <div className='p-8 text-center text-gray-500 dark:text-gray-400'>
-                Memuat...
+                Loading...
             </div>
         );
     }
@@ -93,7 +93,7 @@ const AdminUsersPage = () => {
                     Manajemen User
                 </h1>
                 <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-                    Kelola role pengguna: user → author → editor → admin
+                    Manage user roles: user → author → editor → admin
                 </p>
             </div>
 
@@ -141,7 +141,7 @@ const AdminUsersPage = () => {
                                 Ubah Role
                             </th>
                             <th className='text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400'>
-                                Aksi
+                                Actions
                             </th>
                         </tr>
                     </thead>
@@ -152,7 +152,7 @@ const AdminUsersPage = () => {
                                     colSpan={5}
                                     className='px-4 py-8 text-center text-gray-400 dark:text-gray-600'
                                 >
-                                    Belum ada user terdaftar
+                                    No registered users yet
                                 </td>
                             </tr>
                         )}
@@ -191,7 +191,7 @@ const AdminUsersPage = () => {
                                             ))}
                                         </select>
                                         {changingId === u.id && (
-                                            <span className='ml-2 text-xs text-gray-400'>Menyimpan...</span>
+                                            <span className='ml-2 text-xs text-gray-400'>Saving...</span>
                                         )}
                                     </td>
                                     <td className='px-4 py-3'>
@@ -199,11 +199,11 @@ const AdminUsersPage = () => {
                                             <button
                                                 onClick={() => handleDelete(u)}
                                                 disabled={isSelf}
-                                                title='Hapus user'
+                                                title='Delete user'
                                                 className='flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40'
                                             >
                                                 <BsTrash className='text-sm' />
-                                                Hapus
+                                                Delete
                                             </button>
                                         </div>
                                     </td>
@@ -215,7 +215,7 @@ const AdminUsersPage = () => {
             </div>
 
             <div className='mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs'>
-                <strong>Keterangan role:</strong> User = pembaca biasa · Author = bisa buat/edit artikel blog milik sendiri · Editor = bisa approve/edit konten siroh, tafsir, asbabun nuzul · Admin = full access
+                <strong>Role notes:</strong> User = regular reader · Author = can create/edit own blog articles · Editor = can approve/edit sirah, tafsir, and asbabun nuzul content · Admin = full access
             </div>
         </div>
     );

@@ -11,7 +11,7 @@ const EMPTY_FORM = {
     root: '',
 };
 
-const AdminKamusPage = () => {
+const AdminDictionaryPage = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -92,10 +92,10 @@ const AdminKamusPage = () => {
             <div className='flex items-center justify-between mb-6'>
                 <div>
                     <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
-                        Kamus Arab
+                        Arabic Dictionary
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.length} kata
+                        {items.length} words
                     </p>
                 </div>
                 <button
@@ -103,14 +103,14 @@ const AdminKamusPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Tambah Kata
+                    Add Word
                 </button>
             </div>
 
             <div className='mb-4'>
                 <input
                     type='text'
-                    placeholder='Cari kata atau arti...'
+                    placeholder='Search word or meaning...'
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -118,20 +118,20 @@ const AdminKamusPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Memuat...</p>
+                <p className='text-sm text-gray-500'>Loading...</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-700'>
                             <tr>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Arab
+                                    Arabic
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
                                     Latin
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Arti
+                                    Meaning
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell'>
                                     Akar Kata
@@ -183,7 +183,7 @@ const AdminKamusPage = () => {
                                         colSpan={5}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        Belum ada data
+                                        No data yet
                                     </td>
                                 </tr>
                             )}
@@ -197,7 +197,7 @@ const AdminKamusPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Kata' : 'Tambah Kata'}
+                                {editId ? 'Edit Word' : 'Add Word'}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -209,7 +209,7 @@ const AdminKamusPage = () => {
                         <div className='p-5 space-y-4'>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Arab
+                                    Arabic
                                 </label>
                                 <input
                                     type='text'
@@ -236,7 +236,7 @@ const AdminKamusPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Arti
+                                    Meaning
                                 </label>
                                 <input
                                     type='text'
@@ -267,14 +267,14 @@ const AdminKamusPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.arabic || !form.meaning}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Menyimpan...' : 'Simpan'}
+                                {saving ? 'Saving...' : 'Save'}
                             </button>
                         </div>
                     </div>
@@ -285,23 +285,23 @@ const AdminKamusPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Hapus kata ini?
+                            Delete this word?
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Data yang dihapus tidak dapat dikembalikan.
+                            Deleted data cannot be restored.
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Hapus
+                                Delete
                             </button>
                         </div>
                     </div>
@@ -311,4 +311,4 @@ const AdminKamusPage = () => {
     );
 };
 
-export default AdminKamusPage;
+export default AdminDictionaryPage;

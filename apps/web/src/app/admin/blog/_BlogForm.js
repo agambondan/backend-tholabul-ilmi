@@ -78,7 +78,7 @@ const BlogForm = ({ initialData = null, postId = null }) => {
             }
             router.push('/admin/blog');
         } catch {
-            setError('Gagal menyimpan. Cek koneksi atau data yang diisi.');
+            setError('Failed to save. Check the connection or submitted data.');
         } finally {
             setIsLoading(false);
         }
@@ -97,14 +97,14 @@ const BlogForm = ({ initialData = null, postId = null }) => {
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Judul <span className='text-red-500'>*</span>
+                    Title <span className='text-red-500'>*</span>
                 </label>
                 <input
                     required
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
                     className={inputCls}
-                    placeholder='Judul artikel...'
+                    placeholder='Article title...'
                 />
             </div>
 
@@ -128,20 +128,20 @@ const BlogForm = ({ initialData = null, postId = null }) => {
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Ringkasan (Excerpt)
+                    Summary (Excerpt)
                 </label>
                 <textarea
                     value={excerpt}
                     onChange={(e) => setExcerpt(e.target.value)}
                     rows={2}
                     className={inputCls}
-                    placeholder='Deskripsi singkat artikel...'
+                    placeholder='Brief article description...'
                 />
             </div>
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Konten <span className='text-red-500'>*</span>
+                    Content <span className='text-red-500'>*</span>
                 </label>
                 <textarea
                     required
@@ -149,7 +149,7 @@ const BlogForm = ({ initialData = null, postId = null }) => {
                     onChange={(e) => setContent(e.target.value)}
                     rows={16}
                     className={`${inputCls} font-mono leading-relaxed`}
-                    placeholder='Tulis konten artikel di sini...'
+                    placeholder='Write article content here...'
                 />
                 <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
                     Gunakan baris baru untuk memisahkan paragraf.
@@ -158,7 +158,7 @@ const BlogForm = ({ initialData = null, postId = null }) => {
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    URL Gambar Cover
+                    URL Cover Image Cover
                 </label>
                 <input
                     value={coverImage}
@@ -179,14 +179,14 @@ const BlogForm = ({ initialData = null, postId = null }) => {
             <div className='grid sm:grid-cols-2 gap-4'>
                 <div>
                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                        Kategori
+                        Category
                     </label>
                     <select
                         value={categoryId}
                         onChange={(e) => setCategoryId(e.target.value)}
                         className={inputCls}
                     >
-                        <option value=''>— Pilih Kategori —</option>
+                        <option value=''>— Select Category —</option>
                         {categories.map((cat) => (
                             <option key={cat.id} value={cat.id}>
                                 {cat.name}
@@ -241,13 +241,13 @@ const BlogForm = ({ initialData = null, postId = null }) => {
                     disabled={isLoading}
                     className='px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors'
                 >
-                    {isLoading ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Buat Artikel'}
+                    {isLoading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Article'}
                 </button>
                 <Link
                     href='/admin/blog'
                     className='px-6 py-2.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium transition-colors'
                 >
-                    Batal
+                    Cancel
                 </Link>
             </div>
         </form>

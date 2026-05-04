@@ -22,7 +22,7 @@ const EMPTY_FORM = {
     category: 'umum',
 };
 
-const AdminSejarahPage = () => {
+const AdminHistoryPage = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -103,10 +103,10 @@ const AdminSejarahPage = () => {
             <div className='flex items-center justify-between mb-6'>
                 <div>
                     <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
-                        Sejarah Islam
+                        Islamic History
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.length} peristiwa
+                        {items.length} events
                     </p>
                 </div>
                 <button
@@ -114,14 +114,14 @@ const AdminSejarahPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Tambah Peristiwa
+                    Add Event
                 </button>
             </div>
 
             <div className='mb-4'>
                 <input
                     type='text'
-                    placeholder='Cari judul, tahun, atau kategori...'
+                    placeholder='Search title, year, or category...'
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -129,20 +129,20 @@ const AdminSejarahPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Memuat...</p>
+                <p className='text-sm text-gray-500'>Loading...</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-700'>
                             <tr>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-20'>
-                                    Tahun H
+                                    Year H
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
                                     Peristiwa
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-32'>
-                                    Kategori
+                                    Category
                                 </th>
                                 <th className='px-4 py-3 w-20'></th>
                             </tr>
@@ -190,7 +190,7 @@ const AdminSejarahPage = () => {
                                         colSpan={4}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        Belum ada data
+                                        No data yet
                                     </td>
                                 </tr>
                             )}
@@ -204,7 +204,7 @@ const AdminSejarahPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Peristiwa' : 'Tambah Peristiwa'}
+                                {editId ? 'Edit Event' : 'Add Event'}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -217,7 +217,7 @@ const AdminSejarahPage = () => {
                             <div className='grid grid-cols-2 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Tahun Hijriah
+                                        Year Hijriah
                                     </label>
                                     <input
                                         type='text'
@@ -225,13 +225,13 @@ const AdminSejarahPage = () => {
                                         onChange={(e) =>
                                             setForm({ ...form, year: e.target.value })
                                         }
-                                        placeholder='cth. 1 H'
+                                        placeholder='e.g. 1 H'
                                         className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
                                     />
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Kategori
+                                        Category
                                     </label>
                                     <select
                                         value={form.category}
@@ -250,7 +250,7 @@ const AdminSejarahPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Judul Peristiwa
+                                    Title Peristiwa
                                 </label>
                                 <input
                                     type='text'
@@ -263,7 +263,7 @@ const AdminSejarahPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Deskripsi
+                                    Description
                                 </label>
                                 <textarea
                                     value={form.description}
@@ -280,14 +280,14 @@ const AdminSejarahPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.title}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Menyimpan...' : 'Simpan'}
+                                {saving ? 'Saving...' : 'Save'}
                             </button>
                         </div>
                     </div>
@@ -298,23 +298,23 @@ const AdminSejarahPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Hapus peristiwa ini?
+                            Delete this event?
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Data yang dihapus tidak dapat dikembalikan.
+                            Deleted data cannot be restored.
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Hapus
+                                Delete
                             </button>
                         </div>
                     </div>
@@ -324,4 +324,4 @@ const AdminSejarahPage = () => {
     );
 };
 
-export default AdminSejarahPage;
+export default AdminHistoryPage;

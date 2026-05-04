@@ -6,7 +6,7 @@ const NewBlogPage = () => {
     return (
         <div className='p-8'>
             <h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-6'>
-                Artikel Baru
+                Article Baru
             </h1>
             <BlogForm />
         </div>

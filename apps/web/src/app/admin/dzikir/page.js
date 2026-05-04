@@ -16,7 +16,7 @@ const EMPTY_FORM = {
     source: '',
 };
 
-const AdminDzikirPage = () => {
+const AdminDhikrPage = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -98,9 +98,9 @@ const AdminDzikirPage = () => {
         <div className='p-6'>
             <div className='flex items-center justify-between mb-6'>
                 <div>
-                    <h1 className='text-xl font-bold text-gray-900 dark:text-white'>Dzikir</h1>
+                    <h1 className='text-xl font-bold text-gray-900 dark:text-white'>Dhikr</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.length} entri
+                        {items.length} entries
                     </p>
                 </div>
                 <button
@@ -108,14 +108,14 @@ const AdminDzikirPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Tambah Dzikir
+                    Add Dhikr
                 </button>
             </div>
 
             <div className='mb-4'>
                 <input
                     type='text'
-                    placeholder='Cari judul atau kategori...'
+                    placeholder='Search title or category...'
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -123,17 +123,17 @@ const AdminDzikirPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Memuat...</p>
+                <p className='text-sm text-gray-500'>Loading...</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-700'>
                             <tr>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Judul
+                                    Title
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-32'>
-                                    Kategori
+                                    Category
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-20 hidden md:table-cell'>
                                     Ulangan
@@ -184,7 +184,7 @@ const AdminDzikirPage = () => {
                                         colSpan={4}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        Belum ada data
+                                        No data yet
                                     </td>
                                 </tr>
                             )}
@@ -198,7 +198,7 @@ const AdminDzikirPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Dzikir' : 'Tambah Dzikir'}
+                                {editId ? 'Edit Dhikr' : 'Add Dhikr'}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -210,7 +210,7 @@ const AdminDzikirPage = () => {
                         <div className='p-5 space-y-4'>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Judul
+                                    Title
                                 </label>
                                 <input
                                     type='text'
@@ -223,7 +223,7 @@ const AdminDzikirPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Arab
+                                    Arabic
                                 </label>
                                 <textarea
                                     value={form.arabic}
@@ -253,7 +253,7 @@ const AdminDzikirPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Terjemahan
+                                    Translation
                                 </label>
                                 <textarea
                                     value={form.translation}
@@ -267,7 +267,7 @@ const AdminDzikirPage = () => {
                             <div className='grid grid-cols-2 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Kategori
+                                        Category
                                     </label>
                                     <select
                                         value={form.category}
@@ -293,14 +293,14 @@ const AdminDzikirPage = () => {
                                         onChange={(e) =>
                                             setForm({ ...form, count: e.target.value })
                                         }
-                                        placeholder='cth. 3'
+                                        placeholder='e.g. 3'
                                         className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
                                     />
                                 </div>
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Sumber
+                                    Source
                                 </label>
                                 <input
                                     type='text'
@@ -308,7 +308,7 @@ const AdminDzikirPage = () => {
                                     onChange={(e) =>
                                         setForm({ ...form, source: e.target.value })
                                     }
-                                    placeholder='cth. HR. Muslim No. 2691'
+                                    placeholder='e.g. HR. Muslim No. 2691'
                                     className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
                                 />
                             </div>
@@ -318,14 +318,14 @@ const AdminDzikirPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.title}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Menyimpan...' : 'Simpan'}
+                                {saving ? 'Saving...' : 'Save'}
                             </button>
                         </div>
                     </div>
@@ -336,23 +336,23 @@ const AdminDzikirPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Hapus Dzikir?
+                            Delete Dhikr?
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Data yang dihapus tidak dapat dikembalikan.
+                            Deleted data cannot be restored.
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Hapus
+                                Delete
                             </button>
                         </div>
                     </div>
@@ -362,4 +362,4 @@ const AdminDzikirPage = () => {
     );
 };
 
-export default AdminDzikirPage;
+export default AdminDhikrPage;

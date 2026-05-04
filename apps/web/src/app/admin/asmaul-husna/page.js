@@ -101,7 +101,7 @@ const AdminAsmaulHusnaPage = () => {
                         Asmaul Husna
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.length} / 99 nama
+                        {items.length} / 99 names
                     </p>
                 </div>
                 <button
@@ -109,14 +109,14 @@ const AdminAsmaulHusnaPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Tambah
+                    Add
                 </button>
             </div>
 
             <div className='mb-4'>
                 <input
                     type='text'
-                    placeholder='Cari nama atau arti...'
+                    placeholder='Search name or meaning...'
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -124,7 +124,7 @@ const AdminAsmaulHusnaPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Memuat...</p>
+                <p className='text-sm text-gray-500'>Loading...</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
@@ -134,13 +134,13 @@ const AdminAsmaulHusnaPage = () => {
                                     No
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Arab
+                                    Arabic
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
                                     Latin
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell'>
-                                    Arti (ID)
+                                    Meaning (ID)
                                 </th>
                                 <th className='px-4 py-3 w-20'></th>
                             </tr>
@@ -189,7 +189,7 @@ const AdminAsmaulHusnaPage = () => {
                                         colSpan={5}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        Belum ada data
+                                        No data yet
                                     </td>
                                 </tr>
                             )}
@@ -203,7 +203,7 @@ const AdminAsmaulHusnaPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Asmaul Husna' : 'Tambah Asmaul Husna'}
+                                {editId ? 'Edit Asmaul Husna' : 'Add Asmaul Husna'}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -231,7 +231,7 @@ const AdminAsmaulHusnaPage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Arab
+                                        Arabic
                                     </label>
                                     <input
                                         type='text'
@@ -263,7 +263,7 @@ const AdminAsmaulHusnaPage = () => {
                             <div className='grid grid-cols-2 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Arti (Indonesia)
+                                        Meaning (Indonesian)
                                     </label>
                                     <input
                                         type='text'
@@ -279,7 +279,7 @@ const AdminAsmaulHusnaPage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Arti (English)
+                                        Meaning (English)
                                     </label>
                                     <input
                                         type='text'
@@ -293,7 +293,7 @@ const AdminAsmaulHusnaPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Keterangan
+                                    Notes
                                 </label>
                                 <textarea
                                     value={form.description}
@@ -310,14 +310,14 @@ const AdminAsmaulHusnaPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.arabic}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Menyimpan...' : 'Simpan'}
+                                {saving ? 'Saving...' : 'Save'}
                             </button>
                         </div>
                     </div>
@@ -328,23 +328,23 @@ const AdminAsmaulHusnaPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Hapus nama ini?
+                            Delete this name?
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Data yang dihapus tidak dapat dikembalikan.
+                            Deleted data cannot be restored.
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Batal
+                                Cancel
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Hapus
+                                Delete
                             </button>
                         </div>
                     </div>

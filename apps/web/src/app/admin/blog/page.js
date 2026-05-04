@@ -36,7 +36,7 @@ const AdminBlogPage = () => {
             setCategories(catsRes?.items ?? catsRes ?? []);
             setTags(tagsRes?.items ?? tagsRes ?? []);
         } catch {
-            setError('Gagal memuat data.');
+            setError('Failed to load data.');
         } finally {
             setIsLoading(false);
         }
@@ -47,7 +47,7 @@ const AdminBlogPage = () => {
     }, []);
 
     const handleDeletePost = async (id) => {
-        if (!confirm('Hapus artikel ini?')) return;
+        if (!confirm('Delete this article?')) return;
         const prev = posts;
         setPosts((p) => p.filter((x) => x.id !== id));
         try {
@@ -75,7 +75,7 @@ const AdminBlogPage = () => {
     };
 
     const handleDeleteCategory = async (id) => {
-        if (!confirm('Hapus kategori ini?')) return;
+        if (!confirm('Delete this category?')) return;
         const prev = categories;
         setCategories((c) => c.filter((x) => x.id !== id));
         try {
@@ -118,9 +118,9 @@ const AdminBlogPage = () => {
         <div className='p-8'>
             <div className='flex items-center justify-between mb-8'>
                 <div>
-                    <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>Blog / Artikel</h1>
+                    <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>Blog / Articles</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-                        {posts.length} artikel
+                        {posts.length} articles
                     </p>
                 </div>
                 <Link
@@ -128,7 +128,7 @@ const AdminBlogPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors'
                 >
                     <BsPlus className='text-lg' />
-                    Artikel Baru
+                    Article Baru
                 </Link>
             </div>
 
@@ -140,16 +140,16 @@ const AdminBlogPage = () => {
             <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden mb-8'>
                 {posts.length === 0 ? (
                     <div className='p-8 text-center text-gray-400 dark:text-gray-500 text-sm'>
-                        Belum ada artikel. Buat artikel pertama!
+                        No articles yet. Create the first article!
                     </div>
                 ) : (
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-900 text-left'>
                             <tr>
-                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300'>Judul</th>
-                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden md:table-cell'>Kategori</th>
+                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300'>Title</th>
+                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden md:table-cell'>Category</th>
                                 <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300'>Status</th>
-                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden sm:table-cell'>Tanggal</th>
+                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden sm:table-cell'>Date</th>
                                 <th className='px-5 py-3'></th>
                             </tr>
                         </thead>
@@ -209,12 +209,12 @@ const AdminBlogPage = () => {
             <div className='grid md:grid-cols-2 gap-6'>
                 {/* Categories */}
                 <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5'>
-                    <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>Kategori</h2>
+                    <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>Category</h2>
                     <form onSubmit={handleCreateCategory} className='flex gap-2 mb-4'>
                         <input
                             value={newCatName}
                             onChange={(e) => setNewCatName(e.target.value)}
-                            placeholder='Nama kategori baru...'
+                            placeholder='New category name...'
                             className='flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                         />
                         <button
@@ -241,7 +241,7 @@ const AdminBlogPage = () => {
                             </div>
                         ))}
                         {categories.length === 0 && (
-                            <p className='text-xs text-gray-400 dark:text-gray-500'>Belum ada kategori.</p>
+                            <p className='text-xs text-gray-400 dark:text-gray-500'>No categories yet.</p>
                         )}
                     </div>
                 </div>
@@ -253,7 +253,7 @@ const AdminBlogPage = () => {
                         <input
                             value={newTagName}
                             onChange={(e) => setNewTagName(e.target.value)}
-                            placeholder='Nama tag baru...'
+                            placeholder='New tag name...'
                             className='flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                         />
                         <button
@@ -280,7 +280,7 @@ const AdminBlogPage = () => {
                             </span>
                         ))}
                         {tags.length === 0 && (
-                            <p className='text-xs text-gray-400 dark:text-gray-500'>Belum ada tag.</p>
+                            <p className='text-xs text-gray-400 dark:text-gray-500'>No tags yet.</p>
                         )}
                     </div>
                 </div>

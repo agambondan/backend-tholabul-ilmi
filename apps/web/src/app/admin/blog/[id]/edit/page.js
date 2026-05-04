@@ -31,7 +31,7 @@ const EditBlogPage = ({ params }) => {
     if (error) {
         return (
             <div className='p-8'>
-                <p className='text-red-500 dark:text-red-400'>Artikel tidak ditemukan.</p>
+                <p className='text-red-500 dark:text-red-400'>Article not found.</p>
             </div>
         );
     }
@@ -39,7 +39,7 @@ const EditBlogPage = ({ params }) => {
     return (
         <div className='p-8'>
             <h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-6'>
-                Edit Artikel
+                Edit Article
             </h1>
             <BlogForm initialData={post} postId={params.id} />
         </div>
