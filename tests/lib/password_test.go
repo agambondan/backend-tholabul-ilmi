@@ -10,18 +10,13 @@ import (
 
 func TestPasswordEncrypt(t *testing.T) {
 	raw := "password"
-	salt := "salt"
-	key := "CIPHER_SECRETKEY_MUST_HAVE_32BIT"
-
-	utils.AssertEqual(t, false, lib.PasswordEncrypt(raw, salt, key) == "")
+	utils.AssertEqual(t, false, lib.PasswordEncrypt(raw) == "")
 }
 
 func TestPasswordCompare(t *testing.T) {
 	raw := "password"
-	salt := "salt"
-	key := "CIPHER_SECRETKEY_MUST_HAVE_32BIT"
-	hashed := lib.PasswordEncrypt(raw, salt, key)
-	utils.AssertEqual(t, true, lib.PasswordCompare(hashed, raw, salt, key))
+	hashed := lib.PasswordEncrypt(raw)
+	utils.AssertEqual(t, true, lib.PasswordCompare(hashed, raw))
 }
 
 func TestCipherEncryptDecrypt(t *testing.T) {
