@@ -10,6 +10,9 @@ seed-quran:
 seed-quran-dev:
 	cd services/api && go run ./scripts/seed_quran/main.go -environment development
 
+seed-quran-docker:
+	cd services/api && DB_PORT=54320 go run ./scripts/seed_quran/main.go
+
 build-api:
 	cd services/api && go build main.go -o weddinggo
 
