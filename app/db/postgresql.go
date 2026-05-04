@@ -3,9 +3,9 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/agambondan/islamic-explorer/app/config"
-	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -21,10 +21,6 @@ func NewPostgresql(env *config.Environment) *gorm.DB {
 		logLevel = logger.Error
 	case "production":
 		logLevel = logger.Silent
-	}
-
-	if env == nil {
-		env.DBTablePrefix = lib.Strptr(viper.GetString("DB_TABLE_PREFIX"))
 	}
 
 	config := gorm.Config{
@@ -63,6 +59,8 @@ func NewPostgresql(env *config.Environment) *gorm.DB {
 	// https://aws.amazon.com/blogs/database/performance-impact-of-idle-postgresql-connections
 	sqlDB.SetMaxOpenConns(10)
 	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		Conn: sqlDB,

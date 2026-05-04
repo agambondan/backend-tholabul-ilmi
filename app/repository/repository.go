@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"log"
 	"time"
 
 	"github.com/agambondan/islamic-explorer/app/db/migrations"
@@ -28,6 +27,35 @@ type Repositories struct {
 	Hafalan         HafalanRepository
 	UserActivity    UserActivityRepository
 	Search          SearchRepository
+	Mufrodat        MufrodatRepository
+	Notification    NotificationRepository
+	Feed            FeedRepository
+	Tafsir          TafsirRepository
+	Doa             DoaRepository
+	AsmaUlHusna     AsmaUlHusnaRepository
+	Audio           AudioRepository
+	Siroh           SirohRepository
+	Blog            BlogRepository
+	Tilawah         TilawahRepository
+	Amalan          AmalanRepository
+	Dzikir          DzikirRepository
+	Leaderboard     LeaderboardRepository
+	Sholat          SholatRepository
+	Murojaah        MurojaahRepository
+	Fiqh            FiqhRepository
+	Tahlil          TahlilRepository
+	Kajian          KajianRepository
+	Muhasabah       MuhasabahRepository
+	Goal            GoalRepository
+	History         HistoryRepository
+	Manasik         ManasikRepository
+	Quiz            QuizRepository
+	Note            NoteRepository
+	Dictionary      DictionaryRepository
+	Comment         CommentRepository
+	APIKey          APIKeyRepository
+	IslamicEvent    IslamicEventRepository
+	AsbabunNuzul    AsbabunNuzulRepository
 	db              *gorm.DB
 	pg              *paginate.Pagination
 }
@@ -42,10 +70,8 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 			ExpiresIn: time.Duration(cacheSeconds) * time.Second,
 		})
 	}
-	log.Println(cache)
-
 	pg := paginate.New(&paginate.Config{
-		// CacheAdapter:         cache,
+		CacheAdapter:         cache,
 		FieldSelectorEnabled: true,
 	})
 
@@ -63,6 +89,35 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 		Hafalan:         NewHafalanRepository(db),
 		UserActivity:    NewUserActivityRepository(db),
 		Search:          NewSearchRepository(db),
+		Mufrodat:        NewMufrodatRepository(db),
+		Notification:    NewNotificationRepository(db),
+		Feed:            NewFeedRepository(db, pg),
+		Tafsir:          NewTafsirRepository(db, pg),
+		Doa:             NewDoaRepository(db),
+		AsmaUlHusna:     NewAsmaUlHusnaRepository(db),
+		Audio:           NewAudioRepository(db),
+		Siroh:           NewSirohRepository(db, pg),
+		Blog:            NewBlogRepository(db, pg),
+		Tilawah:         NewTilawahRepository(db),
+		Amalan:          NewAmalanRepository(db),
+		Dzikir:          NewDzikirRepository(db),
+		Leaderboard:     NewLeaderboardRepository(db),
+		Sholat:          NewSholatRepository(db),
+		Murojaah:        NewMurojaahRepository(db),
+		Fiqh:            NewFiqhRepository(db),
+		Tahlil:          NewTahlilRepository(db),
+		Kajian:          NewKajianRepository(db, pg),
+		Muhasabah:       NewMuhasabahRepository(db),
+		Goal:            NewGoalRepository(db),
+		History:         NewHistoryRepository(db),
+		Manasik:         NewManasikRepository(db),
+		Quiz:            NewQuizRepository(db),
+		Note:            NewNoteRepository(db),
+		Dictionary:      NewDictionaryRepository(db),
+		Comment:         NewCommentRepository(db),
+		APIKey:          NewAPIKeyRepository(db),
+		IslamicEvent:    NewIslamicEventRepository(db),
+		AsbabunNuzul:    NewAsbabunNuzulRepository(db),
 		db:              db,
 		pg:              pg,
 	}, nil
@@ -76,19 +131,35 @@ func (s *Repositories) Close() error {
 
 // Migrations convert model to design table
 func (s *Repositories) Migrations() error {
+	migrations.DeduplicateSeedData(s.db)
 	err := s.db.AutoMigrate(migrations.ModelMigrations...)
 	if err != nil {
 		return err
 	}
-	err = s.db.Migrator().DropTable("schema_migration")
-	if err != nil {
-		return err
-	}
+	s.db.Migrator().DropTable("schema_migration")
+	s.createCompositeIndexes()
 	return nil
+}
+
+// createCompositeIndexes adds composite indexes that include deleted_at for high-traffic tables.
+// GORM struct tags can't express composite indexes on embedded fields, so we do it here.
+func (s *Repositories) createCompositeIndexes() {
+	indexes := []string{
+		`CREATE INDEX IF NOT EXISTS idx_hadith_book_del    ON hadith (book_id, deleted_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_hadith_theme_del   ON hadith (theme_id, deleted_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_hadith_chapter_del ON hadith (chapter_id, deleted_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_ua_uid_date_del    ON user_activity (user_id, activity_date, deleted_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_hafalan_uid_del    ON hafalan_progress (user_id, deleted_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_hafalan_status_del ON hafalan_progress (status, deleted_at)`,
+	}
+	for _, sql := range indexes {
+		s.db.Exec(sql)
+	}
 }
 
 // Seeder is insert data to table
 func (s *Repositories) Seeder() error {
+	migrations.DeduplicateSeedData(s.db)
 	seeds := migrations.DataSeeds(s.db)
 	for i := range seeds {
 		tx := s.db.Begin()
@@ -106,6 +177,11 @@ func (s *Repositories) Seeder() error {
 			tx.Rollback()
 		}
 	}
+	if err := migrations.UpsertSeedData(s.db); err != nil {
+		return err
+	}
+	migrations.SeedRelated(s.db)
+	migrations.SeedTier3(s.db)
 	return nil
 }
 

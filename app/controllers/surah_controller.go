@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/url"
 	"strconv"
 
@@ -75,7 +74,6 @@ func (c *surahController) FindByName(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorBadRequest(ctx, err)
 	}
-	log.Println(decodedString)
 	data, err := c.surah.FindByName(ctx, lib.Strptr(decodedString))
 	if err != nil {
 		return lib.ErrorNotFound(ctx)

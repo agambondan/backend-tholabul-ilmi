@@ -104,15 +104,13 @@ func (c *surahRepo) DeleteById(id *int, scoped *string) error {
 		return err
 	}
 	if scoped != nil && *scoped == "hard" {
-		c.db.Unscoped().Delete(&model.Surah{}, id)
-	} else {
-		c.db.Delete(&model.Surah{}, id)
+		return c.db.Unscoped().Delete(&model.Surah{}, id).Error
 	}
-	return nil
+	return c.db.Delete(&model.Surah{}, id).Error
 }
 
 func (c *surahRepo) Count() (*int64, error) {
 	var count int64
-	c.db.Table("surah").Select("id").Count(&count)
+	c.db.Table("surah").Count(&count)
 	return &count, nil
 }

@@ -39,7 +39,7 @@ func (r *userActivityRepo) Record(userID uuid.UUID, actType model.ActivityType) 
 
 func (r *userActivityRepo) FindByUserID(userID uuid.UUID) ([]model.UserActivity, error) {
 	var activities []model.UserActivity
-	err := r.db.Where("user_id = ?", userID).Order("activity_date desc").Find(&activities).Error
+	err := r.db.Where("user_id = ?", userID).Order("activity_date desc").Limit(365).Find(&activities).Error
 	return activities, err
 }
 

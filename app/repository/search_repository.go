@@ -18,13 +18,20 @@ func NewSearchRepository(db *gorm.DB) SearchRepository {
 	return &searchRepo{db}
 }
 
+// tsvAyah builds the tsvector expression over the ayah translation columns.
+const tsvAyah = `to_tsvector('simple', coalesce("Translation".idn,'') || ' ' || coalesce("Translation".en,''))`
+
+// tsvHadith builds the tsvector expression over the hadith translation columns.
+const tsvHadith = `to_tsvector('simple', coalesce("Translation".idn,'') || ' ' || coalesce("Translation".en,''))`
+
 func (r *searchRepo) SearchAyah(query string, limit int) ([]model.Ayah, error) {
 	var ayahs []model.Ayah
-	q := "%" + query + "%"
 	err := r.db.
-		Joins("JOIN translation ON translation.id = ayah.translation_id").
-		Where("translation.idn ILIKE ? OR translation.en ILIKE ? OR translation.ar ILIKE ?", q, q, q).
-		Preload("Translation").Preload("Surah").Preload("Surah.Translation").
+		Joins("Translation").
+		Joins("Surah").Joins("Surah.Translation").
+		Where(tsvAyah+` @@ websearch_to_tsquery('simple', ?) OR "Translation".ar ILIKE ?`,
+			query, "%"+query+"%").
+		Order(gorm.Expr(`ts_rank(`+tsvAyah+`, websearch_to_tsquery('simple', ?)) DESC`, query)).
 		Limit(limit).
 		Find(&ayahs).Error
 	return ayahs, err
@@ -32,11 +39,14 @@ func (r *searchRepo) SearchAyah(query string, limit int) ([]model.Ayah, error) {
 
 func (r *searchRepo) SearchHadith(query string, limit int) ([]model.Hadith, error) {
 	var hadiths []model.Hadith
-	q := "%" + query + "%"
 	err := r.db.
-		Joins("JOIN translation ON translation.id = hadith.translation_id").
-		Where("translation.idn ILIKE ? OR translation.en ILIKE ? OR translation.ar ILIKE ?", q, q, q).
-		Preload("Translation").Preload("Book").Preload("Theme").Preload("Chapter").
+		Joins("Translation").
+		Joins("Book").Joins("Book.Translation").
+		Joins("Theme").Joins("Theme.Translation").
+		Joins("Chapter").Joins("Chapter.Translation").
+		Where(tsvHadith+` @@ websearch_to_tsquery('simple', ?) OR "Translation".ar ILIKE ?`,
+			query, "%"+query+"%").
+		Order(gorm.Expr(`ts_rank(`+tsvHadith+`, websearch_to_tsquery('simple', ?)) DESC`, query)).
 		Limit(limit).
 		Find(&hadiths).Error
 	return hadiths, err

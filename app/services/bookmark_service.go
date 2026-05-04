@@ -44,24 +44,48 @@ func (s *bookmarkService) FindByUserID(userID uuid.UUID) ([]model.Bookmark, erro
 	if err != nil {
 		return nil, err
 	}
-	for i := range bookmarks {
-		s.attachContent(&bookmarks[i])
+	if len(bookmarks) == 0 {
+		return bookmarks, nil
 	}
-	return bookmarks, nil
-}
 
-func (s *bookmarkService) attachContent(b *model.Bookmark) {
-	id := b.RefID
-	switch b.RefType {
-	case model.BookmarkAyah:
-		if ayah, err := s.ayah.FindById(&id); err == nil {
-			b.Ayah = ayah
-		}
-	case model.BookmarkHadith:
-		if hadith, err := s.hadith.FindById(&id); err == nil {
-			b.Hadith = hadith
+	var ayahIDs, hadithIDs []int
+	for _, b := range bookmarks {
+		switch b.RefType {
+		case model.BookmarkAyah:
+			ayahIDs = append(ayahIDs, b.RefID)
+		case model.BookmarkHadith:
+			hadithIDs = append(hadithIDs, b.RefID)
 		}
 	}
+
+	ayahMap := make(map[int]*model.Ayah)
+	if len(ayahIDs) > 0 {
+		if ayahs, err := s.ayah.FindManyByIds(ayahIDs); err == nil {
+			for i := range ayahs {
+				ayahMap[*ayahs[i].ID] = &ayahs[i]
+			}
+		}
+	}
+
+	hadithMap := make(map[int]*model.Hadith)
+	if len(hadithIDs) > 0 {
+		if hadiths, err := s.hadith.FindManyByIds(hadithIDs); err == nil {
+			for i := range hadiths {
+				hadithMap[*hadiths[i].ID] = &hadiths[i]
+			}
+		}
+	}
+
+	for i := range bookmarks {
+		switch bookmarks[i].RefType {
+		case model.BookmarkAyah:
+			bookmarks[i].Ayah = ayahMap[bookmarks[i].RefID]
+		case model.BookmarkHadith:
+			bookmarks[i].Hadith = hadithMap[bookmarks[i].RefID]
+		}
+	}
+
+	return bookmarks, nil
 }
 
 func (s *bookmarkService) Delete(id, userID uuid.UUID) error {

@@ -11,6 +11,7 @@ type AyahRepository interface {
 	Save(*model.Ayah) (*model.Ayah, error)
 	FindAll(*fiber.Ctx) *paginate.Page
 	FindById(*int) (*model.Ayah, error)
+	FindManyByIds(ids []int) ([]model.Ayah, error)
 	FindByNumber(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindBySurahNumber(*fiber.Ctx, *int) (*paginate.Page, error)
 	UpdateById(*int, *model.Ayah) (*model.Ayah, error)
@@ -51,6 +52,13 @@ func (c *ayahRepo) FindById(id *int) (*model.Ayah, error) {
 	return Ayah, nil
 }
 
+func (c *ayahRepo) FindManyByIds(ids []int) ([]model.Ayah, error) {
+	var ayahs []model.Ayah
+	err := c.db.Joins("Translation").Joins("Surah").Joins("Surah.Translation").
+		Where("ayah.id IN ?", ids).Find(&ayahs).Error
+	return ayahs, err
+}
+
 func (c *ayahRepo) FindByNumber(ctx *fiber.Ctx, number *int) (*paginate.Page, error) {
 	var ayahs []*model.Ayah
 	mod := c.db.Model(&model.Ayah{}).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Where(`"ayah".number = ?`, number).Order("id")
@@ -83,15 +91,13 @@ func (c *ayahRepo) DeleteById(id *int, scoped *string) error {
 		return err
 	}
 	if scoped != nil && *scoped == "hard" {
-		c.db.Unscoped().Delete(&model.Ayah{}, id)
-	} else {
-		c.db.Delete(&model.Ayah{}, id)
+		return c.db.Unscoped().Delete(&model.Ayah{}, id).Error
 	}
-	return nil
+	return c.db.Delete(&model.Ayah{}, id).Error
 }
 
 func (c *ayahRepo) Count() (*int64, error) {
 	var count int64
-	c.db.Table("ayah").Select("id").Count(&count)
+	c.db.Table("ayah").Count(&count)
 	return &count, nil
 }

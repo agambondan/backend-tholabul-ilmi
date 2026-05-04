@@ -52,6 +52,7 @@ func DBConnectAndSeedTest(database ...string) *gorm.DB {
 // DBSeedTest seed sample data
 func DBSeedTest(db *gorm.DB) error {
 	return db.Transaction(func(tx *gorm.DB) error {
+		migrations.DeduplicateSeedData(tx)
 		seeds := migrations.DataSeeds(db)
 		for i := range seeds {
 			if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(seeds[i]).Error; nil != err {
@@ -59,6 +60,6 @@ func DBSeedTest(db *gorm.DB) error {
 			}
 		}
 
-		return nil
+		return migrations.UpsertSeedData(tx)
 	})
 }

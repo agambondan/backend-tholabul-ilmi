@@ -37,16 +37,74 @@ func (c *bookRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	var books []model.Book
 	mod := c.db.Model(&model.Book{}).Joins("Translation").Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&books)
-	for i, v := range books {
-		var count int64
-		c.db.Table("hadith").Select("id").Where("book_id = ?", v.ID).Count(&count)
-		books[i].Count = &count
-		c.db.Joins("Translation").
-			Joins(`JOIN book_themes bt ON bt.theme_id = theme.id AND bt.book_id = ?`, v.ID).
-			Find(&books[i].Theme)
+
+	if len(books) == 0 {
+		page.Items = books
+		return &page
+	}
+
+	bookIDs := make([]int, 0, len(books))
+	for _, b := range books {
+		if b.ID != nil {
+			bookIDs = append(bookIDs, *b.ID)
+		}
+	}
+
+	type countRow struct {
+		BookID int   `gorm:"column:book_id"`
+		Count  int64 `gorm:"column:count"`
+	}
+	var countRows []countRow
+	c.db.Table("hadith").Select("book_id, COUNT(*) as count").
+		Where("book_id IN ?", bookIDs).Group("book_id").Scan(&countRows)
+	countMap := make(map[int]int64, len(countRows))
+	for _, r := range countRows {
+		countMap[r.BookID] = r.Count
+	}
+
+	type bookThemeRow struct {
+		BookID  int `gorm:"column:book_id"`
+		ThemeID int `gorm:"column:theme_id"`
+	}
+	var btRows []bookThemeRow
+	c.db.Table("book_themes").Select("book_id, theme_id").
+		Where("book_id IN ?", bookIDs).Scan(&btRows)
+
+	themeIDSet := make(map[int]struct{})
+	for _, bt := range btRows {
+		themeIDSet[bt.ThemeID] = struct{}{}
+	}
+	themeIDs := make([]int, 0, len(themeIDSet))
+	for id := range themeIDSet {
+		themeIDs = append(themeIDs, id)
+	}
+
+	themeMap := make(map[int]model.Theme)
+	if len(themeIDs) > 0 {
+		var themes []model.Theme
+		c.db.Joins("Translation").Where(`"theme".id IN ?`, themeIDs).Find(&themes)
+		for _, t := range themes {
+			if t.ID != nil {
+				themeMap[*t.ID] = t
+			}
+		}
+	}
+
+	bookThemeMap := make(map[int][]model.Theme)
+	for _, bt := range btRows {
+		if t, ok := themeMap[bt.ThemeID]; ok {
+			bookThemeMap[bt.BookID] = append(bookThemeMap[bt.BookID], t)
+		}
+	}
+
+	for i := range books {
+		if books[i].ID != nil {
+			cnt := countMap[*books[i].ID]
+			books[i].Count = &cnt
+			books[i].Theme = bookThemeMap[*books[i].ID]
+		}
 	}
 	page.Items = books
-
 	return &page
 }
 
@@ -56,7 +114,7 @@ func (c *bookRepo) FindById(id *int) (*model.Book, error) {
 		First(&book, `book.id = ?`, id).Error; err != nil {
 		return nil, err
 	}
-	c.db.Joins(`JOIN book_themes "bt" on bt.theme_id = theme.id AND bt.book_id = ?`, book.ID).Joins("Theme.Translation").Find(&book.Theme)
+	c.db.Joins(`JOIN book_themes "bt" on bt.theme_id = theme.id AND bt.book_id = ?`, book.ID).Joins("Translation").Find(&book.Theme)
 	return book, nil
 }
 
@@ -78,6 +136,9 @@ func (c *bookRepo) FindBySlug(ctx *fiber.Ctx, slug *string) (*model.Book, error)
 		Order("number").Find(&hadiths)
 
 	for _, v := range hadiths {
+		if v.ThemeID == nil {
+			continue
+		}
 		var theme model.Theme
 		c.db.Joins("Translation").Where(`"theme".id = ?`, v.ThemeID).First(&theme)
 		book.Theme = append(book.Theme, theme)
@@ -101,15 +162,13 @@ func (c *bookRepo) DeleteById(id *int, scoped *string) error {
 		return err
 	}
 	if scoped != nil && *scoped == "hard" {
-		c.db.Unscoped().Delete(&model.Book{}, id)
-	} else {
-		c.db.Delete(&model.Book{}, id)
+		return c.db.Unscoped().Delete(&model.Book{}, id).Error
 	}
-	return nil
+	return c.db.Delete(&model.Book{}, id).Error
 }
 
 func (c *bookRepo) Count() (*int64, error) {
 	var count int64
-	c.db.Table("book").Select("id").Count(&count)
+	c.db.Table("book").Count(&count)
 	return &count, nil
 }

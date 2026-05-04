@@ -30,7 +30,7 @@ func (r *bookmarkRepo) Save(b *model.Bookmark) (*model.Bookmark, error) {
 
 func (r *bookmarkRepo) FindByUserID(userID uuid.UUID) ([]model.Bookmark, error) {
 	var bookmarks []model.Bookmark
-	err := r.db.Where("user_id = ?", userID).Order("created_at desc").Find(&bookmarks).Error
+	err := r.db.Where("user_id = ?", userID).Order("created_at desc").Limit(200).Find(&bookmarks).Error
 	return bookmarks, err
 }
 

@@ -7,6 +7,7 @@ import (
 	"text/template"
 
 	emailverifier "github.com/AfterShip/email-verifier"
+	"github.com/spf13/viper"
 	"gopkg.in/gomail.v2"
 )
 
@@ -36,6 +37,39 @@ func SendEmail(to, subject, templateFile string, cc map[string]string, attach []
 	return nil
 }
 
+// SendHTMLEmail sends a raw HTML email body.
+func SendHTMLEmail(to, subject, body string) error {
+	smtpHost := viper.GetString("SMTP_HOST")
+	if smtpHost == "" {
+		smtpHost = ConfigSmtpHost
+	}
+	smtpPort := viper.GetInt("SMTP_PORT")
+	if smtpPort == 0 {
+		smtpPort = ConfigSmtpPort
+	}
+	smtpUser := viper.GetString("SMTP_USER")
+	if smtpUser == "" {
+		smtpUser = ConfigAuthEmail
+	}
+	smtpPass := viper.GetString("SMTP_PASS")
+	if smtpPass == "" {
+		smtpPass = ConfigAuthPassword
+	}
+	senderName := viper.GetString("SMTP_SENDER")
+	if senderName == "" {
+		senderName = ConfigSenderName
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", senderName)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", body)
+
+	d := gomail.NewDialer(smtpHost, smtpPort, smtpUser, smtpPass)
+	return d.DialAndSend(m)
+}
+
 // ParseTemplate Parse Template Html
 func ParseTemplate(templateFileName string, data interface{}) (string, error) {
 	t, err := template.ParseFiles(templateFileName)
@@ -48,6 +82,51 @@ func ParseTemplate(templateFileName string, data interface{}) (string, error) {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+// SendPasswordResetEmail sends a reset-password link to the given address.
+func SendPasswordResetEmail(toEmail, resetToken string) error {
+	appURL := viper.GetString("APP_URL")
+	if appURL == "" {
+		appURL = "https://tholabul-ilmi.app"
+	}
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", appURL, resetToken)
+
+	smtpHost := viper.GetString("SMTP_HOST")
+	if smtpHost == "" {
+		smtpHost = ConfigSmtpHost
+	}
+	smtpPort := viper.GetInt("SMTP_PORT")
+	if smtpPort == 0 {
+		smtpPort = ConfigSmtpPort
+	}
+	smtpUser := viper.GetString("SMTP_USER")
+	if smtpUser == "" {
+		smtpUser = ConfigAuthEmail
+	}
+	smtpPass := viper.GetString("SMTP_PASS")
+	if smtpPass == "" {
+		smtpPass = ConfigAuthPassword
+	}
+	senderName := viper.GetString("SMTP_SENDER")
+	if senderName == "" {
+		senderName = ConfigSenderName
+	}
+
+	body := fmt.Sprintf(`<p>Assalamu'alaikum,</p>
+<p>Kami menerima permintaan reset password untuk akun Thalabul Ilmi Anda.</p>
+<p>Klik link berikut untuk membuat password baru (berlaku 1 jam):</p>
+<p><a href="%s">%s</a></p>
+<p>Jika Anda tidak meminta reset password, abaikan email ini.</p>`, resetLink, resetLink)
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", senderName)
+	m.SetHeader("To", toEmail)
+	m.SetHeader("Subject", "Reset Password — Thalabul Ilmi")
+	m.SetBody("text/html", body)
+
+	d := gomail.NewDialer(smtpHost, smtpPort, smtpUser, smtpPass)
+	return d.DialAndSend(m)
 }
 
 // CheckEmailExists is Check Email Exists or not

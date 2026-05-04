@@ -1,16 +1,16 @@
 package model
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type BaseTime struct {
-	CreatedAt *time.Time    `json:"-"`
-	UpdatedAt *time.Time    `json:"-"`
-	DeletedAt *sql.NullTime `json:"-" gorm:"index"`
+	CreatedAt *time.Time     `json:"-"`
+	UpdatedAt *time.Time     `json:"-"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 type BaseID struct {

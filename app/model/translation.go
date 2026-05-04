@@ -1,5 +1,7 @@
 package model
 
+import "strings"
+
 type Translation struct {
 	BaseID
 	DescriptionIdn *string `json:"description_idn,omitempty" gorm:"type:text"`
@@ -13,4 +15,29 @@ type Translation struct {
 	ArWaqaf        *string `json:"ar_waqaf,omitempty" gorm:"type:text"`
 	ArFormat       *string `json:"ar_format,omitempty" gorm:"type:text"`
 	ArHtml         *string `json:"ar_html,omitempty" gorm:"type:text"`
+}
+
+// FilterByLang nils out translation fields not matching the requested language.
+// Arabic source fields (Ar, ArWaqaf, ArFormat, ArHtml) are always kept.
+func (t *Translation) FilterByLang(lang string) {
+	if t == nil {
+		return
+	}
+	switch strings.ToLower(lang) {
+	case "en":
+		t.Idn = nil
+		t.LatinIdn = nil
+		t.DescriptionIdn = nil
+	case "ar":
+		t.Idn = nil
+		t.LatinIdn = nil
+		t.DescriptionIdn = nil
+		t.En = nil
+		t.LatinEn = nil
+		t.DescriptionEn = nil
+	default: // "idn"
+		t.En = nil
+		t.LatinEn = nil
+		t.DescriptionEn = nil
+	}
 }

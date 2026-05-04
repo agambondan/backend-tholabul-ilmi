@@ -91,7 +91,6 @@ func Send(c *fiber.Ctx, status int, responses ...interface{}) error {
 						// Namespace: err.Namespace(),
 						Path:      field,
 						Type:      fieldType,
-						Value:     err.Value(),
 						Validator: err.Tag(),
 					}
 
@@ -142,6 +141,14 @@ func ErrorUnauthorized(c *fiber.Ctx, message ...string) error {
 	}
 
 	return Send(c, 401, message[0])
+}
+
+// ErrorForbidden send http 403 forbidden
+func ErrorForbidden(c *fiber.Ctx, message ...string) error {
+	if len(message) == 0 {
+		message = append(message, "Forbidden")
+	}
+	return Send(c, 403, message[0])
 }
 
 // ErrorNotFound send http 404 not found

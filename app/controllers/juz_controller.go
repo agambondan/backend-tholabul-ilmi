@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"log"
 	"net/url"
 	"strconv"
 
@@ -62,7 +61,6 @@ func (c *juzController) FindBySurahName(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorBadRequest(ctx, err)
 	}
-	log.Println(decodedString)
 	data, err := c.juz.FindBySurahName(ctx, lib.Strptr(decodedString))
 	if err != nil {
 		return lib.ErrorNotFound(ctx)

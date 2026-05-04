@@ -13,25 +13,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// PasswordEncrypt Password Encrypt
-func PasswordEncrypt(plain, salt, key string, cost ...int) string {
-	if len(cost) == 0 {
-		cost = append(cost, bcrypt.DefaultCost)
+// PasswordEncrypt hashes a plain password with bcrypt.
+func PasswordEncrypt(plain string, cost ...int) string {
+	c := bcrypt.DefaultCost
+	if len(cost) > 0 {
+		c = cost[0]
 	}
-	password := plain + "//" + salt + "//" + key
-	hashed, err := bcrypt.GenerateFromPassword([]byte(password), cost[0])
-	encoded := ""
-	if nil == err {
-		encoded = string(hashed)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(plain), c)
+	if err != nil {
+		return ""
 	}
-
-	return encoded
+	return string(hashed)
 }
 
-// PasswordCompare Password Compare
-func PasswordCompare(encrypted, plain, salt, key string) bool {
-	password := plain + "//" + salt + "//" + key
-	return nil == bcrypt.CompareHashAndPassword([]byte(encrypted), []byte(password))
+// PasswordCompare checks a plain password against a bcrypt hash.
+func PasswordCompare(encrypted, plain string) bool {
+	return nil == bcrypt.CompareHashAndPassword([]byte(encrypted), []byte(plain))
 }
 
 // GeneratePassword for generate random password

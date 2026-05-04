@@ -1,14 +1,19 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
+	"log/slog"
+	"os"
+	"time"
 
 	"github.com/agambondan/islamic-explorer/app/config"
 	"github.com/agambondan/islamic-explorer/app/db"
 	"github.com/agambondan/islamic-explorer/app/http"
 	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/repository"
+	service "github.com/agambondan/islamic-explorer/app/services"
 	"github.com/gofiber/fiber/v2"
 	"github.com/spf13/viper"
 )
@@ -26,12 +31,14 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	// it shows your line code while print
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	if viper.GetString("ENVIRONMENT") == "production" {
+		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	} else {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
+	}
 	environment := config.Environment{}
 	env := environment.Init()
-
-	log.Println(lib.ConvertJsonToStr(env))
 
 	redisDB, err := db.NewRedisDB(env)
 	if err != nil {
@@ -57,8 +64,12 @@ func main() {
 		panic(err)
 	}
 
+	services := service.NewServices(newRepositories)
+	services.Notification.StartReminderScheduler(context.Background(), time.Minute)
+
 	app := fiber.New(fiber.Config{
-		Prefork: viper.GetString("PREFORK") == "true",
+		Prefork:   viper.GetString("PREFORK") == "true",
+		BodyLimit: 4 * 1024 * 1024, // 4 MB
 	})
 
 	http.Handle(app, newRepositories)

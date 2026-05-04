@@ -27,10 +27,31 @@ func (c *searchController) Search(ctx *fiber.Ctx) error {
 	}
 	searchType := ctx.Query("type", "all")
 	limit, _ := strconv.Atoi(ctx.Query("limit", "20"))
+	lang := lib.GetPreferredLang(ctx)
 
 	result, err := c.svc.Search(q, searchType, limit)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+
+	for i := range result.Ayahs {
+		result.Ayahs[i].Translation.FilterByLang(lang)
+		if result.Ayahs[i].Surah != nil {
+			result.Ayahs[i].Surah.Translation.FilterByLang(lang)
+		}
+	}
+	for i := range result.Hadiths {
+		result.Hadiths[i].Translation.FilterByLang(lang)
+		if result.Hadiths[i].Book != nil {
+			result.Hadiths[i].Book.Translation.FilterByLang(lang)
+		}
+		if result.Hadiths[i].Theme != nil {
+			result.Hadiths[i].Theme.Translation.FilterByLang(lang)
+		}
+		if result.Hadiths[i].Chapter != nil {
+			result.Hadiths[i].Chapter.Translation.FilterByLang(lang)
+		}
+	}
+
 	return lib.OK(ctx, result)
 }

@@ -69,19 +69,31 @@ func (c *chapterRepo) FindByBookSlugThemeId(ctx *fiber.Ctx, bookSlug *string, th
 		Order("number").Find(&hadiths)
 
 	for _, v := range hadiths {
-		chaptersId = append(chaptersId, *v.ChapterID)
+		if v.ChapterID != nil {
+			chaptersId = append(chaptersId, *v.ChapterID)
+		}
 	}
 
-	mod := c.db.Model(&model.Chapter{}).Joins("Translation").Where("chapter.id IN ?", chaptersId)
+	if len(chaptersId) == 0 {
+		empty := c.pg.With(c.db.Model(&model.Chapter{}).Where("1 = 0")).Request(ctx.Request()).Response(&chapters)
+		return &empty, nil
+	}
+
+	mod := c.db.Model(&model.Chapter{}).
+		Joins("Theme").Joins("Theme.Translation").
+		Joins("Translation").Where("chapter.id IN ?", chaptersId)
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&chapters)
 
-	newChapters := []model.Chapter{}
-	for _, v := range chaptersId {
-		for _, v1 := range chapters {
-			if v == *v1.ID {
-				newChapters = append(newChapters, v1)
-				break
-			}
+	chapterByID := make(map[int]model.Chapter, len(chapters))
+	for _, v1 := range chapters {
+		if v1.ID != nil {
+			chapterByID[*v1.ID] = v1
+		}
+	}
+	newChapters := make([]model.Chapter, 0, len(chaptersId))
+	for _, id := range chaptersId {
+		if ch, ok := chapterByID[id]; ok {
+			newChapters = append(newChapters, ch)
 		}
 	}
 	page.Items = newChapters
@@ -115,15 +127,13 @@ func (c *chapterRepo) DeleteById(id *int, scoped *string) error {
 		return err
 	}
 	if scoped != nil && *scoped == "hard" {
-		c.db.Unscoped().Delete(&model.Chapter{}, id)
-	} else {
-		c.db.Delete(&model.Chapter{}, id)
+		return c.db.Unscoped().Delete(&model.Chapter{}, id).Error
 	}
-	return nil
+	return c.db.Delete(&model.Chapter{}, id).Error
 }
 
 func (c *chapterRepo) Count() (*int64, error) {
 	var count int64
-	c.db.Table("chapter").Select("id").Count(&count)
+	c.db.Table("chapter").Count(&count)
 	return &count, nil
 }

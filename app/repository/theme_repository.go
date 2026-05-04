@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"sync"
-
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/morkid/paginate"
@@ -37,38 +35,80 @@ func (c *themeRepo) Save(Theme *model.Theme) (*model.Theme, error) {
 
 func (c *themeRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	var themes []*model.Theme
-	mod := c.db.Model(&model.Theme{}).Joins("Translation").
-		Preload("Media").
-		// Preload("Chapters").
-		Order("id")
+	mod := c.db.Model(&model.Theme{}).Joins("Translation").Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&themes)
 
-	var wg sync.WaitGroup
-	wg.Add(len(themes))
-
-	for _, v := range themes {
-		go func(theme *model.Theme) {
-			defer wg.Done()
-			var totalHadith int64
-			var bookIDs []*int
-			c.db.Model(&model.Hadith{}).Joins("Theme").
-				Joins("Theme.Translation").
-				Where(`"Theme__Translation".idn = ?`, theme.Translation.Idn).
-				Count(&totalHadith).
-				// Pluck(`"hadith".id`, &totalHadith).
-				Distinct("book_id").Pluck("book_id", &bookIDs)
-			theme.TotalHadith = &totalHadith
-			for _, v := range bookIDs {
-				theme.Book = append(theme.Book, model.Book{
-					BaseID: model.BaseID{
-						ID: v,
-					},
-				})
-			}
-		}(v)
+	if len(themes) == 0 {
+		return &page
 	}
 
-	wg.Wait()
+	themeIDs := make([]int, 0, len(themes))
+	for _, t := range themes {
+		if t.ID != nil {
+			themeIDs = append(themeIDs, *t.ID)
+		}
+	}
+
+	// batch hadith count per theme — O(1) query
+	type themeCount struct {
+		ThemeID int   `gorm:"column:theme_id"`
+		Total   int64 `gorm:"column:total"`
+	}
+	var counts []themeCount
+	c.db.Table("hadith").
+		Select("theme_id, COUNT(*) as total").
+		Where("theme_id IN ?", themeIDs).
+		Group("theme_id").Scan(&counts)
+	countMap := make(map[int]int64, len(counts))
+	for _, ct := range counts {
+		countMap[ct.ThemeID] = ct.Total
+	}
+
+	// batch distinct book_ids per theme — O(1) query
+	type themeBook struct {
+		ThemeID int `gorm:"column:theme_id"`
+		BookID  int `gorm:"column:book_id"`
+	}
+	var themeBooks []themeBook
+	c.db.Table("hadith").
+		Select("DISTINCT theme_id, book_id").
+		Where("theme_id IN ? AND book_id IS NOT NULL", themeIDs).
+		Scan(&themeBooks)
+
+	bookIDSet := make(map[int]struct{})
+	for _, tb := range themeBooks {
+		bookIDSet[tb.BookID] = struct{}{}
+	}
+	bookIDs := make([]int, 0, len(bookIDSet))
+	for id := range bookIDSet {
+		bookIDs = append(bookIDs, id)
+	}
+
+	bookMap := make(map[int]model.Book)
+	if len(bookIDs) > 0 {
+		var books []model.Book
+		c.db.Joins("Translation").Where("book.id IN ?", bookIDs).Order("book.id").Find(&books)
+		for _, b := range books {
+			if b.ID != nil {
+				bookMap[*b.ID] = b
+			}
+		}
+	}
+
+	themeBookMap := make(map[int][]model.Book)
+	for _, tb := range themeBooks {
+		if b, ok := bookMap[tb.BookID]; ok {
+			themeBookMap[tb.ThemeID] = append(themeBookMap[tb.ThemeID], b)
+		}
+	}
+
+	for _, t := range themes {
+		if t.ID != nil {
+			total := countMap[*t.ID]
+			t.TotalHadith = &total
+			t.Book = themeBookMap[*t.ID]
+		}
+	}
 
 	return &page
 }
@@ -109,15 +149,13 @@ func (c *themeRepo) DeleteById(id *int, scoped *string) error {
 		return err
 	}
 	if scoped != nil && *scoped == "hard" {
-		c.db.Unscoped().Delete(&model.Theme{}, id)
-	} else {
-		c.db.Delete(&model.Theme{}, id)
+		return c.db.Unscoped().Delete(&model.Theme{}, id).Error
 	}
-	return nil
+	return c.db.Delete(&model.Theme{}, id).Error
 }
 
 func (c *themeRepo) Count() (*int64, error) {
 	var count int64
-	c.db.Table("theme").Select("id").Count(&count)
+	c.db.Table("theme").Count(&count)
 	return &count, nil
 }

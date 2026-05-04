@@ -11,6 +11,7 @@ type HadithRepository interface {
 	Save(*model.Hadith) (*model.Hadith, error)
 	FindAll(*fiber.Ctx) *paginate.Page
 	FindById(*int) (*model.Hadith, error)
+	FindManyByIds(ids []int) ([]model.Hadith, error)
 	FindByBookSlug(*fiber.Ctx, *string) (*paginate.Page, error)
 	FindByThemeId(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindByThemeName(*fiber.Ctx, *string) (*paginate.Page, error)
@@ -63,6 +64,12 @@ func (c *hadithRepo) FindById(id *int) (*model.Hadith, error) {
 		return nil, err
 	}
 	return hadith, nil
+}
+
+func (c *hadithRepo) FindManyByIds(ids []int) ([]model.Hadith, error) {
+	var hadiths []model.Hadith
+	err := c.withRelations(c.db).Where("hadith.id IN ?", ids).Find(&hadiths).Error
+	return hadiths, err
 }
 
 func (c *hadithRepo) FindByBookSlug(ctx *fiber.Ctx, bookSlug *string) (*paginate.Page, error) {
@@ -159,15 +166,13 @@ func (c *hadithRepo) DeleteById(id *int, scoped *string) error {
 		return err
 	}
 	if scoped != nil && *scoped == "hard" {
-		c.db.Unscoped().Delete(&model.Hadith{}, id)
-	} else {
-		c.db.Delete(&model.Hadith{}, id)
+		return c.db.Unscoped().Delete(&model.Hadith{}, id).Error
 	}
-	return nil
+	return c.db.Delete(&model.Hadith{}, id).Error
 }
 
 func (c *hadithRepo) Count() (*int64, error) {
 	var count int64
-	c.db.Table("hadith").Select("id").Count(&count)
+	c.db.Table("hadith").Count(&count)
 	return &count, nil
 }

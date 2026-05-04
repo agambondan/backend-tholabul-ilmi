@@ -3,23 +3,16 @@ package lib
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gofiber/fiber/v2"
 	"github.com/spf13/viper"
 )
 
 func TokenValid(c *fiber.Ctx) error {
-	token, err := VerifyToken(c)
-	if err != nil {
-		return err
-	}
-	if !token.Valid {
-		return err
-	}
-	return nil
+	_, err := VerifyToken(c)
+	return err
 }
 
 func VerifyToken(c *fiber.Ctx) (*jwt.Token, error) {
@@ -43,7 +36,7 @@ func VerifyTokenCookies(c *fiber.Ctx) (*jwt.Token, error) {
 func VerifyTokenHeaders(c *fiber.Ctx) (*jwt.Token, error) {
 	bearerToken := c.Get("Authorization")
 	tokens := strings.Split(bearerToken, " ")
-	if len(tokens) != 0 {
+	if len(tokens) == 2 {
 		return extractToken(tokens[1])
 	}
 	return nil, errors.New("token is empty")
@@ -71,14 +64,30 @@ func extractToken(reqToken string) (*jwt.Token, error) {
 	return token, nil
 }
 
+// GetPreferredLang reads preferred_lang from JWT claims.
+// Falls back to ?lang= query param, then defaults to "idn".
+func GetPreferredLang(c *fiber.Ctx) string {
+	token, err := VerifyToken(c)
+	if err == nil {
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			if lang, ok := claims["preferred_lang"].(string); ok && lang != "" {
+				return lang
+			}
+		}
+	}
+	if lang := c.Query("lang"); lang != "" {
+		return lang
+	}
+	return "idn"
+}
+
 func ExtractToken(c *fiber.Ctx) (map[string]interface{}, error) {
-	token, err := VerifyTokenHeaders(c)
+	token, err := VerifyToken(c)
 	if err != nil {
 		return nil, err
 	}
 	claims, ok := token.Claims.(jwt.MapClaims)
-	log.Println(claims)
-	if ok && token.Valid {
+	if ok {
 		return claims, nil
 	}
 	return nil, errors.New("invalid token")

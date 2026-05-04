@@ -11,6 +11,7 @@ type HafalanRepository interface {
 	Upsert(*model.HafalanProgress) (*model.HafalanProgress, error)
 	FindByUserID(uuid.UUID) ([]model.HafalanProgress, error)
 	FindByUserIDAndSurahID(uuid.UUID, int) (*model.HafalanProgress, error)
+	FindMemorizedSurahIDs(uuid.UUID) ([]int, error)
 	Summary(uuid.UUID) (*model.HafalanSummary, error)
 }
 
@@ -37,6 +38,14 @@ func (r *hafalanRepo) FindByUserID(userID uuid.UUID) ([]model.HafalanProgress, e
 		Order("surah_id asc").
 		Find(&list).Error
 	return list, err
+}
+
+func (r *hafalanRepo) FindMemorizedSurahIDs(userID uuid.UUID) ([]int, error) {
+	var ids []int
+	err := r.db.Model(&model.HafalanProgress{}).
+		Where("user_id = ? AND status = ?", userID, model.HafalanMemorized).
+		Pluck("surah_id", &ids).Error
+	return ids, err
 }
 
 func (r *hafalanRepo) FindByUserIDAndSurahID(userID uuid.UUID, surahID int) (*model.HafalanProgress, error) {
