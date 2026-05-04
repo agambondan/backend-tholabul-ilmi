@@ -69,7 +69,7 @@ const NotesPage = () => {
     };
 
     const remove = (id) => {
-        if (!confirm('Hapus catatan ini?')) return;
+        if (!confirm(t('notes.delete_confirm'))) return;
         persist(notes.filter((n) => n.id !== id));
     };
 
@@ -80,7 +80,7 @@ const NotesPage = () => {
     );
 
     return (
-        <div className='px-4 py-6 max-w-2xl mx-auto'>
+        <div className='px-4 py-6'>
             <div className='flex items-center justify-between mb-4'>
                 <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
                     {t('notes.title')}

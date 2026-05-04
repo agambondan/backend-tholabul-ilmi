@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsChevronDown, BsChevronUp, BsSearch } from 'react-icons/bs';
 
@@ -11,8 +12,11 @@ const FALLBACK = [
         id: 'f1',
         category: 'sholat',
         title: 'Syarat Sah Sholat',
+        title_en: 'Valid Prayer Conditions',
         content:
             'Syarat sah sholat adalah: suci dari hadats besar dan kecil, menutup aurat, menghadap kiblat, masuk waktu sholat, dan niat.',
+        content_en:
+            'The valid conditions of prayer are purification from major and minor ritual impurity, covering the awrah, facing the qiblah, entering the prayer time, and intention.',
         dalil: 'أَقِيمُوا الصَّلَاةَ',
         source: 'QS. Al-Baqarah: 43',
     },
@@ -20,8 +24,11 @@ const FALLBACK = [
         id: 'f2',
         category: 'thaharah',
         title: 'Tata Cara Wudhu',
+        title_en: 'How to Perform Wudu',
         content:
             'Wudhu dimulai dengan niat, membasuh muka, kedua tangan hingga siku, mengusap sebagian kepala, membasuh kedua kaki hingga mata kaki, dengan tertib.',
+        content_en:
+            'Wudu begins with intention, washing the face, washing both arms to the elbows, wiping part of the head, washing both feet to the ankles, and doing it in order.',
         dalil: '',
         source: 'HR. Bukhari',
     },
@@ -29,8 +36,11 @@ const FALLBACK = [
         id: 'f3',
         category: 'puasa',
         title: 'Hal yang Membatalkan Puasa',
+        title_en: 'Things That Break the Fast',
         content:
             "Yang membatalkan puasa: makan dan minum dengan sengaja, jima', muntah dengan sengaja, haid/nifas, hilang akal/murtad.",
+        content_en:
+            'Things that break the fast include intentional eating or drinking, intercourse, intentional vomiting, menstruation or postpartum bleeding, loss of sanity, and apostasy.',
         dalil: '',
         source: 'Fiqhus Sunnah',
     },
@@ -43,7 +53,7 @@ const toStr = (v) => {
 };
 
 export default function DashboardFiqhPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [items, setItems] = useState(FALLBACK);
     const [cat, setCat] = useState('');
     const [search, setSearch] = useState('');
@@ -62,7 +72,16 @@ export default function DashboardFiqhPage() {
     const filtered = items.filter(
         (i) =>
             (!cat || toStr(i.category) === cat) &&
-            (!search || i.title?.toLowerCase().includes(search.toLowerCase())),
+            (!search ||
+                [
+                    getLocalizedField(i, 'title', lang),
+                    getLocalizedField(i, 'content', lang),
+                    toStr(i.category),
+                ]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase()
+                    .includes(search.toLowerCase())),
     );
 
     return (
@@ -70,7 +89,7 @@ export default function DashboardFiqhPage() {
             <div className='mb-6'>
                 <h1 className='text-xl font-bold text-gray-900 dark:text-white'>{t('fiqh.title')}</h1>
                 <p className='text-sm text-gray-500 dark:text-gray-400 mt-0.5'>
-                    {items.length} materi fiqh
+                    {items.length} {t('fiqh.material_unit')}
                 </p>
             </div>
 
@@ -117,7 +136,7 @@ export default function DashboardFiqhPage() {
                                         {toStr(item.category)}
                                     </span>
                                     <span className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </span>
                                 </div>
                                 {open ? (
@@ -129,7 +148,7 @@ export default function DashboardFiqhPage() {
                             {open && (
                                 <div className='px-4 pb-4 border-t border-gray-50 dark:border-slate-700 pt-3 space-y-2'>
                                     <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
-                                        {toStr(item.content)}
+                                        {getLocalizedField(item, 'content', lang)}
                                     </p>
                                     {item.dalil && (
                                         <p

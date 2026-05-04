@@ -5,61 +5,44 @@ import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 import { ImBook } from 'react-icons/im';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 
 const FALLBACK = [
-    {
-        slug: 'bukhari',
-        name: 'Shahih Bukhari',
-        description: 'Kitab hadith paling shahih',
-        total: 7563,
-    },
-    {
-        slug: 'muslim',
-        name: 'Shahih Muslim',
-        description: 'Salah satu dari dua kitab paling shahih',
-        total: 5362,
-    },
-    {
-        slug: 'abu-daud',
-        name: 'Sunan Abu Daud',
-        description: 'Memuat hadith hukum',
-        total: 5274,
-    },
-    {
-        slug: 'tirmidzi',
-        name: 'Jami At-Tirmidzi',
-        description: 'Memuat hadith dengan kualitas beragam',
-        total: 3956,
-    },
-    {
-        slug: 'nasai',
-        name: "Sunan An-Nasa'i",
-        description: 'Terkenal dengan seleksi ketat',
-        total: 5761,
-    },
-    {
-        slug: 'ibnu-majah',
-        name: 'Sunan Ibnu Majah',
-        description: 'Kitab sunan keenam',
-        total: 4341,
-    },
+    { slug: 'bukhari', name: 'Shahih Bukhari', total: 7563 },
+    { slug: 'muslim', name: 'Shahih Muslim', total: 5362 },
+    { slug: 'abudaud', name: 'Sunan Abu Daud', total: 5274 },
+    { slug: 'tirmidzi', name: 'Jami At-Tirmidzi', total: 3956 },
+    { slug: 'nasai', name: "Sunan An-Nasa'i", total: 5761 },
+    { slug: 'ibnumajah', name: 'Sunan Ibnu Majah', total: 4341 },
 ];
 
 export default function DashboardHadithPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [books, setBooks] = useState(FALLBACK);
     const [search, setSearch] = useState('');
     const formRef = useRef(null);
 
     useEffect(() => {
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/hadith/books`)
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/books`)
             .then((r) => r.json())
             .then((d) => {
                 const arr = d?.items ?? d ?? [];
-                if (Array.isArray(arr) && arr.length > 0) setBooks(arr);
+                if (Array.isArray(arr) && arr.length > 0) {
+                    setBooks(
+                        arr.map((b) => ({
+                            slug: b.slug,
+                            name: getLocalizedTranslation(b.translation, lang) || b.name || b.slug,
+                            description:
+                                getLocalizedTranslation(b.description, lang) ||
+                                getLocalizedTranslation(b.summary, lang) ||
+                                b.description,
+                            total: b.count ?? b.total,
+                        })),
+                    );
+                }
             })
             .catch(() => {});
-    }, []);
+    }, [lang]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -108,12 +91,14 @@ export default function DashboardHadithPage() {
                             <p className='text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors truncate'>
                                 {book.name}
                             </p>
-                            <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2'>
-                                {book.description}
-                            </p>
+                            {book.description && (
+                                <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2'>
+                                    {book.description}
+                                </p>
+                            )}
                             {book.total != null && (
                                 <span className='inline-block mt-1.5 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded text-xs font-medium'>
-                                    {book.total.toLocaleString('id-ID')} {t('hadith.unit')}
+                                    {book.total.toLocaleString(lang === 'EN' ? 'en-US' : 'id-ID')} {t('hadith.unit')}
                                 </span>
                             )}
                         </div>

@@ -4,14 +4,14 @@ import { useLocale } from '@/context/Locale';
 import { useEffect, useState } from 'react';
 import { BsCheckCircleFill, BsCircle } from 'react-icons/bs';
 
-const AMALAN = [
-    'Sholat Subuh Berjamaah',
-    'Sholat Dhuha',
-    'Sholat Tahajud',
-    'Baca Al-Quran',
-    'Dzikir Pagi',
-    'Dzikir Petang',
-    'Puasa Sunnah',
+const AMALAN_KEYS = [
+    'amalan.item.subuh_jamaah',
+    'amalan.item.dhuha',
+    'amalan.item.tahajud',
+    'amalan.item.quran',
+    'amalan.item.dzikir_pagi',
+    'amalan.item.dzikir_petang',
+    'amalan.item.puasa_sunnah',
 ];
 
 const todayStr = () => {
@@ -40,11 +40,11 @@ const AmalanPage = () => {
         } catch {}
     };
 
-    const doneCount = AMALAN.filter((a) => checked[a]).length;
-    const pct = Math.round((doneCount / AMALAN.length) * 100);
+    const doneCount = AMALAN_KEYS.filter((k) => checked[k]).length;
+    const pct = Math.round((doneCount / AMALAN_KEYS.length) * 100);
 
     return (
-        <div className='px-4 py-6 max-w-2xl mx-auto'>
+        <div className='px-4 py-6'>
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-1'>
                 {t('amalan.title')}
             </h1>
@@ -62,7 +62,7 @@ const AmalanPage = () => {
                         {t('amalan.progress')}
                     </span>
                     <span className='text-2xl font-bold text-emerald-700 dark:text-emerald-400'>
-                        {doneCount}/{AMALAN.length}
+                        {doneCount}/{AMALAN_KEYS.length}
                     </span>
                 </div>
                 <div className='h-3 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden'>
@@ -76,12 +76,12 @@ const AmalanPage = () => {
 
             {/* Checklist */}
             <ul className='space-y-2'>
-                {AMALAN.map((amalan) => {
-                    const done = !!checked[amalan];
+                {AMALAN_KEYS.map((key) => {
+                    const done = !!checked[key];
                     return (
-                        <li key={amalan}>
+                        <li key={key}>
                             <button
-                                onClick={() => toggle(amalan)}
+                                onClick={() => toggle(key)}
                                 className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border transition-all text-left ${
                                     done
                                         ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
@@ -100,7 +100,7 @@ const AmalanPage = () => {
                                             : 'text-gray-700 dark:text-gray-300'
                                     }`}
                                 >
-                                    {amalan}
+                                    {t(key)}
                                 </span>
                             </button>
                         </li>

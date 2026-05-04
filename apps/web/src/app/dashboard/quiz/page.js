@@ -2,26 +2,46 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField, getLocalizedOption } from '@/lib/translation';
 
 const FALLBACK = [
     {
         id: 'q1',
-        question: 'Berapa jumlah surah dalam Al-Quran?',
+        question: {
+            idn: 'Berapa jumlah surah dalam Al-Quran?',
+            en: 'How many surahs are in the Quran?',
+        },
         options: ['112', '113', '114', '115'],
         answer: 2,
         category: 'quran',
     },
     {
         id: 'q2',
-        question: 'Siapakah nabi pertama?',
-        options: ['Idris', 'Ibrahim', 'Adam', 'Nuh'],
+        question: {
+            idn: 'Siapakah nabi pertama?',
+            en: 'Who was the first prophet?',
+        },
+        options: [
+            { idn: 'Idris', en: 'Idris' },
+            { idn: 'Ibrahim', en: 'Ibrahim' },
+            { idn: 'Adam', en: 'Adam' },
+            { idn: 'Nuh', en: 'Nuh' },
+        ],
         answer: 2,
         category: 'sejarah',
     },
     {
         id: 'q3',
-        question: 'Apa arti "Islam"?',
-        options: ['Iman', 'Damai/Selamat', 'Taat', 'Ikhlas'],
+        question: {
+            idn: 'Apa arti "Islam"?',
+            en: 'What does "Islam" mean?',
+        },
+        options: [
+            { idn: 'Iman', en: 'Faith' },
+            { idn: 'Damai/Selamat', en: 'Peace/Safety' },
+            { idn: 'Taat', en: 'Obedience' },
+            { idn: 'Ikhlas', en: 'Sincerity' },
+        ],
         answer: 1,
         category: 'aqidah',
     },
@@ -34,7 +54,7 @@ const toStr = (v) => {
 };
 
 const QuizPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [questions, setQuestions] = useState([]);
     const [current, setCurrent] = useState(0);
     const [selected, setSelected] = useState(null);
@@ -75,7 +95,7 @@ const QuizPage = () => {
     const handleSelect = (idx) => {
         if (selected !== null) return;
         setSelected(idx);
-        if (idx === questions[current].answer) {
+        if (idx === Number(questions[current].answer)) {
             setScore((s) => s + 1);
         }
     };
@@ -127,6 +147,8 @@ const QuizPage = () => {
 
     const q = questions[current];
     const total = questions.length;
+    const answerIndex = Number(q.answer);
+    const options = Array.isArray(q.options) ? q.options : [];
 
     return (
         <div className='px-4 py-6 max-w-md mx-auto'>
@@ -160,22 +182,22 @@ const QuizPage = () => {
             {/* Question */}
             <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 mb-4'>
                 <p className='text-base font-semibold text-gray-800 dark:text-white leading-relaxed'>
-                    {q.question}
+                    {getLocalizedField(q, 'question', lang, ['question_text', 'text', 'title'])}
                 </p>
             </div>
 
             {/* Options */}
             <div className='space-y-2 mb-5'>
-                {(q.options ?? []).map((opt, idx) => {
+                {options.map((opt, idx) => {
                     let cls =
                         'w-full px-4 py-3.5 rounded-xl border text-sm font-medium text-left transition-all ';
                     if (selected === null) {
                         cls +=
                             'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/10';
-                    } else if (idx === q.answer) {
+                    } else if (idx === answerIndex) {
                         cls +=
                             'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-700 dark:text-emerald-400';
-                    } else if (idx === selected && selected !== q.answer) {
+                    } else if (idx === selected && selected !== answerIndex) {
                         cls +=
                             'bg-red-50 dark:bg-red-900/20 border-red-400 text-red-600 dark:text-red-400';
                     } else {
@@ -192,7 +214,7 @@ const QuizPage = () => {
                             <span className='mr-2 text-gray-400 dark:text-gray-500 font-normal'>
                                 {String.fromCharCode(65 + idx)}.
                             </span>
-                            {toStr(opt)}
+                            {getLocalizedOption(opt, lang) || toStr(opt)}
                         </button>
                     );
                 })}

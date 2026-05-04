@@ -4,21 +4,15 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BsArrowLeft, BsChevronLeft, BsChevronRight } from 'react-icons/bs';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 
 const PAGE_SIZE = 20;
 
-const getTranslation = (t) => {
-    if (!t) return '';
-    if (typeof t === 'string') return t;
-    return t.idn ?? t.id ?? t.en ?? '';
-};
-
 const getArabic = (ayah) => ayah.translation?.ar ?? ayah.arabic ?? ayah.text ?? '';
 const getLatinIdn = (ayah) => ayah.translation?.latin_idn ?? ayah.transliteration ?? '';
-const getIdn = (ayah) => ayah.translation?.idn ?? getTranslation(ayah.translation) ?? '';
 
 const DashboardQuranReaderPage = ({ params }) => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const slug = decodeURIComponent(params.slug);
 
     const [surah, setSurah] = useState(null);
@@ -96,7 +90,7 @@ const DashboardQuranReaderPage = ({ params }) => {
 
     if (loading) {
         return (
-            <div className='p-6 max-w-3xl mx-auto'>
+            <div className='p-6'>
                 <div className='animate-pulse space-y-6'>
                     {Array.from({ length: 5 }).map((_, i) => (
                         <div key={i} className='bg-gray-100 dark:bg-slate-800 rounded-xl h-28' />
@@ -108,26 +102,26 @@ const DashboardQuranReaderPage = ({ params }) => {
 
     if (error) {
         return (
-            <div className='p-6 max-w-3xl mx-auto text-center py-20'>
+            <div className='p-6 text-center py-20'>
                 <p className='text-4xl mb-3'>⚠️</p>
                 <p className='text-gray-700 dark:text-white font-semibold mb-1'>
-                    Gagal Memuat Surah
+                    {t('quran.error_title')}
                 </p>
                 <p className='text-sm text-gray-400 dark:text-gray-500 mb-5'>
-                    Server API tidak dapat dijangkau.
+                    {t('quran.error_desc')}
                 </p>
                 <Link
                     href='/dashboard/quran'
                     className='text-sm text-emerald-600 dark:text-emerald-400 hover:underline'
                 >
-                    ← Kembali ke daftar surah
+                    ← {t('quran.back_to_surah_list')}
                 </Link>
             </div>
         );
     }
 
     return (
-        <div className='max-w-3xl mx-auto pb-16'>
+        <div className='pb-16'>
             {/* Sticky header */}
             <div className='sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 py-3 flex items-center gap-3'>
                 <Link
@@ -141,8 +135,8 @@ const DashboardQuranReaderPage = ({ params }) => {
                         {surah?.translation?.latin_en ?? surah?.latin ?? slug}
                     </p>
                     <p className='text-xs text-gray-400 dark:text-gray-500 mt-0.5'>
-                        {getTranslation(surah?.translation)} ·{' '}
-                        {surah?.total_ayah ?? surah?.number_of_ayahs ?? '?'} Ayat
+                        {getLocalizedTranslation(surah?.translation, lang)} ·{' '}
+                        {surah?.total_ayah ?? surah?.number_of_ayahs ?? '?'} {t('common.verse')}
                     </p>
                 </div>
                 <span className='text-lg arabic-text text-gray-500 dark:text-gray-400 shrink-0'>
@@ -190,9 +184,9 @@ const DashboardQuranReaderPage = ({ params }) => {
                             </p>
                         )}
 
-                        {getIdn(ayah) && (
+                        {getLocalizedTranslation(ayah.translation, lang) && (
                             <p className='text-sm text-gray-600 dark:text-gray-300 leading-relaxed'>
-                                {getIdn(ayah)}
+                                {getLocalizedTranslation(ayah.translation, lang)}
                             </p>
                         )}
                     </div>
@@ -214,7 +208,7 @@ const DashboardQuranReaderPage = ({ params }) => {
                             className='flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400 hover:underline'
                         >
                             <BsChevronLeft className='text-xs' />
-                            Surah Sebelumnya
+                            {t('quran.prev_surah')}
                         </Link>
                     ) : (
                         <span />
@@ -224,7 +218,7 @@ const DashboardQuranReaderPage = ({ params }) => {
                             href={`/dashboard/quran/${nextSlug}`}
                             className='flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400 hover:underline'
                         >
-                            Surah Selanjutnya
+                            {t('quran.next_surah')}
                             <BsChevronRight className='text-xs' />
                         </Link>
                     ) : (

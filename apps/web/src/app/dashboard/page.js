@@ -122,7 +122,7 @@ const DashboardPage = () => {
     if (authLoading) return null;
 
     return (
-        <div className='px-4 py-6 max-w-3xl mx-auto'>
+        <div className='px-4 py-6'>
                         {/* Welcome */}
                         <div className='mb-6'>
                             <h1 className='text-xl font-bold text-emerald-900 dark:text-white'>

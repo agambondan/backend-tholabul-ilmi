@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
@@ -23,13 +24,8 @@ const FALLBACK_SURAHS = [
 const getLatinName = (s) => s.translation?.latin_en ?? s.translation?.latin_idn ?? s.latin ?? '';
 const getTotalAyah = (s) => s.number_of_ayahs ?? s.total_ayah ?? '?';
 const getArabicName = (s) => s.translation?.ar ?? s.name ?? '';
-const translationText = (s) =>
-    typeof s.translation === 'string'
-        ? s.translation
-        : (s.translation?.idn ?? s.translation?.en ?? '');
-
 const DashboardQuranPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [surahs, setSurahs] = useState(FALLBACK_SURAHS);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
@@ -49,7 +45,7 @@ const DashboardQuranPage = () => {
         const q = search.toLowerCase();
         return (
             getLatinName(s).toLowerCase().includes(q) ||
-            translationText(s).toLowerCase().includes(q) ||
+            getLocalizedTranslation(s.translation, lang).toLowerCase().includes(q) ||
             String(s.number).includes(search)
         );
     });
@@ -100,7 +96,7 @@ const DashboardQuranPage = () => {
                                 {getLatinName(s)}
                             </p>
                             <p className='text-xs text-gray-400 dark:text-gray-500 truncate'>
-                                {translationText(s)} · {getTotalAyah(s)} {t('common.verse')}
+                                {getLocalizedTranslation(s.translation, lang)} · {getTotalAyah(s)} {t('common.verse')}
                             </p>
                         </div>
 

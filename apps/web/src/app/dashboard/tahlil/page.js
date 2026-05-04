@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
 
@@ -8,31 +9,34 @@ const FALLBACK = [
     {
         step: 1,
         title: 'Pembukaan - Al-Fatihah',
+        title_en: 'Opening - Al-Fatihah',
         arabic: 'بِسْمِ اللهِ الرَّحْمَٰنِ الرَّحِيمِ',
         transliteration: 'Bismillaahir rahmaanir rahiim',
-        translation: 'Dengan menyebut nama Allah Yang Maha Pengasih lagi Maha Penyayang',
+        translation: {
+            idn: 'Dengan menyebut nama Allah Yang Maha Pengasih lagi Maha Penyayang',
+            en: 'In the name of Allah, the Most Gracious, the Most Merciful',
+        },
     },
     {
         step: 2,
         title: 'Al-Ikhlas (3x)',
+        title_en: 'Al-Ikhlas (3x)',
         arabic: 'قُلْ هُوَ اللَّهُ أَحَدٌ',
         transliteration: 'Qul huwallahu ahad',
-        translation: 'Katakanlah: Dialah Allah yang Maha Esa',
+        translation: { idn: 'Katakanlah: Dialah Allah yang Maha Esa', en: 'Say: He is Allah, the One' },
     },
     {
         step: 3,
         title: 'Tahlil',
+        title_en: 'Tahlil',
         arabic: 'لَا إِلَٰهَ إِلَّا اللَّٰهُ',
         transliteration: 'Laa ilaaha illallah',
-        translation: 'Tiada Tuhan selain Allah',
+        translation: { idn: 'Tiada Tuhan selain Allah', en: 'There is no deity except Allah' },
     },
 ];
 
-const getTranslation = (v) =>
-    typeof v === 'string' ? v : (v?.idn ?? v?.en ?? '');
-
 export default function DashboardTahlilPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [items, setItems] = useState(FALLBACK);
     const [expanded, setExpanded] = useState(null);
 
@@ -75,7 +79,7 @@ export default function DashboardTahlilPage() {
                                         {item.step}
                                     </span>
                                     <span className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </span>
                                 </div>
                                 {open ? (
@@ -98,9 +102,9 @@ export default function DashboardTahlilPage() {
                                             {item.transliteration}
                                         </p>
                                     )}
-                                    {getTranslation(item.translation) && (
+                                    {getLocalizedTranslation(item.translation, lang) && (
                                         <p className='text-sm text-gray-700 dark:text-gray-300'>
-                                            {getTranslation(item.translation)}
+                                            {getLocalizedTranslation(item.translation, lang)}
                                         </p>
                                     )}
                                 </div>

@@ -5,32 +5,42 @@ import { useLocale } from '@/context/Locale';
 import { useState, useEffect } from 'react';
 import { BsSearch, BsChevronDown, BsChevronUp } from 'react-icons/bs';
 import { doaApi } from '@/lib/api';
+import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
 
 const FALLBACK = [
     {
         id: 'f1',
         title: 'Doa Sebelum Makan',
+        title_en: 'Prayer Before Eating',
         arabic: 'بِسْمِ اللهِ',
         transliteration: 'Bismillah',
-        translation: 'Dengan nama Allah',
+        translation: { idn: 'Dengan nama Allah', en: 'In the name of Allah' },
         category: 'makan',
         source: 'HR. Bukhari',
     },
     {
         id: 'f2',
         title: 'Doa Pagi',
+        title_en: 'Morning Supplication',
         arabic: 'اللَّهُمَّ بِكَ أَصْبَحْنَا',
         transliteration: 'Allahumma bika ashbahnaa',
-        translation: 'Ya Allah, dengan-Mu kami memasuki waktu pagi',
+        translation: {
+            idn: 'Ya Allah, dengan-Mu kami memasuki waktu pagi',
+            en: 'O Allah, by You we enter the morning',
+        },
         category: 'pagi',
         source: 'HR. Abu Daud',
     },
     {
         id: 'f3',
         title: 'Doa Sebelum Tidur',
+        title_en: 'Prayer Before Sleeping',
         arabic: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا',
         transliteration: 'Bismikallaahumma amuutu wa ahyaa',
-        translation: 'Dengan nama-Mu ya Allah, aku mati dan aku hidup',
+        translation: {
+            idn: 'Dengan nama-Mu ya Allah, aku mati dan aku hidup',
+            en: 'In Your name, O Allah, I die and I live',
+        },
         category: 'tidur',
         source: 'HR. Bukhari',
     },
@@ -44,11 +54,8 @@ const toStr = (v) => {
     return v.name ?? v.title ?? v.label ?? v.value ?? '';
 };
 
-const getTranslation = (v) =>
-    typeof v === 'string' ? v : (v?.idn ?? v?.en ?? '');
-
 export default function DoaDashboardPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(null);
@@ -68,7 +75,9 @@ export default function DoaDashboardPage() {
     }, []);
 
     const filtered = items.filter((item) => {
-        const matchSearch = item.title?.toLowerCase().includes(search.toLowerCase());
+        const matchSearch = getLocalizedField(item, 'title', lang)
+            .toLowerCase()
+            .includes(search.toLowerCase());
         const matchCategory = activeCategory ? toStr(item.category) === activeCategory : true;
         return matchSearch && matchCategory;
     });
@@ -138,7 +147,7 @@ export default function DoaDashboardPage() {
                                 className='w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors'>
                                 <div className='flex items-center gap-3'>
                                     <span className='font-semibold text-gray-800 text-sm'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </span>
                                     {item.category && (
                                         <span className='px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700 capitalize'>
@@ -163,7 +172,9 @@ export default function DoaDashboardPage() {
                                     <p className='text-sm italic text-gray-500'>
                                         {item.transliteration}
                                     </p>
-                                    <p className='text-sm text-gray-700'>{getTranslation(item.translation)}</p>
+                                    <p className='text-sm text-gray-700'>
+                                        {getLocalizedTranslation(item.translation, lang)}
+                                    </p>
                                     <SourceBadges source={item.source} />
                                 </div>
                             )}

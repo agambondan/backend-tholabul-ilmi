@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useState, useEffect } from 'react';
 import { BsSearch, BsBoxArrowUpRight } from 'react-icons/bs';
 
@@ -8,22 +9,26 @@ const FALLBACK = [
     {
         id: 'f1',
         title: 'Tafsir Al-Fatihah',
+        title_en: 'Tafsir of Al-Fatihah',
         ustadz: 'Ust. Firanda Andirja',
         category: 'tafsir',
         platform: 'youtube',
         url: '',
         duration: '01:23:45',
         description: 'Tafsir surah pembuka',
+        description_en: 'Explanation of the opening surah',
     },
     {
         id: 'f2',
         title: 'Fiqh Sholat',
+        title_en: 'Fiqh of Prayer',
         ustadz: 'Ust. Khalid Basalamah',
         category: 'fiqh',
         platform: 'youtube',
         url: '',
         duration: '00:45:00',
         description: 'Tata cara sholat yang benar',
+        description_en: 'The correct way to perform prayer',
     },
 ];
 
@@ -41,7 +46,7 @@ const toStr = (v) => {
 };
 
 export default function KajianDashboardPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -61,7 +66,8 @@ export default function KajianDashboardPage() {
     const filtered = items.filter((item) => {
         const q = search.toLowerCase();
         const matchSearch =
-            item.title?.toLowerCase().includes(q) ||
+            getLocalizedField(item, 'title', lang).toLowerCase().includes(q) ||
+            getLocalizedField(item, 'description', lang).toLowerCase().includes(q) ||
             item.ustadz?.toLowerCase().includes(q);
         const matchCategory = activeCategory ? toStr(item.category) === activeCategory : true;
         return matchSearch && matchCategory;
@@ -71,7 +77,7 @@ export default function KajianDashboardPage() {
         <div className='p-6'>
             <h1 className='text-2xl font-bold text-gray-800 mb-1'>{t('kajian.title')}</h1>
             <p className='text-gray-500 mb-6'>
-                Rekaman kajian dari ustadz-ustadz ahlus sunnah
+                {t('kajian.subtitle')}
             </p>
 
             {/* Search */}
@@ -147,7 +153,7 @@ export default function KajianDashboardPage() {
                                 )}
                             </div>
                             <h3 className='font-semibold text-gray-800 text-sm mb-1 line-clamp-2'>
-                                {item.title}
+                                {getLocalizedField(item, 'title', lang)}
                             </h3>
                             <p className='text-xs text-emerald-700 font-medium mb-1'>
                                 {toStr(item.ustadz)}
@@ -155,9 +161,9 @@ export default function KajianDashboardPage() {
                             {item.duration && (
                                 <p className='text-xs text-gray-400 mb-2'>{toStr(item.duration)}</p>
                             )}
-                            {item.description && (
+                            {getLocalizedField(item, 'description', lang) && (
                                 <p className='text-xs text-gray-500 line-clamp-2'>
-                                    {toStr(item.description)}
+                                    {getLocalizedField(item, 'description', lang)}
                                 </p>
                             )}
                         </div>

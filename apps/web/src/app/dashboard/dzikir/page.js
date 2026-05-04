@@ -5,6 +5,7 @@ import { dzikirApi } from '@/lib/api';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
 
 const CATEGORIES = ['pagi', 'petang', 'sesudah-sholat', 'sebelum-tidur', 'umum'];
 
@@ -12,45 +13,56 @@ const FALLBACK_DZIKIR = [
     {
         id: 'f1',
         title: 'Tasbih',
+        title_en: 'Tasbih',
         arabic: 'سُبْحَانَ اللهِ',
         transliteration: 'Subhanallah',
-        translation: 'Maha Suci Allah',
+        translation: { idn: 'Maha Suci Allah', en: 'Glory be to Allah' },
         count: 33,
         category: 'umum',
     },
     {
         id: 'f2',
         title: 'Tahmid',
+        title_en: 'Tahmid',
         arabic: 'الْحَمْدُ لِلَّهِ',
         transliteration: 'Alhamdulillah',
-        translation: 'Segala Puji Bagi Allah',
+        translation: { idn: 'Segala Puji Bagi Allah', en: 'All praise is due to Allah' },
         count: 33,
         category: 'umum',
     },
     {
         id: 'f3',
         title: 'Takbir',
+        title_en: 'Takbir',
         arabic: 'اللهُ أَكْبَرُ',
         transliteration: 'Allahu Akbar',
-        translation: 'Allah Maha Besar',
+        translation: { idn: 'Allah Maha Besar', en: 'Allah is the Greatest' },
         count: 33,
         category: 'umum',
     },
     {
         id: 'f4',
         title: 'Hauqalah',
+        title_en: 'Hawqalah',
         arabic: 'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللهِ',
         transliteration: "La hawla wa la quwwata illa billah",
-        translation: 'Tidak ada daya dan kekuatan kecuali milik Allah',
+        translation: {
+            idn: 'Tidak ada daya dan kekuatan kecuali milik Allah',
+            en: 'There is no power and no strength except with Allah',
+        },
         count: 1,
         category: 'umum',
     },
     {
         id: 'f5',
         title: 'Istighfar',
+        title_en: 'Istighfar',
         arabic: 'أَسْتَغْفِرُ اللهَ الْعَظِيمَ',
         transliteration: 'Astaghfirullahal adzim',
-        translation: 'Aku memohon ampun kepada Allah Yang Maha Agung',
+        translation: {
+            idn: 'Aku memohon ampun kepada Allah Yang Maha Agung',
+            en: 'I seek forgiveness from Allah, the Most Great',
+        },
         count: 100,
         category: 'umum',
     },
@@ -71,7 +83,7 @@ const toStr = (v) => {
 };
 
 const DashboardDzikirPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [items, setItems] = useState(FALLBACK_DZIKIR);
     const [category, setCategory] = useState('');
     const [loading, setLoading] = useState(true);
@@ -97,9 +109,6 @@ const DashboardDzikirPage = () => {
         };
         fetch();
     }, [category]);
-
-    const getTranslation = (v) =>
-        typeof v === 'string' ? v : (v?.idn ?? v?.en ?? '');
 
     return (
         <div className='p-6'>
@@ -163,7 +172,7 @@ const DashboardDzikirPage = () => {
                                     )}
                                     <div>
                                         <p className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                            {item.title}
+                                            {getLocalizedField(item, 'title', lang)}
                                         </p>
                                         {item.category && (
                                             <span
@@ -195,9 +204,9 @@ const DashboardDzikirPage = () => {
                                             {item.transliteration}
                                         </p>
                                     )}
-                                    {getTranslation(item.translation) && (
+                                    {getLocalizedTranslation(item.translation, lang) && (
                                         <p className='text-sm text-gray-700 dark:text-gray-300'>
-                                            {getTranslation(item.translation)}
+                                            {getLocalizedTranslation(item.translation, lang)}
                                         </p>
                                     )}
                                     <SourceBadges source={item.source} />

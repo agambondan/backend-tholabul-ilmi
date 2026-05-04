@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
 
@@ -9,11 +10,14 @@ const FALLBACK_HAJI = [
         type: 'haji',
         step: 1,
         title: 'Ihram dari Miqat',
+        title_en: 'Ihram from Miqat',
         description:
             'Memakai pakaian ihram dan berniat ihram dari miqat yang telah ditentukan',
+        description_en:
+            'Wearing ihram garments and making the intention for ihram from the appointed miqat',
         arabic: 'لَبَّيْكَ اللَّهُمَّ حَجًّا',
         latin: 'Labbaik Allahumma hajjan',
-        translation: 'Aku penuhi panggilan-Mu ya Allah untuk haji',
+        translation: { idn: 'Aku penuhi panggilan-Mu ya Allah untuk haji', en: 'Here I am, O Allah, for Hajj' },
     },
 ];
 
@@ -22,16 +26,20 @@ const FALLBACK_UMRAH = [
         type: 'umrah',
         step: 1,
         title: 'Ihram dari Miqat',
+        title_en: 'Ihram from Miqat',
         description: 'Memakai pakaian ihram dan berniat umrah',
+        description_en: 'Wearing ihram garments and making the intention for Umrah',
         arabic: 'لَبَّيْكَ اللَّهُمَّ عُمْرَةً',
         latin: 'Labbaik Allahumma umratan',
-        translation: 'Aku penuhi panggilan-Mu ya Allah untuk umrah',
+        translation: { idn: 'Aku penuhi panggilan-Mu ya Allah untuk umrah', en: 'Here I am, O Allah, for Umrah' },
     },
     {
         type: 'umrah',
         step: 2,
         title: 'Tawaf',
+        title_en: 'Tawaf',
         description: 'Mengelilingi Kabah 7 kali berlawanan arah jarum jam',
+        description_en: 'Circling the Kaaba seven times counterclockwise',
     },
 ];
 
@@ -41,11 +49,8 @@ const toStr = (v) => {
     return v.name ?? v.title ?? v.label ?? v.value ?? '';
 };
 
-const getTranslation = (v) =>
-    typeof v === 'string' ? v : (v?.idn ?? v?.en ?? '');
-
 export default function DashboardManasikPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [hajiItems, setHajiItems] = useState(FALLBACK_HAJI);
     const [umrahItems, setUmrahItems] = useState(FALLBACK_UMRAH);
     const [tab, setTab] = useState('haji');
@@ -118,7 +123,7 @@ export default function DashboardManasikPage() {
                                         {item.step}
                                     </span>
                                     <span className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </span>
                                 </div>
                                 {open ? (
@@ -129,9 +134,9 @@ export default function DashboardManasikPage() {
                             </button>
                             {open && (
                                 <div className='px-4 pb-4 border-t border-gray-50 dark:border-slate-700 pt-3 space-y-2'>
-                                    {item.description && (
+                                    {getLocalizedField(item, 'description', lang) && (
                                         <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
-                                            {toStr(item.description)}
+                                            {getLocalizedField(item, 'description', lang)}
                                         </p>
                                     )}
                                     {item.arabic && (
@@ -146,9 +151,9 @@ export default function DashboardManasikPage() {
                                             {item.latin}
                                         </p>
                                     )}
-                                    {getTranslation(item.translation) && (
+                                    {getLocalizedTranslation(item.translation, lang) && (
                                         <p className='text-sm text-gray-700 dark:text-gray-300'>
-                                            {getTranslation(item.translation)}
+                                            {getLocalizedTranslation(item.translation, lang)}
                                         </p>
                                     )}
                                 </div>

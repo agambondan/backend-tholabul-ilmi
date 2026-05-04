@@ -76,7 +76,7 @@ const TilawahPage = () => {
     const recent = entries.slice(0, 10);
 
     return (
-        <div className='px-4 py-6 max-w-2xl mx-auto'>
+        <div className='px-4 py-6'>
             <div className='flex items-center justify-between mb-6'>
                 <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
                     {t('tilawah.title')}
@@ -102,7 +102,7 @@ const TilawahPage = () => {
                     <p className='text-sm font-medium text-gray-800 dark:text-white'>
                         {todayEntry.surah}
                         {todayEntry.ayahFrom
-                            ? ` (Ayat ${todayEntry.ayahFrom}–${todayEntry.ayahTo ?? todayEntry.ayahFrom})`
+                            ? ` (${t('common.verse')} ${todayEntry.ayahFrom}–${todayEntry.ayahTo ?? todayEntry.ayahFrom})`
                             : ''}
                     </p>
                     <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>
@@ -227,7 +227,7 @@ const TilawahPage = () => {
                                     onChange={(e) =>
                                         setForm((f) => ({ ...f, surah: e.target.value }))
                                     }
-                                    placeholder='Al-Baqarah'
+                                    placeholder={t('tilawah.surah_placeholder')}
                                     className='w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                                 />
                             </div>
@@ -288,7 +288,7 @@ const TilawahPage = () => {
                                     onChange={(e) =>
                                         setForm((f) => ({ ...f, notes: e.target.value }))
                                     }
-                                    placeholder='Bismillah...'
+                                    placeholder={t('tilawah.notes_placeholder')}
                                     className='w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                                 />
                             </div>

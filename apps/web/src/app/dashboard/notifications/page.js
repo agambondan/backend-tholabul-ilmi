@@ -10,7 +10,7 @@ const todayStr = () => {
 };
 
 const NotificationsPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [notifs, setNotifs] = useState([]);
 
     useEffect(() => {
@@ -30,8 +30,8 @@ const NotificationsPage = () => {
                 stored = [
                     {
                         id: 'auto_muhasabah_today',
-                        title: 'Pengingat Muhasabah',
-                        body: 'Jangan lupa muhasabah hari ini 📝',
+                        title: 'notif.muhasabah_title',
+                        body: 'notif.muhasabah_body',
                         date: todayStr(),
                         read: false,
                     },
@@ -59,9 +59,17 @@ const NotificationsPage = () => {
     };
 
     const unreadCount = notifs.filter((n) => !n.read).length;
+    const displayNotif = (notif) =>
+        notif.id === 'auto_muhasabah_today'
+            ? {
+                  ...notif,
+                  title: t('notif.muhasabah_title'),
+                  body: t('notif.muhasabah_body'),
+              }
+            : notif;
 
     return (
-        <div className='px-4 py-6 max-w-2xl mx-auto'>
+        <div className='px-4 py-6'>
             <div className='flex items-center justify-between mb-6'>
                 <div className='flex items-center gap-2'>
                     <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
@@ -93,58 +101,63 @@ const NotificationsPage = () => {
                 </div>
             ) : (
                 <ul className='space-y-2'>
-                    {notifs.map((notif) => (
-                        <li
-                            key={notif.id}
-                            onClick={() => markRead(notif.id)}
-                            className={`bg-white dark:bg-slate-800 rounded-xl border p-4 cursor-pointer transition-all ${
-                                notif.read
-                                    ? 'border-gray-100 dark:border-slate-700'
-                                    : 'border-emerald-200 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
-                            }`}
-                        >
-                            <div className='flex items-start gap-3'>
-                                <div
-                                    className={`mt-0.5 text-base shrink-0 ${
-                                        notif.read
-                                            ? 'text-gray-300 dark:text-slate-600'
-                                            : 'text-emerald-500'
-                                    }`}
-                                >
-                                    {notif.read ? <BsBell /> : <BsBellFill />}
-                                </div>
-                                <div className='min-w-0'>
-                                    <p
-                                        className={`text-sm font-semibold ${
+                    {notifs.map((rawNotif) => {
+                        const notif = displayNotif(rawNotif);
+                        return (
+                            <li
+                                key={notif.id}
+                                onClick={() => markRead(notif.id)}
+                                className={`bg-white dark:bg-slate-800 rounded-xl border p-4 cursor-pointer transition-all ${
+                                    notif.read
+                                        ? 'border-gray-100 dark:border-slate-700'
+                                        : 'border-emerald-200 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
+                                }`}
+                            >
+                                <div className='flex items-start gap-3'>
+                                    <div
+                                        className={`mt-0.5 text-base shrink-0 ${
                                             notif.read
-                                                ? 'text-gray-600 dark:text-gray-400'
-                                                : 'text-gray-800 dark:text-white'
+                                                ? 'text-gray-300 dark:text-slate-600'
+                                                : 'text-emerald-500'
                                         }`}
                                     >
-                                        {notif.title}
-                                    </p>
-                                    <p className='text-sm text-gray-500 dark:text-gray-400 mt-0.5'>
-                                        {notif.body}
-                                    </p>
-                                    {notif.date && (
-                                        <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                                            {new Date(notif.date + 'T00:00:00').toLocaleDateString(
-                                                'id-ID',
-                                                {
-                                                    weekday: 'short',
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                },
-                                            )}
+                                        {notif.read ? <BsBell /> : <BsBellFill />}
+                                    </div>
+                                    <div className='min-w-0'>
+                                        <p
+                                            className={`text-sm font-semibold ${
+                                                notif.read
+                                                    ? 'text-gray-600 dark:text-gray-400'
+                                                    : 'text-gray-800 dark:text-white'
+                                            }`}
+                                        >
+                                            {notif.title}
                                         </p>
+                                        <p className='text-sm text-gray-500 dark:text-gray-400 mt-0.5'>
+                                            {notif.body}
+                                        </p>
+                                        {notif.date && (
+                                            <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
+                                                {new Date(
+                                                    notif.date + 'T00:00:00',
+                                                ).toLocaleDateString(
+                                                    lang === 'EN' ? 'en-US' : 'id-ID',
+                                                    {
+                                                        weekday: 'short',
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                    },
+                                                )}
+                                            </p>
+                                        )}
+                                    </div>
+                                    {!notif.read && (
+                                        <span className='w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1.5' />
                                     )}
                                 </div>
-                                {!notif.read && (
-                                    <span className='w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1.5' />
-                                )}
-                            </div>
-                        </li>
-                    ))}
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
         </div>

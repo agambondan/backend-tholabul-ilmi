@@ -16,7 +16,7 @@ const BookmarksPage = () => {
     }, []);
 
     const remove = (id) => {
-        if (!confirm('Hapus bookmark ini?')) return;
+        if (!confirm(t('bookmarks.delete_confirm'))) return;
         const updated = bookmarks.filter((b) => b.id !== id);
         setBookmarks(updated);
         try {
@@ -47,7 +47,7 @@ const BookmarksPage = () => {
     };
 
     return (
-        <div className='px-4 py-6 max-w-2xl mx-auto'>
+        <div className='px-4 py-6'>
             <div className='flex items-center justify-between mb-6'>
                 <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
                     {t('bookmarks.title')}

@@ -3,34 +3,43 @@
 import { useState, useEffect } from 'react';
 import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 
 const FALLBACK = [
     {
         id: 'f1',
         year: '1 H',
         title: 'Hijrah Nabi ke Madinah',
+        title_en: "The Prophet's Hijrah to Madinah",
         description: 'Peristiwa hijrah sebagai titik awal kalender Islam',
+        description_en: 'The migration that became the starting point of the Islamic calendar',
         category: 'nabi',
     },
     {
         id: 'f2',
         year: '2 H',
         title: 'Perang Badar',
+        title_en: 'The Battle of Badr',
         description: 'Kemenangan pertama kaum muslimin',
+        description_en: 'The first major victory of the Muslims',
         category: 'perang',
     },
     {
         id: 'f3',
         year: '8 H',
         title: 'Fathu Makkah',
+        title_en: 'The Conquest of Makkah',
         description: 'Penaklukan Mekah',
+        description_en: 'The peaceful conquest of Makkah',
         category: 'nabi',
     },
     {
         id: 'f4',
         year: '11 H',
         title: 'Wafatnya Nabi Muhammad \u{FDFB}',
+        title_en: 'The Passing of Prophet Muhammad ﷺ',
         description: 'Nabi wafat pada usia 63 tahun',
+        description_en: 'The Prophet passed away at the age of 63',
         category: 'nabi',
     },
 ];
@@ -51,7 +60,7 @@ const toStr = (v) => {
 };
 
 export default function SejarahDashboardPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(null);
@@ -137,7 +146,7 @@ export default function SejarahDashboardPage() {
                                         className='w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors'>
                                         <div className='flex items-center gap-2 flex-wrap'>
                                             <span className='font-semibold text-gray-800 text-sm'>
-                                                {item.title}
+                                                {getLocalizedField(item, 'title', lang)}
                                             </span>
                                             {item.category && (
                                                 <span className='px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700 capitalize'>
@@ -155,7 +164,7 @@ export default function SejarahDashboardPage() {
                                     {isOpen && (
                                         <div className='px-4 pb-4 border-t border-gray-100 pt-3'>
                                             <p className='text-sm text-gray-700'>
-                                                {toStr(item.description)}
+                                                {getLocalizedField(item, 'description', lang)}
                                             </p>
                                         </div>
                                     )}

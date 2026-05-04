@@ -4,28 +4,35 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { sirohApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 
 const FALLBACK = [
     {
         id: 'f1',
         slug: 'kelahiran-nabi',
         title: 'Kelahiran Nabi Muhammad \u{FE0F}',
+        title_en: 'The Birth of Prophet Muhammad ﷺ',
         category: 'Masa Mekah',
         excerpt: 'Nabi Muhammad lahir pada 12 Rabiul Awwal tahun Gajah...',
+        excerpt_en: 'Prophet Muhammad was born on 12 Rabiul Awwal in the Year of the Elephant...',
     },
     {
         id: 'f2',
         slug: 'hijrah-madinah',
         title: 'Hijrah ke Madinah',
+        title_en: 'The Hijrah to Madinah',
         category: 'Hijrah',
         excerpt: 'Peristiwa hijrah menandai babak baru Islam...',
+        excerpt_en: 'The hijrah marked a new chapter in Islam...',
     },
     {
         id: 'f3',
         slug: 'fathu-makkah',
         title: 'Fathu Makkah',
+        title_en: 'The Conquest of Makkah',
         category: 'Kemenangan',
         excerpt: 'Penaklukan Mekah tanpa pertumpahan darah...',
+        excerpt_en: 'The conquest of Makkah without bloodshed...',
     },
 ];
 
@@ -36,7 +43,7 @@ const toStr = (v) => {
 };
 
 export default function SirohDashboardPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -83,11 +90,11 @@ export default function SirohDashboardPage() {
                                         )}
                                     </div>
                                     <h3 className='font-bold text-gray-800 text-sm mb-1'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </h3>
-                                    {item.excerpt && (
+                                    {getLocalizedField(item, 'excerpt', lang) && (
                                         <p className='text-xs text-gray-500 line-clamp-2'>
-                                            {item.excerpt}
+                                            {getLocalizedField(item, 'excerpt', lang)}
                                         </p>
                                     )}
                                 </div>

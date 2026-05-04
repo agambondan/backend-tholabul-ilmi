@@ -2,6 +2,7 @@
 
 import SourceBadges from '@/components/SourceBadges';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
 import { useState, useEffect } from 'react';
 import { BsSearch, BsChevronDown, BsChevronUp } from 'react-icons/bs';
 
@@ -9,27 +10,30 @@ const FALLBACK = [
     {
         id: 'f1',
         title: 'Tasbih',
+        title_en: 'Tasbih',
         arabic: 'سُبْحَانَ اللهِ',
         transliteration: 'Subhanallah',
-        translation: 'Maha Suci Allah',
+        translation: { idn: 'Maha Suci Allah', en: 'Glory be to Allah' },
         count: 33,
         category: 'umum',
     },
     {
         id: 'f2',
         title: 'Tahmid',
+        title_en: 'Tahmid',
         arabic: 'الْحَمْدُ لِلَّهِ',
         transliteration: 'Alhamdulillah',
-        translation: 'Segala Puji Bagi Allah',
+        translation: { idn: 'Segala Puji Bagi Allah', en: 'All praise is due to Allah' },
         count: 33,
         category: 'umum',
     },
     {
         id: 'f3',
         title: 'Takbir',
+        title_en: 'Takbir',
         arabic: 'اللهُ أَكْبَرُ',
         transliteration: 'Allahu Akbar',
-        translation: 'Allah Maha Besar',
+        translation: { idn: 'Allah Maha Besar', en: 'Allah is the Greatest' },
         count: 33,
         category: 'umum',
     },
@@ -43,11 +47,8 @@ const toStr = (v) => {
     return v.name ?? v.title ?? v.label ?? v.value ?? '';
 };
 
-const getTranslation = (v) =>
-    typeof v === 'string' ? v : (v?.idn ?? v?.en ?? '');
-
 export default function WiridDashboardPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(null);
@@ -66,7 +67,9 @@ export default function WiridDashboardPage() {
     }, []);
 
     const filtered = items.filter((item) => {
-        const matchSearch = item.title?.toLowerCase().includes(search.toLowerCase());
+        const matchSearch = getLocalizedField(item, 'title', lang)
+            .toLowerCase()
+            .includes(search.toLowerCase());
         const matchCategory = activeCategory ? toStr(item.category) === activeCategory : true;
         return matchSearch && matchCategory;
     });
@@ -143,7 +146,7 @@ export default function WiridDashboardPage() {
                                         </span>
                                     )}
                                     <span className='font-semibold text-gray-800 dark:text-white text-sm'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </span>
                                     {item.category && (
                                         <span className='px-2 py-0.5 rounded-full text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 capitalize'>
@@ -169,7 +172,7 @@ export default function WiridDashboardPage() {
                                         {item.transliteration}
                                     </p>
                                     <p className='text-sm text-gray-700 dark:text-gray-300'>
-                                        {getTranslation(item.translation)}
+                                        {getLocalizedTranslation(item.translation, lang)}
                                     </p>
                                     <SourceBadges source={item.source} />
                                 </div>

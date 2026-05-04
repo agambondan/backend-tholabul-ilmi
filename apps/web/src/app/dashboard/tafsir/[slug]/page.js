@@ -3,14 +3,11 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BsArrowLeft, BsChevronDown, BsChevronRight } from 'react-icons/bs';
-
-const getTranslation = (t) => {
-    if (!t) return '';
-    if (typeof t === 'string') return t;
-    return t.idn ?? t.id ?? t.en ?? '';
-};
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
 
 const DashboardTafsirReaderPage = ({ params }) => {
+    const { t, lang } = useLocale();
     const slug = decodeURIComponent(params.slug);
 
     const [surah, setSurah] = useState(null);
@@ -49,7 +46,7 @@ const DashboardTafsirReaderPage = ({ params }) => {
 
     if (loading) {
         return (
-            <div className='p-6 max-w-3xl mx-auto'>
+            <div className='p-6'>
                 <div className='animate-pulse space-y-4'>
                     <div className='h-8 bg-gray-100 dark:bg-slate-800 rounded w-1/3' />
                     {Array.from({ length: 6 }).map((_, i) => (
@@ -62,28 +59,28 @@ const DashboardTafsirReaderPage = ({ params }) => {
 
     if (error) {
         return (
-            <div className='p-6 max-w-3xl mx-auto text-center py-20'>
+            <div className='p-6 text-center py-20'>
                 <p className='text-4xl mb-3'>⚠️</p>
                 <p className='text-gray-700 dark:text-white font-semibold mb-1'>
-                    Gagal Memuat Tafsir
+                    {t('tafsir.load_error_title')}
                 </p>
                 <p className='text-sm text-gray-400 dark:text-gray-500 mb-5'>
-                    Server API tidak dapat dijangkau.
+                    {t('quran.error_desc')}
                 </p>
                 <Link
                     href='/dashboard/tafsir'
                     className='text-sm text-amber-600 dark:text-amber-400 hover:underline'
                 >
-                    ← Kembali ke daftar surah
+                    {t('tafsir.back_to_surah_list')}
                 </Link>
             </div>
         );
     }
 
-    const translation = getTranslation(surah?.translation);
+    const translation = getLocalizedTranslation(surah?.translation, lang);
 
     return (
-        <div className='max-w-3xl mx-auto pb-16'>
+        <div className='pb-16'>
             {/* Sticky header */}
             <div className='sticky top-0 z-10 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 px-4 py-3 flex items-center gap-3'>
                 <Link
@@ -94,10 +91,10 @@ const DashboardTafsirReaderPage = ({ params }) => {
                 </Link>
                 <div className='flex-1 min-w-0'>
                     <p className='text-sm font-bold text-gray-900 dark:text-white leading-none'>
-                        Tafsir {surah?.latin ?? slug}
+                        {t('tafsir.title')} {surah?.latin ?? slug}
                     </p>
                     <p className='text-xs text-gray-400 dark:text-gray-500 mt-0.5'>
-                        {translation} · {tafsirList.length} ayat
+                        {translation} · {tafsirList.length} {t('quran.ayah_count')}
                     </p>
                 </div>
                 <span className='text-lg arabic-text text-gray-500 dark:text-gray-400 shrink-0'>
@@ -108,7 +105,7 @@ const DashboardTafsirReaderPage = ({ params }) => {
             {tafsirList.length === 0 && !loading && (
                 <div className='text-center py-20'>
                     <p className='text-gray-400 dark:text-gray-500 text-sm'>
-                        Belum ada tafsir untuk surah ini.
+                        {t('tafsir.empty_surah')}
                     </p>
                 </div>
             )}
@@ -157,19 +154,19 @@ const DashboardTafsirReaderPage = ({ params }) => {
                                             {item.arabic}
                                         </p>
                                     )}
-                                    {(getTranslation(item.translation) || item.text) && (
+                                    {(getLocalizedTranslation(item.translation, lang) || item.text) && (
                                         <p className='text-sm text-gray-500 dark:text-gray-400 italic leading-relaxed'>
-                                            {getTranslation(item.translation) || item.text}
+                                            {getLocalizedTranslation(item.translation, lang) || item.text}
                                         </p>
                                     )}
-                                    {item.content && (
+                                    {getLocalizedField(item, 'content', lang) && (
                                         <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line'>
-                                            {item.content}
+                                            {getLocalizedField(item, 'content', lang)}
                                         </p>
                                     )}
                                     {item.source && (
                                         <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                                            Sumber: {item.source}
+                                            {t('common.source')}: {item.source}
                                         </p>
                                     )}
                                 </div>

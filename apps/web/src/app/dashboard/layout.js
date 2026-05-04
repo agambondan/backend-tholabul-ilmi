@@ -3,6 +3,8 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { ConvertFLagLanguage } from '@/lib/converter';
+import SettingButton from '@/components/popup/SettingButton';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -45,6 +47,7 @@ const SIDEBAR_STORAGE_KEY = 'tholabul_dashboard_sidebar_collapsed';
 const DashboardLayout = ({ children }) => {
     const { user, isAuthenticated, isLoading } = useAuth();
     const { t, lang, setLang } = useLocale();
+    const { isWide } = useLayoutMode();
     const router = useRouter();
     const pathname = usePathname();
     const [langOpen, setLangOpen] = useState(false);
@@ -335,7 +338,10 @@ const DashboardLayout = ({ children }) => {
                         )}
                     </div>
                 </header>
-                {children}
+                <div className={isWide ? 'w-full' : 'max-w-5xl mx-auto'}>
+                    {children}
+                </div>
+                <SettingButton isShowFixedComponent={true} />
             </main>
         </div>
     );

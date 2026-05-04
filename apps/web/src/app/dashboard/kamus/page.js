@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 
@@ -10,14 +11,8 @@ const toStr = (v) => {
     return v.name ?? v.title ?? v.label ?? v.value ?? '';
 };
 
-const toTranslation = (t) => {
-    if (!t) return '';
-    if (typeof t === 'string') return t;
-    return t.idn ?? t.id ?? t.latin_en ?? t.en ?? '';
-};
-
 export default function DashboardKamusPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -127,7 +122,7 @@ export default function DashboardKamusPage() {
                                             {item.latin ?? item.transliteration ?? '—'}
                                         </td>
                                         <td className='px-4 py-3 text-gray-700 dark:text-gray-300'>
-                                            {toTranslation(item.meaning ?? item.definition) || '—'}
+                                            {getLocalizedTranslation(item.meaning ?? item.definition, lang) || '—'}
                                         </td>
                                         <td className='px-4 py-3 text-gray-400 dark:text-gray-500'>
                                             {toStr(item.root ?? item.word_root) || '—'}

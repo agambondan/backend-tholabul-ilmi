@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
@@ -14,11 +15,8 @@ const FALLBACK = [
     { number: 112, name: 'الإخلاص', latin: 'Al-Ikhlas', translation: 'Ikhlas', total_ayah: 4 },
 ];
 
-const getTranslation = (v) =>
-    typeof v === 'string' ? v : (v?.idn ?? v?.en ?? '');
-
 export default function DashboardTafsirPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [surahs, setSurahs] = useState(FALLBACK);
     const [search, setSearch] = useState('');
 
@@ -70,7 +68,7 @@ export default function DashboardTafsirPage() {
                 {filtered.map((s) => (
                     <Link
                         key={s.number}
-                        href={`/dashboard/tafsir/${s.latin?.toLowerCase()}`}
+                        href={`/dashboard/tafsir/${encodeURIComponent(s.translation?.latin_en ?? s.identifier ?? s.latin ?? s.number)}`}
                         className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-600 hover:shadow-sm transition-all p-4 group'>
                         <div className='flex items-start justify-between mb-2'>
                             <span className='w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center justify-center shrink-0'>
@@ -86,10 +84,10 @@ export default function DashboardTafsirPage() {
                             {s.name}
                         </p>
                         <p className='text-sm font-semibold text-gray-800 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors'>
-                            {s.latin}
+                            {s.translation?.latin_en ?? s.identifier ?? s.latin}
                         </p>
                         <p className='text-xs text-gray-400 dark:text-gray-500 mt-0.5'>
-                            {getTranslation(s.translation)}
+                            {getLocalizedTranslation(s.translation, lang)}
                         </p>
                     </Link>
                 ))}

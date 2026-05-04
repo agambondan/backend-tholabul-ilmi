@@ -6,7 +6,7 @@ import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
 import { tafsirApi } from '@/lib/api';
 import Link from 'next/link';
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     BsChevronDown,
     BsChevronLeft,
@@ -19,7 +19,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const TafsirSurahPage = ({ params }) => {
     const { t } = useLocale();
-    const { slug } = use(params);
+    const { slug } = params;
     const decodedSlug = decodeURIComponent(slug);
 
     const [surah, setSurah] = useState(null);
@@ -85,10 +85,13 @@ const TafsirSurahPage = ({ params }) => {
         const tafsir = tafsirMap[ayah.id] ?? tafsirMap[ayah.number];
         const haystack = [
             ayah.number,
+            ayah.translation?.ar,
             ayah.text,
             ayah.arab,
+            ayah.translation?.latin_idn,
             ayah.transliteration,
-            ayah.translation?.id,
+            ayah.translation?.idn,
+            ayah.translation?.en,
             ayah.terjemahan,
             ayah.meaning,
             tafsir?.content,
@@ -264,7 +267,7 @@ const TafsirSurahPage = ({ params }) => {
                                                     dir='rtl'
                                                     className='text-base font-arabic text-gray-900 dark:text-white text-right leading-relaxed line-clamp-1'
                                                 >
-                                                    {ayah.text ?? ayah.arab}
+                                                    {ayah.translation?.ar ?? ayah.text ?? ayah.arab}
                                                 </p>
                                             </div>
                                             {isOpen ? (
@@ -282,20 +285,22 @@ const TafsirSurahPage = ({ params }) => {
                                                     dir='rtl'
                                                     className='text-2xl leading-loose font-arabic text-gray-900 dark:text-white text-right'
                                                 >
-                                                    {ayah.text ?? ayah.arab}
+                                                    {ayah.translation?.ar ?? ayah.text ?? ayah.arab}
                                                 </p>
 
                                                 {/* Latin */}
-                                                {showLatin && ayah.transliteration && (
-                                                    <p className='text-sm text-emerald-700 dark:text-emerald-400 italic'>
-                                                        {ayah.transliteration}
-                                                    </p>
-                                                )}
+                                                {showLatin &&
+                                                    (ayah.translation?.latin_idn ?? ayah.transliteration) && (
+                                                        <p className='text-sm text-emerald-700 dark:text-emerald-400 italic'>
+                                                            {ayah.translation?.latin_idn ?? ayah.transliteration}
+                                                        </p>
+                                                    )}
 
                                                 {/* Translation */}
                                                 {showTranslation && (
                                                     <p className='text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-l-2 border-emerald-200 dark:border-emerald-800 pl-3'>
-                                                        {ayah.translation?.id ??
+                                                        {ayah.translation?.idn ??
+                                                            ayah.translation?.en ??
                                                             ayah.terjemahan ??
                                                             ayah.meaning ??
                                                             '—'}

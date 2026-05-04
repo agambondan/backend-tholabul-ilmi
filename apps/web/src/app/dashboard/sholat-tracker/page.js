@@ -70,7 +70,7 @@ const SholatTrackerPage = () => {
     const pct = Math.round((doneCount / 5) * 100);
 
     return (
-        <div className='px-4 py-6 max-w-2xl mx-auto'>
+        <div className='px-4 py-6'>
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-6'>
                 {t('sholat.title')}
             </h1>

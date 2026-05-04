@@ -52,7 +52,7 @@ const MuhasabahPage = () => {
     };
 
     const remove = (id) => {
-        if (!confirm('Hapus catatan muhasabah ini?')) return;
+        if (!confirm(t('muhasabah.delete_confirm'))) return;
         const updated = list.filter((e) => e.id !== id);
         setList(updated);
         try {
@@ -61,7 +61,7 @@ const MuhasabahPage = () => {
     };
 
     return (
-        <div className='px-4 py-6 max-w-2xl mx-auto'>
+        <div className='px-4 py-6'>
             <div className='flex items-center justify-between mb-6'>
                 <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
                     {t('muhasabah.title')}

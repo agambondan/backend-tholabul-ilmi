@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField, getLocalizedText } from '@/lib/translation';
 import { useState, useEffect } from 'react';
 import { BsSearch, BsChevronDown, BsChevronUp } from 'react-icons/bs';
 import { asmaulHusnaApi } from '@/lib/api';
@@ -13,6 +14,7 @@ const FALLBACK = [
         indonesian: 'Allah',
         english: 'Allah',
         description: 'Nama Allah yang paling agung',
+        description_en: 'The greatest name of Allah',
     },
     {
         number: 2,
@@ -21,6 +23,7 @@ const FALLBACK = [
         indonesian: 'Yang Maha Pengasih',
         english: 'The Most Gracious',
         description: 'Pengasih di dunia dan akhirat',
+        description_en: 'The One whose mercy encompasses this world and the Hereafter',
     },
     {
         number: 3,
@@ -29,6 +32,7 @@ const FALLBACK = [
         indonesian: 'Yang Maha Penyayang',
         english: 'The Most Merciful',
         description: 'Penyayang khusus di akhirat',
+        description_en: 'The One whose special mercy is for the Hereafter',
     },
     {
         number: 4,
@@ -37,6 +41,7 @@ const FALLBACK = [
         indonesian: 'Yang Maha Raja',
         english: 'The King',
         description: 'Raja seluruh alam semesta',
+        description_en: 'The King of all creation',
     },
     {
         number: 55,
@@ -48,20 +53,8 @@ const FALLBACK = [
     },
 ];
 
-const toStr = (v) => {
-    if (!v) return '';
-    if (typeof v === 'string') return v;
-    return v.name ?? v.title ?? v.label ?? v.value ?? '';
-};
-
-const toTranslation = (t) => {
-    if (!t) return '';
-    if (typeof t === 'string') return t;
-    return t.idn ?? t.id ?? t.latin_en ?? t.en ?? '';
-};
-
 export default function AsmaulHusnaDashboardPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(null);
@@ -83,9 +76,13 @@ export default function AsmaulHusnaDashboardPage() {
 
     const filtered = sorted.filter((item) => {
         const q = search.toLowerCase();
+        const meaning = getLocalizedText(
+            { idn: item.indonesian, en: item.english },
+            lang,
+        );
         return (
             item.transliteration?.toLowerCase().includes(q) ||
-            toStr(item.indonesian).toLowerCase().includes(q)
+            meaning.toLowerCase().includes(q)
         );
     });
 
@@ -145,18 +142,33 @@ export default function AsmaulHusnaDashboardPage() {
                                     {item.transliteration}
                                 </p>
                                 <p className='text-xs font-medium text-gray-700'>
-                                    {toStr(item.indonesian)}
+                                    {getLocalizedText(
+                                        { idn: item.indonesian, en: item.english },
+                                        lang,
+                                    )}
                                 </p>
                             </button>
 
                             {isOpen && (
                                 <div className='px-4 pb-4 border-t border-gray-100 pt-3 space-y-1'>
-                                    <p className='text-xs text-gray-500'>
-                                        <span className='font-medium'>English:</span>{' '}
-                                        {toStr(item.english)}
-                                    </p>
-                                    {item.description && (
-                                        <p className='text-xs text-gray-600'>{toStr(item.description)}</p>
+                                    {getLocalizedText(
+                                        { idn: item.indonesian, en: item.english },
+                                        lang === 'EN' ? 'ID' : 'EN',
+                                    ) && (
+                                        <p className='text-xs text-gray-500'>
+                                            <span className='font-medium'>
+                                                {lang === 'EN' ? 'Indonesia' : 'English'}:
+                                            </span>{' '}
+                                            {getLocalizedText(
+                                                { idn: item.indonesian, en: item.english },
+                                                lang === 'EN' ? 'ID' : 'EN',
+                                            )}
+                                        </p>
+                                    )}
+                                    {getLocalizedField(item, 'description', lang) && (
+                                        <p className='text-xs text-gray-600'>
+                                            {getLocalizedField(item, 'description', lang)}
+                                        </p>
                                     )}
                                 </div>
                             )}

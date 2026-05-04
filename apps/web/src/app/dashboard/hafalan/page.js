@@ -74,7 +74,7 @@ const HafalanPage = () => {
             : list.filter((s) => (s.status ?? 'belum') === filter);
 
     return (
-        <div className='px-4 py-6 max-w-2xl mx-auto'>
+        <div className='px-4 py-6'>
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-6'>
                 {t('hafalan.title')}
             </h1>

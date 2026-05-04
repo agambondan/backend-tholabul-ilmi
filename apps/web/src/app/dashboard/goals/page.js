@@ -100,7 +100,7 @@ const GoalsPage = () => {
     };
 
     const remove = (id) => {
-        if (!confirm('Hapus target ini?')) return;
+        if (!confirm(t('goals.delete_confirm'))) return;
         persist(goals.filter((g) => g.id !== id));
     };
 
@@ -109,7 +109,7 @@ const GoalsPage = () => {
     );
 
     return (
-        <div className='px-4 py-6 max-w-2xl mx-auto'>
+        <div className='px-4 py-6'>
             <div className='flex items-center justify-between mb-6'>
                 <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
                     {t('goals.title')}
@@ -189,12 +189,12 @@ const GoalsPage = () => {
                                                     onClick={() => openEdit(goal)}
                                                     className='text-xs px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors'
                                                 >
-                                                    Update
+                                                    {t('goals.update_short')}
                                                 </button>
                                                 <button
                                                     onClick={() => markComplete(goal.id)}
                                                     className='text-emerald-500 hover:text-emerald-700 transition-colors'
-                                                    title='Tandai selesai'
+                                                    title={t('goals.mark_done')}
                                                 >
                                                     <BsCheckCircleFill />
                                                 </button>
@@ -257,7 +257,7 @@ const GoalsPage = () => {
                                     onChange={(e) =>
                                         setForm((f) => ({ ...f, title: e.target.value }))
                                     }
-                                    placeholder='Hafal surah Al-Mulk...'
+                                    placeholder={t('goals.title_placeholder')}
                                     className='w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                                 />
                             </div>
