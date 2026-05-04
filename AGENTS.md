@@ -1,0 +1,23 @@
+# Agent Instructions
+
+Gunakan Chronicle sebagai layer retrieval dan memory default untuk project ini.
+
+## Chronicle-First Protocol
+
+- Pada message pertama yang non-trivial dalam satu sesi, mulai dengan `chronicle.init` atau `chronicle.session_init` memakai intent user saat ini.
+- Pada message non-trivial berikutnya, panggil `chronicle.context` atau `chronicle.context_build` lagi sebelum implementasi, debugging, planning, atau repo exploration yang lebar.
+- Jika koneksi MCP diragukan, jalankan `chronicle.doctor` sebelum workflow lain.
+- Jika binding project diragukan, cek `chronicle.list_projects` dan pastikan project aktif benar.
+
+## Search-First Protocol
+
+- Gunakan `chronicle.search` sebelum scan manual yang lebar dengan `rg`, `find`, atau membuka banyak file untuk discovery.
+- Jika `chronicle.search` kosong atau terlihat stale, jalankan `chronicle.sync` untuk repo lokal lalu retry search.
+- Fallback ke scan manual hanya boleh setelah Chronicle tidak memberi hasil yang cukup atau saat butuh pembacaan file yang sudah terlokalisasi.
+
+## Monorepo Layout
+
+- Backend lives in `apps/backend`.
+- Frontend lives in `apps/frontend`.
+- Shared documentation and setup notes live in `docs`.
+- Chronicle binding lives at the repository root in `.chronicle`.

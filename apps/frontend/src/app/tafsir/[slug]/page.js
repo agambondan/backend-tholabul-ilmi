@@ -1,0 +1,355 @@
+'use client';
+
+import Footer from '@/components/Footer';
+import { NavbarTailwindCss } from '@/components/Navbar';
+import Section from '@/components/Section';
+import { tafsirApi } from '@/lib/api';
+import Link from 'next/link';
+import { use, useEffect, useState } from 'react';
+import {
+    BsChevronDown,
+    BsChevronLeft,
+    BsChevronUp,
+    BsSearch,
+} from 'react-icons/bs';
+import { MdOutlineAutoStories } from 'react-icons/md';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const TafsirSurahPage = ({ params }) => {
+    const { slug } = use(params);
+    const decodedSlug = decodeURIComponent(slug);
+
+    const [surah, setSurah] = useState(null);
+    const [ayahs, setAyahs] = useState([]);
+    const [tafsirMap, setTafsirMap] = useState({});
+    const [isLoadingAyah, setIsLoadingAyah] = useState(true);
+    const [isLoadingTafsir, setIsLoadingTafsir] = useState(true);
+    const [open, setOpen] = useState(new Set());
+    const [showLatin, setShowLatin] = useState(true);
+    const [showTranslation, setShowTranslation] = useState(true);
+    const [search, setSearch] = useState('');
+
+    useEffect(() => {
+        setIsLoadingAyah(true);
+        fetch(
+            `${API_URL}/api/v1/surah/name/${encodeURIComponent(decodedSlug)}?page=0&size=300`,
+        )
+            .then((r) => r.json())
+            .then((data) => {
+                setSurah(data);
+                setAyahs(data?.ayahs ?? []);
+                if (data?.number) {
+                    loadTafsir(data.number);
+                }
+            })
+            .catch(() => setAyahs([]))
+            .finally(() => setIsLoadingAyah(false));
+    }, [decodedSlug]);
+
+    const loadTafsir = (surahNumber) => {
+        setIsLoadingTafsir(true);
+        tafsirApi
+            .bySurah(surahNumber)
+            .then((r) => r.json())
+            .then((data) => {
+                const map = {};
+                const list = Array.isArray(data) ? data : data?.tafsirs ?? data?.items ?? [];
+                list.forEach((t) => {
+                    map[t.ayah_id ?? t.ayah_number] = t;
+                });
+                setTafsirMap(map);
+            })
+            .catch(() => setTafsirMap({}))
+            .finally(() => setIsLoadingTafsir(false));
+    };
+
+    const toggle = (id) => {
+        setOpen((prev) => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const expandAll = () => setOpen(new Set(ayahs.map((a) => a.id)));
+    const collapseAll = () => setOpen(new Set());
+
+    const hasTafsirData = Object.keys(tafsirMap).length > 0;
+    const isLoading = isLoadingAyah;
+    const query = search.trim().toLowerCase();
+    const visibleAyahs = ayahs.filter((ayah) => {
+        if (!query) return true;
+        const tafsir = tafsirMap[ayah.id] ?? tafsirMap[ayah.number];
+        const haystack = [
+            ayah.number,
+            ayah.text,
+            ayah.arab,
+            ayah.transliteration,
+            ayah.translation?.id,
+            ayah.terjemahan,
+            ayah.meaning,
+            tafsir?.content,
+            tafsir?.text,
+            tafsir?.description,
+            tafsir?.source,
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+        return haystack.includes(query);
+    });
+
+    return (
+        <main className='min-h-screen flex flex-col'>
+            <NavbarTailwindCss />
+            <Section>
+                <div className='container mx-auto px-4 max-w-2xl'>
+                    {/* Back + header */}
+                    <div className='flex items-center gap-3 mb-6'>
+                        <Link
+                            href='/tafsir'
+                            className='p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-gray-500 dark:text-gray-400'
+                        >
+                            <BsChevronLeft />
+                        </Link>
+                        <div className='flex items-center gap-3'>
+                            <div className='w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center'>
+                                <MdOutlineAutoStories className='text-xl text-emerald-700 dark:text-emerald-400' />
+                            </div>
+                            <div>
+                                <h1 className='text-xl font-bold text-emerald-900 dark:text-white'>
+                                    {surah
+                                        ? `${surah.translation?.latin_en ?? decodedSlug} — Tafsir`
+                                        : 'Tafsir Surah'}
+                                </h1>
+                                {surah && (
+                                    <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                        Surah ke-{surah.number} · {surah.number_of_ayahs ?? ayahs.length} ayat
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Display controls */}
+                    <div className='flex items-center gap-2 mb-4 flex-wrap'>
+                        <button
+                            onClick={() => setShowLatin((v) => !v)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${showLatin ? 'bg-emerald-700 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
+                        >
+                            Latin
+                        </button>
+                        <button
+                            onClick={() => setShowTranslation((v) => !v)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${showTranslation ? 'bg-emerald-700 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
+                        >
+                            Terjemahan
+                        </button>
+                        <div className='ml-auto flex gap-2'>
+                            <button
+                                onClick={expandAll}
+                                className='text-xs text-emerald-600 dark:text-emerald-400 hover:underline'
+                            >
+                                Buka semua
+                            </button>
+                            <button
+                                onClick={collapseAll}
+                                className='text-xs text-gray-400 dark:text-gray-500 hover:underline'
+                            >
+                                Tutup semua
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className='flex items-center gap-2 mb-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 px-3 py-2'>
+                        <BsSearch className='text-gray-400 shrink-0' />
+                        <input
+                            type='text'
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder='Cari ayat, terjemahan, atau tafsir...'
+                            className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
+                        />
+                        {search && (
+                            <button
+                                type='button'
+                                onClick={() => setSearch('')}
+                                className='text-xs font-medium text-emerald-600 dark:text-emerald-400'
+                            >
+                                Hapus
+                            </button>
+                        )}
+                    </div>
+
+                    {!isLoading && ayahs.length > 0 && (
+                        <div className='mb-3 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>
+                            <span>
+                                Menampilkan {visibleAyahs.length} dari {ayahs.length} ayat
+                            </span>
+                            {search && (
+                                <button
+                                    type='button'
+                                    onClick={() => setSearch('')}
+                                    className='font-medium text-emerald-600 dark:text-emerald-400'
+                                >
+                                    Reset pencarian
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tafsir data status */}
+                    {!isLoadingTafsir && !hasTafsirData && ayahs.length > 0 && (
+                        <div className='bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 rounded-xl px-4 py-3 mb-5'>
+                            <p className='text-xs text-amber-700 dark:text-amber-400'>
+                                Tafsir untuk surah ini belum tersedia. Tim kami sedang mempersiapkan
+                                data tafsir dari sumber terpercaya.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Loading */}
+                    {isLoading && (
+                        <div className='space-y-2'>
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className='h-16 bg-gray-100 dark:bg-slate-700 rounded-xl animate-pulse'
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Error state */}
+                    {!isLoading && ayahs.length === 0 && (
+                        <div className='text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700'>
+                            <MdOutlineAutoStories className='text-5xl text-gray-200 dark:text-slate-600 mx-auto mb-3' />
+                            <p className='text-gray-500 dark:text-gray-400 mb-1'>Surah tidak ditemukan</p>
+                            <Link
+                                href='/tafsir'
+                                className='mt-3 inline-block text-sm text-emerald-600 dark:text-emerald-400 hover:underline'
+                            >
+                                ← Kembali ke daftar surah
+                            </Link>
+                        </div>
+                    )}
+
+                    {/* Ayah list */}
+                    {!isLoading && ayahs.length > 0 && visibleAyahs.length > 0 && (
+                        <div className='space-y-2'>
+                            {visibleAyahs.map((ayah) => {
+                                const tafsir = tafsirMap[ayah.id] ?? tafsirMap[ayah.number];
+                                const isOpen = open.has(ayah.id);
+                                return (
+                                    <div
+                                        key={ayah.id}
+                                        className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'
+                                    >
+                                        {/* Ayah header */}
+                                        <button
+                                            onClick={() => toggle(ayah.id)}
+                                            className='w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors text-left'
+                                        >
+                                            <span className='w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center justify-center flex-shrink-0'>
+                                                {ayah.number}
+                                            </span>
+                                            <div className='flex-1 min-w-0'>
+                                                <p
+                                                    dir='rtl'
+                                                    className='text-base font-arabic text-gray-900 dark:text-white text-right leading-relaxed line-clamp-1'
+                                                >
+                                                    {ayah.text ?? ayah.arab}
+                                                </p>
+                                            </div>
+                                            {isOpen ? (
+                                                <BsChevronUp className='text-gray-400 flex-shrink-0' />
+                                            ) : (
+                                                <BsChevronDown className='text-gray-400 flex-shrink-0' />
+                                            )}
+                                        </button>
+
+                                        {/* Ayah content */}
+                                        {isOpen && (
+                                            <div className='border-t border-gray-100 dark:border-slate-700 px-4 py-4 space-y-3'>
+                                                {/* Arabic */}
+                                                <p
+                                                    dir='rtl'
+                                                    className='text-2xl leading-loose font-arabic text-gray-900 dark:text-white text-right'
+                                                >
+                                                    {ayah.text ?? ayah.arab}
+                                                </p>
+
+                                                {/* Latin */}
+                                                {showLatin && ayah.transliteration && (
+                                                    <p className='text-sm text-emerald-700 dark:text-emerald-400 italic'>
+                                                        {ayah.transliteration}
+                                                    </p>
+                                                )}
+
+                                                {/* Translation */}
+                                                {showTranslation && (
+                                                    <p className='text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-l-2 border-emerald-200 dark:border-emerald-800 pl-3'>
+                                                        {ayah.translation?.id ??
+                                                            ayah.terjemahan ??
+                                                            ayah.meaning ??
+                                                            '—'}
+                                                    </p>
+                                                )}
+
+                                                {/* Tafsir */}
+                                                {tafsir ? (
+                                                    <div className='bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-4 py-3 space-y-1'>
+                                                        <p className='text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide'>
+                                                            Tafsir{tafsir.source ? ` — ${tafsir.source}` : ''}
+                                                        </p>
+                                                        <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
+                                                            {tafsir.content ?? tafsir.text ?? tafsir.description}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className='bg-gray-50 dark:bg-slate-700/40 rounded-lg px-4 py-3'>
+                                                        <p className='text-xs text-gray-400 dark:text-gray-500 italic'>
+                                                            Tafsir untuk ayah ini belum tersedia.
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {/* Link to quran */}
+                                                <Link
+                                                    href={`/quran/surah/${encodeURIComponent(decodedSlug)}#${ayah.number}`}
+                                                    className='text-xs text-emerald-600 dark:text-emerald-400 hover:underline'
+                                                >
+                                                    Baca di halaman Quran →
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {!isLoading && ayahs.length > 0 && visibleAyahs.length === 0 && (
+                        <div className='text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700'>
+                            <BsSearch className='text-5xl text-gray-200 dark:text-slate-600 mx-auto mb-3' />
+                            <p className='text-gray-500 dark:text-gray-400 mb-1'>
+                                Tidak ada ayat atau tafsir yang cocok dengan pencarian
+                            </p>
+                            <button
+                                type='button'
+                                onClick={() => setSearch('')}
+                                className='mt-3 inline-block text-sm text-emerald-600 dark:text-emerald-400 hover:underline'
+                            >
+                                Hapus pencarian
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </Section>
+            <Footer />
+        </main>
+    );
+};
+
+export default TafsirSurahPage;

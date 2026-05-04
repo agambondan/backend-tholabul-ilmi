@@ -1,0 +1,49 @@
+'use client';
+
+export const dynamic = 'force-dynamic';
+
+import { Spinner3 } from '@/components/spinner/Spinner';
+import { adminBlogApi } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import BlogForm from '../../_BlogForm';
+
+const EditBlogPage = ({ params }) => {
+    const [post, setPost] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(false);
+
+    useEffect(() => {
+        adminBlogApi
+            .listAll()
+            .then((r) => r.json())
+            .then((data) => {
+                const items = data?.items ?? data ?? [];
+                const found = items.find((p) => String(p.id) === String(params.id));
+                if (found) setPost(found);
+                else setError(true);
+            })
+            .catch(() => setError(true))
+            .finally(() => setIsLoading(false));
+    }, [params.id]);
+
+    if (isLoading) return <Spinner3 />;
+
+    if (error) {
+        return (
+            <div className='p-8'>
+                <p className='text-red-500 dark:text-red-400'>Artikel tidak ditemukan.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className='p-8'>
+            <h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-6'>
+                Edit Artikel
+            </h1>
+            <BlogForm initialData={post} postId={params.id} />
+        </div>
+    );
+};
+
+export default EditBlogPage;

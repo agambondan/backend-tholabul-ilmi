@@ -1,0 +1,353 @@
+'use client';
+
+import Footer from '@/components/Footer';
+import { NavbarTailwindCss } from '@/components/Navbar';
+import { useMemo, useState } from 'react';
+import { BsChevronDown, BsSearch } from 'react-icons/bs';
+import { MdOutlineAutoStories } from 'react-icons/md';
+
+const FIQH_DATA = [
+    {
+        category: 'Thaharah (Bersuci)',
+        arabic: 'الطَّهَارَة',
+        icon: '💧',
+        items: [
+            {
+                title: 'Wudhu',
+                content:
+                    'Fardhu wudhu ada 6: (1) Niat, (2) Membasuh wajah, (3) Membasuh kedua tangan hingga siku, (4) Mengusap sebagian kepala, (5) Membasuh kedua kaki hingga mata kaki, (6) Tertib. Hal yang membatalkan wudhu: keluarnya sesuatu dari dua jalan, hilang akal (tidur bukan dengan duduk tegak), menyentuh kemaluan tanpa penghalang.',
+                dalil: 'QS. Al-Maidah: 6',
+            },
+            {
+                title: 'Mandi Wajib (Ghusl)',
+                content:
+                    'Mandi wajib diwajibkan karena: (1) Bersetubuh, (2) Keluarnya mani, (3) Selesai haid, (4) Nifas, (5) Melahirkan, (6) Meninggal (bagi yang masih hidup memandikan). Fardhu mandi: niat dan meratakan air ke seluruh tubuh.',
+                dalil: 'QS. Al-Maidah: 6; HR. Bukhari Muslim',
+            },
+            {
+                title: 'Tayamum',
+                content:
+                    'Dibolehkan saat tidak ada air atau sakit yang menghalangi penggunaan air. Caranya: (1) Niat, (2) Tepuk debu yang suci 2 kali, (3) Usap wajah dengan tepukan pertama, (4) Usap kedua tangan (sampai siku) dengan tepukan kedua. Tayamum batal dengan hal yang membatalkan wudhu atau saat air tersedia.',
+                dalil: 'QS. Al-Maidah: 6',
+            },
+            {
+                title: 'Najis dan Cara Mensucikannya',
+                content:
+                    'Najis mughallazhah (babi/anjing): sucikan 7x, salah satunya dengan tanah. Najis mutawassithah (umum): hilangkan wujud, rasa, warna, dan baunya dengan air. Najis mukhaffafah (air kencing bayi laki-laki yang belum makan selain ASI): cukup diperciki air.',
+                dalil: 'HR. Muslim, Abu Dawud',
+            },
+        ],
+    },
+    {
+        category: 'Sholat',
+        arabic: 'الصَّلَاة',
+        icon: '🕌',
+        items: [
+            {
+                title: 'Sholat Fardhu 5 Waktu',
+                content:
+                    'Wajib atas setiap Muslim yang baligh dan berakal. Waktunya: Subuh (fajar - terbit matahari), Dzuhur (tergelincir - bayangan sama panjang), Ashar (bayangan lebih panjang - terbenam), Maghrib (terbenam - mega merah hilang), Isya (mega merah - tengah malam/fajar). Jumlah rakaat: Subuh 2, Dzuhur 4, Ashar 4, Maghrib 3, Isya 4.',
+                dalil: 'QS. Al-Isra: 78; HR. Bukhari Muslim',
+            },
+            {
+                title: 'Sholat Berjamaah',
+                content:
+                    'Hukum sholat berjamaah adalah fardhu kifayah menurut mayoritas ulama, sunnah muakkad menurut sebagian ulama. Keutamaannya 27 derajat lebih dari sholat sendirian. Syarat makmum: tidak boleh lebih depan dari imam, niat menjadi makmum, mengetahui gerakan imam.',
+                dalil: 'HR. Bukhari Muslim',
+            },
+            {
+                title: 'Sholat Qashar dan Jama',
+                content:
+                    "Qashar: meringkas sholat 4 rakaat menjadi 2 rakaat saat safar (perjalanan ≥ 81 km/2 marhalah). Jama' Taqdim: menggabungkan Dzuhur+Ashar di waktu Dzuhur, atau Maghrib+Isya di waktu Maghrib. Jama' Ta'khir: kebalikannya. Boleh dilakukan saat safar, hujan lebat, atau keadaan darurat.",
+                dalil: 'QS. An-Nisa: 101; HR. Muslim',
+            },
+            {
+                title: 'Sholat Sunnah Rawatib',
+                content:
+                    'Sholat rawatib yang dikerjakan: (1) 2 rakaat sebelum Subuh – sangat dikuatkan, (2) 4 rakaat sebelum Dzuhur, (3) 2 rakaat sesudah Dzuhur, (4) 2 rakaat sesudah Maghrib, (5) 2 rakaat sesudah Isya. Total 12 rakaat rawatib. Sholat 2 rakaat sebelum Subuh afdhal dari dunia dan seisinya.',
+                dalil: 'HR. Muslim, Tirmidzi',
+            },
+            {
+                title: 'Sholat Jumat',
+                content:
+                    'Wajib bagi laki-laki Muslim yang mukallaf, merdeka, mukim (bukan musafir), tidak uzur. Terdiri dari 2 rakaat dengan 2 khutbah sebelumnya. Waktu: sama dengan Dzuhur. Dianjurkan mandi, memakai pakaian terbaik, bersegera ke masjid, dan memperbanyak sholawat pada hari Jumat.',
+                dalil: 'QS. Al-Jumuah: 9-10',
+            },
+        ],
+    },
+    {
+        category: 'Puasa',
+        arabic: 'الصِّيَام',
+        icon: '🌙',
+        items: [
+            {
+                title: 'Puasa Ramadhan',
+                content:
+                    'Wajib bagi Muslim yang baligh, berakal, sehat, mukim, dan tidak haid/nifas. Rukun: niat sebelum fajar dan menahan diri dari pembatal sejak fajar hingga terbenam matahari. Pembatal puasa: makan/minum dengan sengaja, hubungan badan, keluar mani dengan sengaja, muntah dengan sengaja, haid/nifas, murtad.',
+                dalil: 'QS. Al-Baqarah: 183-185',
+            },
+            {
+                title: 'Puasa Sunnah',
+                content:
+                    "Puasa Senin-Kamis: amal ditampakkan pada hari itu. Puasa Ayyamul Bidh: 13, 14, 15 setiap bulan Hijriah. Puasa Syawal: 6 hari setelah Ramadhan. Puasa Asyura (10 Muharram): menghapus dosa setahun lalu. Puasa Arafah (9 Dzulhijjah): menghapus dosa 2 tahun.",
+                dalil: 'HR. Muslim, Abu Dawud, Tirmidzi',
+            },
+            {
+                title: 'Fidyah dan Kafarat',
+                content:
+                    'Fidyah: memberi makan 1 orang miskin per hari bagi yang tidak bisa puasa karena sakit permanen atau usia lanjut. Qadha: mengganti puasa yang ditinggalkan dengan uzur (sakit sementara, hamil/menyusui, safar). Kafarat: memerdekakan budak / puasa 2 bulan berturut / memberi makan 60 orang miskin untuk batal puasa karena berhubungan badan.',
+                dalil: 'QS. Al-Baqarah: 184; HR. Bukhari Muslim',
+            },
+        ],
+    },
+    {
+        category: 'Zakat',
+        arabic: 'الزَّكَاة',
+        icon: '💰',
+        items: [
+            {
+                title: 'Zakat Maal',
+                content:
+                    'Wajib jika harta mencapai nisab (85 gram emas) dan telah tersimpan 1 tahun (haul). Jenis harta: emas/perak/uang, barang dagangan, hasil pertanian, hewan ternak, hasil tambang, harta temuan. Kadar: 2,5% untuk emas/perak/uang/dagang, 5-10% untuk hasil pertanian, bervariasi untuk hewan.',
+                dalil: 'QS. At-Taubah: 60; HR. Bukhari Muslim',
+            },
+            {
+                title: '8 Golongan Penerima Zakat (Ashnaf)',
+                content:
+                    '(1) Fakir: tidak memiliki apa-apa, (2) Miskin: punya tapi tidak cukup, (3) Amil: pengurus zakat, (4) Muallaf: yang baru masuk Islam, (5) Riqab: budak yang ingin merdeka, (6) Gharim: orang terlilit hutang, (7) Fi Sabilillah: pejuang Islam, (8) Ibnu Sabil: musafir yang kehabisan bekal.',
+                dalil: 'QS. At-Taubah: 60',
+            },
+            {
+                title: 'Zakat Fitrah',
+                content:
+                    'Wajib atas setiap Muslim yang mampu, termasuk anak kecil dan janin dalam kandungan. Besarnya 1 sha\' (±2,5 kg) makanan pokok atau senilainya. Waktu: boleh dibayar sejak awal Ramadhan, wajib sebelum sholat Idul Fitri. Tujuan: membersihkan diri dari kesia-siaan dan ucapan kotor selama Ramadhan.',
+                dalil: 'HR. Abu Dawud, Ibnu Majah',
+            },
+        ],
+    },
+    {
+        category: 'Haji & Umrah',
+        arabic: 'الْحَجُّ وَالْعُمْرَة',
+        icon: '🕋',
+        items: [
+            {
+                title: 'Rukun Haji',
+                content:
+                    'Rukun haji ada 6 yang jika ditinggalkan maka haji tidak sah: (1) Ihram, (2) Wukuf di Arafah (9 Dzulhijjah), (3) Thawaf ifadhah, (4) Sa\'i, (5) Tahallul (mencukur/memendekkan rambut), (6) Tertib. Wukuf di Arafah adalah pilar utama haji.',
+                dalil: 'HR. Abu Dawud, Tirmidzi',
+            },
+            {
+                title: 'Larangan Saat Ihram',
+                content:
+                    'Larangan bagi laki-laki: memakai pakaian berjahit dan menutup kepala. Larangan bagi perempuan: menutup wajah dan memakai sarung tangan. Larangan bagi keduanya: memakai wewangian, mencukur/memotong rambut/kuku, berburu hewan darat, akad nikah, dan berhubungan badan.',
+                dalil: 'QS. Al-Baqarah: 197; HR. Bukhari Muslim',
+            },
+            {
+                title: 'Umrah dan Rukunnya',
+                content:
+                    'Umrah hukumnya wajib sekali seumur hidup menurut pendapat yang rajih. Rukun umrah: (1) Ihram dari miqat, (2) Thawaf 7x mengelilingi Kabah, (3) Sa\'i 7x antara Shafa dan Marwah, (4) Tahallul (mencukur/memendekkan rambut). Umrah bisa dilakukan kapan saja sepanjang tahun kecuali hari-hari tertentu menurut sebagian ulama.',
+                dalil: 'HR. Bukhari Muslim',
+            },
+        ],
+    },
+    {
+        category: 'Muamalah',
+        arabic: 'الْمُعَامَلَة',
+        icon: '🤝',
+        items: [
+            {
+                title: 'Jual Beli (Bai\')',
+                content:
+                    "Syarat jual beli: (1) Penjual dan pembeli baligh & berakal, (2) Kerelaan kedua pihak, (3) Barang bermanfaat dan bisa diserahkan, (4) Barang milik penjual atau wakilnya. Jual beli yang dilarang: riba, gharar (ketidakjelasan), maysir (judi), haram lidzatihi (barang haram).",
+                dalil: 'QS. Al-Baqarah: 275; HR. Bukhari Muslim',
+            },
+            {
+                title: 'Riba dan Jenisnya',
+                content:
+                    'Riba adalah pengambilan tambahan yang bathil. Riba Fadhl: menukar barang ribawi sejenis yang tidak setimbang. Riba Nasiah: penambahan harga karena penundaan pembayaran (bunga bank). Hukum: haram, termasuk dosa besar. Semua transaksi berbasis bunga (kredit, deposito riba) termasuk dalam larangan ini.',
+                dalil: 'QS. Al-Baqarah: 275-278',
+            },
+            {
+                title: 'Warisan (Faraid)',
+                content:
+                    "Ilmu faraid adalah ilmu wajib dipelajari umat Islam. Ahli waris utama: anak laki-laki (ashabah), anak perempuan (1/2 atau 2/3), istri (1/8 atau 1/4), suami (1/4 atau 1/2), ibu (1/6 atau 1/3), ayah (1/6 + ashabah). Prinsip: laki-laki mendapat 2x bagian perempuan dalam nasab yang sama.",
+                dalil: 'QS. An-Nisa: 11-12',
+            },
+        ],
+    },
+];
+
+export default function FiqhPage() {
+    const [openCategory, setOpenCategory] = useState(null);
+    const [openItem, setOpenItem] = useState({});
+    const [search, setSearch] = useState('');
+
+    const toggleCategory = (i) => {
+        setOpenCategory(openCategory === i ? null : i);
+        setOpenItem({});
+    };
+
+    const toggleItem = (ci, ii) => {
+        const key = `${ci}-${ii}`;
+        setOpenItem((prev) => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const filteredData = useMemo(() => {
+        const query = search.trim().toLowerCase();
+        if (!query) return FIQH_DATA;
+        return FIQH_DATA.map((category) => {
+            const items = category.items.filter((item) => {
+                const haystack = [category.category, category.arabic, item.title, item.content, item.dalil]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+                return haystack.includes(query);
+            });
+            return { ...category, items };
+        }).filter((category) => category.items.length > 0);
+    }, [search]);
+
+    const totalTopics = FIQH_DATA.reduce((sum, category) => sum + category.items.length, 0);
+    const visibleTopics = filteredData.reduce((sum, category) => sum + category.items.length, 0);
+
+    return (
+        <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
+            <NavbarTailwindCss />
+            <div className='max-w-2xl flex-1 w-full mx-auto px-4 pt-24 pb-8'>
+                {/* Header */}
+                <div className='mb-8 text-center'>
+                    <div className='inline-flex items-center justify-center w-16 h-16 bg-teal-100 dark:bg-teal-900/40 rounded-2xl mb-4'>
+                        <MdOutlineAutoStories className='text-3xl text-teal-600 dark:text-teal-400' />
+                    </div>
+                    <h1 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-2'>
+                        Fiqh Ringkas
+                    </h1>
+                    <p className='text-sm text-gray-500 dark:text-gray-400'>
+                        Panduan praktis hukum Islam sehari-hari
+                    </p>
+                </div>
+
+                <div className='flex items-center gap-2 mb-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 px-3 py-2'>
+                    <BsSearch className='text-gray-400 shrink-0' />
+                    <input
+                        type='text'
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder='Cari topik, dalil, atau penjelasan...'
+                        className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
+                    />
+                    {search && (
+                        <button
+                            type='button'
+                            onClick={() => setSearch('')}
+                            className='text-xs font-medium text-emerald-600 dark:text-emerald-400'
+                        >
+                            Hapus
+                        </button>
+                    )}
+                </div>
+
+                <div className='mb-4 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>
+                    <span>
+                        Menampilkan {visibleTopics} dari {totalTopics} topik
+                    </span>
+                    {search && (
+                        <button
+                            type='button'
+                            onClick={() => setSearch('')}
+                            className='font-medium text-emerald-600 dark:text-emerald-400'
+                        >
+                            Reset pencarian
+                        </button>
+                    )}
+                </div>
+
+                {/* Categories */}
+                <div className='space-y-3'>
+                    {filteredData.length === 0 ? (
+                        <div className='text-center py-16 text-gray-400 dark:text-gray-500 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700'>
+                            Tidak ada topik fiqh yang cocok dengan pencarian.
+                        </div>
+                    ) : (
+                        filteredData.map((cat, ci) => (
+                            <div
+                                key={ci}
+                                className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden'
+                            >
+                                <button
+                                    onClick={() => toggleCategory(ci)}
+                                    className='w-full flex items-center justify-between px-5 py-4'
+                                >
+                                    <div className='flex items-center gap-3'>
+                                        <span className='text-2xl'>{cat.icon}</span>
+                                        <div className='text-left'>
+                                            <p className='font-bold text-gray-900 dark:text-white'>
+                                                {cat.category}
+                                            </p>
+                                            <p
+                                                className='text-xs text-gray-400 dark:text-gray-500'
+                                                style={{ fontFamily: 'Amiri, serif' }}
+                                            >
+                                                {cat.arabic}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className='flex items-center gap-2'>
+                                        <span className='text-xs text-gray-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-full'>
+                                            {cat.items.length} topik
+                                        </span>
+                                        <BsChevronDown
+                                            className={`text-gray-400 transition-transform ${openCategory === ci ? 'rotate-180' : ''}`}
+                                        />
+                                    </div>
+                                </button>
+
+                                {openCategory === ci && (
+                                    <div className='border-t border-gray-50 dark:border-slate-700 divide-y divide-gray-50 dark:divide-slate-700'>
+                                        {cat.items.map((item, ii) => {
+                                            const key = `${ci}-${ii}`;
+                                            const isOpen = !!openItem[key];
+                                            return (
+                                                <div key={ii}>
+                                                    <button
+                                                        onClick={() => toggleItem(ci, ii)}
+                                                        className='w-full flex items-center justify-between px-5 py-3.5 text-left bg-gray-50/50 dark:bg-slate-800/50'
+                                                    >
+                                                        <span className='text-sm font-semibold text-emerald-800 dark:text-emerald-300'>
+                                                            {item.title}
+                                                        </span>
+                                                        <BsChevronDown
+                                                            className={`text-gray-400 text-xs flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                                                        />
+                                                    </button>
+                                                    {isOpen && (
+                                                        <div className='px-5 pb-4 space-y-2'>
+                                                            <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
+                                                                {item.content}
+                                                            </p>
+                                                            {item.dalil && (
+                                                                <p className='text-xs text-emerald-600 dark:text-emerald-400 font-medium'>
+                                                                    Dalil: {item.dalil}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-8'>
+                    Konten merupakan ringkasan. Untuk masalah detail, konsultasikan dengan
+                    ulama atau ahli fiqh.
+                </p>
+            </div>
+            <Footer />
+        </main>
+    );
+}

@@ -1,0 +1,263 @@
+'use client';
+/* eslint-disable react-hooks/exhaustive-deps */
+
+import AyahPage from '@/app/quran/[...slug]/AyahPage';
+import AutoScrollButton from '@/components/popup/AutoScrollButton';
+import ScrollableComponent from '@/components/popup/ScrollableButton';
+import SettingButton from '@/components/popup/SettingButton';
+import { SkeletonReader } from '@/components/skeleton/Skeleton';
+import { progressApi, streakApi } from '@/lib/api';
+import { useLayoutMode } from '@/lib/useLayoutMode';
+import classNames from 'classnames';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
+import { TbPlayerTrackNext, TbPlayerTrackPrev } from 'react-icons/tb';
+
+const PAGE_SIZE = 10;
+
+const normalizeAyahs = (data) => data?.ayahs ?? data?.items ?? data ?? [];
+
+const InfiniteScrollAyahPage = ({ params, searchParams }) => {
+	const { isWide } = useLayoutMode();
+	const [surah, setSurah] = useState(null);
+	const [ayahs, setAyahs] = useState([]);
+	const [page, setPage] = useState(0);
+	const [isInitialLoading, setIsInitialLoading] = useState(true);
+	const [isFetchingMore, setIsFetchingMore] = useState(false);
+	const [hasMore, setHasMore] = useState(true);
+	const [error, setError] = useState('');
+
+	const slug = decodeURIComponent(params.slug?.[1] ?? '');
+
+	const loadMoreAyah = useCallback(() => {
+		if (isInitialLoading || isFetchingMore || !hasMore) return;
+		setPage((prev) => prev + 1);
+	}, [hasMore, isFetchingMore, isInitialLoading]);
+
+	const fetchSurah = useCallback(
+		async (pageIndex, size = PAGE_SIZE) => {
+			const hash = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
+			let nextSize = size;
+			if (hash && pageIndex === 0) {
+				const hashNum = parseInt(hash, 10);
+				if (!Number.isNaN(hashNum) && hashNum > 0) {
+					nextSize = hashNum + (hashNum % PAGE_SIZE);
+				}
+			}
+
+			const res = await fetch(
+				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/surah/name/${slug}?page=${pageIndex}&size=${nextSize}`,
+			);
+			if (!res.ok) {
+				throw new Error('Gagal memuat surah');
+			}
+			return res.json();
+		},
+		[slug],
+	);
+
+	useEffect(() => {
+		let isActive = true;
+		setIsInitialLoading(true);
+		setError('');
+		setPage(0);
+		setAyahs([]);
+		setSurah(null);
+		setHasMore(true);
+
+		fetchSurah(0)
+			.then((data) => {
+				if (!isActive) return;
+				const nextSurah = data ?? {};
+				const nextAyahs = normalizeAyahs(nextSurah);
+				setSurah(nextSurah);
+				setAyahs(nextAyahs);
+				setHasMore(nextAyahs.length < (nextSurah.number_of_ayahs ?? nextAyahs.length));
+				if (nextSurah.number && nextAyahs[0]) {
+					progressApi.saveQuran(nextSurah.number, nextAyahs[0].number).catch(() => {});
+					streakApi.logActivity('quran').catch(() => {});
+				}
+			})
+			.catch(() => {
+				if (isActive) setError('Gagal memuat surah.');
+			})
+			.finally(() => {
+				if (isActive) setIsInitialLoading(false);
+			});
+
+		return () => {
+			isActive = false;
+		};
+	}, [fetchSurah]);
+
+	useEffect(() => {
+		if (page === 0 || !surah) return;
+
+		let isActive = true;
+		setIsFetchingMore(true);
+		fetchSurah(page)
+			.then((data) => {
+				if (!isActive) return;
+				const nextAyahs = normalizeAyahs(data);
+				setAyahs((prev) => {
+					const merged = [...prev, ...nextAyahs];
+					setHasMore(merged.length < (surah.number_of_ayahs ?? merged.length));
+					return merged;
+				});
+			})
+			.catch(() => {
+				if (isActive) setHasMore(false);
+			})
+			.finally(() => {
+				if (isActive) setIsFetchingMore(false);
+			});
+
+		return () => {
+			isActive = false;
+		};
+	}, [fetchSurah, page, surah]);
+
+	if (isInitialLoading) return <SkeletonReader />;
+	if (error)
+		return (
+			<div className='flex flex-col items-center justify-center min-h-[40vh] text-center px-4'>
+				<p className='text-4xl mb-3'>⚠️</p>
+				<h2 className='text-lg font-bold text-emerald-900 dark:text-white mb-2'>
+					Gagal Memuat Quran
+				</h2>
+				<p className='text-sm text-gray-500 dark:text-gray-400'>
+					Server API tidak dapat dijangkau. Pastikan server backend berjalan.
+				</p>
+			</div>
+		);
+
+	const surahTitle = surah?.translation?.latin_en ?? 'Al-Quran';
+	const prevHref = surah?.prev_surah?.translation?.latin_en
+		? `/quran/surah/${surah.prev_surah.translation.latin_en}`
+		: '';
+	const nextHref = surah?.next_surah?.translation?.latin_en
+		? `/quran/surah/${surah.next_surah.translation.latin_en}`
+		: '';
+
+	return (
+		<div className={isWide ? 'w-full' : 'max-w-4xl mx-auto'}>
+			<div className='text-center py-6 px-4 border-b border-emerald-100 dark:border-slate-700'>
+				<p className='text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1'>
+					Surah {surah?.number ?? '-'}
+				</p>
+				<h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-0.5'>
+					{surahTitle}
+				</h1>
+				<p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>
+					{surah?.translation?.idn ?? ''} &middot; {surah?.number_of_ayahs ?? ayahs.length} Ayat &middot;{' '}
+					{surah?.revelation_type ?? ''}
+				</p>
+				<p
+					className='font-kitab text-5xl leading-[2] text-emerald-900 dark:text-white'
+					style={{ direction: 'rtl' }}
+				>
+					{surah?.translation?.ar?.replace('سُورَةُ', '').trim() ?? ''}
+				</p>
+			</div>
+
+			<div className='flex justify-between items-center px-4 py-3 text-sm border-b border-emerald-50 dark:border-slate-800'>
+				<div
+					className={classNames({
+						'flex items-center': true,
+						'opacity-30 pointer-events-none': !prevHref,
+					})}
+				>
+					<Link
+						className='flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors'
+						href={prevHref}
+					>
+						<TbPlayerTrackPrev size={14} />
+						<span className='hidden sm:inline'>Surat Sebelumnya</span>
+						<span className='sm:hidden'>Prev</span>
+					</Link>
+				</div>
+				<div
+					className={classNames({
+						'flex items-center': true,
+						'opacity-30 pointer-events-none': !nextHref,
+					})}
+				>
+					<Link
+						className='flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors'
+						href={nextHref}
+					>
+						<span className='hidden sm:inline'>Surat Selanjutnya</span>
+						<span className='sm:hidden'>Next</span>
+						<TbPlayerTrackNext size={14} />
+					</Link>
+				</div>
+			</div>
+
+			<ul
+				key={`${surahTitle}-${surah?.number ?? ''}`}
+				id={`${surahTitle}-${surah?.number ?? ''}`}
+			>
+				{ayahs.map((ayah, index) => (
+					<AyahPage
+						surah={surah}
+						key={ayah.number}
+						ayah={ayah}
+						newLimit={loadMoreAyah}
+						isLast={index === ayahs.length - 2}
+					/>
+				))}
+			</ul>
+
+			{isFetchingMore && (
+				<div className='py-4'>
+					<SkeletonReader />
+				</div>
+			)}
+
+			{!hasMore && ayahs.length > 0 && (
+				<p className='text-center text-xs text-gray-400 dark:text-gray-600 py-4'>
+					Semua ayat sudah ditampilkan
+				</p>
+			)}
+
+			<ScrollableComponent>
+				<div className='flex justify-between items-center text-sm max-w-4xl mx-auto'>
+					<div
+						className={classNames({
+							'flex items-center': true,
+							'opacity-30 pointer-events-none': !prevHref,
+						})}
+					>
+						<Link
+							className='flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors'
+							href={prevHref}
+						>
+							<TbPlayerTrackPrev size={14} />
+							<span className='hidden sm:inline'>Surat Sebelumnya</span>
+							<span className='sm:hidden'>Prev</span>
+						</Link>
+					</div>
+					<div
+						className={classNames({
+							'flex items-center': true,
+							'opacity-30 pointer-events-none': !nextHref,
+						})}
+					>
+						<Link
+							className='flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors'
+							href={nextHref}
+						>
+							<span className='hidden sm:inline'>Surat Selanjutnya</span>
+							<span className='sm:hidden'>Next</span>
+							<TbPlayerTrackNext size={14} />
+						</Link>
+					</div>
+				</div>
+			</ScrollableComponent>
+			<AutoScrollButton />
+			<SettingButton />
+		</div>
+	);
+};
+
+export default InfiniteScrollAyahPage;

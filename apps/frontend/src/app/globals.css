@@ -1,0 +1,284 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --navbar-height: 4.5rem;
+    }
+}
+
+/* ─── Custom Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #faf3e0;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #065f46;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #064e3b;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #10b981;
+}
+
+/* ─── Ornament Divider ─────────────────────────────────────────── */
+.ornament-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: #d97706;
+}
+
+.ornament-divider::before,
+.ornament-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #d97706, transparent);
+}
+
+/* ─── Arabic Text ──────────────────────────────────────────────── */
+.text-arabic {
+    direction: rtl;
+    font-family: 'Amiri', serif;
+    line-height: 2;
+}
+
+tajweed.ghn {
+    color: #FF7E1E;
+}
+
+tajweed.ghn:hover {
+    background-color: #FF7E1E;
+    color: black;
+}
+
+tajweed.qlq {
+    color: #DD0008;
+}
+
+tajweed.qlq:hover {
+    background-color: #F3A6A9;
+    color: #DD0008;
+    cursor: pointer;
+}
+
+tajweed.idgh_ghn {
+    color: #169200;
+}
+
+tajweed.idgh_ghn:hover {
+    background-color: #9CE58E;
+    color: #169200;
+    cursor: pointer;
+}
+
+tajweed.idgh_w_ghn {
+    color: #169200;
+}
+
+tajweed.idgh_w_ghn:hover {
+    background-color: #9CE58E;
+    color: #169200;
+    cursor: pointer;
+}
+
+tajweed.iqlb {
+    color: #26BFFD;
+}
+
+tajweed.iqlb:hover {
+    background-color: #92E5FF;
+    color: #0099C5;
+    cursor: pointer;
+}
+
+tajweed.ikhf {
+    color: #9400A8;
+}
+
+tajweed.ikhf:hover {
+    background-color: #DAA6E1;
+    color: #9400A8;
+    cursor: pointer;
+}
+
+tajweed.ikhf_shfw {
+    color: #D500B7;
+}
+
+tajweed.ikhf_shfw:hover {
+    background-color: #F0A6E6;
+    color: #D500B7;
+    cursor: pointer;
+}
+
+tajweed.idghm_shfw {
+    color: #58B800;
+}
+
+tajweed.idghm_shfw:hover {
+    background-color: #BAE890;
+    color: #58B800;
+    cursor: pointer;
+}
+
+tajweed.slnt {
+    color: #AAAAAA;
+}
+
+tajweed.ham_wasl {
+    color: #AAAAAA;
+}
+
+tajweed.ham_wasl:hover {
+    background-color: #D7D7D7;
+}
+
+tajweed.madda_necessary {
+    color: #000EBC;
+}
+
+tajweed.madda_obligatory {
+    color: #2144C1;
+}
+
+tajweed.madda_permissible {
+    color: #4050FF;
+}
+
+tajweed.madda_normal {
+    color: #537FFF;
+}
+
+.idgh_mus {
+    color: #A1A1A1;
+}
+
+tajweed.idgh_mus:hover {
+    background-color: #D7D7D7;
+}
+
+@import url(//fonts.googleapis.com/earlyaccess/amiri.css);
+@import url(//fonts.googleapis.com/earlyaccess/droidarabickufi.css);
+@import url(//fonts.googleapis.com/earlyaccess/droidarabicnaskh.css);
+@import url(//fonts.googleapis.com/earlyaccess/thabit.css);
+
+@font-face {
+    font-family: 'MeQuran';
+    src: url('//cdn.alquran.cloud/public/fonts/me_quran-webfont.otf');
+}
+
+.font-mequran {
+    font-family: 'MeQuran';
+}
+
+@font-face {
+    font-family: 'MeQuran2';
+    src: url('//cdn.alquran.cloud/public/fonts/me_quran_2.ttf');
+}
+
+.font-mequran2 {
+    font-family: 'MeQuran2';
+}
+
+@font-face {
+    font-family: 'NooreHidayah';
+    src: url('//cdn.alquran.cloud/public/fonts/noorehidayat.ttf');
+}
+
+.font-nh {
+    font-family: 'NooreHidayah';
+}
+
+@font-face {
+    font-family: 'Othmani';
+    src: url('//cdn.alquran.cloud/public/fonts/ar-Othmani.ttf');
+}
+
+.font-othmani {
+    font-family: 'Othmani';
+}
+
+@font-face {
+    font-family: 'Quran';
+    src: url('//cdn.alquran.cloud/public/fonts/QUR_STD.TTF');
+}
+
+.font-quran {
+    font-family: 'Quran';
+}
+
+@font-face {
+    font-family: 'Uthmani';
+    src: url("//cdn.alquran.cloud/public/fonts/uthman_tn09.otf") format("opentype");
+}
+
+.font-uthmani {
+    font-family: 'Uthmani', serif;
+}
+
+@font-face {
+    font-family: 'Scheherazade';
+    src: url("//cdn.alquran.cloud/public/fonts/Scheherazade-webfont.ttf");
+}
+
+.font-scheherazade {
+    font-family: 'Scheherazade';
+}
+
+@font-face {
+    font-family: 'Naskh';
+    src: url("//cdn.alquran.cloud/public/fonts/kfc_naskh-webfont.ttf");
+}
+
+.font-naskh {
+    font-family: 'Naskh';
+}
+
+@font-face {
+    font-family: 'Kitab';
+    src: url("//cdn.alquran.cloud/public/fonts/Kitab-Regular.ttf");
+}
+
+.font-kitab {
+    font-family: 'Kitab';
+}
+
+@font-face {
+    font-family: 'Kitab Bold';
+    src: url("//cdn.alquran.cloud/public/fonts/Kitab-Bold.ttf");
+}
+
+.font-kitab-bold {
+    font-family: 'Kitab Bold';
+}
+
+.font-amiri {
+    font-family: 'Amiri', serif;
+}
+
+.font-droid-arabic-kufi {
+    font-family: 'Droid Arabic Kufi', serif;
+}
+
+.font-droid-arabic-naskh {
+    font-family: 'Droid Arabic Naskh', serif;
+}
+
+.font-thabit {
+    font-family: 'Thabit', serif;
+}

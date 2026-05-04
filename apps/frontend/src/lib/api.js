@@ -1,0 +1,452 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const getToken = () =>
+    typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
+const refreshAccessToken = async () => {
+    try {
+        const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        const newToken = data.token ?? data.access_token;
+        if (newToken) localStorage.setItem('auth_token', newToken);
+        return newToken ?? null;
+    } catch {
+        return null;
+    }
+};
+
+export const authFetch = async (path, options = {}) => {
+    const token = getToken();
+    const res = await fetch(`${API_URL}${path}`, {
+        ...options,
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...options.headers,
+        },
+    });
+
+    if (res.status === 401) {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+            return fetch(`${API_URL}${path}`, {
+                ...options,
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${newToken}`,
+                    ...options.headers,
+                },
+            });
+        }
+    }
+
+    return res;
+};
+
+export const userApi = {
+    updateMe: (id, data) =>
+        authFetch(`/api/v1/users/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+    changePassword: (oldPassword, newPassword) =>
+        authFetch('/api/v1/auth/password', {
+            method: 'PUT',
+            body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+        }),
+};
+
+export const adminUserApi = {
+    list: () => authFetch('/api/v1/users'),
+    update: (id, data) =>
+        authFetch(`/api/v1/users/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+    delete: (id) => authFetch(`/api/v1/users/${id}`, { method: 'DELETE' }),
+};
+
+export const bookmarkApi = {
+    list: () => authFetch('/api/v1/bookmarks'),
+    add: (refType, refId) =>
+        authFetch('/api/v1/bookmarks', {
+            method: 'POST',
+            body: JSON.stringify({ ref_type: refType, ref_id: refId }),
+        }),
+    remove: (id) => authFetch(`/api/v1/bookmarks/${id}`, { method: 'DELETE' }),
+};
+
+export const progressApi = {
+    getQuran: () => authFetch('/api/v1/progress/quran'),
+    saveQuran: (surahNumber, ayahNumber) =>
+        authFetch('/api/v1/progress/quran', {
+            method: 'PUT',
+            body: JSON.stringify({ surah_number: surahNumber, ayah_number: ayahNumber }),
+        }),
+    getHadith: () => authFetch('/api/v1/progress/hadith'),
+    saveHadith: (bookSlug, hadithId) =>
+        authFetch('/api/v1/progress/hadith', {
+            method: 'PUT',
+            body: JSON.stringify({ book_slug: bookSlug, hadith_id: hadithId }),
+        }),
+};
+
+export const hafalanApi = {
+    list: () => authFetch('/api/v1/hafalan'),
+    summary: () => authFetch('/api/v1/hafalan/summary'),
+    update: (surahId, status) =>
+        authFetch(`/api/v1/hafalan/surah/${surahId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status }),
+        }),
+};
+
+export const streakApi = {
+    get: () => authFetch('/api/v1/streak'),
+    logActivity: (type) =>
+        authFetch('/api/v1/activity', {
+            method: 'POST',
+            body: JSON.stringify({ type }),
+        }),
+};
+
+export const searchApi = {
+    search: (q, type = 'all', lang = 'id') =>
+        fetch(`${API_URL}/api/v1/search?q=${encodeURIComponent(q)}&type=${type}&lang=${lang}`),
+};
+
+export const doaApi = {
+    list: (page = 0, size = 20) => fetch(`${API_URL}/api/v1/doa?page=${page}&size=${size}`),
+    byCategory: (category, page = 0, size = 20) =>
+        fetch(`${API_URL}/api/v1/doa/category/${encodeURIComponent(category)}?page=${page}&size=${size}`),
+    detail: (id) => fetch(`${API_URL}/api/v1/doa/${id}`),
+};
+
+export const asmaulHusnaApi = {
+    list: () => fetch(`${API_URL}/api/v1/asmaul-husna`),
+    detail: (number) => fetch(`${API_URL}/api/v1/asmaul-husna/${number}`),
+};
+
+export const tafsirApi = {
+    byAyah: (ayahId) => fetch(`${API_URL}/api/v1/tafsir/ayah/${ayahId}`),
+    bySurah: (number) => fetch(`${API_URL}/api/v1/tafsir/surah/${number}`),
+};
+
+export const mufrodatApi = {
+    byAyah: (ayahId) => fetch(`${API_URL}/api/v1/mufrodat/ayah/${ayahId}`),
+    byRoot: (word) => fetch(`${API_URL}/api/v1/mufrodat/root/${encodeURIComponent(word)}`),
+};
+
+export const audioApi = {
+    bySurah: (surahNumber) => fetch(`${API_URL}/api/v1/audio/surah/${surahNumber}`),
+    byAyah: (ayahId) => fetch(`${API_URL}/api/v1/audio/ayah/${ayahId}`),
+};
+
+export const sirohApi = {
+    listCategories: () => fetch(`${API_URL}/api/v1/siroh/categories`),
+    list: (page = 0, size = 20) =>
+        fetch(`${API_URL}/api/v1/siroh/contents?page=${page}&size=${size}`),
+    detail: (slug) => fetch(`${API_URL}/api/v1/siroh/contents/${slug}`),
+};
+
+export const blogApi = {
+    list: (page = 0, size = 10) =>
+        fetch(`${API_URL}/api/v1/blog/posts?page=${page}&size=${size}`),
+    detail: (slug) => fetch(`${API_URL}/api/v1/blog/posts/${slug}`),
+    listCategories: () => fetch(`${API_URL}/api/v1/blog/categories`),
+    listTags: () => fetch(`${API_URL}/api/v1/blog/tags`),
+};
+
+export const adminBlogApi = {
+    listAll: (status = '') =>
+        authFetch(`/api/v1/blog/posts${status ? `?status=${status}` : '?status=all'}`),
+    create: (data) =>
+        authFetch('/api/v1/blog/posts', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) =>
+        authFetch(`/api/v1/blog/posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) =>
+        authFetch(`/api/v1/blog/posts/${id}`, { method: 'DELETE' }),
+    createCategory: (data) =>
+        authFetch('/api/v1/blog/categories', { method: 'POST', body: JSON.stringify(data) }),
+    updateCategory: (id, data) =>
+        authFetch(`/api/v1/blog/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteCategory: (id) =>
+        authFetch(`/api/v1/blog/categories/${id}`, { method: 'DELETE' }),
+    createTag: (data) =>
+        authFetch('/api/v1/blog/tags', { method: 'POST', body: JSON.stringify(data) }),
+    deleteTag: (id) =>
+        authFetch(`/api/v1/blog/tags/${id}`, { method: 'DELETE' }),
+};
+
+export const adminSirohApi = {
+    listCategories: () => authFetch('/api/v1/siroh/categories'),
+    createCategory: (data) =>
+        authFetch('/api/v1/siroh/categories', { method: 'POST', body: JSON.stringify(data) }),
+    updateCategory: (id, data) =>
+        authFetch(`/api/v1/siroh/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteCategory: (id) =>
+        authFetch(`/api/v1/siroh/categories/${id}`, { method: 'DELETE' }),
+    listContents: () => authFetch('/api/v1/siroh/contents'),
+    createContent: (data) =>
+        authFetch('/api/v1/siroh/contents', { method: 'POST', body: JSON.stringify(data) }),
+    updateContent: (id, data) =>
+        authFetch(`/api/v1/siroh/contents/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteContent: (id) =>
+        authFetch(`/api/v1/siroh/contents/${id}`, { method: 'DELETE' }),
+};
+
+export const statsApi = {
+    summary: () => authFetch('/api/v1/stats'),
+    weekly: () => authFetch('/api/v1/stats/weekly'),
+    monthly: (month) => authFetch(`/api/v1/stats/monthly?month=${month}`),
+    yearly: (year) => authFetch(`/api/v1/stats/yearly?year=${year}`),
+};
+
+export const tilawahApi = {
+    add: (pagesRead, juzRead, note = '') =>
+        authFetch('/api/v1/tilawah', {
+            method: 'POST',
+            body: JSON.stringify({ pages_read: pagesRead, juz_read: juzRead, note }),
+        }),
+    list: (start, end) => {
+        const params = new URLSearchParams();
+        if (start) params.set('start', start);
+        if (end) params.set('end', end);
+        const qs = params.toString();
+        return authFetch(`/api/v1/tilawah${qs ? `?${qs}` : ''}`);
+    },
+    summary: () => authFetch('/api/v1/tilawah/summary'),
+};
+
+export const amalanApi = {
+    list: () => fetch(`${API_URL}/api/v1/amalan`),
+    check: (id) => authFetch(`/api/v1/amalan/${id}/check`, { method: 'PUT' }),
+    today: () => authFetch('/api/v1/amalan/today'),
+    history: () => authFetch('/api/v1/amalan/history'),
+};
+
+export const hijriApi = {
+    today: () => fetch(`${API_URL}/api/v1/hijri/today`),
+    convert: (date) => fetch(`${API_URL}/api/v1/hijri?date=${encodeURIComponent(date)}`),
+    events: () => fetch(`${API_URL}/api/v1/hijri/events`),
+    eventsByMonth: (month) => fetch(`${API_URL}/api/v1/hijri/events/${month}`),
+};
+
+export const asbabunNuzulApi = {
+    byAyah: (ayahId) => fetch(`${API_URL}/api/v1/asbabun-nuzul/ayah/${ayahId}`),
+    bySurah: (number) => fetch(`${API_URL}/api/v1/asbabun-nuzul/surah/${number}`),
+};
+
+export const dzikirApi = {
+    list: (page = 0, size = 20) => fetch(`${API_URL}/api/v1/dzikir?page=${page}&size=${size}`),
+    detail: (id) => fetch(`${API_URL}/api/v1/dzikir/${id}`),
+    byCategory: (category, page = 0, size = 20) =>
+        fetch(`${API_URL}/api/v1/dzikir/category/${encodeURIComponent(category)}?page=${page}&size=${size}`),
+};
+
+export const leaderboardApi = {
+    streak: () => fetch(`${API_URL}/api/v1/leaderboard/streak`),
+    hafalan: () => fetch(`${API_URL}/api/v1/leaderboard/hafalan`),
+    me: () => authFetch('/api/v1/leaderboard/me'),
+};
+
+export const shareApi = {
+    ayah: (id) => fetch(`${API_URL}/api/v1/share/ayah/${id}`),
+    hadith: (id) => fetch(`${API_URL}/api/v1/share/hadith/${id}`),
+};
+
+export const developerApi = {
+    listKeys: () => authFetch('/api/v1/developer/keys'),
+    createKey: (name) =>
+        authFetch('/api/v1/developer/keys', {
+            method: 'POST',
+            body: JSON.stringify({ name }),
+        }),
+    revokeKey: (id) => authFetch(`/api/v1/developer/keys/${id}`, { method: 'DELETE' }),
+};
+
+export const notificationApi = {
+    getSettings: () => authFetch('/api/v1/notifications/settings'),
+    updateSettings: (settings) =>
+        authFetch('/api/v1/notifications/settings', {
+            method: 'PUT',
+            body: JSON.stringify(settings),
+        }),
+};
+
+export const notesApi = {
+    list: () => authFetch('/api/v1/notes'),
+    create: (data) =>
+        authFetch('/api/v1/notes', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) =>
+        authFetch(`/api/v1/notes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/notes/${id}`, { method: 'DELETE' }),
+};
+
+export const kamusApi = {
+    search: (q) =>
+        fetch(`${API_URL}/api/v1/kamus?q=${encodeURIComponent(q)}`),
+    detail: (id) => fetch(`${API_URL}/api/v1/kamus/${id}`),
+};
+
+export const quizApi = {
+    questions: (category = '') =>
+        fetch(`${API_URL}/api/v1/quiz/questions${category ? `?category=${encodeURIComponent(category)}` : ''}`),
+    submit: (answers) =>
+        authFetch('/api/v1/quiz/submit', { method: 'POST', body: JSON.stringify({ answers }) }),
+};
+
+export const prayerApi = {
+    timings: (lat, lng) =>
+        fetch(
+            `https://api.aladhan.com/v1/timings/${Math.floor(Date.now() / 1000)}?latitude=${lat}&longitude=${lng}&method=11`,
+        ),
+    timingsByCity: (city, country = 'Indonesia') => {
+        const d = new Date();
+        const date = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+        return fetch(
+            `https://api.aladhan.com/v1/timingsByCity/${date}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=11`,
+        );
+    },
+};
+
+export const sholatTrackerApi = {
+    today: () => authFetch('/api/v1/sholat/today'),
+    update: (data) =>
+        authFetch('/api/v1/sholat/today', { method: 'PUT', body: JSON.stringify(data) }),
+    history: () => authFetch('/api/v1/sholat/history'),
+};
+
+export const muhasabahApi = {
+    list: () => authFetch('/api/v1/muhasabah'),
+    create: (data) =>
+        authFetch('/api/v1/muhasabah', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) =>
+        authFetch(`/api/v1/muhasabah/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/muhasabah/${id}`, { method: 'DELETE' }),
+};
+
+export const goalsApi = {
+    list: () => authFetch('/api/v1/goals'),
+    create: (data) =>
+        authFetch('/api/v1/goals', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) =>
+        authFetch(`/api/v1/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/goals/${id}`, { method: 'DELETE' }),
+};
+
+export const kajianApi = {
+    list: (params = '') =>
+        fetch(`${API_URL}/api/v1/kajian${params ? `?${params}` : ''}`),
+    detail: (id) => fetch(`${API_URL}/api/v1/kajian/${id}`),
+};
+
+export const wiridApi = {
+    list: () => fetch(`${API_URL}/api/v1/wirid`),
+    byOccasion: (occasion) =>
+        fetch(`${API_URL}/api/v1/wirid/occasion/${encodeURIComponent(occasion)}`),
+};
+
+export const imsakiyahApi = {
+    monthly: (lat, lng, year, month) =>
+        fetch(
+            `https://api.aladhan.com/v1/calendar/${year}/${month}?latitude=${lat}&longitude=${lng}&method=11`,
+        ),
+    monthlyByCity: (city, year, month, country = 'Indonesia') =>
+        fetch(
+            `https://api.aladhan.com/v1/calendarByCity/${year}/${month}?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=11`,
+        ),
+};
+
+// ─── Admin APIs ───────────────────────────────────────────────────────────────
+
+export const adminDoaApi = {
+    list: (page = 0, size = 100) => authFetch(`/api/v1/doa?page=${page}&size=${size}`),
+    create: (data) => authFetch('/api/v1/doa', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/doa/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/doa/${id}`, { method: 'DELETE' }),
+};
+
+export const adminDzikirApi = {
+    list: (page = 0, size = 100) => authFetch(`/api/v1/dzikir?page=${page}&size=${size}`),
+    create: (data) => authFetch('/api/v1/dzikir', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/dzikir/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/dzikir/${id}`, { method: 'DELETE' }),
+};
+
+export const adminAsmaulHusnaApi = {
+    list: () => authFetch('/api/v1/asmaul-husna'),
+    create: (data) => authFetch('/api/v1/asmaul-husna', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/asmaul-husna/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/asmaul-husna/${id}`, { method: 'DELETE' }),
+};
+
+export const adminKajianApi = {
+    list: (page = 0, size = 100) => authFetch(`/api/v1/kajian?page=${page}&size=${size}`),
+    create: (data) => authFetch('/api/v1/kajian', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/kajian/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/kajian/${id}`, { method: 'DELETE' }),
+};
+
+export const adminKamusApi = {
+    list: (page = 0, size = 100) => authFetch(`/api/v1/kamus/list?page=${page}&size=${size}`),
+    create: (data) => authFetch('/api/v1/kamus', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/kamus/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/kamus/${id}`, { method: 'DELETE' }),
+};
+
+export const adminQuizApi = {
+    list: () => authFetch('/api/v1/quiz/questions/all'),
+    create: (data) => authFetch('/api/v1/quiz/questions', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/quiz/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/quiz/questions/${id}`, { method: 'DELETE' }),
+};
+
+export const adminSejarahApi = {
+    list: () => authFetch('/api/v1/sejarah'),
+    create: (data) => authFetch('/api/v1/sejarah', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/sejarah/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/sejarah/${id}`, { method: 'DELETE' }),
+};
+
+export const adminAsbabunNuzulApi = {
+    list: (page = 0, size = 100) => authFetch(`/api/v1/asbabun-nuzul/list?page=${page}&size=${size}`),
+    create: (data) => authFetch('/api/v1/asbabun-nuzul', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/asbabun-nuzul/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/asbabun-nuzul/${id}`, { method: 'DELETE' }),
+};
+
+export const adminWiridApi = {
+    list: () => authFetch('/api/v1/wirid'),
+    create: (data) => authFetch('/api/v1/wirid', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/wirid/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/wirid/${id}`, { method: 'DELETE' }),
+};
+
+export const adminTahlilApi = {
+    list: () => authFetch('/api/v1/tahlil'),
+    create: (data) => authFetch('/api/v1/tahlil', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/tahlil/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/tahlil/${id}`, { method: 'DELETE' }),
+};
+
+export const adminManasikApi = {
+    list: () => authFetch('/api/v1/manasik'),
+    create: (data) => authFetch('/api/v1/manasik', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/manasik/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/manasik/${id}`, { method: 'DELETE' }),
+};
+
+export const adminFiqhApi = {
+    list: () => authFetch('/api/v1/fiqh'),
+    create: (data) => authFetch('/api/v1/fiqh', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/fiqh/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/fiqh/${id}`, { method: 'DELETE' }),
+};

@@ -1,18 +1,51 @@
-/*
-!/app/
-!/docs/
-!/tests/
-!/.env.example
-!/.gitignore
-!/.gitlab-ci.yml
-!/docker-compose.yml
-!/Dockerfile
-!/go.mod
-!/go.sum
-!/environment.go
-!/main.go
-!/README.md
-!/LICENSE
-!/kubernetes-deploy*.yml
-!/magic.py
-!/magic-agam.py
+# OS/editor
+.DS_Store
+*.swp
+*.tmp
+
+# local env
+.env
+.env.*
+!.env.example
+
+# Node / Next.js
+node_modules/
+.pnp
+.pnp.js
+.next/
+out/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+next-env.d.ts
+
+# Go/build artifacts
+bin/
+dist/
+coverage.out
+
+# backend local data and generated command binaries
+apps/backend/data/
+apps/backend/build/
+apps/backend/fill_gaps
+apps/backend/import_hadits
+apps/backend/import_ibnukatsir
+apps/backend/import_tafsir
+apps/backend/import_tafsirweb
+apps/backend/migrate_hadith_grade
+apps/backend/migrate_i18n
+apps/backend/scrape_all
+apps/backend/scrape_ibnukatsir
+apps/backend/scrape_tafsir
+apps/backend/scrape_tafsirweb
+apps/backend/seed_quran
+apps/backend/translate_i18n
+apps/backend/update_sources
+
+# local tooling state
+.playwright-mcp/
+.firecrawl/
+.claude/
+.vercel/

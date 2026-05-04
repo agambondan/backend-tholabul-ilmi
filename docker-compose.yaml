@@ -4,14 +4,14 @@ services:
   tholabul-ilmi-be:
     image: tholabul-ilmi-be
     build:
-      context: .
+      context: ./apps/backend
       dockerfile: Dockerfile
     ports:
       - "29900:9900"
     environment:
       - PORT=9900
       - ENDPOINT=/api/v1/
-      - ENVIRONTMENT=production
+      - ENVIRONMENT=production
       - DB_HOST=tholabul-ilmi-postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -39,7 +39,7 @@ services:
   tholabul-ilmi-fe:
     image: tholabul-ilmi-fe
     build:
-      context: ../frontend-tholabul-ilmi
+      context: ./apps/frontend
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:29900

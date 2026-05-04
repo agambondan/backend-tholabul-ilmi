@@ -1,0 +1,219 @@
+'use client';
+
+import Footer from '@/components/Footer';
+import { NavbarTailwindCss } from '@/components/Navbar';
+import { kamusApi } from '@/lib/api';
+import { useState } from 'react';
+import { BsBook, BsSearch } from 'react-icons/bs';
+
+const COMMON_WORDS = [
+    { arabic: 'الله', latin: 'Allah', meaning: 'Allah (nama Tuhan yang disembah)', root: 'أله' },
+    { arabic: 'رَبّ', latin: 'Rabb', meaning: 'Tuhan, Pemilik, Pengatur', root: 'ربب' },
+    { arabic: 'رَحْمَة', latin: 'Rahmah', meaning: 'Kasih sayang, Rahmat', root: 'رحم' },
+    { arabic: 'عِلْم', latin: "'Ilm", meaning: 'Ilmu, Pengetahuan', root: 'علم' },
+    { arabic: 'كِتَاب', latin: 'Kitab', meaning: 'Kitab, Buku', root: 'كتب' },
+    { arabic: 'قُرْآن', latin: 'Quran', meaning: "Bacaan, Al-Quran", root: 'قرأ' },
+    { arabic: 'إِيمَان', latin: 'Iman', meaning: 'Keimanan, Kepercayaan', root: 'أمن' },
+    { arabic: 'إِسْلَام', latin: 'Islam', meaning: 'Ketundukan, Agama Islam', root: 'سلم' },
+    { arabic: 'صَلَاة', latin: 'Shalah', meaning: 'Sholat, Doa', root: 'صلو' },
+    { arabic: 'زَكَاة', latin: 'Zakah', meaning: 'Zakat, Kesucian', root: 'زكو' },
+    { arabic: 'صِيَام', latin: 'Shiyam', meaning: 'Puasa', root: 'صوم' },
+    { arabic: 'حَجّ', latin: 'Hajj', meaning: 'Haji, Ziarah ke Mekkah', root: 'حجج' },
+    { arabic: 'تَقْوَى', latin: 'Taqwa', meaning: 'Ketakwaan, Menjaga diri dari larangan Allah', root: 'وقي' },
+    { arabic: 'صَبْر', latin: 'Shabr', meaning: 'Sabar, Ketabahan', root: 'صبر' },
+    { arabic: 'شُكْر', latin: 'Shukr', meaning: 'Syukur, Terima kasih', root: 'شكر' },
+    { arabic: 'تَوْبَة', latin: 'Tawbah', meaning: 'Taubat, Kembali kepada Allah', root: 'توب' },
+    { arabic: 'دُعَاء', latin: "Du'a", meaning: 'Doa, Permohonan', root: 'دعو' },
+    { arabic: 'ذِكْر', latin: "Dzikr", meaning: 'Dzikir, Mengingat Allah', root: 'ذكر' },
+    { arabic: 'مَسْجِد', latin: 'Masjid', meaning: 'Masjid, Tempat sujud', root: 'سجد' },
+    { arabic: 'حَلَال', latin: 'Halal', meaning: 'Halal, Dibolehkan', root: 'حلل' },
+    { arabic: 'حَرَام', latin: 'Haram', meaning: 'Haram, Dilarang', root: 'حرم' },
+    { arabic: 'سُنَّة', latin: 'Sunnah', meaning: 'Sunnah, Kebiasaan Nabi', root: 'سنن' },
+    { arabic: 'فَرْض', latin: 'Fardh', meaning: 'Fardhu, Wajib', root: 'فرض' },
+    { arabic: 'نَفْس', latin: 'Nafs', meaning: 'Jiwa, Diri, Nafsu', root: 'نفس' },
+    { arabic: 'قَلْب', latin: 'Qalb', meaning: 'Hati, Jantung', root: 'قلب' },
+    { arabic: 'عَقْل', latin: "'Aql", meaning: 'Akal, Pikiran, Rasio', root: 'عقل' },
+    { arabic: 'أَخ', latin: 'Akh', meaning: 'Saudara (laki-laki)', root: 'أخو' },
+    { arabic: 'أُخْت', latin: 'Ukht', meaning: 'Saudara (perempuan)', root: 'أخت' },
+    { arabic: 'أُمَّة', latin: 'Ummah', meaning: 'Umat, Komunitas Islam', root: 'أمم' },
+    { arabic: 'أَمَانَة', latin: 'Amanah', meaning: 'Amanah, Kepercayaan', root: 'أمن' },
+    { arabic: 'حِكْمَة', latin: 'Hikmah', meaning: 'Hikmah, Kebijaksanaan', root: 'حكم' },
+    { arabic: 'رِزْق', latin: 'Rizq', meaning: 'Rezeki, Karunia', root: 'رزق' },
+    { arabic: 'جَنَّة', latin: 'Jannah', meaning: 'Surga', root: 'جنن' },
+    { arabic: 'نَار', latin: 'Nar', meaning: 'Neraka, Api', root: 'نور' },
+    { arabic: 'مَلَك', latin: 'Malak', meaning: 'Malaikat', root: 'ملك' },
+    { arabic: 'نَبِيّ', latin: 'Nabi', meaning: 'Nabi, Pembawa berita', root: 'نبو' },
+    { arabic: 'رَسُول', latin: 'Rasul', meaning: 'Rasul, Utusan', root: 'رسل' },
+    { arabic: 'مُسْلِم', latin: 'Muslim', meaning: 'Muslim, Orang yang berserah diri', root: 'سلم' },
+    { arabic: 'مُؤْمِن', latin: "Mu'min", meaning: 'Mukmin, Orang beriman', root: 'أمن' },
+    { arabic: 'بِسْم', latin: 'Bism', meaning: 'Dengan nama (basmalah)', root: 'سمو' },
+];
+
+export default function KamusPage() {
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [selected, setSelected] = useState(null);
+
+    const handleSearch = () => {
+        const q = query.trim();
+        if (!q) return;
+        setLoading(true);
+        setSelected(null);
+        kamusApi
+            .search(q)
+            .then((r) => r.json())
+            .then((data) => {
+                setResults(data?.items ?? data ?? []);
+            })
+            .catch(() => {
+                // Fallback: search local dictionary
+                const lower = q.toLowerCase();
+                const local = COMMON_WORDS.filter(
+                    (w) =>
+                        w.arabic.includes(q) ||
+                        w.latin.toLowerCase().includes(lower) ||
+                        w.meaning.toLowerCase().includes(lower) ||
+                        w.root.includes(q),
+                );
+                setResults(local);
+            })
+            .finally(() => setLoading(false));
+    };
+
+    const filtered = query
+        ? COMMON_WORDS.filter(
+              (w) =>
+                  w.arabic.includes(query) ||
+                  w.latin.toLowerCase().includes(query.toLowerCase()) ||
+                  w.meaning.toLowerCase().includes(query.toLowerCase()) ||
+                  w.root.includes(query),
+          )
+        : COMMON_WORDS;
+
+    const displayResults = results ?? filtered;
+
+    return (
+        <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
+            <NavbarTailwindCss />
+            <div className='max-w-2xl flex-1 w-full mx-auto px-4 pt-24 pb-8'>
+                {/* Header */}
+                <div className='mb-8 text-center'>
+                    <div className='inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-2xl mb-4'>
+                        <BsBook className='text-3xl text-blue-600 dark:text-blue-400' />
+                    </div>
+                    <h1 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-2'>
+                        Kamus Arab
+                    </h1>
+                    <p className='text-sm text-gray-500 dark:text-gray-400'>
+                        Cari arti kosakata Arab Al-Quran dan Islam
+                    </p>
+                </div>
+
+                {/* Search */}
+                <div className='flex gap-2 mb-6'>
+                    <div className='relative flex-1'>
+                        <BsSearch className='absolute left-4 top-1/2 -translate-y-1/2 text-gray-400' />
+                        <input
+                            type='text'
+                            value={query}
+                            onChange={(e) => {
+                                setQuery(e.target.value);
+                                setResults(null);
+                            }}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            placeholder='Cari kata Arab, Latin, atau arti…'
+                            className='w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-400'
+                        />
+                    </div>
+                    <button
+                        onClick={handleSearch}
+                        className='px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-colors'
+                    >
+                        Cari
+                    </button>
+                </div>
+
+                {loading && (
+                    <div className='text-center py-8'>
+                        <div className='w-7 h-7 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto' />
+                    </div>
+                )}
+
+                {!loading && (
+                    <>
+                        <p className='text-xs text-gray-400 dark:text-gray-500 mb-4'>
+                            {displayResults.length} kata ditemukan
+                        </p>
+                        <div className='space-y-2'>
+                            {displayResults.map((word, i) => {
+                                const isOpen = selected === i;
+                                return (
+                                    <div
+                                        key={i}
+                                        className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden cursor-pointer'
+                                        onClick={() => setSelected(isOpen ? null : i)}
+                                    >
+                                        <div className='flex items-center justify-between px-5 py-4'>
+                                            <div className='flex items-center gap-4'>
+                                                <p
+                                                    className='text-2xl text-gray-900 dark:text-white font-bold'
+                                                    style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}
+                                                >
+                                                    {word.arabic}
+                                                </p>
+                                                <div>
+                                                    <p className='text-sm font-semibold text-emerald-700 dark:text-emerald-400 italic'>
+                                                        {word.latin}
+                                                    </p>
+                                                    <p className='text-sm text-gray-600 dark:text-gray-300'>
+                                                        {word.meaning}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {word.root && (
+                                                <span className='text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-lg font-medium flex-shrink-0'>
+                                                    {word.root}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {isOpen && (
+                                            <div className='px-5 pb-4 border-t border-gray-50 dark:border-slate-700 pt-3 space-y-2'>
+                                                <div className='flex flex-wrap gap-2'>
+                                                    <div className='flex items-center gap-1.5 text-xs'>
+                                                        <span className='text-gray-400'>Akar kata:</span>
+                                                        <span
+                                                            className='font-bold text-gray-800 dark:text-white'
+                                                            style={{ fontFamily: 'Amiri, serif' }}
+                                                        >
+                                                            {word.root}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {word.notes && (
+                                                    <p className='text-sm text-gray-600 dark:text-gray-300'>
+                                                        {word.notes}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {displayResults.length === 0 && query && (
+                            <div className='text-center py-12 text-gray-500 dark:text-gray-400'>
+                                <BsBook className='text-4xl mx-auto mb-3 opacity-30' />
+                                <p className='font-semibold mb-1'>Kata tidak ditemukan</p>
+                                <p className='text-sm'>Coba kata lain atau cek ejaan</p>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+            <Footer />
+        </main>
+    );
+}

@@ -1,0 +1,53 @@
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const SITE_URL =
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tholabul-ilmi.com';
+
+async function getSurah(slug) {
+    try {
+        const res = await fetch(
+            `${API_URL}/api/v1/surah/name/${encodeURIComponent(slug)}?page=0&size=1`,
+            { next: { revalidate: 86400 } },
+        );
+        if (!res.ok) return null;
+        return await res.json();
+    } catch {
+        return null;
+    }
+}
+
+export async function generateMetadata({ params }) {
+    const decodedSlug = decodeURIComponent(params.slug);
+    const surah = await getSurah(decodedSlug);
+
+    const name = surah?.translation?.latin_en ?? decodedSlug;
+    const arabicName = surah?.name ?? '';
+    const title = surah
+        ? `Tafsir Surah ${name}${arabicName ? ` (${arabicName})` : ''}`
+        : `Tafsir Surah — Thullaabul 'Ilmi`;
+    const description = surah
+        ? `Baca tafsir lengkap Surah ${name} — penjelasan makna dan konteks setiap ayat Al-Quran.`
+        : `Tafsir dan penjelasan makna ayat Al-Quran per surah di Thullaabul Ilmi.`;
+    const canonicalUrl = `${SITE_URL}/tafsir/${params.slug}`;
+
+    return {
+        title,
+        description,
+        alternates: { canonical: canonicalUrl },
+        openGraph: {
+            title,
+            description,
+            url: canonicalUrl,
+            images: [{ url: '/og', width: 1200, height: 630 }],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+            images: ['/og'],
+        },
+    };
+}
+
+export default function TafsirSurahLayout({ children }) {
+    return children;
+}

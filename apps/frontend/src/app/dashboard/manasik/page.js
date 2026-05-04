@@ -1,0 +1,162 @@
+'use client';
+
+import { useLocale } from '@/context/Locale';
+import { useEffect, useState } from 'react';
+import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
+
+const FALLBACK_HAJI = [
+    {
+        type: 'haji',
+        step: 1,
+        title: 'Ihram dari Miqat',
+        description:
+            'Memakai pakaian ihram dan berniat ihram dari miqat yang telah ditentukan',
+        arabic: 'لَبَّيْكَ اللَّهُمَّ حَجًّا',
+        latin: 'Labbaik Allahumma hajjan',
+        translation: 'Aku penuhi panggilan-Mu ya Allah untuk haji',
+    },
+];
+
+const FALLBACK_UMRAH = [
+    {
+        type: 'umrah',
+        step: 1,
+        title: 'Ihram dari Miqat',
+        description: 'Memakai pakaian ihram dan berniat umrah',
+        arabic: 'لَبَّيْكَ اللَّهُمَّ عُمْرَةً',
+        latin: 'Labbaik Allahumma umratan',
+        translation: 'Aku penuhi panggilan-Mu ya Allah untuk umrah',
+    },
+    {
+        type: 'umrah',
+        step: 2,
+        title: 'Tawaf',
+        description: 'Mengelilingi Kabah 7 kali berlawanan arah jarum jam',
+    },
+];
+
+const toStr = (v) => {
+    if (!v) return '';
+    if (typeof v === 'string') return v;
+    return v.name ?? v.title ?? v.label ?? v.value ?? '';
+};
+
+const getTranslation = (v) =>
+    typeof v === 'string' ? v : (v?.idn ?? v?.en ?? '');
+
+export default function DashboardManasikPage() {
+    const { t } = useLocale();
+    const [hajiItems, setHajiItems] = useState(FALLBACK_HAJI);
+    const [umrahItems, setUmrahItems] = useState(FALLBACK_UMRAH);
+    const [tab, setTab] = useState('haji');
+    const [expanded, setExpanded] = useState(null);
+
+    useEffect(() => {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/manasik?page=0&size=100`)
+            .then((r) => r.json())
+            .then((d) => {
+                const arr = d?.items ?? d ?? [];
+                if (!Array.isArray(arr) || arr.length === 0) return;
+                const haji = arr
+                    .filter((i) => toStr(i.type) === 'haji')
+                    .sort((a, b) => (a.step ?? 0) - (b.step ?? 0));
+                const umrah = arr
+                    .filter((i) => toStr(i.type) === 'umrah')
+                    .sort((a, b) => (a.step ?? 0) - (b.step ?? 0));
+                if (haji.length > 0) setHajiItems(haji);
+                if (umrah.length > 0) setUmrahItems(umrah);
+            })
+            .catch(() => {});
+    }, []);
+
+    const activeItems = tab === 'haji' ? hajiItems : umrahItems;
+
+    return (
+        <div className='p-6'>
+            <div className='mb-6'>
+                <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
+                    {t('manasik.title')}
+                </h1>
+                <p className='text-sm text-gray-500 dark:text-gray-400 mt-0.5'>
+                    {t('manasik.subtitle')}
+                </p>
+            </div>
+
+            {/* Tab toggle */}
+            <div className='flex gap-2 mb-5 p-1 bg-gray-100 dark:bg-slate-800 rounded-xl w-fit'>
+                {['haji', 'umrah'].map((tabKey) => (
+                    <button
+                        key={tabKey}
+                        onClick={() => {
+                            setTab(tabKey);
+                            setExpanded(null);
+                        }}
+                        className={`px-5 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
+                            tab === tabKey
+                                ? 'bg-amber-500 text-white shadow-sm'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        }`}>
+                        {t(`manasik.${tabKey}`)}
+                    </button>
+                ))}
+            </div>
+
+            {/* Steps */}
+            <div className='space-y-2'>
+                {activeItems.map((item) => {
+                    const id = item.id ?? item._id ?? `${item.type}-${item.step}`;
+                    const open = expanded === id;
+                    return (
+                        <div
+                            key={id}
+                            className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
+                            <button
+                                onClick={() => setExpanded(open ? null : id)}
+                                className='w-full text-left px-4 py-3 flex items-center justify-between gap-3'>
+                                <div className='flex items-center gap-3'>
+                                    <span className='w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center justify-center shrink-0'>
+                                        {item.step}
+                                    </span>
+                                    <span className='text-sm font-semibold text-gray-900 dark:text-white'>
+                                        {item.title}
+                                    </span>
+                                </div>
+                                {open ? (
+                                    <BsChevronUp className='text-gray-400 shrink-0' />
+                                ) : (
+                                    <BsChevronDown className='text-gray-400 shrink-0' />
+                                )}
+                            </button>
+                            {open && (
+                                <div className='px-4 pb-4 border-t border-gray-50 dark:border-slate-700 pt-3 space-y-2'>
+                                    {item.description && (
+                                        <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
+                                            {toStr(item.description)}
+                                        </p>
+                                    )}
+                                    {item.arabic && (
+                                        <p
+                                            dir='rtl'
+                                            className='text-lg font-arabic leading-loose text-gray-800 dark:text-gray-200 text-right'>
+                                            {item.arabic}
+                                        </p>
+                                    )}
+                                    {item.latin && (
+                                        <p className='text-sm italic text-gray-500 dark:text-gray-400'>
+                                            {item.latin}
+                                        </p>
+                                    )}
+                                    {getTranslation(item.translation) && (
+                                        <p className='text-sm text-gray-700 dark:text-gray-300'>
+                                            {getTranslation(item.translation)}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}

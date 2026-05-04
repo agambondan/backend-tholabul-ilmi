@@ -1,0 +1,275 @@
+package main
+
+import (
+	"encoding/json"
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/agambondan/islamic-explorer/app/config"
+	appdb "github.com/agambondan/islamic-explorer/app/db"
+	"github.com/agambondan/islamic-explorer/app/lib"
+	"github.com/agambondan/islamic-explorer/app/model"
+	"github.com/spf13/viper"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+)
+
+const (
+	baseURL       = "https://api.alquran.cloud/v1"
+	editionAr     = "quran-uthmani"
+	editionIdn    = "id.indonesian"
+	editionEn     = "en.asad"
+	requestDelay  = 300 * time.Millisecond
+)
+
+// ─── API response structs ─────────────────────────────────────────────────────
+
+type SurahListResponse struct {
+	Code   int           `json:"code"`
+	Status string        `json:"status"`
+	Data   []SurahMeta   `json:"data"`
+}
+
+type SurahMeta struct {
+	Number                 int    `json:"number"`
+	Name                   string `json:"name"`
+	EnglishName            string `json:"englishName"`
+	EnglishNameTranslation string `json:"englishNameTranslation"`
+	NumberOfAyahs          int    `json:"numberOfAyahs"`
+	RevelationType         string `json:"revelationType"`
+}
+
+type SurahEditionsResponse struct {
+	Code   int            `json:"code"`
+	Status string         `json:"status"`
+	Data   []SurahEdition `json:"data"`
+}
+
+type SurahEdition struct {
+	Number        int          `json:"number"`
+	Name          string       `json:"name"`
+	EnglishName   string       `json:"englishName"`
+	NumberOfAyahs int          `json:"numberOfAyahs"`
+	RevelationType string      `json:"revelationType"`
+	Edition       EditionMeta  `json:"edition"`
+	Ayahs         []AyahRaw    `json:"ayahs"`
+}
+
+type EditionMeta struct {
+	Identifier string `json:"identifier"`
+	Language   string `json:"language"`
+	Name       string `json:"name"`
+}
+
+type AyahRaw struct {
+	Number        int         `json:"number"`
+	Text          string      `json:"text"`
+	NumberInSurah int         `json:"numberInSurah"`
+	Juz           int         `json:"juz"`
+	Manzil        int         `json:"manzil"`
+	Page          int         `json:"page"`
+	Ruku          int         `json:"ruku"`
+	HizbQuarter   int         `json:"hizbQuarter"`
+	Sajda         SajdaField  `json:"sajda"`
+}
+
+// SajdaField bisa false atau object {"id":N,"recommended":bool,"obligatory":bool}
+type SajdaField struct {
+	Value bool
+}
+
+func (s *SajdaField) UnmarshalJSON(data []byte) error {
+	raw := strings.TrimSpace(string(data))
+	if raw == "false" {
+		s.Value = false
+		return nil
+	}
+	if raw == "true" {
+		s.Value = true
+		return nil
+	}
+	// object form — ada sajda
+	s.Value = true
+	return nil
+}
+
+// ─── HTTP helpers ─────────────────────────────────────────────────────────────
+
+var httpClient = &http.Client{Timeout: 30 * time.Second}
+
+func fetchJSON(url string, dest interface{}) error {
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return fmt.Errorf("GET %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET %s: status %d", url, resp.StatusCode)
+	}
+	return json.NewDecoder(resp.Body).Decode(dest)
+}
+
+// ─── DB helpers ──────────────────────────────────────────────────────────────
+
+func saveTranslation(db *gorm.DB, t *model.Translation) error {
+	return db.Clauses(clause.OnConflict{DoNothing: true}).Create(t).Error
+}
+
+func saveSurah(db *gorm.DB, s *model.Surah) error {
+	return db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "number"}},
+		DoUpdates: clause.AssignmentColumns([]string{"translation_id", "number_of_ayahs", "revelation_type", "identifier", "slug"}),
+	}).Create(s).Error
+}
+
+func saveAyah(db *gorm.DB, a *model.Ayah) error {
+	return db.Clauses(clause.OnConflict{DoNothing: true}).Create(a).Error
+}
+
+// ─── Main logic ──────────────────────────────────────────────────────────────
+
+func run(db *gorm.DB) error {
+	// 1. Fetch surah list
+	log.Println("Fetching surah list...")
+	var surahList SurahListResponse
+	if err := fetchJSON(baseURL+"/surah", &surahList); err != nil {
+		return err
+	}
+	log.Printf("Found %d surahs\n", len(surahList.Data))
+
+	for _, meta := range surahList.Data {
+		log.Printf("[%3d/114] Surah %s (%s)...", meta.Number, meta.EnglishName, meta.Name)
+
+		// 2. Fetch surah dengan 3 editions sekaligus
+		url := fmt.Sprintf("%s/surah/%d/editions/%s,%s,%s", baseURL, meta.Number, editionAr, editionIdn, editionEn)
+		var edResp SurahEditionsResponse
+		if err := fetchJSON(url, &edResp); err != nil {
+			log.Printf("  ERROR fetch surah %d: %v — skip", meta.Number, err)
+			time.Sleep(requestDelay)
+			continue
+		}
+
+		// Map editions by identifier
+		edMap := map[string]*SurahEdition{}
+		for i := range edResp.Data {
+			edMap[edResp.Data[i].Edition.Identifier] = &edResp.Data[i]
+		}
+
+		arEd, idnEd, enEd := edMap[editionAr], edMap[editionIdn], edMap[editionEn]
+		if arEd == nil {
+			log.Printf("  WARN: arabic edition not found for surah %d", meta.Number)
+			time.Sleep(requestDelay)
+			continue
+		}
+
+		// 3. Simpan Translation untuk Surah (nama surah)
+		surahTranslation := &model.Translation{
+			Ar:            lib.Strptr(meta.Name),
+			LatinEn:       lib.Strptr(meta.EnglishName),
+			En:            lib.Strptr(meta.EnglishNameTranslation),
+			Idn:           lib.Strptr(meta.EnglishNameTranslation), // fallback, nama surah Inggris = Idn
+			DescriptionAr: lib.Strptr(meta.Name),
+		}
+		if err := saveTranslation(db, surahTranslation); err != nil {
+			return fmt.Errorf("save surah translation %d: %w", meta.Number, err)
+		}
+
+		// 4. Simpan Surah
+		slug := strings.ToLower(strings.ReplaceAll(meta.EnglishName, " ", "-"))
+		surah := &model.Surah{
+			BaseID:         model.BaseID{ID: lib.Intptr(meta.Number)},
+			Number:         lib.Intptr(meta.Number),
+			NumberOfAyahs:  lib.Intptr(meta.NumberOfAyahs),
+			RevelationType: lib.Strptr(meta.RevelationType),
+			Identifier:     lib.Strptr(meta.EnglishName),
+			Slug:           lib.Strptr(slug),
+			TranslationID:  surahTranslation.ID,
+		}
+		if err := saveSurah(db, surah); err != nil {
+			return fmt.Errorf("save surah %d: %w", meta.Number, err)
+		}
+
+		// 5. Simpan Ayahs
+		totalAyah := len(arEd.Ayahs)
+		for i := 0; i < totalAyah; i++ {
+			arAyah := arEd.Ayahs[i]
+
+			ayahTranslation := &model.Translation{
+				Ar: lib.Strptr(arAyah.Text),
+			}
+			if idnEd != nil && i < len(idnEd.Ayahs) {
+				ayahTranslation.Idn = lib.Strptr(idnEd.Ayahs[i].Text)
+			}
+			if enEd != nil && i < len(enEd.Ayahs) {
+				ayahTranslation.En = lib.Strptr(enEd.Ayahs[i].Text)
+			}
+
+			if err := saveTranslation(db, ayahTranslation); err != nil {
+				return fmt.Errorf("save ayah translation surah=%d ayah=%d: %w", meta.Number, arAyah.NumberInSurah, err)
+			}
+
+			sajda := arAyah.Sajda.Value
+			ayah := &model.Ayah{
+				Number:        lib.Intptr(arAyah.NumberInSurah),
+				SurahID:       surah.ID,
+				TranslationID: ayahTranslation.ID,
+				JuzNumber:     lib.Intptr(arAyah.Juz),
+				Manzil:        lib.Intptr(arAyah.Manzil),
+				Page:          lib.Intptr(arAyah.Page),
+				Ruku:          lib.Intptr(arAyah.Ruku),
+				HizbQuarter:   lib.Intptr(arAyah.HizbQuarter),
+				Sajda:         lib.Boolptr(sajda),
+			}
+			if err := saveAyah(db, ayah); err != nil {
+				return fmt.Errorf("save ayah surah=%d ayah=%d: %w", meta.Number, arAyah.NumberInSurah, err)
+			}
+		}
+
+		log.Printf("  OK — %d ayahs saved", totalAyah)
+		time.Sleep(requestDelay)
+	}
+
+	log.Println("Done seeding Al-Quran data.")
+	return nil
+}
+
+func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	environment := flag.String("environment", "", "set environment (development|staging|production), default: local")
+	flag.Parse()
+
+	switch *environment {
+	case "development":
+		if err := lib.LoadEnvironmentLocalFlag(".env.development"); err != nil {
+			panic(err)
+		}
+	case "staging":
+		if err := lib.LoadEnvironmentLocalFlag(".env.staging"); err != nil {
+			panic(err)
+		}
+	case "production":
+		if err := lib.LoadEnvironmentLocalFlag(".env.production"); err != nil {
+			panic(err)
+		}
+	case "container":
+		viper.AutomaticEnv()
+	default:
+		if err := lib.LoadEnvironmentLocalFlag(".env.local"); err != nil {
+			panic(err)
+		}
+	}
+
+	env := config.Environment{}
+	envInit := env.Init()
+
+	gormDB := appdb.NewPostgresql(envInit)
+
+	if err := run(gormDB); err != nil {
+		log.Fatalf("Seed failed: %v", err)
+	}
+}
