@@ -127,15 +127,18 @@ func (c *bookRepo) FindBySlug(ctx *fiber.Ctx, slug *string) (*model.Book, error)
 	// var themeIds []int
 	// c.db.Table("(?) as subquery", c.db.Model(&model.Hadith{}).Where("book_id = ?", book.ID).Order("number")).
 	// 	Distinct().Pluck("theme_id", &themeIds)
-	var hadiths []model.Hadith
-	c.db.Table("(?) as sub", c.db.
-		Model(&model.Hadith{}).
-		Select("DISTINCT ON (theme_id) theme_id, number").
-		Where("book_id = ?", book.ID).
-		Order("theme_id, number")).
-		Order("number").Find(&hadiths)
+	type themeIDRow struct {
+		ThemeID *int `gorm:"column:theme_id"`
+	}
+	var rows []themeIDRow
+	c.db.Raw(`
+		SELECT DISTINCT ON (theme_id) theme_id
+		FROM hadith
+		WHERE book_id = ? AND theme_id IS NOT NULL
+		ORDER BY theme_id, number
+	`, book.ID).Scan(&rows)
 
-	for _, v := range hadiths {
+	for _, v := range rows {
 		if v.ThemeID == nil {
 			continue
 		}

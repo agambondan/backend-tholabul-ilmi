@@ -59,16 +59,19 @@ func (c *chapterRepo) FindByBookSlugThemeId(ctx *fiber.Ctx, bookSlug *string, th
 	var chapters []model.Chapter
 	var chaptersId []int
 
-	var hadiths []model.Hadith
-	c.db.Table("(?) as sub", c.db.
-		Model(&model.Hadith{}).
-		Select("DISTINCT ON (chapter_id) chapter_id, number").
-		Joins(`LEFT JOIN book b on b.id = hadith.book_id`).
-		Where(`hadith.theme_id = ? AND b.slug = ?`, themeId, bookSlug).
-		Order("hadith.chapter_id, hadith.number")).
-		Order("number").Find(&hadiths)
+	type chapterIDRow struct {
+		ChapterID *int `gorm:"column:chapter_id"`
+	}
+	var rows []chapterIDRow
+	c.db.Raw(`
+		SELECT DISTINCT ON (hadith.chapter_id) hadith.chapter_id
+		FROM hadith
+		LEFT JOIN book b ON b.id = hadith.book_id
+		WHERE hadith.theme_id = ? AND b.slug = ? AND hadith.chapter_id IS NOT NULL
+		ORDER BY hadith.chapter_id, hadith.number
+	`, themeId, bookSlug).Scan(&rows)
 
-	for _, v := range hadiths {
+	for _, v := range rows {
 		if v.ChapterID != nil {
 			chaptersId = append(chaptersId, *v.ChapterID)
 		}
