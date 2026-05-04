@@ -8,29 +8,12 @@ import { useEffect, useRef, useState } from 'react';
 import { RiSettings3Fill } from 'react-icons/ri';
 import { TbLayoutDistributeHorizontal, TbLayoutSidebarRight } from 'react-icons/tb';
 
-const SettingButton = ({ isShowFixedComponent }) => {
+const SettingButton = () => {
     const { t } = useLocale();
     const [showPopup, setShowPopup] = useState(false);
-    const [showFixedComponent, setShowFixedComponent] = useState(false);
     const { isWide, setLayout } = useLayoutMode();
     const { fontId, setFont } = useQuranFont();
     const popupRef = useRef(null);
-
-    useEffect(() => {
-        let timeoutId;
-
-        const handleScroll = () => {
-            setShowFixedComponent(true);
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => setShowFixedComponent(false), 2000);
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            clearTimeout(timeoutId);
-        };
-    }, []);
 
     useEffect(() => {
         if (!showPopup) return;
@@ -44,18 +27,7 @@ const SettingButton = ({ isShowFixedComponent }) => {
     }, [showPopup]);
 
     return (
-        <div
-            ref={popupRef}
-            className={classNames({
-                'fixed right-2 z-10': true,
-                'bottom-[52px]':
-                    showFixedComponent && isShowFixedComponent === undefined,
-                'bottom-2':
-                    !showFixedComponent && isShowFixedComponent === undefined,
-                // eslint-disable-next-line no-dupe-keys
-                'bottom-2': isShowFixedComponent,
-            })}
-        >
+        <div ref={popupRef} className='fixed right-2 bottom-2 z-10'>
             <button
                 className='dark:bg-slate-200 bg-slate-800 dark:text-black text-white rounded-full p-3 shadow hover:opacity-80 transition-opacity'
                 onClick={() => setShowPopup((p) => !p)}
