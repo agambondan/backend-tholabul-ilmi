@@ -1,16 +1,19 @@
 'use client';
 
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const ByTheme = () => {
+    const { t, lang } = useLocale();
     const [isLoading, SetIsLoading] = useState(true);
     const [isError, setIsError] = useState(false);
     const [themes, setThemes] = useState([]);
 
     const getThemeLabel = (theme) =>
-        theme?.translation?.en ?? theme?.translation?.idn ?? `Theme ${theme?.id}`;
+        getLocalizedTranslation(theme?.translation, lang) || `Theme ${theme?.id}`;
 
     const fetchThemes = async () => {
         const res = await fetch(
@@ -37,10 +40,10 @@ const ByTheme = () => {
             <div className='flex flex-col items-center justify-center min-h-[40vh] text-center px-4'>
                 <p className='text-4xl mb-3'>⚠️</p>
                 <h2 className='text-lg font-bold text-emerald-900 dark:text-white mb-2'>
-                    Gagal Memuat Tema
+                    {t('hadith.load_error_title')}
                 </h2>
                 <p className='text-sm text-gray-500 dark:text-gray-400'>
-                    Server API tidak dapat dijangkau. Pastikan server backend berjalan.
+                    {t('hadith.load_error_desc')}
                 </p>
             </div>
         );
@@ -54,7 +57,7 @@ const ByTheme = () => {
                 const themeBooksLabel =
                     themeBooks.length > 0
                         ? themeBooks
-                              .map((book) => book?.translation?.idn ?? book?.translation?.en ?? '')
+                              .map((book) => getLocalizedTranslation(book?.translation, lang))
                               .filter(Boolean)
                               .join(', ')
                         : '-';

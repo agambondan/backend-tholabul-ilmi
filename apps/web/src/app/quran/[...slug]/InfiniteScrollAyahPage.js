@@ -6,7 +6,9 @@ import AutoScrollButton from '@/components/popup/AutoScrollButton';
 import ScrollableComponent from '@/components/popup/ScrollableButton';
 import SettingButton from '@/components/popup/SettingButton';
 import { SkeletonReader } from '@/components/skeleton/Skeleton';
+import { useLocale } from '@/context/Locale';
 import { progressApi, streakApi } from '@/lib/api';
+import { getLocalizedTranslation } from '@/lib/translation';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import classNames from 'classnames';
 import Link from 'next/link';
@@ -18,6 +20,7 @@ const PAGE_SIZE = 10;
 const normalizeAyahs = (data) => data?.ayahs ?? data?.items ?? data ?? [];
 
 const InfiniteScrollAyahPage = ({ params, searchParams }) => {
+	const { t, lang } = useLocale();
 	const { isWide } = useLayoutMode();
 	const [surah, setSurah] = useState(null);
 	const [ayahs, setAyahs] = useState([]);
@@ -49,7 +52,7 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/surah/name/${slug}?page=${pageIndex}&size=${nextSize}`,
 			);
 			if (!res.ok) {
-				throw new Error('Gagal memuat surah');
+				throw new Error('failed');
 			}
 			return res.json();
 		},
@@ -79,7 +82,7 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 				}
 			})
 			.catch(() => {
-				if (isActive) setError('Gagal memuat surah.');
+				if (isActive) setError(t('quran.error_desc'));
 			})
 			.finally(() => {
 				if (isActive) setIsInitialLoading(false);
@@ -123,10 +126,10 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 			<div className='flex flex-col items-center justify-center min-h-[40vh] text-center px-4'>
 				<p className='text-4xl mb-3'>⚠️</p>
 				<h2 className='text-lg font-bold text-emerald-900 dark:text-white mb-2'>
-					Gagal Memuat Quran
+					{t('quran.error_title')}
 				</h2>
 				<p className='text-sm text-gray-500 dark:text-gray-400'>
-					Server API tidak dapat dijangkau. Pastikan server backend berjalan.
+					{error}
 				</p>
 			</div>
 		);
@@ -150,8 +153,8 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 						{surahTitle}
 					</h1>
 					<p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>
-						{surah?.translation?.idn ?? ''} &middot;{' '}
-						{surah?.number_of_ayahs ?? ayahs.length} Ayat &middot;{' '}
+						{getLocalizedTranslation(surah?.translation, lang)} &middot;{' '}
+						{surah?.number_of_ayahs ?? ayahs.length} {t('common.verse')} &middot;{' '}
 						{surah?.revelation_type ?? ''}
 					</p>
 					<p
@@ -174,7 +177,7 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 						href={prevHref}
 					>
 						<TbPlayerTrackPrev size={14} />
-						<span className='hidden sm:inline'>Surat Sebelumnya</span>
+						<span className='hidden sm:inline'>{t('quran.prev_surah')}</span>
 						<span className='sm:hidden'>Prev</span>
 					</Link>
 				</div>
@@ -188,7 +191,7 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 						className='flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors'
 						href={nextHref}
 					>
-						<span className='hidden sm:inline'>Surat Selanjutnya</span>
+						<span className='hidden sm:inline'>{t('quran.next_surah')}</span>
 						<span className='sm:hidden'>Next</span>
 						<TbPlayerTrackNext size={14} />
 					</Link>
@@ -219,7 +222,7 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 
 			{!hasMore && ayahs.length > 0 && (
 				<p className='text-center text-xs text-gray-400 dark:text-gray-600 py-4'>
-					Semua ayat sudah ditampilkan
+					{t('quran.all_displayed')}
 				</p>
 			)}
 
@@ -236,7 +239,7 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 							href={prevHref}
 						>
 							<TbPlayerTrackPrev size={14} />
-							<span className='hidden sm:inline'>Surat Sebelumnya</span>
+							<span className='hidden sm:inline'>{t('quran.prev_surah')}</span>
 							<span className='sm:hidden'>Prev</span>
 						</Link>
 					</div>
@@ -250,7 +253,7 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 							className='flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 transition-colors'
 							href={nextHref}
 						>
-							<span className='hidden sm:inline'>Surat Selanjutnya</span>
+							<span className='hidden sm:inline'>{t('quran.next_surah')}</span>
 							<span className='sm:hidden'>Next</span>
 							<TbPlayerTrackNext size={14} />
 						</Link>

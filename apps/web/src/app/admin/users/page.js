@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { adminUserApi } from '@/lib/api';
 import { useAuth } from '@/context/Auth';
+import { useLocale } from '@/context/Locale';
 import { BsTrash } from 'react-icons/bs';
 
 const ROLES = [
@@ -12,17 +13,18 @@ const ROLES = [
     { value: 'admin', label: 'Admin', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
 ];
 
-const RoleBadge = ({ role }) => {
+const RoleBadge = ({ role, t }) => {
     const def = ROLES.find((r) => r.value === role) ?? ROLES[0];
     return (
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${def.color}`}>
-            {def.label}
+            {t(`admin.role.${def.value}`)}
         </span>
     );
 };
 
 const AdminUsersPage = () => {
     const { user: currentUser } = useAuth();
+    const { t } = useLocale();
     const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -33,17 +35,17 @@ const AdminUsersPage = () => {
         const load = async () => {
             try {
                 const res = await adminUserApi.list();
-                if (!res.ok) throw new Error('Failed to load user list');
+                if (!res.ok) throw new Error(t('admin.users.load_error'));
                 const data = await res.json();
                 setUsers(Array.isArray(data) ? data : data.data ?? []);
             } catch (err) {
-                setError(err.message || 'An error occurred while loading data');
+                setError(err.message || t('admin.error.load_data'));
             } finally {
                 setIsLoading(false);
             }
         };
         load();
-    }, []);
+    }, [t]);
 
     const handleChangeRole = async (target, newRole) => {
         if (target.role === newRole) return;
@@ -55,33 +57,33 @@ const AdminUsersPage = () => {
         setChangingId(target.id);
         try {
             const res = await adminUserApi.update(target.id, { role: newRole });
-            if (!res.ok) throw new Error('Failed to change role');
+            if (!res.ok) throw new Error(t('admin.users.change_role_error'));
         } catch (err) {
             setUsers(prev);
-            setActionError(err.message || 'Failed to change role user');
+            setActionError(err.message || t('admin.users.change_role_error'));
         } finally {
             setChangingId(null);
         }
     };
 
     const handleDelete = async (target) => {
-        if (!confirm(`Delete user "${target.name}"? This action cannot be undone.`)) return;
+        if (!confirm(t('admin.users.confirm_delete').replace('{name}', target.name))) return;
         const prev = users;
         setUsers((u) => u.filter((x) => x.id !== target.id));
         setActionError('');
         try {
             const res = await adminUserApi.delete(target.id);
-            if (!res.ok) throw new Error('Failed to delete user');
+            if (!res.ok) throw new Error(t('admin.users.delete_error'));
         } catch (err) {
             setUsers(prev);
-            setActionError(err.message || 'Failed to delete user');
+            setActionError(err.message || t('admin.users.delete_error'));
         }
     };
 
     if (isLoading) {
         return (
             <div className='p-8 text-center text-gray-500 dark:text-gray-400'>
-                Loading...
+                {t('common.loading')}
             </div>
         );
     }
@@ -90,10 +92,10 @@ const AdminUsersPage = () => {
         <div className='p-6 max-w-5xl'>
             <div className='mb-6'>
                 <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
-                    Manajemen User
+                    {t('admin.users.title')}
                 </h1>
                 <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-                    Manage user roles: user → author → editor → admin
+                    {t('admin.users.subtitle')}
                 </p>
             </div>
 
@@ -106,7 +108,7 @@ const AdminUsersPage = () => {
                             className='bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-4 py-3 text-center'
                         >
                             <p className='text-xl font-bold text-gray-800 dark:text-white'>{count}</p>
-                            <RoleBadge role={r.value} />
+                            <RoleBadge role={r.value} t={t} />
                         </div>
                     );
                 })}
@@ -129,7 +131,7 @@ const AdminUsersPage = () => {
                     <thead>
                         <tr className='border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50'>
                             <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400'>
-                                Nama
+                                {t('admin.field.name')}
                             </th>
                             <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400'>
                                 Email
@@ -138,10 +140,10 @@ const AdminUsersPage = () => {
                                 Role
                             </th>
                             <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-400'>
-                                Ubah Role
+                                {t('admin.users.change_role')}
                             </th>
                             <th className='text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-400'>
-                                Actions
+                                {t('admin.field.actions')}
                             </th>
                         </tr>
                     </thead>
@@ -152,7 +154,7 @@ const AdminUsersPage = () => {
                                     colSpan={5}
                                     className='px-4 py-8 text-center text-gray-400 dark:text-gray-600'
                                 >
-                                    No registered users yet
+                                    {t('admin.users.empty')}
                                 </td>
                             </tr>
                         )}
@@ -167,7 +169,7 @@ const AdminUsersPage = () => {
                                         {u.name}
                                         {isSelf && (
                                             <span className='ml-2 text-xs text-emerald-600 dark:text-emerald-400'>
-                                                (Anda)
+                                                ({t('admin.users.you')})
                                             </span>
                                         )}
                                     </td>
@@ -175,7 +177,7 @@ const AdminUsersPage = () => {
                                         {u.email}
                                     </td>
                                     <td className='px-4 py-3'>
-                                        <RoleBadge role={u.role} />
+                                        <RoleBadge role={u.role} t={t} />
                                     </td>
                                     <td className='px-4 py-3'>
                                         <select
@@ -186,12 +188,12 @@ const AdminUsersPage = () => {
                                         >
                                             {ROLES.map((r) => (
                                                 <option key={r.value} value={r.value}>
-                                                    {r.label}
+                                                    {t(`admin.role.${r.value}`)}
                                                 </option>
                                             ))}
                                         </select>
                                         {changingId === u.id && (
-                                            <span className='ml-2 text-xs text-gray-400'>Saving...</span>
+                                            <span className='ml-2 text-xs text-gray-400'>{t('common.saving')}</span>
                                         )}
                                     </td>
                                     <td className='px-4 py-3'>
@@ -199,11 +201,11 @@ const AdminUsersPage = () => {
                                             <button
                                                 onClick={() => handleDelete(u)}
                                                 disabled={isSelf}
-                                                title='Delete user'
+                                                title={t('admin.users.delete_user')}
                                                 className='flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40'
                                             >
                                                 <BsTrash className='text-sm' />
-                                                Delete
+                                                {t('common.delete')}
                                             </button>
                                         </div>
                                     </td>
@@ -215,7 +217,7 @@ const AdminUsersPage = () => {
             </div>
 
             <div className='mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs'>
-                <strong>Role notes:</strong> User = regular reader · Author = can create/edit own blog articles · Editor = can approve/edit sirah, tafsir, and asbabun nuzul content · Admin = full access
+                <strong>{t('admin.users.role_notes_title')}:</strong> {t('admin.users.role_notes')}
             </div>
         </div>
     );

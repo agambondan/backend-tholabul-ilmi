@@ -1,6 +1,8 @@
 'use client';
 
 import { adminWiridApi } from '@/lib/api';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsPencil, BsPlusCircle, BsTrash, BsX } from 'react-icons/bs';
 
@@ -16,6 +18,7 @@ const EMPTY_FORM = {
 };
 
 const AdminWirdPage = () => {
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -96,9 +99,9 @@ const AdminWirdPage = () => {
         <div className='p-6'>
             <div className='flex items-center justify-between mb-6'>
                 <div>
-                    <h1 className='text-xl font-bold text-gray-900 dark:text-white'>Wird</h1>
+                    <h1 className='text-xl font-bold text-gray-900 dark:text-white'>{t('admin.nav.wird')}</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.length} entries
+                        {items.length} {t('admin.crud.entries')}
                     </p>
                 </div>
                 <button
@@ -106,14 +109,14 @@ const AdminWirdPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Add Wird
+                    {t('admin.crud.add')} {t('admin.nav.wird')}
                 </button>
             </div>
 
             <div className='mb-4'>
                 <input
                     type='text'
-                    placeholder='Search title or category...'
+                    placeholder={t('admin.crud.search_title_category')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -121,20 +124,20 @@ const AdminWirdPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Loading...</p>
+                <p className='text-sm text-gray-500'>{t('common.loading')}</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-700'>
                             <tr>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Title
+                                    {t('admin.field.title')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-32'>
-                                    Category
+                                    {t('admin.field.category')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-20 hidden md:table-cell'>
-                                    Ulangan
+                                    {t('admin.field.repetition')}
                                 </th>
                                 <th className='px-4 py-3 w-20'></th>
                             </tr>
@@ -146,7 +149,7 @@ const AdminWirdPage = () => {
                                     className='hover:bg-gray-50 dark:hover:bg-slate-750'
                                 >
                                     <td className='px-4 py-3 text-gray-900 dark:text-white font-medium'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </td>
                                     <td className='px-4 py-3'>
                                         <span className='px-2 py-0.5 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400 rounded text-xs'>
@@ -182,7 +185,7 @@ const AdminWirdPage = () => {
                                         colSpan={4}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        No data yet
+                                        {t('admin.crud.no_data')}
                                     </td>
                                 </tr>
                             )}
@@ -196,7 +199,9 @@ const AdminWirdPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Wird' : 'Add Wird'}
+                                {editId
+                                    ? `${t('common.edit')} ${t('admin.nav.wird')}`
+                                    : `${t('admin.crud.add')} ${t('admin.nav.wird')}`}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -208,7 +213,7 @@ const AdminWirdPage = () => {
                         <div className='p-5 space-y-4'>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Title
+                                    {t('admin.field.title')}
                                 </label>
                                 <input
                                     type='text'
@@ -221,7 +226,7 @@ const AdminWirdPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Arabic
+                                    {t('admin.field.arabic')}
                                 </label>
                                 <textarea
                                     value={form.arabic}
@@ -235,7 +240,7 @@ const AdminWirdPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Latin
+                                    {t('admin.field.latin')}
                                 </label>
                                 <textarea
                                     value={form.transliteration}
@@ -251,7 +256,7 @@ const AdminWirdPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Translation
+                                    {t('common.translation')}
                                 </label>
                                 <textarea
                                     value={form.translation}
@@ -265,7 +270,7 @@ const AdminWirdPage = () => {
                             <div className='grid grid-cols-2 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Category
+                                        {t('admin.field.category')}
                                     </label>
                                     <select
                                         value={form.category}
@@ -283,7 +288,7 @@ const AdminWirdPage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Ulangan (x)
+                                        {t('admin.field.repetition')} (x)
                                     </label>
                                     <input
                                         type='number'
@@ -302,14 +307,14 @@ const AdminWirdPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.title}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Saving...' : 'Save'}
+                                {saving ? t('common.saving') : t('common.save')}
                             </button>
                         </div>
                     </div>
@@ -320,23 +325,23 @@ const AdminWirdPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Delete this wird?
+                            {t('admin.crud.delete_title').replace('{item}', t('admin.nav.wird'))}
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Deleted data cannot be restored.
+                            {t('admin.crud.delete_body')}
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Delete
+                                {t('common.delete')}
                             </button>
                         </div>
                     </div>

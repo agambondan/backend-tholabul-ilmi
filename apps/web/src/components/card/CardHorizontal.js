@@ -1,6 +1,8 @@
 'use client';
 
-const CardHorizontal = ({ surat }) => {
+import { getLocalizedTranslation } from '@/lib/translation';
+
+const CardHorizontal = ({ surat, lang = 'ID', ayahUnit = 'Ayat' }) => {
     const arabicName = surat.translation.ar.replace('سُورَةُ', '').trim();
 
     return (
@@ -19,8 +21,8 @@ const CardHorizontal = ({ surat }) => {
                         {surat.translation.latin_en}
                     </p>
                     <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate'>
-                        {surat.revelation_type} &middot; {surat.translation.idn} &middot;{' '}
-                        {surat.number_of_ayahs} Ayat
+                        {surat.revelation_type} &middot; {getLocalizedTranslation(surat.translation, lang)} &middot;{' '}
+                        {surat.number_of_ayahs} {ayahUnit}
                     </p>
                 </div>
 

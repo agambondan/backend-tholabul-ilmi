@@ -5,6 +5,7 @@ import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
 import { kajianApi } from '@/lib/api';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsPlayCircle, BsSearch, BsYoutube } from 'react-icons/bs';
 import { MdOutlinePlayLesson } from 'react-icons/md';
@@ -18,6 +19,65 @@ const CATEGORIES = [
     { key: 'tafsir', labelKey: 'kajian.category_tafsir' },
     { key: 'hadith', labelKey: 'kajian.category_hadith' },
 ];
+
+const FALLBACK_KAJIAN_EN = {
+    1: {
+        title: 'Aqidah of Ahlus Sunnah wal Jamaah',
+        description: 'A complete explanation of correct Islamic creed based on the Quran and Sunnah.',
+    },
+    2: {
+        title: 'Practical Fiqh of Worship',
+        description: 'A practical guide to daily worship: purification, prayer, fasting, and zakat.',
+    },
+    3: {
+        title: 'Tazkiyatun Nafs: Purification of the Soul',
+        description: 'Studies on purifying the heart and soul from inner diseases.',
+    },
+    4: {
+        title: 'Complete Prophetic Biography',
+        description: 'The life journey of Prophet Muhammad ﷺ from birth until his passing.',
+    },
+    5: {
+        title: "Tafsir of Juz Amma",
+        description: 'Explanation of the short surahs in Juz 30 that are often recited.',
+    },
+    6: {
+        title: "Explanation of Nawawi's Forty Hadith",
+        description: "Explanation of Imam Nawawi's 42 selected hadith that form foundations of Islamic knowledge.",
+    },
+    7: {
+        title: 'Kitab At-Tawhid: Shaykh Muhammad At-Tamimi',
+        description: 'Explanation of Kitab At-Tawhid, an essential work for understanding tawhid correctly.',
+    },
+    8: {
+        title: 'Fiqh of Ramadan Fasting',
+        description: 'Rulings of Ramadan fasting: intention, invalidators, fidyah, and related issues.',
+    },
+    9: {
+        title: 'Tafsir of Al-Fatihah',
+        description: 'A deeper explanation of the meanings and virtues of Surah Al-Fatihah.',
+    },
+    10: {
+        title: 'Self-Reflection and Purification of the Heart',
+        description: 'Reflections and studies on self-accounting, reliance on Allah, and love for Allah.',
+    },
+    11: {
+        title: 'Selected Hadith from Sahih Bukhari',
+        description: 'Selected hadith from Sahih Bukhari with brief and practical explanations.',
+    },
+    12: {
+        title: 'Sirah: Stories of the Companions',
+        description: 'Inspiring stories of the companions of the Prophet ﷺ and their examples.',
+    },
+};
+
+const fallbackKajianField = (item, field, lang) => {
+    if (String(lang).toUpperCase() === 'EN') {
+        const translated = FALLBACK_KAJIAN_EN[item.id]?.[field];
+        if (translated) return translated;
+    }
+    return getLocalizedField(item, field, lang);
+};
 
 const FALLBACK_KAJIAN = [
     {
@@ -164,7 +224,7 @@ const catColor = {
 };
 
 const KajianPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [kajian, setKajian] = useState(FALLBACK_KAJIAN);
     const [activeCategory, setActiveCategory] = useState('semua');
     const [search, setSearch] = useState('');
@@ -183,7 +243,13 @@ const KajianPage = () => {
         const matchCat = activeCategory === 'semua' || k.category === activeCategory;
         const matchSearch =
             !search ||
-            [k.title, k.ustadz, k.description, k.category, k.duration]
+            [
+                fallbackKajianField(k, 'title', lang),
+                k.ustadz,
+                fallbackKajianField(k, 'description', lang),
+                k.category,
+                k.duration,
+            ]
                 .filter(Boolean)
                 .join(' ')
                 .toLowerCase()
@@ -327,7 +393,7 @@ const KajianPage = () => {
                                     {/* Title */}
                                     <div className='flex-1'>
                                         <h3 className='text-sm font-semibold text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors leading-snug'>
-                                            {k.title}
+                                            {fallbackKajianField(k, 'title', lang)}
                                         </h3>
                                         <p className='text-xs text-emerald-600 dark:text-emerald-400 mt-0.5'>
                                             {k.ustadz}
@@ -336,7 +402,7 @@ const KajianPage = () => {
 
                                     {/* Description */}
                                     <p className='text-xs text-gray-500 dark:text-gray-400 line-clamp-2'>
-                                        {k.description}
+                                        {fallbackKajianField(k, 'description', lang)}
                                     </p>
 
                                     {/* Footer */}

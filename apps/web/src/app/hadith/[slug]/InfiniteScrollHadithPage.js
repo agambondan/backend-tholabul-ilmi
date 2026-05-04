@@ -6,12 +6,15 @@ import Select, { SelectOptionWithLabel } from '@/components/select/Select';
 import { SkeletonReader } from '@/components/skeleton/Skeleton';
 import AutoScrollButton from '@/components/popup/AutoScrollButton';
 import SettingButton from '@/components/popup/SettingButton';
+import { useLocale } from '@/context/Locale';
 import { progressApi, streakApi } from '@/lib/api';
+import { getLocalizedTranslation } from '@/lib/translation';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 const InfiniteScrollHadithPage = ({ params, searchParams }) => {
+	const { t, lang } = useLocale();
 	const { isWide } = useLayoutMode();
 	const router = useRouter();
 	const [bookList, setBookList] = useState([]);
@@ -161,10 +164,10 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 			<div className='flex flex-col items-center justify-center min-h-[40vh] text-center px-4'>
 				<p className='text-4xl mb-3'>⚠️</p>
 				<h2 className='text-lg font-bold text-emerald-900 dark:text-white mb-2'>
-					Gagal Memuat Hadith
+					{t('hadith.load_error_title')}
 				</h2>
 				<p className='text-sm text-gray-500 dark:text-gray-400'>
-					Server API tidak dapat dijangkau. Pastikan server backend berjalan.
+					{t('hadith.load_error_desc')}
 				</p>
 			</div>
 		);
@@ -180,17 +183,17 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 						الْحَدِيث
 					</p>
 					<h1 className='text-xl font-bold text-emerald-900 dark:text-white mb-0.5'>
-						{book?.translation?.idn ?? params.slug}
+						{getLocalizedTranslation(book?.translation, lang) || params.slug}
 					</h1>
 					<p className='text-sm text-gray-500 dark:text-gray-400'>
-						Kumpulan hadith dari kitab {book?.translation?.idn ?? params.slug}
+						{t('hadith.collection_from')} {getLocalizedTranslation(book?.translation, lang) || params.slug}
 					</p>
 				</div>
 			)}
 			<div className='flex flex-col space-y-3 px-4'>
 				<SelectOptionWithLabel
 					id={'riwayat'}
-					label={'Pilih Periwayat'}
+					label={t('hadith.select_narrator')}
 					customClassName={''}
 					callbackOnChange={(event) => {
 						router.push(`/hadith/${event.target.value}`);
@@ -200,14 +203,14 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 					{bookList.map((item) => {
 						return (
 							<Select.Option key={item.slug} value={item.slug}>
-								{item.translation?.idn ?? item.slug}
+								{getLocalizedTranslation(item.translation, lang) || item.slug}
 							</Select.Option>
 						);
 					})}
 				</SelectOptionWithLabel>
 				<SelectOptionWithLabel
 					id={'theme'}
-					label={'Pilih Kitab'}
+					label={t('hadith.select_theme')}
 					customClassName={''}
 					callbackOnChange={(event) => {
 						setSelectedTheme(event.target.value);
@@ -215,13 +218,13 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 				>
 					{themes.map((item) => (
 						<Select.Option key={item.theme.id} value={item.theme.id}>
-							{item.theme.translation?.en ?? item.theme.translation?.idn ?? `Kitab ${item.theme.id}`}
+							{getLocalizedTranslation(item.theme.translation, lang) || `Kitab ${item.theme.id}`}
 						</Select.Option>
 					))}
 				</SelectOptionWithLabel>
 				<SelectOptionWithLabel
 					id={'chapter'}
-					label={'Pilih Bab'}
+					label={t('hadith.select_chapter')}
 					customClassName={''}
 					callbackOnChange={(event) => {
 						setSelectedChapter(event.target.value);
@@ -229,7 +232,7 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 				>
 					{(chapters?.items ?? []).map((item) => (
 						<Select.Option key={item.id} value={item.id}>
-							{item.translation?.en ?? item.translation?.idn ?? `Bab ${item.id}`}
+							{getLocalizedTranslation(item.translation, lang) || `Bab ${item.id}`}
 						</Select.Option>
 					))}
 				</SelectOptionWithLabel>

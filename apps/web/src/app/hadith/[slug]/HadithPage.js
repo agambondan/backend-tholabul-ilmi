@@ -3,8 +3,10 @@
 import BookmarkButton from '@/components/BookmarkButton';
 import GradeBadge, { HadithAuthenticity } from '@/components/GradeBadge';
 import { PopUpIsCopied, ShareAyah } from '@/components/popup/ListImage';
+import { useLocale } from '@/context/Locale';
 import { listMasjidImage } from '@/lib/const';
 import { CopyImageToClipboard, CopyToClipboard } from '@/lib/copy';
+import { getLocalizedTranslation } from '@/lib/translation';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
 import { useEffect, useRef, useState } from 'react';
@@ -17,6 +19,7 @@ import {
 import { IoIosLink, IoMdCopy, IoMdImages } from 'react-icons/io';
 
 const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
+    const { t, lang } = useLocale();
     const cardRef = useRef();
     const audioRef = useRef(null);
     const [isCopied, SetIsCopied] = useState(false);
@@ -31,6 +34,7 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
         .map((entry) => entry?.multimedia?.url)
         .filter(Boolean);
     const firstAudioSource = audioSources[0] ?? '';
+    const hadithTranslation = getLocalizedTranslation(hadith.translation, lang);
 
     const toggleSettingPopUp = () => {
         SetSettingPopUp(!settingPopUp);
@@ -55,7 +59,7 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
 
     const playAudio = async (url) => {
         if (!url) {
-            showStatus('Audio hadith belum tersedia');
+            showStatus(t('hadith.audio_unavailable'));
             return;
         }
 
@@ -71,13 +75,13 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
             setIsPlayingAudio(true);
         } catch {
             setIsPlayingAudio(false);
-            showStatus('Gagal memutar audio hadith');
+            showStatus(t('hadith.audio_play_error'));
         }
     };
 
     const handleAudio = async () => {
         if (!firstAudioSource) {
-            showStatus('Audio hadith belum tersedia');
+            showStatus(t('hadith.audio_unavailable'));
             return;
         }
 
@@ -138,7 +142,7 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
                     images={listMasjidImage}
                     isCopiedCallback={toggleShareImagePopUp}
                     text={`${hadith.translation.ar}\n`
-                        .concat(`${hadith.translation.idn}\n`)
+                        .concat(`${hadithTranslation}\n`)
                         .concat(
                             `(HR. ${params.slug}: ${hadith.number})\n`.concat(
                                 `Via Thullaabul 'Ilmi ${window.location.href}#${hadith.number}`
@@ -201,7 +205,7 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
                     </li>
                     <li className='flex justify-center'>
                         <button
-                            title='Share'
+                            title={t('common.share')}
                             onClick={toggleShareImagePopUp}
                             className='p-2 rounded-lg text-lg hover:bg-emerald-100 dark:hover:bg-slate-700 transition-colors'
                         >
@@ -210,7 +214,7 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
                     </li>
                     <li className='flex justify-center relative'>
                         <button
-                            title='More'
+                            title={t('common.more')}
                             onClick={toggleSettingPopUp}
                             className='p-2 rounded-lg text-lg hover:bg-emerald-100 dark:hover:bg-slate-700 transition-colors'
                         >
@@ -258,7 +262,7 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
                                             copyText(
                                                 `${hadith.translation.ar}\n`
                                                     .concat(
-                                                        `${hadith.translation.idn}\n`
+                                                        `${hadithTranslation}\n`
                                                     )
                                                     .concat(
                                                         `(HR. ${params.slug}: ${hadith.number})\n`.concat(
@@ -287,7 +291,7 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
                         className='text-left p-2 text-base'
                         style={{ direction: 'ltr' }}
                     >
-                        {hadith.translation.idn}
+                        {hadithTranslation}
                     </li>
                 </ul>
             </ul>

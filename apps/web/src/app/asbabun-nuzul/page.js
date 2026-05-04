@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { asbabunNuzulApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
 import { useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
@@ -14,7 +15,7 @@ const SURAH_COUNT = 114;
 const QUICK_SURAH = [1, 2, 4, 18, 36, 67, 112];
 
 const AsbabunNuzulPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [surahNumber, setSurahNumber] = useState('');
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -152,7 +153,10 @@ const AsbabunNuzulPage = () => {
                                     )}
                                 </div>
                                 <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
-                                    {item.content}
+                                    {getLocalizedField(item, 'content', lang, [
+                                        'description',
+                                        'text',
+                                    ])}
                                 </p>
                             </div>
                         ))}

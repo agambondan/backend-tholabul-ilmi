@@ -2,10 +2,13 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const ByBook = () => {
+    const { t, lang } = useLocale();
     const [isLoading, SetIsLoading] = useState(true);
     const [isError, setIsError] = useState(false);
     const [books, setBooks] = useState([]);
@@ -33,10 +36,10 @@ const ByBook = () => {
             <div className='flex flex-col items-center justify-center min-h-[40vh] text-center px-4'>
                 <p className='text-4xl mb-3'>⚠️</p>
                 <h2 className='text-lg font-bold text-emerald-900 dark:text-white mb-2'>
-                    Gagal Memuat Daftar Kitab
+                    {t('hadith.load_error_title')}
                 </h2>
                 <p className='text-sm text-gray-500 dark:text-gray-400'>
-                    Server API tidak dapat dijangkau. Pastikan server backend berjalan.
+                    {t('hadith.load_error_desc')}
                 </p>
             </div>
         );
@@ -44,7 +47,7 @@ const ByBook = () => {
     return (
         <div className='container mx-auto grid xl:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4 px-4'>
             {(books?.items ?? []).map((book) => {
-                const label = book?.translation?.idn ?? book?.translation?.en ?? book.slug;
+                const label = getLocalizedTranslation(book?.translation, lang) || book.slug;
                 return (
                     <div
                         key={book.id}
@@ -68,7 +71,7 @@ const ByBook = () => {
                                 href={`/hadith/${book.slug}`}
                                 className='bg-emerald-700 hover:bg-emerald-600 text-white text-sm text-center py-1.5 px-3 rounded-lg transition-colors'
                             >
-                                Baca Hadith
+                                {t('hadith.open_reader')}
                             </Link>
                         </div>
                     </div>

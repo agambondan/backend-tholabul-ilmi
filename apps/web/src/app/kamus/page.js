@@ -2,7 +2,9 @@
 
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
+import { useLocale } from '@/context/Locale';
 import { kamusApi } from '@/lib/api';
+import { getLocalizedField } from '@/lib/translation';
 import { useState } from 'react';
 import { BsBook, BsSearch } from 'react-icons/bs';
 
@@ -49,11 +51,61 @@ const COMMON_WORDS = [
     { arabic: 'بِسْم', latin: 'Bism', meaning: 'Dengan nama (basmalah)', root: 'سمو' },
 ];
 
+const COMMON_WORD_MEANINGS_EN = {
+    Allah: 'Allah, the name of God worshiped',
+    Rabb: 'Lord, Owner, Sustainer',
+    Rahmah: 'Mercy, compassion',
+    "'Ilm": 'Knowledge',
+    Kitab: 'Book, scripture',
+    Quran: 'Recitation, the Quran',
+    Iman: 'Faith, belief',
+    Islam: 'Submission, the religion of Islam',
+    Shalah: 'Prayer, supplication',
+    Zakah: 'Zakat, purification',
+    Shiyam: 'Fasting',
+    Hajj: 'Pilgrimage to Makkah',
+    Taqwa: 'God-consciousness, guarding oneself from what Allah forbids',
+    Shabr: 'Patience, perseverance',
+    Shukr: 'Gratitude, thanks',
+    Tawbah: 'Repentance, returning to Allah',
+    "Du'a": 'Supplication, request',
+    Dzikr: 'Dhikr, remembrance of Allah',
+    Masjid: 'Mosque, place of prostration',
+    Halal: 'Permissible',
+    Haram: 'Forbidden',
+    Sunnah: "The Prophet's way and practice",
+    Fardh: 'Obligatory duty',
+    Nafs: 'Soul, self, desire',
+    Qalb: 'Heart',
+    "'Aql": 'Intellect, reason',
+    Akh: 'Brother',
+    Ukht: 'Sister',
+    Ummah: 'Community, Muslim nation',
+    Amanah: 'Trust, responsibility',
+    Hikmah: 'Wisdom',
+    Rizq: 'Provision, sustenance',
+    Jannah: 'Paradise',
+    Nar: 'Fire, Hellfire',
+    Malak: 'Angel',
+    Nabi: 'Prophet',
+    Rasul: 'Messenger',
+    Muslim: 'One who submits to Allah',
+    "Mu'min": 'Believer',
+    Bism: 'In the name',
+};
+
 export default function KamusPage() {
+    const { t, lang } = useLocale();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState(null);
     const [loading, setLoading] = useState(false);
     const [selected, setSelected] = useState(null);
+
+    const wordMeaning = (word) =>
+        (lang === 'EN' && COMMON_WORD_MEANINGS_EN[word.latin]
+            ? COMMON_WORD_MEANINGS_EN[word.latin]
+            : getLocalizedField(word, 'meaning', lang)) ||
+        word.meaning;
 
     const handleSearch = () => {
         const q = query.trim();
@@ -73,7 +125,7 @@ export default function KamusPage() {
                     (w) =>
                         w.arabic.includes(q) ||
                         w.latin.toLowerCase().includes(lower) ||
-                        w.meaning.toLowerCase().includes(lower) ||
+                        wordMeaning(w).toLowerCase().includes(lower) ||
                         w.root.includes(q),
                 );
                 setResults(local);
@@ -86,7 +138,7 @@ export default function KamusPage() {
               (w) =>
                   w.arabic.includes(query) ||
                   w.latin.toLowerCase().includes(query.toLowerCase()) ||
-                  w.meaning.toLowerCase().includes(query.toLowerCase()) ||
+                  wordMeaning(w).toLowerCase().includes(query.toLowerCase()) ||
                   w.root.includes(query),
           )
         : COMMON_WORDS;
@@ -103,10 +155,10 @@ export default function KamusPage() {
                         <BsBook className='text-3xl text-blue-600 dark:text-blue-400' />
                     </div>
                     <h1 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-2'>
-                        Kamus Arab
+                        {t('kamus.title')}
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        Cari arti kosakata Arab Al-Quran dan Islam
+                        {t('kamus.subtitle')}
                     </p>
                 </div>
 
@@ -122,7 +174,7 @@ export default function KamusPage() {
                                 setResults(null);
                             }}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            placeholder='Cari kata Arab, Latin, atau arti…'
+                            placeholder={t('kamus.search_placeholder')}
                             className='w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-400'
                         />
                     </div>
@@ -130,7 +182,7 @@ export default function KamusPage() {
                         onClick={handleSearch}
                         className='px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-colors'
                     >
-                        Cari
+                        {t('common.search')}
                     </button>
                 </div>
 
@@ -143,7 +195,7 @@ export default function KamusPage() {
                 {!loading && (
                     <>
                         <p className='text-xs text-gray-400 dark:text-gray-500 mb-4'>
-                            {displayResults.length} kata ditemukan
+                            {displayResults.length} {t('kamus.results_unit')}
                         </p>
                         <div className='space-y-2'>
                             {displayResults.map((word, i) => {
@@ -167,7 +219,7 @@ export default function KamusPage() {
                                                         {word.latin}
                                                     </p>
                                                     <p className='text-sm text-gray-600 dark:text-gray-300'>
-                                                        {word.meaning}
+                                                        {wordMeaning(word)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -182,7 +234,7 @@ export default function KamusPage() {
                                             <div className='px-5 pb-4 border-t border-gray-50 dark:border-slate-700 pt-3 space-y-2'>
                                                 <div className='flex flex-wrap gap-2'>
                                                     <div className='flex items-center gap-1.5 text-xs'>
-                                                        <span className='text-gray-400'>Akar kata:</span>
+                                                        <span className='text-gray-400'>{t('kamus.root_label')}:</span>
                                                         <span
                                                             className='font-bold text-gray-800 dark:text-white'
                                                             style={{ fontFamily: 'Amiri, serif' }}
@@ -206,8 +258,8 @@ export default function KamusPage() {
                         {displayResults.length === 0 && query && (
                             <div className='text-center py-12 text-gray-500 dark:text-gray-400'>
                                 <BsBook className='text-4xl mx-auto mb-3 opacity-30' />
-                                <p className='font-semibold mb-1'>Kata tidak ditemukan</p>
-                                <p className='text-sm'>Coba kata lain atau cek ejaan</p>
+                                <p className='font-semibold mb-1'>{t('kamus.not_found_word')}</p>
+                                <p className='text-sm'>{t('kamus.not_found_hint')}</p>
                             </div>
                         )}
                     </>

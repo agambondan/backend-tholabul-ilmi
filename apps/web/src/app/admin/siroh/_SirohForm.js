@@ -1,6 +1,7 @@
 'use client';
 
 import { adminSirohApi } from '@/lib/api';
+import { useLocale } from '@/context/Locale';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -15,6 +16,7 @@ const slugify = (str) =>
 
 const SirahForm = ({ initialData = null, contentId = null }) => {
     const router = useRouter();
+    const { t } = useLocale();
     const isEdit = !!contentId;
 
     const [title, setTitle] = useState(initialData?.title ?? '');
@@ -46,7 +48,7 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!categoryId) {
-            setError('Select a category first.');
+            setError(t('admin.form.select_category_first'));
             return;
         }
         setError('');
@@ -66,7 +68,7 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
             }
             router.push('/admin/siroh');
         } catch {
-            setError('Failed to save. Check the connection or submitted data.');
+            setError(t('admin.error.save'));
         } finally {
             setIsLoading(false);
         }
@@ -86,7 +88,7 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
             <div className='grid sm:grid-cols-2 gap-4'>
                 <div>
                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                        Category / Bab <span className='text-red-500'>*</span>
+                        {t('admin.field.category')} <span className='text-red-500'>*</span>
                     </label>
                     <select
                         value={categoryId}
@@ -94,7 +96,7 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
                         className={inputCls}
                         required
                     >
-                        <option value=''>— Select Category —</option>
+                        <option value=''>— {t('admin.form.select_category')} —</option>
                         {categories.map((cat) => (
                             <option key={cat.id} value={cat.id}>
                                 {cat.title}
@@ -103,9 +105,9 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
                     </select>
                     {categories.length === 0 && (
                         <p className='text-xs text-amber-500 mt-1'>
-                            Create a category first on the{' '}
+                            {t('admin.sirah.create_category_first')}{' '}
                             <Link href='/admin/siroh' className='underline'>
-                                Manage Sirah
+                                {t('admin.nav.sirah')}
                             </Link>
                             .
                         </p>
@@ -114,7 +116,7 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
 
                 <div>
                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                        Order
+                        {t('admin.field.order')}
                     </label>
                     <input
                         type='number'
@@ -129,20 +131,20 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Title <span className='text-red-500'>*</span>
+                    {t('admin.field.title')} <span className='text-red-500'>*</span>
                 </label>
                 <input
                     required
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
                     className={inputCls}
-                    placeholder='Sirah chapter title...'
+                    placeholder={t('admin.sirah.title_placeholder')}
                 />
             </div>
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Slug
+                    {t('admin.field.slug')}
                 </label>
                 <input
                     value={slug}
@@ -160,7 +162,7 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Content <span className='text-red-500'>*</span>
+                    {t('admin.field.content')} <span className='text-red-500'>*</span>
                 </label>
                 <textarea
                     required
@@ -168,10 +170,10 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
                     onChange={(e) => setContent(e.target.value)}
                     rows={18}
                     className={`${inputCls} font-mono leading-relaxed`}
-                    placeholder='Write sirah content here. Use new lines to separate paragraphs...'
+                    placeholder={t('admin.sirah.content_placeholder')}
                 />
                 <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                    {content.length.toLocaleString()} characters
+                    {content.length.toLocaleString()} {t('admin.form.characters')}
                 </p>
             </div>
 
@@ -181,13 +183,17 @@ const SirahForm = ({ initialData = null, contentId = null }) => {
                     disabled={isLoading}
                     className='px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors'
                 >
-                    {isLoading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Content'}
+                    {isLoading
+                        ? t('common.saving')
+                        : isEdit
+                          ? t('admin.form.save_changes')
+                          : t('admin.sirah.create_content')}
                 </button>
                 <Link
                     href='/admin/siroh'
                     className='px-6 py-2.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium transition-colors'
                 >
-                    Cancel
+                    {t('common.cancel')}
                 </Link>
             </div>
         </form>

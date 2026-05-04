@@ -178,8 +178,133 @@ const FIQH_DATA = [
     },
 ];
 
+const FIQH_CATEGORY_EN = {
+    'Thaharah (Bersuci)': 'Purification',
+    Sholat: 'Prayer',
+    Puasa: 'Fasting',
+    Zakat: 'Zakat',
+    'Haji & Umrah': 'Hajj and Umrah',
+    Muamalah: 'Transactions',
+};
+
+const FIQH_ITEM_EN = {
+    Wudhu: {
+        title: 'Wudu',
+        content:
+            'The obligatory parts of wudu are intention, washing the face, washing both arms to the elbows, wiping part of the head, washing both feet to the ankles, and following the correct order. Wudu is invalidated by discharge from the two private passages, loss of consciousness, and touching the private part without a barrier.',
+    },
+    'Mandi Wajib (Ghusl)': {
+        title: 'Obligatory Bath (Ghusl)',
+        content:
+            'Ghusl becomes obligatory after intercourse, ejaculation, the end of menstruation, postpartum bleeding, childbirth, and death for the deceased. Its essentials are intention and making water reach the entire body.',
+    },
+    Tayamum: {
+        title: 'Tayammum',
+        content:
+            'Tayammum is allowed when water is unavailable or illness prevents water use. Its steps are intention, striking clean earth, wiping the face, and wiping both hands. It is invalidated by the same things that invalidate wudu or when water becomes available.',
+    },
+    'Najis dan Cara Mensucikannya': {
+        title: 'Impurities and How to Purify Them',
+        content:
+            'Severe impurity such as dog or pig impurity is washed seven times, one with earth. Common impurity is removed by eliminating its substance, taste, color, and smell with water. Light impurity, such as the urine of a baby boy who only consumes milk, is purified by sprinkling water.',
+    },
+    'Sholat Fardhu 5 Waktu': {
+        title: 'The Five Obligatory Prayers',
+        content:
+            'The five daily prayers are obligatory for every mature and sane Muslim. Their times are Fajr, Dhuhr, Asr, Maghrib, and Isha, with rakah counts of 2, 4, 4, 3, and 4 respectively.',
+    },
+    'Sholat Berjamaah': {
+        title: 'Congregational Prayer',
+        content:
+            'Congregational prayer is highly emphasized and carries a reward greater than praying alone. The follower should not stand ahead of the imam, should intend to follow, and should know the imam’s movements.',
+    },
+    'Sholat Qashar dan Jama': {
+        title: 'Shortening and Combining Prayers',
+        content:
+            'Qasr shortens four-rakah prayers to two during travel. Jama combines Dhuhr with Asr or Maghrib with Isha, either earlier or later, and is allowed during travel, heavy rain, or genuine difficulty.',
+    },
+    'Sholat Sunnah Rawatib': {
+        title: 'Rawatib Sunnah Prayers',
+        content:
+            'Rawatib prayers include two before Fajr, four before Dhuhr, two after Dhuhr, two after Maghrib, and two after Isha. The two rakah before Fajr are especially emphasized.',
+    },
+    'Sholat Jumat': {
+        title: 'Friday Prayer',
+        content:
+            'Friday prayer is obligatory for eligible Muslim men. It consists of two rakah preceded by two khutbahs. It is recommended to bathe, wear good clothing, come early, and send abundant blessings upon the Prophet on Friday.',
+    },
+    'Puasa Ramadhan': {
+        title: 'Ramadan Fasting',
+        content:
+            'Ramadan fasting is obligatory for Muslims who are mature, sane, healthy, resident, and not menstruating or in postpartum bleeding. Its pillars are intention before dawn and refraining from invalidators from dawn until sunset.',
+    },
+    'Puasa Sunnah': {
+        title: 'Voluntary Fasting',
+        content:
+            'Recommended fasts include Mondays and Thursdays, the white days of each Hijri month, six days of Shawwal, Ashura, and Arafah for those not performing Hajj.',
+    },
+    'Fidyah dan Kafarat': {
+        title: 'Fidyah and Expiation',
+        content:
+            'Fidyah is feeding one poor person for each missed day for those permanently unable to fast. Qadha replaces missed fasts with a valid excuse. Kaffarah applies to specific severe violations such as intercourse during Ramadan fasting.',
+    },
+    'Zakat Maal': {
+        title: 'Wealth Zakat',
+        content:
+            'Zakat on wealth is obligatory when wealth reaches the nisab and remains for one lunar year. It applies to gold, silver, money, trade goods, crops, livestock, minerals, and treasures with different rates.',
+    },
+    '8 Golongan Penerima Zakat (Ashnaf)': {
+        title: 'The Eight Recipients of Zakat',
+        content:
+            'Zakat recipients are the poor, the needy, zakat workers, those whose hearts are to be reconciled, slaves seeking freedom, debtors, those in the path of Allah, and stranded travelers.',
+    },
+    'Zakat Fitrah': {
+        title: 'Zakat Al-Fitr',
+        content:
+            'Zakat al-fitr is obligatory for every capable Muslim before Eid prayer. It is given as one sa of staple food or its equivalent and purifies the fasting person from idle and improper speech.',
+    },
+    'Rukun Haji': {
+        title: 'Pillars of Hajj',
+        content:
+            'The pillars of Hajj are ihram, standing at Arafah, tawaf al-ifadah, sai, shaving or shortening the hair, and observing the required order. Standing at Arafah is the central pillar of Hajj.',
+    },
+    'Larangan Saat Ihram': {
+        title: 'Prohibitions During Ihram',
+        content:
+            'Men may not wear stitched clothing or cover the head. Women may not cover the face or wear gloves. All pilgrims avoid perfume, cutting hair or nails, hunting land animals, marriage contracts, and intercourse.',
+    },
+    'Umrah dan Rukunnya': {
+        title: 'Umrah and Its Pillars',
+        content:
+            'Umrah is obligatory once in a lifetime according to the stronger view. Its pillars are ihram from the miqat, tawaf, sai between Safa and Marwah, and shaving or shortening the hair.',
+    },
+    "Jual Beli (Bai')": {
+        title: 'Buying and Selling',
+        content:
+            'Valid sale requires sane and eligible parties, mutual consent, a lawful and deliverable item, and ownership or representation. Prohibited sales include riba, excessive uncertainty, gambling, and intrinsically unlawful goods.',
+    },
+    'Riba dan Jenisnya': {
+        title: 'Riba and Its Types',
+        content:
+            'Riba is unlawful excess. Riba al-fadl occurs in unequal exchange of similar ribawi goods, while riba al-nasiah occurs through increase due to deferred payment, including interest-based transactions.',
+    },
+    'Warisan (Faraid)': {
+        title: 'Inheritance',
+        content:
+            'Faraid is the Islamic science of inheritance. Main heirs include sons, daughters, spouses, parents, and others according to detailed shares. A core principle is that a male receives the share of two females in the same lineage category.',
+    },
+};
+
+const localizeFiqhCategory = (category, lang) =>
+    String(lang).toUpperCase() === 'EN' ? FIQH_CATEGORY_EN[category] ?? category : category;
+
+const localizeFiqhItem = (item, field, lang) =>
+    String(lang).toUpperCase() === 'EN'
+        ? FIQH_ITEM_EN[item.title]?.[field] ?? item[field]
+        : item[field];
+
 export default function FiqhPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [openCategory, setOpenCategory] = useState(null);
     const [openItem, setOpenItem] = useState({});
     const [search, setSearch] = useState('');
@@ -199,7 +324,13 @@ export default function FiqhPage() {
         if (!query) return FIQH_DATA;
         return FIQH_DATA.map((category) => {
             const items = category.items.filter((item) => {
-                const haystack = [category.category, category.arabic, item.title, item.content, item.dalil]
+                const haystack = [
+                    localizeFiqhCategory(category.category, lang),
+                    category.arabic,
+                    localizeFiqhItem(item, 'title', lang),
+                    localizeFiqhItem(item, 'content', lang),
+                    item.dalil,
+                ]
                     .filter(Boolean)
                     .join(' ')
                     .toLowerCase();
@@ -207,7 +338,7 @@ export default function FiqhPage() {
             });
             return { ...category, items };
         }).filter((category) => category.items.length > 0);
-    }, [search]);
+    }, [lang, search]);
 
     const totalTopics = FIQH_DATA.reduce((sum, category) => sum + category.items.length, 0);
     const visibleTopics = filteredData.reduce((sum, category) => sum + category.items.length, 0);
@@ -284,7 +415,7 @@ export default function FiqhPage() {
                                         <span className='text-2xl'>{cat.icon}</span>
                                         <div className='text-left'>
                                             <p className='font-bold text-gray-900 dark:text-white'>
-                                                {cat.category}
+                                                {localizeFiqhCategory(cat.category, lang)}
                                             </p>
                                             <p
                                                 className='text-xs text-gray-400 dark:text-gray-500'
@@ -316,7 +447,7 @@ export default function FiqhPage() {
                                                         className='w-full flex items-center justify-between px-5 py-3.5 text-left bg-gray-50/50 dark:bg-slate-800/50'
                                                     >
                                                         <span className='text-sm font-semibold text-emerald-800 dark:text-emerald-300'>
-                                                            {item.title}
+                                                            {localizeFiqhItem(item, 'title', lang)}
                                                         </span>
                                                         <BsChevronDown
                                                             className={`text-gray-400 text-xs flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -325,7 +456,7 @@ export default function FiqhPage() {
                                                     {isOpen && (
                                                         <div className='px-5 pb-4 space-y-2'>
                                                             <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
-                                                                {item.content}
+                                                                {localizeFiqhItem(item, 'content', lang)}
                                                             </p>
                                                             {item.dalil && (
                                                                 <p className='text-xs text-emerald-600 dark:text-emerald-400 font-medium'>

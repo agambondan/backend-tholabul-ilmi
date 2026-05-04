@@ -3,6 +3,7 @@
 
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 import classNames from 'classnames';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -12,7 +13,7 @@ const PAGE_SIZE = 20;
 const normalizeItems = (data) => data?.items ?? data ?? [];
 
 const ByHadith = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [bookList, setBookList] = useState([]);
     const [selectedBookSlug, setSelectedBookSlug] = useState('');
     const [query, setQuery] = useState('');
@@ -77,10 +78,12 @@ const ByHadith = () => {
         return hadiths.filter((hadith) => {
             const numberMatch = String(hadith?.number ?? '').includes(normalizedQuery);
             const arabicMatch = String(hadith?.translation?.ar ?? '').toLowerCase().includes(normalizedQuery);
-            const idnMatch = String(hadith?.translation?.idn ?? '').toLowerCase().includes(normalizedQuery);
-            return numberMatch || arabicMatch || idnMatch;
+            const translationMatch = getLocalizedTranslation(hadith?.translation, lang)
+                .toLowerCase()
+                .includes(normalizedQuery);
+            return numberMatch || arabicMatch || translationMatch;
         });
-    }, [hadiths, query]);
+    }, [hadiths, query, lang]);
 
     const handleLoadMore = () => {
         const nextPage = page + 1;
@@ -110,7 +113,7 @@ const ByHadith = () => {
                             >
                                 {bookList.map((book) => (
                                     <option key={book.slug} value={book.slug}>
-                                        {book.translation?.idn ?? book.slug}
+                                        {getLocalizedTranslation(book.translation, lang) || book.slug}
                                     </option>
                                 ))}
                             </select>
@@ -193,7 +196,7 @@ const ByHadith = () => {
                                     <div className='flex items-start justify-between gap-3 mb-3'>
                                         <div>
                                             <p className='text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500'>
-                                                {currentBook?.translation?.idn ?? 'Hadith'} · No. {hadith.number}
+                                                {getLocalizedTranslation(currentBook?.translation, lang) || 'Hadith'} · No. {hadith.number}
                                             </p>
                                         </div>
                                         <span className='rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold px-2.5 py-1'>
@@ -209,7 +212,7 @@ const ByHadith = () => {
                                     </p>
 
                                     <p className='mt-3 text-sm text-gray-600 dark:text-gray-300 line-clamp-2'>
-                                        {hadith?.translation?.idn ?? t('hadith.translation_unavailable')}
+                                        {getLocalizedTranslation(hadith?.translation, lang) || t('hadith.translation_unavailable')}
                                     </p>
                                 </Link>
                             ))}

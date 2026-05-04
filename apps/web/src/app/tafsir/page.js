@@ -3,6 +3,8 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
@@ -11,6 +13,7 @@ import { MdOutlineAutoStories } from 'react-icons/md';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const TafsirIndexPage = () => {
+    const { t, lang } = useLocale();
     const [surahs, setSurahs] = useState([]);
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +34,7 @@ const TafsirIndexPage = () => {
         const q = search.toLowerCase();
         return (
             s.translation?.latin_en?.toLowerCase().includes(q) ||
-            s.translation?.id?.toLowerCase().includes(q) ||
+            getLocalizedTranslation(s.translation, lang).toLowerCase().includes(q) ||
             String(s.number).includes(q)
         );
     });
@@ -48,10 +51,10 @@ const TafsirIndexPage = () => {
                         </div>
                         <div>
                             <h1 className='text-xl font-bold text-emerald-900 dark:text-white'>
-                                Tafsir Al-Quran
+                                {t('tafsir.title')}
                             </h1>
                             <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                Pilih surah untuk membaca tafsir
+                                {t('tafsir.pick_surah')}
                             </p>
                         </div>
                     </div>
@@ -59,9 +62,7 @@ const TafsirIndexPage = () => {
                     {/* Notice */}
                     <div className='bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 rounded-xl px-4 py-3 mb-5'>
                         <p className='text-xs text-amber-700 dark:text-amber-400'>
-                            <strong>Catatan:</strong> Data tafsir sedang dalam proses pengisian. Beberapa
-                            surah mungkin belum memiliki konten tafsir. Kami secara bertahap menambahkan
-                            tafsir dari ulama terpercaya.
+                            <strong>{t('common.notes')}:</strong> {t('tafsir.data_note')}
                         </p>
                     </div>
 
@@ -70,7 +71,7 @@ const TafsirIndexPage = () => {
                         <BsSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm' />
                         <input
                             type='text'
-                            placeholder='Cari surah (nama atau nomor)...'
+                            placeholder={t('tafsir.search_placeholder')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className='w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
@@ -90,7 +91,7 @@ const TafsirIndexPage = () => {
                     ) : filtered.length === 0 ? (
                         <div className='text-center py-16 text-gray-400 dark:text-gray-500'>
                             <MdOutlineAutoStories className='text-4xl mx-auto mb-2' />
-                            <p className='text-sm'>Surah tidak ditemukan</p>
+                            <p className='text-sm'>{t('quran.not_found')}</p>
                         </div>
                     ) : (
                         <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
@@ -108,7 +109,7 @@ const TafsirIndexPage = () => {
                                             {s.translation?.latin_en ?? `Surah ${s.number}`}
                                         </p>
                                         <p className='text-xs text-gray-400 dark:text-gray-500 truncate'>
-                                            {s.translation?.id ?? ''}
+                                            {getLocalizedTranslation(s.translation, lang)}
                                         </p>
                                     </div>
                                 </Link>

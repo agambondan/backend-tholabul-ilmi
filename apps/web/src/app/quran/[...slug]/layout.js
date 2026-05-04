@@ -23,7 +23,7 @@ export async function generateMetadata({ params }) {
     const name = surah?.translation?.latin_en ?? surahSlug;
     const arabicName = surah?.name ?? '';
     const surahNumber = surah?.number ?? '';
-    const meaning = surah?.translation?.id ?? '';
+    const meaning = surah?.translation?.idn ?? surah?.translation?.en ?? '';
 
     const title = surah
         ? `Surah ${name}${arabicName ? ` (${arabicName})` : ''} — Al-Quran`

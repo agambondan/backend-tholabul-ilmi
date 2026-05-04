@@ -85,7 +85,7 @@ export async function GET() {
                             color: '#6ee7b7',
                         }}
                     >
-                        Portal Ilmu Islam — Al-Quran · Hadith · Doa
+                        Islamic Knowledge Portal — Al-Quran · Hadith · Duas
                     </div>
                 </div>
             ),

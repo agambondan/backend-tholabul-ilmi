@@ -2,21 +2,16 @@
 
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
+import { useLocale } from '@/context/Locale';
 import { useState } from 'react';
 import { FaCalculator } from 'react-icons/fa';
 import { MdInfo } from 'react-icons/md';
 
-const TABS = ['Zakat Maal', 'Zakat Fitrah', 'Zakat Profesi'];
+const TABS = ['zakat.maal', 'zakat.fitrah', 'zakat.profession'];
 const NISAB_GRAM = 85;
 
-const fmt = (n) =>
-    new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0,
-    }).format(n);
-
 export default function ZakatPage() {
+    const { t, lang } = useLocale();
     const [tab, setTab] = useState(0);
     const [goldPrice, setGoldPrice] = useState(1050000);
     const [totalWealth, setTotalWealth] = useState('');
@@ -32,6 +27,12 @@ export default function ZakatPage() {
     const zakatMaal = wealth >= nisab && haul ? wealth * 0.025 : 0;
     const zakatFitrah = 2.5 * ricePrice * familyCount;
     const zakatProfesi = income >= nisabMonthly ? income * 0.025 : 0;
+    const fmt = (n) =>
+        new Intl.NumberFormat(lang === 'EN' ? 'en-US' : 'id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            maximumFractionDigits: 0,
+        }).format(n);
 
     const InputField = ({ label, value, onChange, placeholder, hint }) => (
         <div>
@@ -86,18 +87,18 @@ export default function ZakatPage() {
                         <FaCalculator className='text-3xl text-emerald-600 dark:text-emerald-400' />
                     </div>
                     <h1 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-2'>
-                        Kalkulator Zakat
+                        {t('zakat.title')}
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        Hitung zakat maal, fitrah, dan profesi sesuai syariat
+                        {t('zakat.subtitle')}
                     </p>
                 </div>
 
                 {/* Tabs */}
                 <div className='flex bg-white dark:bg-slate-800 rounded-xl p-1 mb-6 shadow-sm border border-gray-100 dark:border-slate-700'>
-                    {TABS.map((t, i) => (
+                    {TABS.map((labelKey, i) => (
                         <button
-                            key={t}
+                            key={labelKey}
                             onClick={() => setTab(i)}
                             className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
                                 tab === i
@@ -105,7 +106,7 @@ export default function ZakatPage() {
                                     : 'text-gray-500 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-300'
                             }`}
                         >
-                            {t}
+                            {t(labelKey)}
                         </button>
                     ))}
                 </div>
@@ -116,21 +117,21 @@ export default function ZakatPage() {
                         <div className='flex items-start gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl text-sm text-emerald-800 dark:text-emerald-300'>
                             <MdInfo className='text-lg flex-shrink-0 mt-0.5' />
                             <span>
-                                Wajib jika harta ≥ nisab (85g emas) dan sudah 1 tahun (haul).
-                                Kadar: <strong>2,5%</strong>.
+                                {t('zakat.maal_info_prefix')}{' '}
+                                <strong>2,5%</strong>.
                             </span>
                         </div>
                         <InputField
-                            label='Harga Emas per Gram (Rp)'
+                            label={t('zakat.gold_price')}
                             value={goldPrice}
                             onChange={(v) => setGoldPrice(parseFloat(v) || 0)}
-                            hint={`Nisab saat ini: ${fmt(nisab)}`}
+                            hint={`${t('zakat.current_nisab')}: ${fmt(nisab)}`}
                         />
                         <InputField
-                            label='Total Harta Dizakati (Rp)'
+                            label={t('zakat.total_wealth')}
                             value={totalWealth}
                             onChange={setTotalWealth}
-                            placeholder='Tabungan + emas + investasi − hutang'
+                            placeholder={t('zakat.total_wealth_placeholder')}
                         />
                         <div className='flex items-center gap-3'>
                             <input
@@ -144,22 +145,22 @@ export default function ZakatPage() {
                                 htmlFor='haul'
                                 className='text-sm text-gray-700 dark:text-gray-300'
                             >
-                                Harta sudah dimiliki 1 tahun penuh (haul)
+                                {t('zakat.haul_label')}
                             </label>
                         </div>
                         {wealth > 0 && wealth < nisab && (
                             <p className='text-sm text-center text-amber-600 dark:text-amber-400'>
-                                Harta belum mencapai nisab ({fmt(nisab)})
+                                {t('zakat.wealth_below_nisab')} ({fmt(nisab)})
                             </p>
                         )}
                         {wealth >= nisab && !haul && (
                             <p className='text-sm text-center text-amber-600 dark:text-amber-400'>
-                                Belum memenuhi haul (1 tahun)
+                                {t('zakat.haul_unmet')}
                             </p>
                         )}
                         <ResultCard
                             amount={zakatMaal}
-                            label='Zakat Maal yang Harus Dibayar'
+                            label={t('zakat.maal_result')}
                         />
                     </div>
                 )}
@@ -170,18 +171,19 @@ export default function ZakatPage() {
                         <div className='flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl text-sm text-amber-800 dark:text-amber-300'>
                             <MdInfo className='text-lg flex-shrink-0 mt-0.5' />
                             <span>
-                                Wajib sebelum sholat Idul Fitri. Besarnya{' '}
-                                <strong>1 sha&apos; (±2,5 kg)</strong> makanan pokok per jiwa.
+                                {t('zakat.fitrah_info_prefix')}{' '}
+                                <strong>1 sha&apos; (±2,5 kg)</strong>{' '}
+                                {t('zakat.fitrah_info_suffix')}
                             </span>
                         </div>
                         <InputField
-                            label='Harga Beras per Kg (Rp)'
+                            label={t('zakat.rice_price')}
                             value={ricePrice}
                             onChange={(v) => setRicePrice(parseFloat(v) || 0)}
                         />
                         <div>
                             <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-                                Jumlah Jiwa yang Ditanggung
+                                {t('zakat.family_count')}
                             </label>
                             <div className='flex items-center gap-4'>
                                 <button
@@ -199,14 +201,16 @@ export default function ZakatPage() {
                                 >
                                     +
                                 </button>
-                                <span className='text-sm text-gray-500 dark:text-gray-400'>jiwa</span>
+                                <span className='text-sm text-gray-500 dark:text-gray-400'>
+                                    {t('zakat.person_unit')}
+                                </span>
                             </div>
                         </div>
                         <ResultCard
                             amount={zakatFitrah}
                             color='amber'
-                            label='Total Zakat Fitrah'
-                            note={`${familyCount} jiwa × 2,5 kg × ${fmt(ricePrice)}/kg`}
+                            label={t('zakat.fitrah_result')}
+                            note={`${familyCount} ${t('zakat.person_unit')} × 2,5 kg × ${fmt(ricePrice)}/kg`}
                         />
                     </div>
                 )}
@@ -217,38 +221,38 @@ export default function ZakatPage() {
                         <div className='flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-sm text-blue-800 dark:text-blue-300'>
                             <MdInfo className='text-lg flex-shrink-0 mt-0.5' />
                             <span>
-                                Kadar <strong>2,5%</strong> dari penghasilan bersih per bulan
-                                jika mencapai nisab bulanan (nisab tahunan ÷ 12).
+                                {t('zakat.profession_info_prefix')}{' '}
+                                <strong>2,5%</strong>{' '}
+                                {t('zakat.profession_info_suffix')}
                             </span>
                         </div>
                         <InputField
-                            label='Harga Emas per Gram (Rp)'
+                            label={t('zakat.gold_price')}
                             value={goldPrice}
                             onChange={(v) => setGoldPrice(parseFloat(v) || 0)}
-                            hint={`Nisab bulanan: ${fmt(nisabMonthly)}`}
+                            hint={`${t('zakat.monthly_nisab')}: ${fmt(nisabMonthly)}`}
                         />
                         <InputField
-                            label='Penghasilan Bersih per Bulan (Rp)'
+                            label={t('zakat.monthly_income')}
                             value={monthlyIncome}
                             onChange={setMonthlyIncome}
-                            placeholder='Gaji setelah dikurangi kebutuhan pokok'
+                            placeholder={t('zakat.monthly_income_placeholder')}
                         />
                         {income > 0 && income < nisabMonthly && (
                             <p className='text-sm text-center text-blue-600 dark:text-blue-400'>
-                                Penghasilan belum mencapai nisab bulanan ({fmt(nisabMonthly)})
+                                {t('zakat.income_below_nisab')} ({fmt(nisabMonthly)})
                             </p>
                         )}
                         <ResultCard
                             amount={zakatProfesi}
                             color='blue'
-                            label='Zakat Profesi per Bulan'
+                            label={t('zakat.profession_result')}
                         />
                     </div>
                 )}
 
                 <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-6'>
-                    Kalkulator bersifat estimasi. Konsultasikan dengan ulama atau lembaga
-                    zakat terpercaya.
+                    {t('zakat.disclaimer')}
                 </p>
             </div>
             <Footer />

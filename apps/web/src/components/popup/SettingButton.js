@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale } from '@/context/Locale';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import classNames from 'classnames';
 import { useEffect, useRef, useState } from 'react';
@@ -7,6 +8,7 @@ import { RiSettings3Fill } from 'react-icons/ri';
 import { TbLayoutDistributeHorizontal, TbLayoutSidebarRight } from 'react-icons/tb';
 
 const SettingButton = ({ isShowFixedComponent }) => {
+    const { t } = useLocale();
     const [showPopup, setShowPopup] = useState(false);
     const [showFixedComponent, setShowFixedComponent] = useState(false);
     const { isWide, setLayout } = useLayoutMode();
@@ -55,7 +57,7 @@ const SettingButton = ({ isShowFixedComponent }) => {
             <button
                 className='dark:bg-slate-200 bg-slate-800 dark:text-black text-white rounded-full p-3 shadow hover:opacity-80 transition-opacity'
                 onClick={() => setShowPopup((p) => !p)}
-                title='Pengaturan'
+                title={t('settings.title')}
             >
                 <RiSettings3Fill size={24} />
             </button>
@@ -63,13 +65,13 @@ const SettingButton = ({ isShowFixedComponent }) => {
             {showPopup && (
                 <div className='absolute right-0 bottom-16 bg-white dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 rounded-xl w-52 p-3 shadow-lg text-sm text-emerald-900 dark:text-white'>
                     <p className='font-semibold mb-3 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide'>
-                        Pengaturan
+                        {t('settings.title')}
                     </p>
 
                     {/* Layout toggle */}
                     <div className='mb-1'>
                         <p className='text-xs text-gray-500 dark:text-gray-400 mb-2'>
-                            Tampilan Ayat
+                            {t('settings.ayah_layout')}
                         </p>
                         <div className='flex gap-2'>
                             <button
@@ -85,7 +87,7 @@ const SettingButton = ({ isShowFixedComponent }) => {
                                 )}
                             >
                                 <TbLayoutSidebarRight size={18} />
-                                Kompak
+                                {t('settings.compact')}
                             </button>
                             <button
                                 onClick={() => setLayout(true)}
@@ -100,7 +102,7 @@ const SettingButton = ({ isShowFixedComponent }) => {
                                 )}
                             >
                                 <TbLayoutDistributeHorizontal size={18} />
-                                Wide
+                                {t('settings.wide')}
                             </button>
                         </div>
                     </div>

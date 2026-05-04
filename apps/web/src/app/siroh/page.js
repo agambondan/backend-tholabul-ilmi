@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { sirohApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
@@ -13,7 +14,7 @@ import { BsSearch } from 'react-icons/bs';
 const PAGE_SIZE = 20;
 
 const SirohPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [chapters, setChapters] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -71,8 +72,8 @@ const SirohPage = () => {
         const query = search.trim().toLowerCase();
         if (!query) return true;
         return (
-            chapter.title?.toLowerCase().includes(query) ||
-            chapter.excerpt?.toLowerCase().includes(query) ||
+            getLocalizedField(chapter, 'title', lang).toLowerCase().includes(query) ||
+            getLocalizedField(chapter, 'excerpt', lang).toLowerCase().includes(query) ||
             chapter.slug?.toLowerCase().includes(query)
         );
     });
@@ -139,11 +140,11 @@ const SirohPage = () => {
                                 </span>
                                 <div className='flex-1 min-w-0'>
                                     <p className='font-semibold text-emerald-900 dark:text-white text-sm truncate'>
-                                        {chapter.title}
+                                        {getLocalizedField(chapter, 'title', lang)}
                                     </p>
-                                    {chapter.excerpt && (
+                                    {getLocalizedField(chapter, 'excerpt', lang) && (
                                         <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate'>
-                                            {chapter.excerpt}
+                                            {getLocalizedField(chapter, 'excerpt', lang)}
                                         </p>
                                     )}
                                 </div>

@@ -4,6 +4,8 @@ import { useAuth } from '@/context/Auth';
 import { Spinner3 } from '@/components/spinner/Spinner';
 import { useLocale } from '@/context/Locale';
 import { ConvertFLagLanguage } from '@/lib/converter';
+import SettingButton from '@/components/popup/SettingButton';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -30,22 +32,22 @@ import {
 } from 'react-icons/bs';
 
 const NAV = [
-    { href: '/admin', label: 'Dashboard', icon: <BsGrid /> },
-    { href: '/admin/blog', label: 'Blog', icon: <BsFileText /> },
-    { href: '/admin/siroh', label: 'Sirah', icon: <BsJournalText /> },
-    { href: '/admin/doa', label: 'Prayers', icon: <BsBookHalf /> },
-    { href: '/admin/dzikir', label: 'Dhikr', icon: <BsRepeat /> },
-    { href: '/admin/asmaul-husna', label: 'Asmaul Husna', icon: <BsStar /> },
-    { href: '/admin/kajian', label: 'Studies', icon: <BsCameraVideo /> },
-    { href: '/admin/kamus', label: 'Dictionary', icon: <BsBook /> },
-    { href: '/admin/quiz', label: 'Quiz', icon: <BsQuestionCircle /> },
-    { href: '/admin/sejarah', label: 'History', icon: <BsClock /> },
-    { href: '/admin/asbabun-nuzul', label: 'Asbabun Nuzul', icon: <BsBookmark /> },
-    { href: '/admin/wirid', label: 'Wird', icon: <BsHeart /> },
-    { href: '/admin/tahlil', label: 'Tahlil', icon: <BsMoon /> },
-    { href: '/admin/manasik', label: 'Manasik', icon: <BsMap /> },
-    { href: '/admin/fiqh', label: 'Fiqh', icon: <BsListCheck /> },
-    { href: '/admin/users', label: 'Users', icon: <BsPeople /> },
+    { href: '/admin', labelKey: 'admin.nav.dashboard', icon: <BsGrid /> },
+    { href: '/admin/blog', labelKey: 'admin.nav.blog', icon: <BsFileText /> },
+    { href: '/admin/siroh', labelKey: 'admin.nav.sirah', icon: <BsJournalText /> },
+    { href: '/admin/doa', labelKey: 'admin.nav.prayers', icon: <BsBookHalf /> },
+    { href: '/admin/dzikir', labelKey: 'admin.nav.dhikr', icon: <BsRepeat /> },
+    { href: '/admin/asmaul-husna', labelKey: 'admin.nav.asmaul', icon: <BsStar /> },
+    { href: '/admin/kajian', labelKey: 'admin.nav.studies', icon: <BsCameraVideo /> },
+    { href: '/admin/kamus', labelKey: 'admin.nav.dictionary', icon: <BsBook /> },
+    { href: '/admin/quiz', labelKey: 'admin.nav.quiz', icon: <BsQuestionCircle /> },
+    { href: '/admin/sejarah', labelKey: 'admin.nav.history', icon: <BsClock /> },
+    { href: '/admin/asbabun-nuzul', labelKey: 'admin.nav.asbabun', icon: <BsBookmark /> },
+    { href: '/admin/wirid', labelKey: 'admin.nav.wird', icon: <BsHeart /> },
+    { href: '/admin/tahlil', labelKey: 'admin.nav.tahlil', icon: <BsMoon /> },
+    { href: '/admin/manasik', labelKey: 'admin.nav.manasik', icon: <BsMap /> },
+    { href: '/admin/fiqh', labelKey: 'admin.nav.fiqh', icon: <BsListCheck /> },
+    { href: '/admin/users', labelKey: 'admin.nav.users', icon: <BsPeople /> },
 ];
 
 const LANGS = ['ID', 'EN'];
@@ -54,6 +56,7 @@ const SIDEBAR_STORAGE_KEY = 'tholabul_admin_sidebar_collapsed';
 const AdminLayout = ({ children }) => {
     const { user, isAuthenticated, isLoading } = useAuth();
     const { t, lang, setLang } = useLocale();
+    const { isWide } = useLayoutMode();
     const router = useRouter();
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
@@ -116,7 +119,7 @@ const AdminLayout = ({ children }) => {
                     {isCollapsed ? (
                         <Link
                             href='/'
-                            title='Back to App'
+                            title={t('admin.back_to_app')}
                             className='flex h-9 w-9 items-center justify-center rounded-lg text-xs text-emerald-300 hover:bg-emerald-800 hover:text-white transition-colors'
                         >
                             ←
@@ -127,10 +130,10 @@ const AdminLayout = ({ children }) => {
                                 href='/'
                                 className='text-xs text-emerald-300 hover:text-white transition-colors'
                             >
-                                ← Back to App
+                                ← {t('admin.back_to_app')}
                             </Link>
                             <p className='text-sm font-bold text-white mt-1 truncate'>
-                                Admin Panel
+                                {t('admin.panel')}
                             </p>
                         </div>
                     )}
@@ -146,7 +149,7 @@ const AdminLayout = ({ children }) => {
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                title={link.label}
+                                title={t(link.labelKey)}
                                 className={`flex items-center py-2 rounded-lg text-sm transition-colors ${
                                     isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'
                                 } ${
@@ -156,7 +159,7 @@ const AdminLayout = ({ children }) => {
                                 }`}
                             >
                                 <span className='text-base shrink-0'>{link.icon}</span>
-                                {!isCollapsed && <span className='truncate'>{link.label}</span>}
+                                {!isCollapsed && <span className='truncate'>{t(link.labelKey)}</span>}
                             </Link>
                         );
                     })}
@@ -236,7 +239,10 @@ const AdminLayout = ({ children }) => {
                         )}
                     </div>
                 </header>
-                {children}
+                <div className={isWide ? 'w-full' : 'max-w-5xl mx-auto'}>
+                    {children}
+                </div>
+                <SettingButton isShowFixedComponent={true} />
             </main>
         </div>
     );

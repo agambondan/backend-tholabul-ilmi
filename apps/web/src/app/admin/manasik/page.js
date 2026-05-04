@@ -1,6 +1,8 @@
 'use client';
 
 import { adminManasikApi } from '@/lib/api';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsPencil, BsPlusCircle, BsTrash, BsX } from 'react-icons/bs';
 
@@ -18,6 +20,7 @@ const EMPTY_FORM = {
 };
 
 const AdminManasikPage = () => {
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -104,10 +107,10 @@ const AdminManasikPage = () => {
         <div className='p-6'>
             <div className='flex items-center justify-between mb-6'>
                 <div>
-                    <h1 className='text-xl font-bold text-gray-900 dark:text-white'>Manasik</h1>
+                    <h1 className='text-xl font-bold text-gray-900 dark:text-white'>{t('admin.nav.manasik')}</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.filter((i) => i.type === 'haji').length} hajj steps ·{' '}
-                        {items.filter((i) => i.type === 'umrah').length} umrah steps
+                        {items.filter((i) => i.type === 'haji').length} {t('admin.manasik.hajj_steps')} ·{' '}
+                        {items.filter((i) => i.type === 'umrah').length} {t('admin.manasik.umrah_steps')}
                     </p>
                 </div>
                 <button
@@ -115,7 +118,7 @@ const AdminManasikPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Add Step
+                    {t('admin.manasik.add_step')}
                 </button>
             </div>
 
@@ -136,20 +139,20 @@ const AdminManasikPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Loading...</p>
+                <p className='text-sm text-gray-500'>{t('common.loading')}</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-700'>
                             <tr>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-16'>
-                                    Langkah
+                                    {t('admin.manasik.step')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Title
+                                    {t('admin.field.title')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell'>
-                                    Description
+                                    {t('admin.field.description')}
                                 </th>
                                 <th className='px-4 py-3 w-20'></th>
                             </tr>
@@ -164,10 +167,10 @@ const AdminManasikPage = () => {
                                         {item.step}
                                     </td>
                                     <td className='px-4 py-3 text-gray-900 dark:text-white font-medium'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </td>
                                     <td className='px-4 py-3 text-gray-400 dark:text-gray-500 text-xs hidden md:table-cell max-w-xs truncate'>
-                                        {item.description?.slice(0, 80) ?? '-'}
+                                        {getLocalizedField(item, 'description', lang)?.slice(0, 80) ?? '-'}
                                     </td>
                                     <td className='px-4 py-3'>
                                         <div className='flex items-center gap-2 justify-end'>
@@ -195,7 +198,7 @@ const AdminManasikPage = () => {
                                         colSpan={4}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        No data yet untuk {filter}
+                                        {t('admin.crud.no_data')} {filter}
                                     </td>
                                 </tr>
                             )}
@@ -209,7 +212,7 @@ const AdminManasikPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Step' : 'Add Step'}
+                                {editId ? t('admin.manasik.edit_step') : t('admin.manasik.add_step')}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -222,7 +225,7 @@ const AdminManasikPage = () => {
                             <div className='grid grid-cols-3 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Jenis
+                                        {t('admin.manasik.type')}
                                     </label>
                                     <select
                                         value={form.type}
@@ -240,7 +243,7 @@ const AdminManasikPage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Langkah
+                                        {t('admin.manasik.step')}
                                     </label>
                                     <input
                                         type='number'
@@ -256,7 +259,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Title
+                                    {t('admin.field.title')}
                                 </label>
                                 <input
                                     type='text'
@@ -269,7 +272,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Arabic (opsional)
+                                    {t('admin.field.arabic')} ({t('common.optional')})
                                 </label>
                                 <textarea
                                     value={form.arabic}
@@ -283,7 +286,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Latin
+                                    {t('admin.field.latin')}
                                 </label>
                                 <textarea
                                     value={form.latin}
@@ -296,7 +299,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Translation
+                                    {t('common.translation')}
                                 </label>
                                 <textarea
                                     value={form.translation}
@@ -309,7 +312,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Description
+                                    {t('admin.field.description')}
                                 </label>
                                 <textarea
                                     value={form.description}
@@ -322,7 +325,7 @@ const AdminManasikPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Catatan
+                                    {t('common.notes')}
                                 </label>
                                 <textarea
                                     value={form.notes}
@@ -339,14 +342,14 @@ const AdminManasikPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.title}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Saving...' : 'Save'}
+                                {saving ? t('common.saving') : t('common.save')}
                             </button>
                         </div>
                     </div>
@@ -357,23 +360,23 @@ const AdminManasikPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Delete this step?
+                            {t('admin.crud.delete_title').replace('{item}', t('admin.manasik.step'))}
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Deleted data cannot be restored.
+                            {t('admin.crud.delete_body')}
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Delete
+                                {t('common.delete')}
                             </button>
                         </div>
                     </div>

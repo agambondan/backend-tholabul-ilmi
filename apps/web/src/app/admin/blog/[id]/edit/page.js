@@ -3,11 +3,13 @@
 export const dynamic = 'force-dynamic';
 
 import { Spinner3 } from '@/components/spinner/Spinner';
+import { useLocale } from '@/context/Locale';
 import { adminBlogApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import BlogForm from '../../_BlogForm';
 
 const EditBlogPage = ({ params }) => {
+    const { t } = useLocale();
     const [post, setPost] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -31,7 +33,7 @@ const EditBlogPage = ({ params }) => {
     if (error) {
         return (
             <div className='p-8'>
-                <p className='text-red-500 dark:text-red-400'>Article not found.</p>
+                <p className='text-red-500 dark:text-red-400'>{t('admin.blog.not_found')}</p>
             </div>
         );
     }
@@ -39,7 +41,7 @@ const EditBlogPage = ({ params }) => {
     return (
         <div className='p-8'>
             <h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-6'>
-                Edit Article
+                {t('admin.blog.edit_article')}
             </h1>
             <BlogForm initialData={post} postId={params.id} />
         </div>

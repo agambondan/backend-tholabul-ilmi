@@ -3,6 +3,7 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
+import { useLocale } from '@/context/Locale';
 import { useState } from 'react';
 import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
 import { MdOutlineDirectionsWalk } from 'react-icons/md';
@@ -162,13 +163,116 @@ const HAJI_STEPS = [
     },
 ];
 
+const STEP_TEXT_EN = {
+    umrah: {
+        1: {
+            title: 'Ihram Intention',
+            translation: 'Here I am, O Allah, for Umrah',
+            description:
+                'Wear ihram garments. Perform the sunnah bath, wudu, and two rakaat prayer, then make the Umrah intention from the miqat. After the intention, ihram restrictions apply.',
+            notes: 'Madinah miqat: Bir Ali / Dzulhulaifah. Other routes have different miqat points.',
+        },
+        2: {
+            title: 'Talbiyah',
+            translation:
+                'Here I am, O Allah, here I am. You have no partner. All praise, blessings, and dominion belong to You. You have no partner.',
+            description:
+                'Repeat the talbiyah throughout ihram until you begin tawaf.',
+        },
+        3: {
+            title: 'Tawaf',
+            translation: 'In the name of Allah, Allah is the Greatest',
+            description:
+                'Circle the Kaaba seven times counterclockwise, starting from the Black Stone. Men perform raml on the first three circuits. Finish with two rakaat prayer near Maqam Ibrahim.',
+            notes: 'Purity from hadath is required for tawaf. Women may enter the mosque while menstruating but should not perform tawaf until pure.',
+        },
+        4: {
+            title: "Sa'i",
+            translation: 'Indeed, Safa and Marwah are among the symbols of Allah',
+            description:
+                'Walk seven times between Safa and Marwah, starting from Safa. Men jog lightly between the two green markers, following Hajar as she searched for water for Ismail.',
+        },
+        5: {
+            title: 'Tahallul (Shaving or Trimming Hair)',
+            translation: 'O Allah, I shave my head seeking Your pleasure',
+            description:
+                'Shave the head, which is preferred, or trim at least a small amount of hair. With this, ihram ends and its restrictions are lifted.',
+            notes: 'Sunnah: shaving the whole head for men. Women trim only about a fingertip length.',
+        },
+    },
+    haji: {
+        1: {
+            title: 'Hajj Ihram Intention',
+            translation: 'Here I am, O Allah, for Hajj',
+            description:
+                'Enter ihram from the miqat or from Makkah for those already there. Hajj intention begins on 8 Dzulhijjah, the Day of Tarwiyah. Ihram restrictions apply until tahallul.',
+        },
+        2: {
+            title: 'Day of Tarwiyah: Going to Mina',
+            description:
+                '8 Dzulhijjah: Depart for Mina. Spend the night and pray the five daily prayers there. This is a sunnah practiced by the Prophet ﷺ.',
+            notes: 'A confirmed sunnah. Some scholars regard it as required.',
+        },
+        3: {
+            title: 'Standing at Arafah',
+            translation: 'Hajj is Arafah',
+            description:
+                '9 Dzulhijjah: Stand at Arafah from after Dhuhr until sunset. Increase supplication, dhikr, and istighfar. This is the greatest pillar of Hajj.',
+            notes: 'Tirmidhi and Abu Dawud narrate: "Hajj is Arafah." Missing Arafah invalidates Hajj.',
+        },
+        4: {
+            title: 'Spending the Night at Muzdalifah',
+            translation: 'When you depart from Arafah, remember Allah',
+            description:
+                'After Arafah, proceed to Muzdalifah. Spend the night, remember Allah often, collect small stones for the jamarat, and combine Maghrib and Isha in shortened form.',
+        },
+        5: {
+            title: 'Stoning Jamrah Aqabah',
+            translation: 'In the name of Allah, Allah is the Greatest',
+            description:
+                '10 Dzulhijjah: Stone Jamrah Aqabah with seven small pebbles, saying takbir with each throw. It is done after leaving Muzdalifah before sunset.',
+            notes: 'Best time: after Fajr until Dhuhr. Night stoning is allowed for those with difficulty.',
+        },
+        6: {
+            title: 'Offering Hadyu and First Tahallul',
+            translation: 'Complete Hajj and Umrah for Allah',
+            description:
+                'Offer the hadyu sacrifice, required for tamattu and qiran Hajj. Then shave or trim hair for first tahallul. After this, ihram restrictions are lifted except marital relations.',
+        },
+        7: {
+            title: 'Tawaf Ifadah',
+            translation: 'Then let them remove their untidiness',
+            description:
+                'Perform seven circuits of tawaf in Masjidil Haram. This is a required pillar of Hajj. Continue with Sa’i if it has not been performed. After tawaf ifadah, all ihram restrictions are lifted.',
+        },
+        8: {
+            title: 'Staying in Mina During Tashriq',
+            translation: 'Remember Allah during appointed days',
+            description:
+                '11, 12, 13 Dzulhijjah: Spend nights in Mina and stone the three jamarat each day. One may leave on the 12th for nafar awal or stay until the 13th for nafar tsani.',
+        },
+        9: {
+            title: 'Farewell Tawaf',
+            translation: 'Let them circumambulate the Ancient House',
+            description:
+                'Perform farewell tawaf before leaving Makkah. It is required for those departing Makkah, except menstruating or postpartum women.',
+            notes: 'Leaving Makkah without tawaf wada requires dam according to the common ruling.',
+        },
+    },
+};
+
 const ManasikPage = () => {
+    const { t, lang } = useLocale();
     const [activeTab, setActiveTab] = useState('umrah');
     const [openIdx, setOpenIdx] = useState(null);
 
     const steps = activeTab === 'umrah' ? UMRAH_STEPS : HAJI_STEPS;
 
     const toggle = (i) => setOpenIdx((prev) => (prev === i ? null : i));
+    const stepText = (step, field) =>
+        lang === 'EN'
+            ? STEP_TEXT_EN[activeTab]?.[step.order]?.[field] || step[field]
+            : step[field];
 
     return (
         <main className='min-h-screen flex flex-col'>
@@ -182,10 +286,10 @@ const ManasikPage = () => {
                         </div>
                         <div>
                             <h1 className='text-xl font-bold text-emerald-900 dark:text-white'>
-                                Manasik Haji & Umrah
+                                {t('manasik.title')}
                             </h1>
                             <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                Panduan tata cara ibadah langkah demi langkah
+                                {t('manasik.step_subtitle')}
                             </p>
                         </div>
                     </div>
@@ -193,8 +297,8 @@ const ManasikPage = () => {
                     {/* Tab */}
                     <div className='flex gap-2 mb-6'>
                         {[
-                            { key: 'umrah', label: 'Umrah', steps: UMRAH_STEPS.length },
-                            { key: 'haji', label: 'Haji', steps: HAJI_STEPS.length },
+                            { key: 'umrah', label: t('manasik.umrah'), steps: UMRAH_STEPS.length },
+                            { key: 'haji', label: t('manasik.haji'), steps: HAJI_STEPS.length },
                         ].map((tab) => (
                             <button
                                 key={tab.key}
@@ -210,7 +314,7 @@ const ManasikPage = () => {
                             >
                                 {tab.label}
                                 <span className='ml-1.5 text-xs opacity-70'>
-                                    ({tab.steps} langkah)
+                                    ({tab.steps} {t('manasik.steps_unit')})
                                 </span>
                             </button>
                         ))}
@@ -220,11 +324,11 @@ const ManasikPage = () => {
                     <div className='flex items-center gap-4 mb-5 text-xs text-gray-500 dark:text-gray-400'>
                         <span className='flex items-center gap-1.5'>
                             <span className='inline-block w-2 h-2 rounded-full bg-emerald-600' />
-                            Rukun/Wajib
+                            {t('manasik.required')}
                         </span>
                         <span className='flex items-center gap-1.5'>
                             <span className='inline-block w-2 h-2 rounded-full bg-gray-300 dark:bg-slate-600' />
-                            Sunnah
+                            {t('manasik.sunnah')}
                         </span>
                     </div>
 
@@ -252,7 +356,7 @@ const ManasikPage = () => {
                                         </div>
                                         <div className='flex-1 min-w-0'>
                                             <p className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                                {step.title}
+                                                {stepText(step, 'title')}
                                             </p>
                                             {!isOpen && step.arabic && (
                                                 <p
@@ -294,14 +398,14 @@ const ManasikPage = () => {
                                             {/* Translation */}
                                             {step.translation && (
                                                 <p className='text-sm text-gray-600 dark:text-gray-300 border-l-2 border-emerald-200 dark:border-emerald-800 pl-3'>
-                                                    {step.translation}
+                                                    {stepText(step, 'translation')}
                                                 </p>
                                             )}
 
                                             {/* Description */}
                                             <div className='bg-gray-50 dark:bg-slate-700/50 rounded-lg p-3'>
                                                 <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
-                                                    {step.description}
+                                                    {stepText(step, 'description')}
                                                 </p>
                                             </div>
 
@@ -309,7 +413,7 @@ const ManasikPage = () => {
                                             {step.notes && (
                                                 <div className='bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2'>
                                                     <p className='text-xs text-amber-700 dark:text-amber-400'>
-                                                        📝 {step.notes}
+                                                        📝 {stepText(step, 'notes')}
                                                     </p>
                                                 </div>
                                             )}
@@ -323,7 +427,7 @@ const ManasikPage = () => {
                                                             : 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-400'
                                                     }`}
                                                 >
-                                                    {step.wajib ? 'Rukun / Wajib' : 'Sunnah'}
+                                                    {step.wajib ? t('manasik.required') : t('manasik.sunnah')}
                                                 </span>
                                             </div>
                                         </div>
@@ -335,8 +439,7 @@ const ManasikPage = () => {
 
                     <div className='mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 rounded-xl px-4 py-3'>
                         <p className='text-xs text-amber-700 dark:text-amber-400'>
-                            ⚠️ Panduan ini bersifat umum. Untuk ibadah yang sesungguhnya, ikuti bimbingan
-                            pembimbing haji/umrah dan bacaan kitab manasik yang sahih.
+                            {t('manasik.general_note')}
                         </p>
                     </div>
                 </div>

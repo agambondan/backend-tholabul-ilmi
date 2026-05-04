@@ -7,18 +7,19 @@ import { SkeletonList, SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { amalanApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useCallback, useEffect, useState } from 'react';
 import { BsCheckCircleFill, BsCircle, BsSearch } from 'react-icons/bs';
 
 const CATEGORY_LABELS = {
-    sholat: 'Sholat',
-    puasa: 'Puasa',
-    dzikir: 'Dzikir',
-    sedekah: 'Sedekah',
+    sholat: 'amalan.category_prayer',
+    puasa: 'amalan.category_fasting',
+    dzikir: 'amalan.category_dhikr',
+    sedekah: 'amalan.category_charity',
 };
 
 const AmalanPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [todayItems, setTodayItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -97,7 +98,11 @@ const AmalanPage = () => {
 
     const matches = (item) => {
         if (!query) return true;
-        const haystack = [item.name, item.description, item.category]
+        const haystack = [
+            getLocalizedField(item, 'name', lang, ['title']),
+            getLocalizedField(item, 'description', lang),
+            item.category,
+        ]
             .filter(Boolean)
             .join(' ')
             .toLowerCase();
@@ -108,7 +113,7 @@ const AmalanPage = () => {
     const visibleHistory = history.filter((day) => {
         if (!query) return true;
         const dayLabel = new Date(day.date)
-            .toLocaleDateString('id-ID', {
+            .toLocaleDateString(lang === 'EN' ? 'en-US' : 'id-ID', {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
@@ -116,7 +121,15 @@ const AmalanPage = () => {
             })
             .toLowerCase();
         const itemsText = (day.items ?? [])
-            .map((item) => [item.name, item.description, item.category].filter(Boolean).join(' '))
+            .map((item) =>
+                [
+                    getLocalizedField(item, 'name', lang, ['title']),
+                    getLocalizedField(item, 'description', lang),
+                    item.category,
+                ]
+                    .filter(Boolean)
+                    .join(' '),
+            )
             .join(' ')
             .toLowerCase();
         return dayLabel.includes(query) || itemsText.includes(query);
@@ -246,7 +259,7 @@ const AmalanPage = () => {
                                         ([cat, items]) => (
                                             <div key={cat} className='mb-4'>
                                                 <h3 className='text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 px-1'>
-                                                    {CATEGORY_LABELS[cat] ?? cat}
+                                                    {CATEGORY_LABELS[cat] ? t(CATEGORY_LABELS[cat]) : cat}
                                                 </h3>
                                                 <div className='space-y-2'>
                                                     {items.map((item) => (
@@ -268,11 +281,11 @@ const AmalanPage = () => {
                                                                 <p
                                                                     className={`text-sm font-medium ${item.is_done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-white'}`}
                                                                 >
-                                                                    {item.name}
+                                                                    {getLocalizedField(item, 'name', lang, ['title'])}
                                                                 </p>
-                                                                {item.description && (
+                                                                {getLocalizedField(item, 'description', lang) && (
                                                                     <p className='text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5'>
-                                                                        {item.description}
+                                                                        {getLocalizedField(item, 'description', lang)}
                                                                     </p>
                                                                 )}
                                                             </div>
@@ -309,7 +322,7 @@ const AmalanPage = () => {
                                             <div className='flex items-center justify-between mb-2'>
                                                 <p className='text-sm font-medium text-gray-700 dark:text-gray-300'>
                                                     {new Date(day.date).toLocaleDateString(
-                                                        'id-ID',
+                                                        lang === 'EN' ? 'en-US' : 'id-ID',
                                                         {
                                                             weekday: 'long',
                                                             day: 'numeric',
@@ -332,7 +345,7 @@ const AmalanPage = () => {
                                                                     : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
                                                             }`}
                                                         >
-                                                            {it.name}
+                                                            {getLocalizedField(it, 'name', lang, ['title'])}
                                                         </span>
                                                     ))}
                                                 </div>

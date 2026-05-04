@@ -3,6 +3,8 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import SourceBadges from '@/components/SourceBadges';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsChevronDown } from 'react-icons/bs';
 import { MdOutlineMenuBook } from 'react-icons/md';
@@ -10,62 +12,82 @@ import { MdOutlineMenuBook } from 'react-icons/md';
 const PRAYERS = [
     {
         name: 'Sholat Subuh',
+        name_en: 'Fajr Prayer',
         rakat: 2,
         arabic: 'صَلَاةُ الْفَجْرِ',
         time: 'Fajar shadiq → terbit matahari',
+        time_en: 'True dawn -> sunrise',
         color: 'indigo',
         niat: {
             arabic: 'أُصَلِّي فَرْضَ الصُّبْحِ رَكْعَتَيْنِ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
             latin: "Ushalli fardhas-shubhi rak'ataini mustaqbilal-qiblati adaa'an lillahi ta'ala",
             terjemah: "Aku niat sholat fardhu Subuh 2 rakaat menghadap kiblat karena Allah Ta'ala",
+            terjemah_en:
+                'I intend to pray the obligatory Fajr prayer, two rakaat, facing the qiblah, for Allah Most High.',
         },
     },
     {
         name: 'Sholat Dzuhur',
+        name_en: 'Dhuhr Prayer',
         rakat: 4,
         arabic: 'صَلَاةُ الظُّهْرِ',
         time: 'Matahari tergelincir → bayangan sama panjang benda',
+        time_en: 'After the sun declines -> when shadow equals object length',
         color: 'yellow',
         niat: {
             arabic: 'أُصَلِّي فَرْضَ الظُّهْرِ أَرْبَعَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
             latin: "Ushalli fardhadh-dhuhri arba'a raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
             terjemah: "Aku niat sholat fardhu Dzuhur 4 rakaat menghadap kiblat karena Allah Ta'ala",
+            terjemah_en:
+                'I intend to pray the obligatory Dhuhr prayer, four rakaat, facing the qiblah, for Allah Most High.',
         },
     },
     {
         name: 'Sholat Ashar',
+        name_en: 'Asr Prayer',
         rakat: 4,
         arabic: 'صَلَاةُ الْعَصْرِ',
         time: 'Bayangan lebih panjang → terbenam matahari',
+        time_en: 'When shadows lengthen -> sunset',
         color: 'orange',
         niat: {
             arabic: 'أُصَلِّي فَرْضَ الْعَصْرِ أَرْبَعَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
             latin: "Ushalli fardhal-'ashri arba'a raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
             terjemah: "Aku niat sholat fardhu Ashar 4 rakaat menghadap kiblat karena Allah Ta'ala",
+            terjemah_en:
+                'I intend to pray the obligatory Asr prayer, four rakaat, facing the qiblah, for Allah Most High.',
         },
     },
     {
         name: 'Sholat Maghrib',
+        name_en: 'Maghrib Prayer',
         rakat: 3,
         arabic: 'صَلَاةُ الْمَغْرِبِ',
         time: 'Terbenam matahari → hilang mega merah',
+        time_en: 'Sunset -> disappearance of the red twilight',
         color: 'red',
         niat: {
             arabic: 'أُصَلِّي فَرْضَ الْمَغْرِبِ ثَلَاثَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
             latin: "Ushalli fardhal-maghribi tsalaatsa raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
             terjemah: "Aku niat sholat fardhu Maghrib 3 rakaat menghadap kiblat karena Allah Ta'ala",
+            terjemah_en:
+                'I intend to pray the obligatory Maghrib prayer, three rakaat, facing the qiblah, for Allah Most High.',
         },
     },
     {
         name: 'Sholat Isya',
+        name_en: 'Isha Prayer',
         rakat: 4,
         arabic: 'صَلَاةُ الْعِشَاءِ',
         time: 'Hilang mega merah → sebelum fajar',
+        time_en: 'After twilight disappears -> before dawn',
         color: 'purple',
         niat: {
             arabic: 'أُصَلِّي فَرْضَ الْعِشَاءِ أَرْبَعَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
             latin: "Ushalli fardhal-'isyaa'i arba'a raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
             terjemah: "Aku niat sholat fardhu Isya 4 rakaat menghadap kiblat karena Allah Ta'ala",
+            terjemah_en:
+                'I intend to pray the obligatory Isha prayer, four rakaat, facing the qiblah, for Allah Most High.',
         },
     },
 ];
@@ -79,7 +101,8 @@ const COLOR_BADGE = {
 };
 
 const normalizeStep = (s) => ({
-    step: s.title ?? '',
+    ...s,
+    step: s.title ?? s.step ?? '',
     arabic: s.arabic ?? '',
     latin: s.transliteration ?? '',
     terjemah: s.translation ?? '',
@@ -88,6 +111,7 @@ const normalizeStep = (s) => ({
 });
 
 export default function PanduanSholatPage() {
+    const { t, lang } = useLocale();
     const [openPrayer, setOpenPrayer] = useState(0);
     const [openStep, setOpenStep] = useState(null);
     const [apiSteps, setApiSteps] = useState([]);
@@ -116,10 +140,10 @@ export default function PanduanSholatPage() {
                         <MdOutlineMenuBook className='text-3xl text-emerald-600 dark:text-emerald-400' />
                     </div>
                     <h1 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-2'>
-                        Panduan Sholat
+                        {t('link.prayer_guide')}
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        Tata cara sholat 5 waktu beserta niat, bacaan, dan gerakan
+                        {t('prayer_guide.subtitle')}
                     </p>
                 </div>
 
@@ -138,7 +162,7 @@ export default function PanduanSholatPage() {
                                     : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-600 hover:border-emerald-400'
                             }`}
                         >
-                            {p.name}
+                            {getLocalizedField(p, 'name', lang)}
                         </button>
                     ))}
                 </div>
@@ -147,10 +171,10 @@ export default function PanduanSholatPage() {
                 {(() => {
                     const p = PRAYERS[openPrayer];
                     const niatStep = {
-                        step: 'Niat',
+                        step: t('prayer_guide.intention'),
                         arabic: p.niat.arabic,
                         latin: p.niat.latin,
-                        terjemah: p.niat.terjemah,
+                        terjemah: getLocalizedField(p.niat, 'terjemah', lang),
                         note: '',
                         source: '',
                     };
@@ -162,7 +186,7 @@ export default function PanduanSholatPage() {
                                 <div className='flex items-start justify-between gap-4'>
                                     <div>
                                         <h2 className='text-xl font-extrabold text-gray-900 dark:text-white mb-1'>
-                                            {p.name}
+                                            {getLocalizedField(p, 'name', lang)}
                                         </h2>
                                         <p
                                             className='text-lg text-gray-600 dark:text-gray-400 mb-2'
@@ -171,13 +195,13 @@ export default function PanduanSholatPage() {
                                             {p.arabic}
                                         </p>
                                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                                            {p.time}
+                                            {getLocalizedField(p, 'time', lang)}
                                         </p>
                                     </div>
                                     <span
                                         className={`text-sm font-bold px-3 py-1 rounded-full whitespace-nowrap ${COLOR_BADGE[p.color]}`}
                                     >
-                                        {p.rakat} rakaat
+                                        {p.rakat} {t('prayer_guide.rakat')}
                                     </span>
                                 </div>
                             </div>
@@ -210,7 +234,9 @@ export default function PanduanSholatPage() {
                                                     {si + 1}
                                                 </span>
                                                 <span className='font-semibold text-gray-800 dark:text-gray-100 text-sm'>
-                                                    {s.step}
+                                                    {getLocalizedField(s, 'title', lang, [
+                                                        'step',
+                                                    ]) || s.step}
                                                 </span>
                                             </div>
                                             <BsChevronDown
@@ -232,15 +258,30 @@ export default function PanduanSholatPage() {
                                                         {s.latin}
                                                     </p>
                                                 )}
-                                                {s.terjemah && (
+                                                {(getLocalizedField(s, 'translation', lang, [
+                                                    'terjemah',
+                                                ]) ||
+                                                    s.terjemah) && (
                                                     <p className='text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-700/50 rounded-xl p-3'>
-                                                        &ldquo;{s.terjemah}&rdquo;
+                                                        &ldquo;{getLocalizedField(
+                                                            s,
+                                                            'translation',
+                                                            lang,
+                                                            ['terjemah'],
+                                                        ) || s.terjemah}&rdquo;
                                                     </p>
                                                 )}
-                                                {s.note && (
+                                                {(getLocalizedField(s, 'note', lang, [
+                                                    'description',
+                                                    'notes',
+                                                ]) ||
+                                                    s.note) && (
                                                     <p className='text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 flex items-start gap-2'>
                                                         <span className='text-amber-500 flex-shrink-0'>ℹ</span>
-                                                        {s.note}
+                                                        {getLocalizedField(s, 'note', lang, [
+                                                            'description',
+                                                            'notes',
+                                                        ]) || s.note}
                                                     </p>
                                                 )}
                                                 <SourceBadges source={s.source} />

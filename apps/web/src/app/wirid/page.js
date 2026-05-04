@@ -3,20 +3,23 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
 import { GiOpenBook } from 'react-icons/gi';
 
 const WIRID_OCCASIONS = [
-    { occasion: 'jumat', label: 'Hari Jumat', emoji: '🕌', description: 'Amalan sunnah dan bacaan khusus hari Jumat' },
-    { occasion: 'arafah', label: 'Hari Arafah (9 Dzulhijjah)', emoji: '🏔️', description: 'Bacaan utama pada hari yang mulia — penghapus dosa 2 tahun' },
-    { occasion: 'lailatul_qadar', label: 'Lailatul Qadar', emoji: '✨', description: 'Malam lebih baik dari seribu bulan — perbanyak doa ini' },
-    { occasion: 'ramadan', label: 'Ramadan', emoji: '🌙', description: 'Doa-doa khusus bulan Ramadan' },
-    { occasion: 'iedul_fitri', label: 'Idul Fitri (1 Syawal)', emoji: '🎉', description: 'Bacaan dan ucapan saat Idul Fitri' },
-    { occasion: 'iedul_adha', label: 'Idul Adha (10 Dzulhijjah)', emoji: '🐑', description: 'Bacaan saat Idul Adha dan penyembelihan kurban' },
+    { occasion: 'jumat', label: 'Hari Jumat', label_en: 'Friday', emoji: '🕌', description: 'Amalan sunnah dan bacaan khusus hari Jumat', description_en: 'Sunnah deeds and special recitations for Friday' },
+    { occasion: 'arafah', label: 'Hari Arafah (9 Dzulhijjah)', label_en: 'Day of Arafah (9 Dhul Hijjah)', emoji: '🏔️', description: 'Bacaan utama pada hari yang mulia — penghapus dosa 2 tahun', description_en: 'Main recitations for the noble day that expiates two years of sins' },
+    { occasion: 'lailatul_qadar', label: 'Lailatul Qadar', label_en: 'Laylatul Qadr', emoji: '✨', description: 'Malam lebih baik dari seribu bulan — perbanyak doa ini', description_en: 'The night better than a thousand months. Increase this dua' },
+    { occasion: 'ramadan', label: 'Ramadan', label_en: 'Ramadan', emoji: '🌙', description: 'Doa-doa khusus bulan Ramadan', description_en: 'Special duas for Ramadan' },
+    { occasion: 'iedul_fitri', label: 'Idul Fitri (1 Syawal)', label_en: 'Eid al-Fitr (1 Shawwal)', emoji: '🎉', description: 'Bacaan dan ucapan saat Idul Fitri', description_en: 'Recitations and greetings for Eid al-Fitr' },
+    { occasion: 'iedul_adha', label: 'Idul Adha (10 Dzulhijjah)', label_en: 'Eid al-Adha (10 Dhul Hijjah)', emoji: '🐑', description: 'Bacaan saat Idul Adha dan penyembelihan kurban', description_en: 'Recitations for Eid al-Adha and sacrifice' },
 ];
 
 const normalizeItem = (item) => ({
+    ...item,
     title: item.title ?? '',
     arabic: item.arabic ?? '',
     latin: item.transliteration ?? '',
@@ -26,6 +29,7 @@ const normalizeItem = (item) => ({
 });
 
 const WiridPage = () => {
+    const { t, lang } = useLocale();
     const [activeOccasion, setActiveOccasion] = useState(WIRID_OCCASIONS[0].occasion);
     const [items, setItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -85,10 +89,10 @@ const WiridPage = () => {
                         </div>
                         <div>
                             <h1 className='text-xl font-bold text-emerald-900 dark:text-white'>
-                                Wirid & Bacaan Sunnah
+                                {t('wirid.title')}
                             </h1>
                             <p className='text-xs text-gray-500 dark:text-gray-400'>
-                                Bacaan khusus untuk momen istimewa
+                                {t('wirid.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -105,7 +109,7 @@ const WiridPage = () => {
                             onClick={() => setShowMeaning((v) => !v)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${showMeaning ? 'bg-emerald-700 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
                         >
-                            Terjemahan
+                            {t('common.translation')}
                         </button>
                     </div>
 
@@ -121,7 +125,7 @@ const WiridPage = () => {
                                         : 'bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 text-gray-600 dark:text-gray-300 hover:border-emerald-300'
                                 }`}
                             >
-                                {w.emoji} {w.label}
+                                {w.emoji} {getLocalizedField(w, 'label', lang)}
                             </button>
                         ))}
                     </div>
@@ -129,10 +133,10 @@ const WiridPage = () => {
                     {/* Description */}
                     <div className='bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-4 py-3 mb-5'>
                         <p className='text-sm font-semibold text-emerald-800 dark:text-emerald-300'>
-                            {current.emoji} {current.label}
+                            {current.emoji} {getLocalizedField(current, 'label', lang)}
                         </p>
                         <p className='text-xs text-emerald-600 dark:text-emerald-500 mt-0.5'>
-                            {current.description}
+                            {getLocalizedField(current, 'description', lang)}
                         </p>
                     </div>
 
@@ -152,10 +156,10 @@ const WiridPage = () => {
                         <div className='flex flex-col items-center justify-center min-h-[30vh] text-center'>
                             <p className='text-3xl mb-2'>⚠️</p>
                             <p className='text-sm font-semibold text-emerald-900 dark:text-white'>
-                                Gagal Memuat Wirid
+                                {t('wirid.load_error')}
                             </p>
                             <p className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-                                Pastikan server backend berjalan lalu refresh halaman.
+                                {t('wirid.backend_hint')}
                             </p>
                         </div>
                     ) : (
@@ -174,7 +178,7 @@ const WiridPage = () => {
                                         </span>
                                         <div className='flex-1'>
                                             <p className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                                {item.title}
+                                                {getLocalizedField(item, 'title', lang, ['name'])}
                                             </p>
                                             <p className='text-xs text-gray-400 dark:text-gray-500'>
                                                 {item.count}
@@ -202,13 +206,16 @@ const WiridPage = () => {
                                             )}
                                             {showMeaning && item.meaning && (
                                                 <p className='text-sm text-gray-600 dark:text-gray-300'>
-                                                    {item.meaning}
+                                                    {getLocalizedField(item, 'meaning', lang, [
+                                                        'translation',
+                                                        'description',
+                                                    ])}
                                                 </p>
                                             )}
-                                            {item.fadhilah && (
+                                            {getLocalizedField(item, 'fadhilah', lang, ['source']) && (
                                                 <div className='bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2'>
                                                     <p className='text-xs text-amber-700 dark:text-amber-400'>
-                                                        📖 {item.fadhilah}
+                                                        📖 {getLocalizedField(item, 'fadhilah', lang, ['source'])}
                                                     </p>
                                                 </div>
                                             )}

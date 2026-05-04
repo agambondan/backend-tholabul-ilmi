@@ -7,32 +7,40 @@ import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
 import { searchApi } from '@/lib/api';
+import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 
 const normalizeItems = (data, key) => data?.[key] ?? data?.[`${key}s`] ?? [];
 
-const getAyahMeta = (item) => ({
+const getAyahMeta = (item, lang) => ({
     surahSlug: item?.surah?.translation?.latin_en ?? item?.surah_latin ?? '',
-    surahName: item?.surah?.translation?.idn ?? item?.surah?.translation?.latin_en ?? '',
+    surahName:
+        getLocalizedTranslation(item?.surah?.translation, lang) ||
+        item?.surah?.translation?.latin_en ||
+        '',
     number: item?.number ?? '',
     arabic: item?.translation?.ar ?? item?.ar ?? '',
     latin: item?.translation?.latin_idn ?? item?.translation?.latin_en ?? '',
-    meaning: item?.translation?.idn ?? item?.idn ?? '',
+    meaning: getLocalizedTranslation(item?.translation, lang) || item?.idn || '',
 });
 
-const getHadithMeta = (item) => ({
+const getHadithMeta = (item, lang) => ({
     bookSlug: item?.book?.slug ?? item?.book_slug ?? '',
-    bookName: item?.book?.translation?.idn ?? item?.book?.translation?.latin_en ?? item?.book_slug ?? '',
+    bookName:
+        getLocalizedTranslation(item?.book?.translation, lang) ||
+        item?.book?.translation?.latin_en ||
+        item?.book_slug ||
+        '',
     number: item?.number ?? '',
     arabic: item?.translation?.ar ?? item?.ar ?? '',
     latin: item?.translation?.latin_idn ?? item?.translation?.latin_en ?? '',
-    meaning: item?.translation?.idn ?? item?.idn ?? '',
+    meaning: getLocalizedTranslation(item?.translation, lang) || item?.idn || '',
 });
 
 export default function SearchClient({ initialQuery = '' }) {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const TYPES = [
         { value: 'all', label: t('search.type.all') },
         { value: 'ayah', label: t('search.type.ayah') },
@@ -135,7 +143,7 @@ export default function SearchClient({ initialQuery = '' }) {
                                     </h2>
                                     <div className='space-y-2'>
                                         {ayahResults.map((item) => {
-                                            const meta = getAyahMeta(item);
+                                            const meta = getAyahMeta(item, lang);
                                             return (
                                                 <Link
                                                     key={item.id}
@@ -175,7 +183,7 @@ export default function SearchClient({ initialQuery = '' }) {
                                     </h2>
                                     <div className='space-y-2'>
                                         {hadithResults.map((item) => {
-                                            const meta = getHadithMeta(item);
+                                            const meta = getHadithMeta(item, lang);
                                             return (
                                                 <Link
                                                     key={item.id}

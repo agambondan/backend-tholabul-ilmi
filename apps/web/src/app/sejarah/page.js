@@ -213,8 +213,121 @@ const TIMELINE = [
     },
 ];
 
+const TIMELINE_EN = {
+    'Kelahiran Nabi Muhammad ﷺ': {
+        title: 'Birth of Prophet Muhammad ﷺ',
+        description:
+            'Prophet Muhammad ﷺ was born in Makkah in the Year of the Elephant, when Abraha’s army failed to destroy the Kaaba.',
+    },
+    'Wahyu Pertama — Iqra!': {
+        title: 'The First Revelation: Iqra',
+        description:
+            'Prophet Muhammad ﷺ received the first revelation in the Cave of Hira through Angel Jibril. The opening verses of Surah Al-Alaq marked the beginning of prophethood.',
+    },
+    'Hijrah ke Madinah': {
+        title: 'Hijrah to Madinah',
+        description:
+            'The Prophet ﷺ and his companions migrated from Makkah to Madinah. This became the start of the Hijri calendar and the first Muslim community.',
+    },
+    'Perang Badr': {
+        title: 'Battle of Badr',
+        description:
+            'The first major battle between the Muslims and Quraysh. A small Muslim force defeated a much larger army, and the day is known as Yaumul Furqan.',
+    },
+    'Perang Uhud': {
+        title: 'Battle of Uhud',
+        description:
+            'A battle near Mount Uhud where the Muslims faced a temporary setback after some archers left their post. Hamzah ibn Abdul Muttalib was martyred.',
+    },
+    'Perang Khandaq (Ahzab)': {
+        title: 'Battle of the Trench',
+        description:
+            'A coalition besieged Madinah. Following Salman Al-Farisi’s suggestion, the Muslims dug a trench and the siege eventually failed.',
+    },
+    'Perjanjian Hudaibiyah': {
+        title: 'Treaty of Hudaybiyyah',
+        description:
+            'A ten-year peace treaty between the Prophet ﷺ and Quraysh. Though it seemed unfavorable at first, it opened a major path for Islamic dawah.',
+    },
+    'Fathu Makkah (Pembebasan Mekkah)': {
+        title: 'Conquest of Makkah',
+        description:
+            'The Muslims entered Makkah with a large army and little bloodshed. The Prophet ﷺ forgave its people and the Kaaba was purified from idols.',
+    },
+    'Haji Wada & Wafatnya Nabi ﷺ': {
+        title: "Farewell Hajj and the Prophet's Passing",
+        description:
+            'The Prophet ﷺ delivered the Farewell Sermon at Arafah and passed away in 11 H after Islam had been completed.',
+    },
+    'Khalifah Abu Bakar As-Siddiq': {
+        title: 'Caliph Abu Bakr As-Siddiq',
+        description:
+            'The first caliph. He suppressed the Ridda wars, fought false prophets, began compiling the Quran, and expanded Islam into Iraq and Sham.',
+    },
+    'Khalifah Umar bin Khattab': {
+        title: 'Caliph Umar ibn Al-Khattab',
+        description:
+            'The second caliph. Under his leadership, Islam expanded into Persia, Egypt, Sham, and Palestine, and state administration was strengthened.',
+    },
+    'Khalifah Utsman bin Affan': {
+        title: 'Caliph Uthman ibn Affan',
+        description:
+            'The third caliph. He unified the Quranic mushaf on one standard reading and Islam expanded into Armenia, Azerbaijan, and North Africa.',
+    },
+    'Khalifah Ali bin Abi Thalib': {
+        title: 'Caliph Ali ibn Abi Talib',
+        description:
+            'The fourth caliph, cousin and son-in-law of the Prophet ﷺ. His rule was marked by major trials, and he was martyred in Kufah.',
+    },
+    'Dinasti Umayyah': {
+        title: 'Umayyad Dynasty',
+        description:
+            'The first dynastic Islamic caliphate, centered in Damascus. Muslim lands expanded to Al-Andalus, Morocco, and India.',
+    },
+    'Dinasti Abbasiyah — Zaman Keemasan Islam': {
+        title: 'Abbasid Dynasty: The Golden Age of Islam',
+        description:
+            'Centered in Baghdad, this era saw major advances in knowledge through institutions such as Bayt Al-Hikmah before Baghdad fell to the Mongols.',
+    },
+    'Imam Ahmad bin Hanbal': {
+        title: 'Imam Ahmad ibn Hanbal',
+        description:
+            'Founder of the Hanbali school. He remained firm during the mihnah and his Musnad contains tens of thousands of hadith reports.',
+    },
+    'Perang Salib': {
+        title: 'The Crusades',
+        description:
+            'A series of wars by European forces over the Holy Land. Salahuddin Al-Ayyubi recaptured Jerusalem in 1187 with widely noted honor and mercy.',
+    },
+    'Kejatuhan Baghdad — Mongol Menghancurkan Abbasiyah': {
+        title: 'Fall of Baghdad: The Mongol Destruction of the Abbasids',
+        description:
+            'Hulagu Khan’s Mongol army destroyed Baghdad, killed many inhabitants, and burned libraries, marking one of the greatest tragedies in Islamic history.',
+    },
+    'Kesultanan Utsmaniyah (Ottoman)': {
+        title: 'Ottoman Sultanate',
+        description:
+            'One of the largest and longest-lasting Islamic empires, ruling across three continents for centuries before collapsing after World War I.',
+    },
+    'Syaikh Muhammad bin Abdul Wahhab': {
+        title: 'Shaykh Muhammad ibn Abdul Wahhab',
+        description:
+            'A reform scholar from Najd who called people back to pure tawhid and opposed religious innovations.',
+    },
+    'Penghapusan Khilafah Utsmaniyah': {
+        title: 'Abolition of the Ottoman Caliphate',
+        description:
+            'Mustafa Kemal Ataturk abolished the caliphate after the Ottoman collapse, reshaping the modern Muslim world.',
+    },
+};
+
+const localizeEvent = (event, field, lang) =>
+    String(lang).toUpperCase() === 'EN'
+        ? TIMELINE_EN[event.title]?.[field] ?? event[field]
+        : event[field];
+
 const SejarahPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [activeCategory, setActiveCategory] = useState('semua');
     const [search, setSearch] = useState('');
     const [openId, setOpenId] = useState(null);
@@ -224,7 +337,13 @@ const SejarahPage = () => {
         const q = search.trim().toLowerCase();
         const matchSearch =
             !q ||
-            [ev.title, ev.description, ev.year, ev.hijri, ev.category]
+            [
+                localizeEvent(ev, 'title', lang),
+                localizeEvent(ev, 'description', lang),
+                ev.year,
+                ev.hijri,
+                ev.category,
+            ]
                 .filter(Boolean)
                 .join(' ')
                 .toLowerCase()
@@ -357,7 +476,7 @@ const SejarahPage = () => {
                                                             </span>
                                                         </div>
                                                         <p className='text-sm font-semibold text-gray-900 dark:text-white leading-snug'>
-                                                            {ev.title}
+                                                            {localizeEvent(ev, 'title', lang)}
                                                         </p>
                                                     </div>
                                                     {isOpen ? (
@@ -370,7 +489,7 @@ const SejarahPage = () => {
                                                 {isOpen && (
                                                     <div className='px-4 pb-4 border-t border-gray-100 dark:border-slate-700 pt-3'>
                                                         <p className='text-sm text-gray-600 dark:text-gray-300 leading-relaxed'>
-                                                            {ev.description}
+                                                            {localizeEvent(ev, 'description', lang)}
                                                         </p>
                                                     </div>
                                                 )}
@@ -383,7 +502,7 @@ const SejarahPage = () => {
                     )}
 
                     <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-8'>
-                        Konten sejarah bersumber dari literatur Islam terpercaya. Data terus diperbarui.
+                        {t('history.source_note')}
                     </p>
                 </div>
             </Section>

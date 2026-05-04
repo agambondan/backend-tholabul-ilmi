@@ -1,3 +1,5 @@
+import { getLocalizedTranslation } from '@/lib/translation';
+
 const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL;
 
 const getToken = () =>
@@ -468,8 +470,8 @@ export const getBooks = async () => {
     }
 };
 
-export const bookLabel = (book) =>
-    book?.translation?.idn ?? book?.translation?.en ?? book?.slug ?? '';
+export const bookLabel = (book, lang = 'ID') =>
+    getLocalizedTranslation(book?.translation, lang) || book?.slug || '';
 
 export const bookImageSrc = (slug) => `/assets/images/kitab/hadith/${slug}.png`;
 

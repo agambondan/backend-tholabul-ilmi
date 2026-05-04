@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/context/Auth';
+import { useLocale } from '@/context/Locale';
 import { bookmarkApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -8,6 +9,7 @@ import { BsBookmark, BsBookmarkFill } from 'react-icons/bs';
 
 const BookmarkButton = ({ refType, refId, className = '' }) => {
     const { isAuthenticated } = useAuth();
+    const { t } = useLocale();
     const router = useRouter();
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [bookmarkId, setBookmarkId] = useState(null);
@@ -59,7 +61,7 @@ const BookmarkButton = ({ refType, refId, className = '' }) => {
 
     return (
         <button
-            title={isBookmarked ? 'Hapus Bookmark' : 'Simpan Bookmark'}
+            title={isBookmarked ? t('bookmarks.remove') : t('bookmarks.save')}
             onClick={toggle}
             disabled={isLoading}
             className={`p-2 rounded-lg text-lg transition-colors disabled:opacity-50 ${

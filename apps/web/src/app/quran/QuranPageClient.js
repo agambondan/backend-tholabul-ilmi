@@ -2,6 +2,7 @@
 
 import CardHorizontal from '@/components/card/CardHorizontal';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
@@ -9,11 +10,8 @@ import { BsSearch } from 'react-icons/bs';
 const getLatinName = (surah) =>
     surah.translation?.latin_en ?? surah.translation?.latin_idn ?? '';
 
-const getTranslation = (surah) =>
-    surah.translation?.idn ?? surah.translation?.en ?? '';
-
 export default function QuranPageClient({ items, isError }) {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [search, setSearch] = useState('');
 
     const filtered = items.filter((surah) => {
@@ -21,7 +19,7 @@ export default function QuranPageClient({ items, isError }) {
         if (!query) return true;
         return (
             getLatinName(surah).toLowerCase().includes(query) ||
-            getTranslation(surah).toLowerCase().includes(query) ||
+            getLocalizedTranslation(surah.translation, lang).toLowerCase().includes(query) ||
             String(surah.number).includes(query)
         );
     });
@@ -74,7 +72,7 @@ export default function QuranPageClient({ items, isError }) {
                         prefetch={false}
                         href={`/quran/surah/${getLatinName(surat)}`}
                     >
-                        <CardHorizontal surat={surat} />
+                        <CardHorizontal surat={surat} lang={lang} ayahUnit={t('common.verse')} />
                     </Link>
                 ))}
             </div>

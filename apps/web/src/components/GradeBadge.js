@@ -1,5 +1,7 @@
 'use client';
 
+import { useLocale } from '@/context/Locale';
+
 const GRADE_CONFIG = {
     shahih: {
         label: 'Shahih',
@@ -61,6 +63,7 @@ export default function GradeBadge({ grade }) {
 }
 
 export function HadithAuthenticity({ hadith }) {
+    const { t } = useLocale();
     const hasAny =
         hadith.grade ||
         hadith.shahih_by ||
@@ -73,7 +76,7 @@ export function HadithAuthenticity({ hadith }) {
         <div className='rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden text-sm'>
             <div className='px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/60 flex items-center gap-2'>
                 <span className='font-semibold text-neutral-700 dark:text-neutral-300 text-xs'>
-                    Autentikasi Hadits
+                    {t('hadith.authenticity')}
                 </span>
                 <GradeBadge grade={hadith.grade} />
             </div>
@@ -81,7 +84,7 @@ export function HadithAuthenticity({ hadith }) {
                 {hadith.shahih_by && (
                     <div>
                         <span className='font-medium text-green-700 dark:text-green-400'>
-                            Dishahihkan oleh:{' '}
+                            {t('hadith.authenticated_by')}:{' '}
                         </span>
                         <span className='text-neutral-700 dark:text-neutral-300'>
                             {hadith.shahih_by}
@@ -91,7 +94,7 @@ export function HadithAuthenticity({ hadith }) {
                 {hadith.dhaif_by && (
                     <div>
                         <span className='font-medium text-red-700 dark:text-red-400'>
-                            Didhaifkan oleh:{' '}
+                            {t('hadith.weakened_by')}:{' '}
                         </span>
                         <span className='text-neutral-700 dark:text-neutral-300'>
                             {hadith.dhaif_by}
@@ -101,7 +104,7 @@ export function HadithAuthenticity({ hadith }) {
                 {hadith.grade_notes && (
                     <div>
                         <span className='font-medium text-neutral-600 dark:text-neutral-400'>
-                            Catatan:{' '}
+                            {t('common.notes')}:{' '}
                         </span>
                         <span className='text-neutral-600 dark:text-neutral-400'>
                             {hadith.grade_notes}
@@ -111,7 +114,7 @@ export function HadithAuthenticity({ hadith }) {
                 {hadith.sanad && (
                     <details className='mt-1'>
                         <summary className='cursor-pointer font-medium text-neutral-600 dark:text-neutral-400 select-none'>
-                            Sanad (Rangkaian Perawi)
+                            {t('hadith.sanad_chain')}
                         </summary>
                         <p className='mt-2 text-neutral-600 dark:text-neutral-400 leading-relaxed'>
                             {hadith.sanad}

@@ -44,6 +44,47 @@ const ISLAMIC_EVENTS = [
     { id: 18, hijri_day: 13, hijri_month: 12, name: 'Hari Tasyrik 3 (Nafar Tsani)', description: 'Hari terakhir hari tasyrik', category: 'Haji' },
 ];
 
+const HIJRI_MONTHS_EN = [
+    'Muharram',
+    'Safar',
+    'Rabi al-Awwal',
+    'Rabi al-Akhir',
+    'Jumada al-Awwal',
+    'Jumada al-Akhir',
+    'Rajab',
+    "Sha'ban",
+    'Ramadan',
+    'Shawwal',
+    'Dhul Qadah',
+    'Dhul Hijjah',
+];
+
+const ISLAMIC_EVENTS_EN = {
+    1: { name: 'Hijri New Year (1 Muharram)', description: 'The beginning of the Islamic calendar year', category: 'Holiday' },
+    2: { name: 'Day of Ashura (10 Muharram)', description: 'A day when voluntary fasting is recommended', category: 'Fasting' },
+    3: { name: 'Birth of Prophet Muhammad ﷺ', description: 'The birth day of Prophet Muhammad ﷺ', category: 'Mawlid' },
+    4: { name: "Isra and Mi'raj", description: 'The night journey of the Prophet ﷺ to Sidratul Muntaha', category: 'Event' },
+    5: { name: "Beginning of Sha'ban", description: 'A month of preparation before Ramadan', category: 'Sacred Month' },
+    6: { name: "Mid-Sha'ban", description: "The middle of Sha'ban", category: 'Fasting' },
+    7: { name: 'Beginning of Ramadan', description: 'The start of the month-long obligatory fast', category: 'Fasting' },
+    8: { name: 'Nuzulul Quran', description: 'Commemoration of the first revelation of the Quran', category: 'Quran' },
+    9: { name: 'Laylatul Qadr Night (possible)', description: 'A night better than a thousand months', category: 'Ramadan' },
+    10: { name: 'Laylatul Qadr Night (likely)', description: 'A night better than a thousand months', category: 'Ramadan' },
+    11: { name: 'Eid al-Fitr (1 Shawwal)', description: 'Eid al-Fitr after a month of Ramadan', category: 'Holiday' },
+    12: { name: 'Six Days of Shawwal Fasting', description: 'Recommended fasting for six days after Eid al-Fitr', category: 'Fasting' },
+    13: { name: 'Day of Tarwiyah', description: 'Pilgrims depart for Mina', category: 'Hajj' },
+    14: { name: 'Day of Arafah', description: 'The peak of Hajj and a highly recommended fasting day', category: 'Hajj' },
+    15: { name: 'Eid al-Adha (10 Dhul Hijjah)', description: 'Eid al-Adha and the sacrifice ritual', category: 'Holiday' },
+    16: { name: 'First Day of Tashriq', description: 'A day when fasting is prohibited and stoning rituals continue', category: 'Hajj' },
+    17: { name: 'Second Day of Tashriq', description: 'A day when fasting is prohibited and stoning rituals continue', category: 'Hajj' },
+    18: { name: 'Third Day of Tashriq', description: 'The final day of Tashriq', category: 'Hajj' },
+};
+
+const localizeEvent = (event, field, lang) =>
+    lang === 'EN' ? ISLAMIC_EVENTS_EN[event.id]?.[field] ?? event[field] : event[field];
+
+const monthNames = (lang) => (lang === 'EN' ? HIJRI_MONTHS_EN : HIJRI_MONTHS);
+
 const toAladhanDate = (isoDate) => {
     const [y, m, d] = isoDate.split('-');
     return `${d}-${m}-${y}`;
@@ -58,6 +99,7 @@ const parseAladhanHijri = (data) => ({
 
 const HijriPage = () => {
     const { lang, t } = useLocale();
+    const months = monthNames(lang);
     const [todayHijri, setTodayHijri] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -121,7 +163,11 @@ const HijriPage = () => {
         const eventMonth = String(ev.hijri_month);
         if (selectedMonth && eventMonth !== selectedMonth) return false;
         if (!query) return true;
-        const haystack = [ev.name, ev.description, ev.category]
+        const haystack = [
+            localizeEvent(ev, 'name', lang),
+            localizeEvent(ev, 'description', lang),
+            localizeEvent(ev, 'category', lang),
+        ]
             .filter(Boolean)
             .join(' ')
             .toLowerCase();
@@ -166,7 +212,7 @@ const HijriPage = () => {
                                     </p>
                                     <p className='text-xl font-bold'>
                                         {todayHijri.hijri_day ?? todayHijri.day}{' '}
-                                        {HIJRI_MONTHS[
+                                        {months[
                                             (todayHijri.hijri_month ?? todayHijri.month) - 1
                                         ] ?? ''}{' '}
                                         {todayHijri.hijri_year ?? todayHijri.year} H
@@ -221,7 +267,7 @@ const HijriPage = () => {
                                         ) : (
                                             <p className='text-emerald-700 dark:text-emerald-300 font-medium'>
                                                 {convertResult.hijri_day}{' '}
-                                                {HIJRI_MONTHS[convertResult.hijri_month - 1] ?? ''}{' '}
+                                                {months[convertResult.hijri_month - 1] ?? ''}{' '}
                                                 {convertResult.hijri_year} H
                                             </p>
                                         )}
@@ -276,7 +322,7 @@ const HijriPage = () => {
                                                 >
                                                     {t('hijri.all_months')}
                                                 </button>
-                                                {HIJRI_MONTHS.map((month, idx) => {
+                                                {months.map((month, idx) => {
                                                     const value = String(idx + 1);
                                                     return (
                                                         <button
@@ -324,20 +370,20 @@ const HijriPage = () => {
                                                 </div>
                                                 <div className='flex-1 min-w-0'>
                                                     <p className='text-sm font-medium text-gray-800 dark:text-white'>
-                                                        {ev.name}
+                                                        {localizeEvent(ev, 'name', lang)}
                                                     </p>
                                                     <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>
-                                                        {HIJRI_MONTHS[ev.hijri_month - 1] ?? ''}
+                                                        {months[ev.hijri_month - 1] ?? ''}
                                                     </p>
                                                     {ev.description && (
                                                         <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                                                            {ev.description}
+                                                            {localizeEvent(ev, 'description', lang)}
                                                         </p>
                                                     )}
                                                 </div>
                                                 {ev.category && (
                                                     <span className='shrink-0 text-xs px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'>
-                                                        {ev.category}
+                                                        {localizeEvent(ev, 'category', lang)}
                                                     </span>
                                                 )}
                                             </div>

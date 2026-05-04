@@ -6,15 +6,15 @@ import Section from '@/components/Section';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { goalsApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BsCheckCircleFill, BsPlusCircle, BsSearch, BsTrash, BsX } from 'react-icons/bs';
 import { MdFlag, MdOutlineTrackChanges } from 'react-icons/md';
 
 const GOAL_TYPES = [
-    { key: 'hafalan', label: 'Hafalan Surah', unit: 'surah', icon: '📖' },
-    { key: 'tilawah', label: 'Tilawah', unit: 'halaman', icon: '📕' },
-    { key: 'hadith', label: 'Baca Hadith', unit: 'hadith', icon: '📚' },
-    { key: 'amalan', label: 'Amalan Harian', unit: 'hari', icon: '✅' },
+    { key: 'hafalan', labelKey: 'goals.type_hafalan', unitKey: 'goals.unit_surah', icon: '📖' },
+    { key: 'tilawah', labelKey: 'goals.type_tilawah', unitKey: 'goals.unit_page', icon: '📕' },
+    { key: 'hadith', labelKey: 'goals.type_hadith', unitKey: 'goals.unit_hadith', icon: '📚' },
+    { key: 'amalan', labelKey: 'goals.type_amalan', unitKey: 'goals.unit_day', icon: '✅' },
 ];
 
 const LS_KEY = 'tholabul_goals';
@@ -38,7 +38,7 @@ const pct = (current, target) => Math.min(100, Math.round((current / target) * 1
 const typeInfo = (key) => GOAL_TYPES.find((t) => t.key === key) ?? GOAL_TYPES[0];
 
 const GoalsPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [goals, setGoals] = useState([]);
     const [showForm, setShowForm] = useState(false);
@@ -47,6 +47,8 @@ const GoalsPage = () => {
     const [updating, setUpdating] = useState(null);
     const [updateVal, setUpdateVal] = useState('');
     const [search, setSearch] = useState('');
+    const typeLabel = useCallback((type) => t(typeInfo(type).labelKey), [t]);
+    const typeUnit = useCallback((type) => t(typeInfo(type).unitKey), [t]);
 
     useEffect(() => {
         if (authLoading || !isAuthenticated) return;
@@ -73,7 +75,7 @@ const GoalsPage = () => {
             type: form.type,
             title:
                 form.title.trim() ||
-                `${typeInfo(form.type).label} — target ${form.target} ${typeInfo(form.type).unit}`,
+                `${typeLabel(form.type)} - ${t('goals.target_word')} ${form.target} ${typeUnit(form.type)}`,
             target_value: Number(form.target),
             current_value: 0,
             deadline: form.deadline || null,
@@ -139,8 +141,8 @@ const GoalsPage = () => {
                 const haystack = [
                     goal.title,
                     goal.type,
-                    typeInfo(goal.type).label,
-                    typeInfo(goal.type).unit,
+                    typeLabel(goal.type),
+                    typeUnit(goal.type),
                     goal.deadline,
                 ]
                     .filter(Boolean)
@@ -148,7 +150,7 @@ const GoalsPage = () => {
                     .toLowerCase();
                 return haystack.includes(query);
             }),
-        [active, query],
+        [active, query, typeLabel, typeUnit],
     );
     const filteredCompleted = useMemo(
         () =>
@@ -157,8 +159,8 @@ const GoalsPage = () => {
                 const haystack = [
                     goal.title,
                     goal.type,
-                    typeInfo(goal.type).label,
-                    typeInfo(goal.type).unit,
+                    typeLabel(goal.type),
+                    typeUnit(goal.type),
                     goal.deadline,
                 ]
                     .filter(Boolean)
@@ -166,7 +168,7 @@ const GoalsPage = () => {
                     .toLowerCase();
                 return haystack.includes(query);
             }),
-        [completed, query],
+        [completed, query, typeLabel, typeUnit],
     );
 
     if (authLoading) return null;
@@ -268,18 +270,18 @@ const GoalsPage = () => {
                                         {t('goals.type_label')}
                                     </label>
                                     <div className='grid grid-cols-2 gap-2'>
-                                        {GOAL_TYPES.map((t) => (
+                                        {GOAL_TYPES.map((type) => (
                                             <button
-                                                key={t.key}
+                                                key={type.key}
                                                 type='button'
-                                                onClick={() => setForm((f) => ({ ...f, type: t.key }))}
+                                                onClick={() => setForm((f) => ({ ...f, type: type.key }))}
                                                 className={`py-2 rounded-lg text-xs font-medium border transition-colors ${
-                                                    form.type === t.key
+                                                    form.type === type.key
                                                         ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                                                         : 'border-gray-200 dark:border-slate-600 text-gray-600 dark:text-gray-400'
                                                 }`}
                                             >
-                                                {t.icon} {t.label}
+                                                {type.icon} {t(type.labelKey)}
                                             </button>
                                         ))}
                                     </div>
@@ -293,7 +295,7 @@ const GoalsPage = () => {
                                     <input
                                         value={form.title}
                                         onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                                        placeholder={`Contoh: Hafal ${typeInfo(form.type).label}`}
+                                        placeholder={`${t('common.example')}: ${t('goals.example_prefix')} ${typeLabel(form.type)}`}
                                         className='w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                                     />
                                 </div>
@@ -301,7 +303,7 @@ const GoalsPage = () => {
                                 {/* Target value */}
                                 <div>
                                     <label className='block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>
-                                        Target ({typeInfo(form.type).unit})
+                                        {t('goals.label_target')} ({typeUnit(form.type)})
                                     </label>
                                     <input
                                         type='number'
@@ -309,7 +311,7 @@ const GoalsPage = () => {
                                         value={form.target}
                                         onChange={(e) => setForm((f) => ({ ...f, target: e.target.value }))}
                                         required
-                                        placeholder={`Jumlah ${typeInfo(form.type).unit}`}
+                                        placeholder={`${t('goals.amount_placeholder')} ${typeUnit(form.type)}`}
                                         className='w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                                     />
                                 </div>
@@ -364,7 +366,7 @@ const GoalsPage = () => {
                                                             {t('goals.deadline_prefix')}{' '}
                                                             {new Date(
                                                                 g.deadline + 'T00:00:00',
-                                                            ).toLocaleDateString('id-ID', {
+                                                            ).toLocaleDateString(lang === 'EN' ? 'en-US' : 'id-ID', {
                                                                 day: 'numeric',
                                                                 month: 'long',
                                                                 year: 'numeric',
@@ -384,7 +386,7 @@ const GoalsPage = () => {
                                             <div className='mb-2'>
                                                 <div className='flex items-center justify-between text-xs mb-1'>
                                                     <span className='text-gray-500 dark:text-gray-400'>
-                                                        {g.current_value ?? 0} / {g.target_value} {goalType.unit}
+                                                        {g.current_value ?? 0} / {g.target_value} {typeUnit(g.type)}
                                                     </span>
                                                     <span className='font-bold text-emerald-600 dark:text-emerald-400'>
                                                         {p}%
@@ -407,7 +409,7 @@ const GoalsPage = () => {
                                                         max={g.target_value}
                                                         value={updateVal}
                                                         onChange={(e) => setUpdateVal(e.target.value)}
-                                                        placeholder={`Capaian saat ini (${goalType.unit})`}
+                                                        placeholder={`${t('goals.current_placeholder')} (${typeUnit(g.type)})`}
                                                         className='flex-1 px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500'
                                                         autoFocus
                                                     />
@@ -435,7 +437,7 @@ const GoalsPage = () => {
                                                     }}
                                                     className='mt-2 text-xs text-emerald-600 dark:text-emerald-400 hover:underline'
                                                 >
-                                                    + Update progress
+                                                    + {t('goals.update')}
                                                 </button>
                                             )}
                                         </div>
@@ -474,7 +476,7 @@ const GoalsPage = () => {
                                                     {goalType.icon} {g.title}
                                                 </p>
                                                 <p className='text-xs text-emerald-600 dark:text-emerald-500'>
-                                                    {g.target_value} {goalType.unit} tercapai 🎉
+                                                    {g.target_value} {typeUnit(g.type)} {t('goals.reached')}
                                                 </p>
                                             </div>
                                             <button

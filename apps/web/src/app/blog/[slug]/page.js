@@ -5,7 +5,9 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonList } from '@/components/skeleton/Skeleton';
+import { useLocale } from '@/context/Locale';
 import { blogApi } from '@/lib/api';
+import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -13,10 +15,10 @@ const normalizeItems = (data) => data?.items ?? data?.data ?? data ?? [];
 
 const normalizeText = (value) => String(value ?? '').trim().toLowerCase();
 
-const formatDate = (value) => {
+const formatDate = (value, lang = 'ID') => {
     if (!value) return '';
     try {
-        return new Date(value).toLocaleDateString('id-ID', {
+        return new Date(value).toLocaleDateString(lang === 'EN' ? 'en-US' : 'id-ID', {
             day: 'numeric',
             month: 'long',
             year: 'numeric',
@@ -27,6 +29,7 @@ const formatDate = (value) => {
 };
 
 const BlogDetailPage = ({ params }) => {
+    const { t, lang } = useLocale();
     const [post, setPost] = useState(null);
     const [relatedPosts, setRelatedPosts] = useState([]);
     const [popularPosts, setPopularPosts] = useState([]);
@@ -129,13 +132,13 @@ const BlogDetailPage = ({ params }) => {
                         href='/blog'
                         className='inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline mb-6'
                     >
-                        ← Kembali ke Artikel
+                        ← {t('blog.back_to_articles')}
                     </Link>
 
                     {error && (
                         <div className='text-center py-12'>
                             <p className='text-gray-500 dark:text-gray-400'>
-                                Artikel tidak ditemukan.
+                                {t('blog.detail_not_found')}
                             </p>
                         </div>
                     )}
@@ -145,32 +148,32 @@ const BlogDetailPage = ({ params }) => {
                             <div className='p-5 md:p-8'>
                                 {post.category && (
                                     <span className='text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-3 block'>
-                                        {post.category}
+                                    {getLocalizedField(post, 'category', lang)}
                                     </span>
                                 )}
                                 <h1 className='text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3 leading-snug'>
-                                    {post.title}
+                                    {getLocalizedField(post, 'title', lang)}
                                 </h1>
                                 <div className='flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 mb-6 pb-6 border-b border-gray-100 dark:border-slate-700'>
-                                    {post.author && <span>Oleh {post.author}</span>}
+                                    {post.author && <span>{t('blog.by_author')} {post.author}</span>}
                                     {post.published_at && (
-                                        <span>{formatDate(post.published_at)}</span>
+                                        <span>{formatDate(post.published_at, lang)}</span>
                                     )}
                                     {post.view_count != null && (
-                                        <span>{post.view_count.toLocaleString()} dibaca</span>
+                                        <span>{post.view_count.toLocaleString()} {t('blog.read_count')}</span>
                                     )}
                                 </div>
 
                                 {post.cover_image && (
                                     <img
                                         src={post.cover_image}
-                                        alt={post.title}
+                                        alt={getLocalizedField(post, 'title', lang)}
                                         className='w-full rounded-xl mb-6 max-h-80 object-cover'
                                     />
                                 )}
 
                                 <div className='text-gray-700 dark:text-gray-300 leading-relaxed space-y-4 text-sm'>
-                                    {post.content
+                                    {getLocalizedField(post, 'content', lang)
                                         ?.split('\n')
                                         .filter(Boolean)
                                         .map((para, i) => (
@@ -199,10 +202,10 @@ const BlogDetailPage = ({ params }) => {
                                             <div className='flex items-center justify-between gap-3 mb-4'>
                                                 <div>
                                                     <p className='text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide'>
-                                                        Artikel Terkait
+                                                        {t('blog.related_articles')}
                                                     </p>
                                                     <h2 className='text-lg font-bold text-gray-900 dark:text-white'>
-                                                        Lanjut membaca
+                                                        {t('blog.keep_reading')}
                                                     </h2>
                                                 </div>
                                             </div>
@@ -216,15 +219,15 @@ const BlogDetailPage = ({ params }) => {
                                                     >
                                                         {item.category && (
                                                             <p className='text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-2'>
-                                                                {item.category}
+                                                                {getLocalizedField(item, 'category', lang)}
                                                             </p>
                                                         )}
                                                         <h3 className='font-bold text-gray-900 dark:text-white line-clamp-2 mb-2'>
-                                                            {item.title}
+                                                            {getLocalizedField(item, 'title', lang)}
                                                         </h3>
-                                                        {item.excerpt && (
+                                                        {getLocalizedField(item, 'excerpt', lang) && (
                                                             <p className='text-sm text-gray-600 dark:text-gray-400 line-clamp-2'>
-                                                                {item.excerpt}
+                                                                {getLocalizedField(item, 'excerpt', lang)}
                                                             </p>
                                                         )}
                                                     </Link>
@@ -236,7 +239,7 @@ const BlogDetailPage = ({ params }) => {
                                     {popularPosts.length > 0 && (
                                         <section>
                                             <p className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3'>
-                                                Artikel Populer
+                                                {t('blog.popular_articles')}
                                             </p>
                                             <div className='space-y-3'>
                                                 {popularPosts.map((item) => (
@@ -247,15 +250,15 @@ const BlogDetailPage = ({ params }) => {
                                                     >
                                                         <div className='min-w-0'>
                                                             <h3 className='font-medium text-gray-900 dark:text-white line-clamp-1'>
-                                                                {item.title}
+                                                                {getLocalizedField(item, 'title', lang)}
                                                             </h3>
                                                             <p className='text-xs text-gray-400 dark:text-gray-500 mt-0.5'>
-                                                                {formatDate(item.published_at ?? item.created_at)}
+                                                                {formatDate(item.published_at ?? item.created_at, lang)}
                                                             </p>
                                                         </div>
                                                         {item.view_count != null && (
                                                             <span className='shrink-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300'>
-                                                                {item.view_count.toLocaleString()} dibaca
+                                                                {item.view_count.toLocaleString()} {t('blog.read_count')}
                                                             </span>
                                                         )}
                                                     </Link>

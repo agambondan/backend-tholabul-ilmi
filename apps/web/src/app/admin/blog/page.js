@@ -2,17 +2,20 @@
 
 import { adminBlogApi, blogApi } from '@/lib/api';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BsPencil, BsPlus, BsTrash, BsX } from 'react-icons/bs';
 import { Spinner3 } from '@/components/spinner/Spinner';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 
 const STATUS_LABELS = {
-    draft: { label: 'Draft', cls: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' },
-    published: { label: 'Published', cls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
-    archived: { label: 'Archived', cls: 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400' },
+    draft: { labelKey: 'admin.status.draft', cls: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' },
+    published: { labelKey: 'admin.status.published', cls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' },
+    archived: { labelKey: 'admin.status.archived', cls: 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400' },
 };
 
 const AdminBlogPage = () => {
+    const { t, lang } = useLocale();
     const [posts, setPosts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [tags, setTags] = useState([]);
@@ -24,7 +27,7 @@ const AdminBlogPage = () => {
     const [catLoading, setCatLoading] = useState(false);
     const [tagLoading, setTagLoading] = useState(false);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setIsLoading(true);
         try {
             const [postsRes, catsRes, tagsRes] = await Promise.all([
@@ -36,18 +39,18 @@ const AdminBlogPage = () => {
             setCategories(catsRes?.items ?? catsRes ?? []);
             setTags(tagsRes?.items ?? tagsRes ?? []);
         } catch {
-            setError('Failed to load data.');
+            setError(t('admin.error.load_data'));
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [t]);
 
     useEffect(() => {
         load();
-    }, []);
+    }, [load]);
 
     const handleDeletePost = async (id) => {
-        if (!confirm('Delete this article?')) return;
+        if (!confirm(t('admin.blog.confirm_delete_article'))) return;
         const prev = posts;
         setPosts((p) => p.filter((x) => x.id !== id));
         try {
@@ -75,7 +78,7 @@ const AdminBlogPage = () => {
     };
 
     const handleDeleteCategory = async (id) => {
-        if (!confirm('Delete this category?')) return;
+        if (!confirm(t('admin.blog.confirm_delete_category'))) return;
         const prev = categories;
         setCategories((c) => c.filter((x) => x.id !== id));
         try {
@@ -118,9 +121,9 @@ const AdminBlogPage = () => {
         <div className='p-8'>
             <div className='flex items-center justify-between mb-8'>
                 <div>
-                    <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>Blog / Articles</h1>
+                    <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>{t('admin.nav.blog')}</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-                        {posts.length} articles
+                        {posts.length} {t('admin.blog.articles_unit')}
                     </p>
                 </div>
                 <Link
@@ -128,7 +131,7 @@ const AdminBlogPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors'
                 >
                     <BsPlus className='text-lg' />
-                    Article Baru
+                    {t('admin.blog.new_article')}
                 </Link>
             </div>
 
@@ -140,16 +143,16 @@ const AdminBlogPage = () => {
             <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden mb-8'>
                 {posts.length === 0 ? (
                     <div className='p-8 text-center text-gray-400 dark:text-gray-500 text-sm'>
-                        No articles yet. Create the first article!
+                        {t('admin.blog.empty_articles')}
                     </div>
                 ) : (
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-900 text-left'>
                             <tr>
-                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300'>Title</th>
-                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden md:table-cell'>Category</th>
-                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300'>Status</th>
-                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden sm:table-cell'>Date</th>
+                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300'>{t('admin.field.title')}</th>
+                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden md:table-cell'>{t('admin.field.category')}</th>
+                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300'>{t('common.status')}</th>
+                                <th className='px-5 py-3 font-semibold text-gray-600 dark:text-gray-300 hidden sm:table-cell'>{t('common.date')}</th>
                                 <th className='px-5 py-3'></th>
                             </tr>
                         </thead>
@@ -160,11 +163,11 @@ const AdminBlogPage = () => {
                                     <tr key={post.id} className='hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors'>
                                         <td className='px-5 py-3'>
                                             <p className='font-medium text-gray-900 dark:text-white line-clamp-1'>
-                                                {post.title}
+                                                {getLocalizedField(post, 'title', lang)}
                                             </p>
-                                            {post.excerpt && (
+                                            {getLocalizedField(post, 'excerpt', lang) && (
                                                 <p className='text-xs text-gray-400 dark:text-gray-500 line-clamp-1 mt-0.5'>
-                                                    {post.excerpt}
+                                                    {getLocalizedField(post, 'excerpt', lang)}
                                                 </p>
                                             )}
                                         </td>
@@ -173,13 +176,13 @@ const AdminBlogPage = () => {
                                         </td>
                                         <td className='px-5 py-3'>
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${badge.cls}`}>
-                                                {badge.label}
+                                                {t(badge.labelKey)}
                                             </span>
                                         </td>
                                         <td className='px-5 py-3 text-gray-400 dark:text-gray-500 text-xs hidden sm:table-cell'>
                                             {post.published_at
-                                                ? new Date(post.published_at).toLocaleDateString('id-ID')
-                                                : new Date(post.created_at).toLocaleDateString('id-ID')}
+                                                ? new Date(post.published_at).toLocaleDateString(lang === 'EN' ? 'en-US' : 'id-ID')
+                                                : new Date(post.created_at).toLocaleDateString(lang === 'EN' ? 'en-US' : 'id-ID')}
                                         </td>
                                         <td className='px-5 py-3'>
                                             <div className='flex items-center gap-1 justify-end'>
@@ -209,12 +212,12 @@ const AdminBlogPage = () => {
             <div className='grid md:grid-cols-2 gap-6'>
                 {/* Categories */}
                 <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5'>
-                    <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>Category</h2>
+                    <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>{t('admin.field.category')}</h2>
                     <form onSubmit={handleCreateCategory} className='flex gap-2 mb-4'>
                         <input
                             value={newCatName}
                             onChange={(e) => setNewCatName(e.target.value)}
-                            placeholder='New category name...'
+                            placeholder={t('admin.blog.new_category_placeholder')}
                             className='flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                         />
                         <button
@@ -241,19 +244,19 @@ const AdminBlogPage = () => {
                             </div>
                         ))}
                         {categories.length === 0 && (
-                            <p className='text-xs text-gray-400 dark:text-gray-500'>No categories yet.</p>
+                            <p className='text-xs text-gray-400 dark:text-gray-500'>{t('admin.blog.empty_categories')}</p>
                         )}
                     </div>
                 </div>
 
                 {/* Tags */}
                 <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5'>
-                    <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>Tag</h2>
+                    <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>{t('admin.field.tag')}</h2>
                     <form onSubmit={handleCreateTag} className='flex gap-2 mb-4'>
                         <input
                             value={newTagName}
                             onChange={(e) => setNewTagName(e.target.value)}
-                            placeholder='New tag name...'
+                            placeholder={t('admin.blog.new_tag_placeholder')}
                             className='flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                         />
                         <button
@@ -280,7 +283,7 @@ const AdminBlogPage = () => {
                             </span>
                         ))}
                         {tags.length === 0 && (
-                            <p className='text-xs text-gray-400 dark:text-gray-500'>No tags yet.</p>
+                            <p className='text-xs text-gray-400 dark:text-gray-500'>{t('admin.blog.empty_tags')}</p>
                         )}
                     </div>
                 </div>

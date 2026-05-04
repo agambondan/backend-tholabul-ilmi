@@ -6,7 +6,7 @@ import { translations } from '@/lib/i18n';
 const LocaleContext = createContext({
     lang: 'ID',
     setLang: () => {},
-    t: (k) => k,
+    t: (k, vars) => k,
 });
 
 export function LocaleProvider({ children }) {
@@ -24,7 +24,16 @@ export function LocaleProvider({ children }) {
     }, []);
 
     const t = useCallback(
-        (key) => translations[lang]?.[key] ?? translations['ID'][key] ?? key,
+        (key, vars) => {
+            const text = translations[lang]?.[key] ?? translations['ID'][key] ?? key;
+            if (!vars || typeof text !== 'string') return text;
+
+            return Object.entries(vars).reduce(
+                (next, [name, value]) =>
+                    next.replaceAll(`{${name}}`, String(value ?? '')),
+                text,
+            );
+        },
         [lang],
     );
 

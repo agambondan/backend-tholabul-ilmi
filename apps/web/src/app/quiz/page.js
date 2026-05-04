@@ -3,6 +3,7 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import { useLocale } from '@/context/Locale';
+import { getLocalizedField, getLocalizedOption } from '@/lib/translation';
 import { useState } from 'react';
 import { BsCheckCircleFill, BsXCircleFill } from 'react-icons/bs';
 import { FaBrain } from 'react-icons/fa';
@@ -14,15 +15,17 @@ const normalizeQuestion = (q) => {
     const options = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options ?? []);
     const answer = options.indexOf(q.correct_answer);
     return {
-        q: q.question_text,
+        raw: q,
         options,
-        answer,
-        explanation: q.explanation ?? '',
+        answer:
+            answer >= 0
+                ? answer
+                : Number(q.answer ?? q.correct_answer_index ?? q.correctAnswerIndex ?? 0),
     };
 };
 
 export default function QuizPage() {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [phase, setPhase] = useState('intro'); // intro | quiz | result
     const [questions, setQuestions] = useState([]);
     const [current, setCurrent] = useState(0);
@@ -105,7 +108,7 @@ export default function QuizPage() {
                     </p>
                     {fetchError && (
                         <p className='text-sm text-red-500 dark:text-red-400 mb-4'>
-                            Gagal memuat soal. Pastikan server berjalan lalu coba lagi.
+                            {t('quiz.load_error')}
                         </p>
                     )}
                     <button
@@ -162,7 +165,13 @@ export default function QuizPage() {
                                 ) : (
                                     <BsXCircleFill className='flex-shrink-0' />
                                 )}
-                                <span className='truncate'>{questions[i].q}</span>
+                                <span className='truncate'>
+                                    {getLocalizedField(questions[i].raw, 'question', lang, [
+                                        'question_text',
+                                        'text',
+                                        'title',
+                                    ])}
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -204,8 +213,12 @@ export default function QuizPage() {
 
                 {/* Question */}
                 <div className='bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 mb-5'>
-                    <p className='text-lg font-bold text-gray-900 dark:text-white leading-snug'>
-                        {q.q}
+                        <p className='text-lg font-bold text-gray-900 dark:text-white leading-snug'>
+                        {getLocalizedField(q.raw, 'question', lang, [
+                            'question_text',
+                            'text',
+                            'title',
+                        ])}
                     </p>
                 </div>
 
@@ -232,7 +245,7 @@ export default function QuizPage() {
                                 <span className='inline-block w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 text-xs font-extrabold text-center leading-6 mr-3'>
                                     {String.fromCharCode(65 + i)}
                                 </span>
-                                {opt}
+                                {getLocalizedOption(opt, lang)}
                             </button>
                         );
                     })}
@@ -250,9 +263,9 @@ export default function QuizPage() {
                         <p className='font-bold mb-1'>
                             {selected === q.answer
                                 ? `✅ ${t('quiz.correct_answer')}`
-                                : `❌ ${t('quiz.wrong_answer')} ${q.options[q.answer]}`}
+                                : `❌ ${t('quiz.wrong_answer')} ${getLocalizedOption(q.options[q.answer], lang)}`}
                         </p>
-                        <p>{q.explanation}</p>
+                        <p>{getLocalizedField(q.raw, 'explanation', lang)}</p>
                     </div>
                 )}
 

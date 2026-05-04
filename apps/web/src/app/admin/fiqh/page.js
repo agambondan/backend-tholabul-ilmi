@@ -1,6 +1,8 @@
 'use client';
 
 import { adminFiqhApi } from '@/lib/api';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsPencil, BsPlusCircle, BsTrash, BsX } from 'react-icons/bs';
 
@@ -24,6 +26,7 @@ const EMPTY_FORM = {
 };
 
 const AdminFiqhPage = () => {
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -107,7 +110,7 @@ const AdminFiqhPage = () => {
                 <div>
                     <h1 className='text-xl font-bold text-gray-900 dark:text-white'>Fiqh</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.length} materials
+                        {items.length} {t('admin.fiqh.materials_unit')}
                     </p>
                 </div>
                 <button
@@ -115,14 +118,14 @@ const AdminFiqhPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Add Material
+                    {t('admin.fiqh.add_material')}
                 </button>
             </div>
 
             <div className='mb-4 flex flex-wrap gap-3'>
                 <input
                     type='text'
-                    placeholder='Search title or content...'
+                    placeholder={t('admin.crud.search_title_content')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -132,7 +135,7 @@ const AdminFiqhPage = () => {
                     onChange={(e) => setCatFilter(e.target.value)}
                     className='px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
                 >
-                    <option value=''>All categories</option>
+                    <option value=''>{t('admin.crud.all_categories')}</option>
                     {CATEGORIES.map((c) => (
                         <option key={c} value={c}>
                             {c}
@@ -142,17 +145,17 @@ const AdminFiqhPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Loading...</p>
+                <p className='text-sm text-gray-500'>{t('common.loading')}</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-700'>
                             <tr>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Title
+                                    {t('admin.field.title')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-28'>
-                                    Category
+                                    {t('admin.field.category')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell'>
                                     Dalil
@@ -167,7 +170,7 @@ const AdminFiqhPage = () => {
                                     className='hover:bg-gray-50 dark:hover:bg-slate-750'
                                 >
                                     <td className='px-4 py-3 text-gray-900 dark:text-white font-medium max-w-xs truncate'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </td>
                                     <td className='px-4 py-3'>
                                         <span className='px-2 py-0.5 bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-400 rounded text-xs capitalize'>
@@ -203,7 +206,7 @@ const AdminFiqhPage = () => {
                                         colSpan={4}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        No data yet
+                                        {t('admin.crud.no_data')}
                                     </td>
                                 </tr>
                             )}
@@ -217,7 +220,7 @@ const AdminFiqhPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Fiqh Material' : 'Add Fiqh Material'}
+                                {editId ? t('admin.fiqh.edit_material') : t('admin.fiqh.add_material')}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -230,7 +233,7 @@ const AdminFiqhPage = () => {
                             <div className='grid grid-cols-2 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Category
+                                        {t('admin.field.category')}
                                     </label>
                                     <select
                                         value={form.category}
@@ -248,7 +251,7 @@ const AdminFiqhPage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Title
+                                        {t('admin.field.title')}
                                     </label>
                                     <input
                                         type='text'
@@ -262,7 +265,7 @@ const AdminFiqhPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Content
+                                    {t('admin.field.content')}
                                 </label>
                                 <textarea
                                     value={form.content}
@@ -290,7 +293,7 @@ const AdminFiqhPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Source
+                                    {t('common.source')}
                                 </label>
                                 <input
                                     type='text'
@@ -308,14 +311,14 @@ const AdminFiqhPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.title}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Saving...' : 'Save'}
+                                {saving ? t('common.saving') : t('common.save')}
                             </button>
                         </div>
                     </div>
@@ -326,23 +329,23 @@ const AdminFiqhPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Delete this material?
+                            {t('admin.crud.delete_title').replace('{item}', t('admin.fiqh.material'))}
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Deleted data cannot be restored.
+                            {t('admin.crud.delete_body')}
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Delete
+                                {t('common.delete')}
                             </button>
                         </div>
                     </div>

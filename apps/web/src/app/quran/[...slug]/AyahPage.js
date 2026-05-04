@@ -7,6 +7,7 @@ import { useLocale } from '@/context/Locale';
 import { listMasjidImage } from '@/lib/const';
 import { NumberToArabic } from '@/lib/converter';
 import { CopyImageToClipboard, CopyToClipboard } from '@/lib/copy';
+import { getLocalizedTranslation } from '@/lib/translation';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
 import { useEffect, useRef, useState } from 'react';
@@ -22,7 +23,7 @@ import {
 import { IoIosLink, IoMdCopy, IoMdImages } from 'react-icons/io';
 
 const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const cardRef = useRef();
     const audioRef = useRef(null);
     const [isCopied, SetIsCopied] = useState(false);
@@ -41,6 +42,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
     const [audioUrls, setAudioUrls] = useState([]);
     const [isPlaying, setIsPlaying] = useState(false);
     const [audioLoading, setAudioLoading] = useState(false);
+    const ayahTranslation = getLocalizedTranslation(ayah.translation, lang);
 
     const copyText = (value) => {
         CopyToClipboard(value);
@@ -134,7 +136,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
         <div ref={cardRef} id={`${surah.translation.latin_en}-${ayah.number}`}>
             {clipboardPopUp && (
                 <div className='fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg'>
-                    Tersalin ke clipboard!
+                    {t('ayah.copied_to_clipboard')}
                 </div>
             )}
             {shareImagePopUp && (
@@ -145,9 +147,9 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                         .concat(`${ayah.translation.ar} `)
                         .concat(`۝${NumberToArabic(ayah.number)}\n`)
                         .concat(`${ayah.translation.latin_idn}\n`)
-                        .concat(`${ayah.translation.idn}\n`)
+                        .concat(`${ayahTranslation}\n`)
                         .concat(
-                            `(QS. ${surah.translation.latin_en} ${surah.number}: Ayat ${ayah.number})\n`.concat(
+                            `(QS. ${surah.translation.latin_en} ${surah.number}: ${t('common.verse')} ${ayah.number})\n`.concat(
                                 `Via Thullaabul 'Ilmi ${window.location.href}#${ayah.number}`
                             )
                         )}
@@ -188,7 +190,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                     </li>
                     <li className='flex justify-center'>
                         <button
-                            title='Tafsir'
+                            title={t('tafsir.title')}
                             onClick={toggleTafsir}
                             className={`p-2 rounded-lg text-lg transition-colors ${
                                 tafsirOpen
@@ -201,7 +203,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                     </li>
                     <li className='flex justify-center'>
                         <button
-                            title='Mufrodat (Kosakata)'
+                            title={t('ayah.mufrodat_title')}
                             onClick={toggleMufrodat}
                             className={`p-2 rounded-lg text-lg transition-colors ${
                                 mufrodatOpen
@@ -217,7 +219,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                     </li>
                     <li className='flex justify-center'>
                         <button
-                            title='Share'
+                            title={t('common.share')}
                             onClick={() => SetShareImagePopUp(true)}
                             className='p-2 rounded-lg text-lg hover:bg-emerald-100 dark:hover:bg-slate-700 transition-colors'
                         >
@@ -226,7 +228,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                     </li>
                     <li className='flex justify-center relative'>
                         <button
-                            title='More'
+                            title={t('common.more')}
                             onClick={() => SetSettingPopUp(!settingPopUp)}
                             className='p-2 rounded-lg text-lg hover:bg-emerald-100 dark:hover:bg-slate-700 transition-colors'
                         >
@@ -271,9 +273,9 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                                                 `Allah Subhanahu Wa Ta'ala berfirman:\n\n`
                                                     .concat(`${ayah.translation.ar}\n\n`)
                                                     .concat(`${ayah.translation.latin_idn}\n\n`)
-                                                    .concat(`${ayah.translation.idn}\n\n`)
+                                                    .concat(`${ayahTranslation}\n\n`)
                                                     .concat(
-                                                        `(QS. ${surah.translation.latin_en} ${surah.number}: Ayat ${ayah.number})\n`.concat(
+                                                        `(QS. ${surah.translation.latin_en} ${surah.number}: ${t('common.verse')} ${ayah.number})\n`.concat(
                                                             `Via Thullaabul 'Ilmi ${window.location.href}#${ayah.number}`
                                                         )
                                                     )
@@ -307,7 +309,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                         </li>
                     )}
                     <li className='text-left p-2' style={{ direction: 'ltr' }}>
-                        {ayah.translation.idn}
+                        {ayahTranslation}
                     </li>
                 </ul>
             </ul>

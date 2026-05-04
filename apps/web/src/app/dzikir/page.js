@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
 import { dzikirApi } from '@/lib/api';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 
@@ -39,8 +40,90 @@ const FALLBACK_DZIKIR = [
     { id: 15, title: 'Sholawat Ibrahimiyah', arabic: 'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ', transliteration: "Allahumma shalli ala muhammadin wa ala ali muhammad, kama shallaita ala ibrahima wa ala ali ibrahim", translation: 'Ya Allah, limpahkanlah shalawat kepada Muhammad dan keluarga Muhammad, sebagaimana Engkau limpahkan shalawat kepada Ibrahim dan keluarga Ibrahim.', count: '10x', source: 'HR. Bukhari', category: 'setelah_sholat' },
 ];
 
+const FALLBACK_DZIKIR_EN = {
+    1: {
+        title: 'Morning Dhikr: Ayat Kursi',
+        translation:
+            'Allah, there is no deity except Him, the Ever-Living, the Sustainer.',
+    },
+    2: {
+        title: 'Morning Dhikr: Al-Ikhlas, Al-Falaq, An-Nas',
+        translation: 'Recite Surah Al-Ikhlas, Al-Falaq, and An-Nas three times each.',
+    },
+    3: {
+        title: 'Sayyidul Istighfar (Morning)',
+        translation:
+            'O Allah, You are my Lord; there is no deity except You. You created me and I am Your servant.',
+    },
+    4: {
+        title: 'Morning Dhikr: Hisnul Muslim',
+        translation:
+            'We have entered the morning and the dominion belongs to Allah. All praise is for Allah.',
+    },
+    5: {
+        title: 'Morning Dhikr: Protection',
+        translation:
+            'O Allah, by You we enter the morning and evening; by You we live and die, and to You is the resurrection.',
+    },
+    6: {
+        title: 'Evening Dhikr: Ayat Kursi',
+        translation:
+            'Allah, there is no deity except Him, the Ever-Living, the Sustainer.',
+    },
+    7: {
+        title: 'Evening Dhikr: Hisnul Muslim',
+        translation:
+            'We have entered the evening and the dominion belongs to Allah. All praise is for Allah.',
+    },
+    8: {
+        title: 'Subhanallah wa Bihamdih',
+        translation: 'Glory be to Allah and all praise is for Him.',
+    },
+    9: {
+        title: 'Subhanallah, Alhamdulillah, Allahu Akbar',
+        translation: 'Glory be to Allah, all praise is for Allah, Allah is the Greatest.',
+    },
+    10: {
+        title: 'Istighfar After Prayer',
+        translation: 'I seek forgiveness from Allah.',
+    },
+    11: {
+        title: 'La Ilaha Illallah Wahdah',
+        translation:
+            'There is no deity except Allah alone, without partner. To Him belongs the dominion and praise, and He has power over all things.',
+    },
+    12: {
+        title: 'Travel Supplication: Before Departing',
+        translation:
+            'O Allah, we ask You in this journey for righteousness and piety.',
+    },
+    13: {
+        title: 'Dhikr Before Sleep',
+        translation: 'In Your name, O Allah, I die and I live.',
+    },
+    14: {
+        title: 'Supplication When Anxious',
+        translation:
+            'Allah is sufficient for me. There is no deity except Him. Upon Him I rely, and He is the Lord of the mighty Throne.',
+    },
+    15: {
+        title: 'Ibrahimiyah Blessings',
+        translation:
+            'O Allah, send blessings upon Muhammad and the family of Muhammad as You sent blessings upon Ibrahim and the family of Ibrahim.',
+    },
+};
+
+const fallbackDzikir = (cat) => {
+    const localized = FALLBACK_DZIKIR.map((item) => ({
+        ...item,
+        title_en: FALLBACK_DZIKIR_EN[item.id]?.title,
+        translation_en: FALLBACK_DZIKIR_EN[item.id]?.translation,
+    }));
+    return cat ? localized.filter((d) => d.category === cat) : localized;
+};
+
 const DzikirPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [dzikirList, setDzikirList] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -69,10 +152,7 @@ const DzikirPage = () => {
             .then((data) => {
                 const items = data?.items ?? data ?? [];
                 if (items.length === 0 && pageNum === 0 && !append) {
-                    const fallback = cat
-                        ? FALLBACK_DZIKIR.filter((d) => d.category === cat)
-                        : FALLBACK_DZIKIR;
-                    setDzikirList(fallback);
+                    setDzikirList(fallbackDzikir(cat));
                     setHasMore(false);
                 } else {
                     setDzikirList((prev) => (append ? [...prev, ...items] : items));
@@ -81,10 +161,7 @@ const DzikirPage = () => {
             })
             .catch(() => {
                 if (!append) {
-                    const fallback = cat
-                        ? FALLBACK_DZIKIR.filter((d) => d.category === cat)
-                        : FALLBACK_DZIKIR;
-                    setDzikirList(fallback);
+                    setDzikirList(fallbackDzikir(cat));
                 }
                 setHasMore(false);
             })
@@ -124,11 +201,11 @@ const DzikirPage = () => {
             if (!search) return true;
             const query = search.toLowerCase();
             const haystack = [
-                d.title,
-                d.translation,
+                getLocalizedField(d, 'title', lang, ['name']),
+                getLocalizedField(d, 'translation', lang, ['meaning', 'description']),
                 d.transliteration,
                 d.source,
-                d.fadhilah,
+                getLocalizedField(d, 'fadhilah', lang, ['virtue']),
                 d.category,
             ]
                 .filter(Boolean)
@@ -233,11 +310,11 @@ const DzikirPage = () => {
                                 >
                                     <div>
                                         <span className='text-sm font-semibold text-emerald-900 dark:text-white'>
-                                            {dzikir.title}
+                                            {getLocalizedField(dzikir, 'title', lang, ['name'])}
                                         </span>
                                         {dzikir.category && (
                                             <span className='ml-2 text-xs px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full'>
-                                                {dzikir.category.replace('_', ' ')}
+                                                {t(CATEGORIES.find((item) => item.value === dzikir.category)?.labelKey) || dzikir.category.replace('_', ' ')}
                                             </span>
                                         )}
                                         {dzikir.count && dzikir.count > 1 && (
@@ -265,15 +342,18 @@ const DzikirPage = () => {
                                             </p>
                                         )}
                                         <p className='text-sm text-gray-700 dark:text-gray-300'>
-                                            {dzikir.translation}
+                                            {getLocalizedField(dzikir, 'translation', lang, [
+                                                'meaning',
+                                                'description',
+                                            ])}
                                         </p>
-                                        {dzikir.fadhilah && (
+                                        {getLocalizedField(dzikir, 'fadhilah', lang, ['virtue']) && (
                                             <div className='bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2'>
                                                 <p className='text-xs font-medium text-amber-700 dark:text-amber-400 mb-0.5'>
                                                     {t('dzikir.fadhilah')}
                                                 </p>
                                                 <p className='text-xs text-amber-600 dark:text-amber-300'>
-                                                    {dzikir.fadhilah}
+                                                    {getLocalizedField(dzikir, 'fadhilah', lang, ['virtue'])}
                                                 </p>
                                             </div>
                                         )}

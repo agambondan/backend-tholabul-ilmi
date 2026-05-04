@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale } from '@/context/Locale';
 import { useEffect, useRef, useState } from 'react';
 import { BsPauseFill, BsPlayFill } from 'react-icons/bs';
 import { MdSpeed } from 'react-icons/md';
@@ -7,6 +8,7 @@ import { MdSpeed } from 'react-icons/md';
 const SPEED_KEY = 'autoScrollSpeed';
 
 const AutoScrollButton = () => {
+    const { t } = useLocale();
     const [isPlaying, setIsPlaying] = useState(false);
     const [speed, setSpeed] = useState(3);
     const [showPanel, setShowPanel] = useState(false);
@@ -107,7 +109,7 @@ const AutoScrollButton = () => {
                     <div className='flex items-center gap-1.5 mb-3'>
                         <MdSpeed size={14} className='text-gray-400' />
                         <p className='font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide'>
-                            Kecepatan Scroll
+                            {t('auto_scroll.speed')}
                         </p>
                     </div>
                     <input
@@ -119,15 +121,15 @@ const AutoScrollButton = () => {
                         className='w-full accent-emerald-600 cursor-pointer'
                     />
                     <div className='flex justify-between text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                        <span>Lambat</span>
+                        <span>{t('auto_scroll.slow')}</span>
                         <span className='font-medium text-emerald-600 dark:text-emerald-400'>
                             {speed}
                         </span>
-                        <span>Cepat</span>
+                        <span>{t('auto_scroll.fast')}</span>
                     </div>
                     {isPlaying && (
                         <p className='text-center text-xs text-emerald-600 dark:text-emerald-400 mt-2 animate-pulse'>
-                            ● Berjalan
+                            ● {t('auto_scroll.running')}
                         </p>
                     )}
                 </div>
@@ -135,14 +137,14 @@ const AutoScrollButton = () => {
 
             <div className='flex items-center gap-2'>
                 <button
-                    title='Pengaturan kecepatan'
+                    title={t('auto_scroll.speed_settings')}
                     onClick={() => setShowPanel((p) => !p)}
                     className='bg-slate-800 dark:bg-slate-200 text-white dark:text-black rounded-full p-2.5 shadow hover:opacity-80 transition-opacity'
                 >
                     <MdSpeed size={18} />
                 </button>
                 <button
-                    title={isPlaying ? 'Pause Auto Scroll' : 'Mulai Auto Scroll'}
+                    title={isPlaying ? t('auto_scroll.pause') : t('auto_scroll.start')}
                     onClick={toggle}
                     className={`rounded-full p-3 shadow transition-colors ${
                         isPlaying

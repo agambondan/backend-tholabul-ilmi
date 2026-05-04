@@ -1,12 +1,15 @@
 'use client';
 
 import { Spinner3 } from '@/components/spinner/Spinner';
+import { useLocale } from '@/context/Locale';
 import { adminSirohApi } from '@/lib/api';
+import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BsPencil, BsPlus, BsTrash, BsX } from 'react-icons/bs';
 
 const AdminSirahPage = () => {
+    const { t, lang } = useLocale();
     const [categories, setCategories] = useState([]);
     const [contents, setContents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +23,7 @@ const AdminSirahPage = () => {
     const [editCatTitle, setEditCatTitle] = useState('');
     const [editCatOrder, setEditCatOrder] = useState('');
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setIsLoading(true);
         try {
             const [catsRes, contentsRes] = await Promise.all([
@@ -30,15 +33,15 @@ const AdminSirahPage = () => {
             setCategories(catsRes?.items ?? catsRes ?? []);
             setContents(contentsRes?.items ?? contentsRes ?? []);
         } catch {
-            setError('Failed to load sirah data.');
+            setError(t('admin.sirah.load_error'));
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [t]);
 
     useEffect(() => {
         load();
-    }, []);
+    }, [load]);
 
     const handleCreateCategory = async (e) => {
         e.preventDefault();
@@ -62,7 +65,7 @@ const AdminSirahPage = () => {
     };
 
     const handleDeleteCategory = async (id) => {
-        if (!confirm('Delete this category? Content di dalamnya juga akan terhapus.')) return;
+        if (!confirm(t('admin.sirah.confirm_delete_category'))) return;
         const prev = categories;
         setCategories((c) => c.filter((x) => x.id !== id));
         try {
@@ -95,7 +98,7 @@ const AdminSirahPage = () => {
     };
 
     const handleDeleteContent = async (id) => {
-        if (!confirm('Delete this sirah content?')) return;
+        if (!confirm(t('admin.sirah.confirm_delete_content'))) return;
         const prev = contents;
         setContents((c) => c.filter((x) => x.id !== id));
         try {
@@ -112,10 +115,10 @@ const AdminSirahPage = () => {
             <div className='flex items-center justify-between mb-8'>
                 <div>
                     <h1 className='text-2xl font-bold text-gray-900 dark:text-white'>
-                        Prophet&apos;s Biography
+                        {t('admin.nav.sirah')}
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-                        {categories.length} categories · {contents.length} contents
+                        {categories.length} {t('admin.sirah.categories_unit')} · {contents.length} {t('admin.sirah.contents_unit')}
                     </p>
                 </div>
                 <Link
@@ -123,7 +126,7 @@ const AdminSirahPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors'
                 >
                     <BsPlus className='text-lg' />
-                    Content Baru
+                    {t('admin.sirah.new_content')}
                 </Link>
             </div>
 
@@ -135,7 +138,7 @@ const AdminSirahPage = () => {
                 {/* Categories */}
                 <div>
                     <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>
-                        Category / Bab
+                        {t('admin.field.category')}
                     </h2>
 
                     <form
@@ -145,13 +148,13 @@ const AdminSirahPage = () => {
                         <input
                             value={newCatTitle}
                             onChange={(e) => setNewCatTitle(e.target.value)}
-                            placeholder='New category title...'
+                            placeholder={t('admin.sirah.new_category_placeholder')}
                             className='flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                         />
                         <input
                             value={newCatOrder}
                             onChange={(e) => setNewCatOrder(e.target.value)}
-                            placeholder='Order'
+                            placeholder={t('admin.field.order')}
                             type='number'
                             className='w-20 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                         />
@@ -167,7 +170,7 @@ const AdminSirahPage = () => {
                     <div className='space-y-2'>
                         {categories.length === 0 && (
                             <p className='text-sm text-gray-400 dark:text-gray-500'>
-                                No categories yet.
+                                {t('admin.blog.empty_categories')}
                             </p>
                         )}
                         {categories.map((cat) => (
@@ -192,7 +195,7 @@ const AdminSirahPage = () => {
                                             onClick={() => handleUpdateCategory(cat.id)}
                                             className='px-3 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs'
                                         >
-                                            Save
+                                            {t('common.save')}
                                         </button>
                                         <button
                                             onClick={() => setEditingCat(null)}
@@ -205,10 +208,10 @@ const AdminSirahPage = () => {
                                     <div className='flex items-center justify-between'>
                                         <div>
                                             <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                                                {cat.title}
+                                                {getLocalizedField(cat, 'title', lang)}
                                             </p>
                                             <p className='text-xs text-gray-400 dark:text-gray-500'>
-                                                Order: {cat.order ?? 0} · {cat.slug}
+                                                {t('admin.field.order')}: {cat.order ?? 0} · {cat.slug}
                                             </p>
                                         </div>
                                         <div className='flex gap-1'>
@@ -235,12 +238,12 @@ const AdminSirahPage = () => {
                 {/* Contents */}
                 <div>
                     <h2 className='text-base font-bold text-gray-900 dark:text-white mb-4'>
-                        Content
+                        {t('admin.field.content')}
                     </h2>
                     <div className='space-y-2'>
                         {contents.length === 0 && (
                             <p className='text-sm text-gray-400 dark:text-gray-500'>
-                                No content yet. Create new content.
+                                {t('admin.sirah.empty_content')}
                             </p>
                         )}
                         {contents.map((item) => (
@@ -250,12 +253,12 @@ const AdminSirahPage = () => {
                             >
                                 <div className='min-w-0 flex-1'>
                                     <p className='text-sm font-medium text-gray-900 dark:text-white truncate'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </p>
                                     <p className='text-xs text-gray-400 dark:text-gray-500'>
                                         {categories.find((c) => c.id === item.category_id)?.title ??
-                                            `Category #${item.category_id}`}{' '}
-                                        · Order {item.order ?? 0}
+                                            `${t('admin.field.category')} #${item.category_id}`}{' '}
+                                        · {t('admin.field.order')} {item.order ?? 0}
                                     </p>
                                 </div>
                                 <div className='flex gap-1 ml-3 shrink-0'>

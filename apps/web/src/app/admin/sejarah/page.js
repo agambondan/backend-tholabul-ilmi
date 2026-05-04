@@ -1,6 +1,8 @@
 'use client';
 
 import { adminSejarahApi } from '@/lib/api';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsPencil, BsPlusCircle, BsTrash, BsX } from 'react-icons/bs';
 
@@ -23,6 +25,7 @@ const EMPTY_FORM = {
 };
 
 const AdminHistoryPage = () => {
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -103,10 +106,10 @@ const AdminHistoryPage = () => {
             <div className='flex items-center justify-between mb-6'>
                 <div>
                     <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
-                        Islamic History
+                        {t('admin.nav.history')}
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.length} events
+                        {items.length} {t('admin.history.events_unit')}
                     </p>
                 </div>
                 <button
@@ -114,14 +117,14 @@ const AdminHistoryPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Add Event
+                    {t('admin.history.add_event')}
                 </button>
             </div>
 
             <div className='mb-4'>
                 <input
                     type='text'
-                    placeholder='Search title, year, or category...'
+                    placeholder={t('admin.history.search_placeholder')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -129,20 +132,20 @@ const AdminHistoryPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Loading...</p>
+                <p className='text-sm text-gray-500'>{t('common.loading')}</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-700'>
                             <tr>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-20'>
-                                    Year H
+                                    {t('admin.history.year_h')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Peristiwa
+                                    {t('admin.history.event')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-32'>
-                                    Category
+                                    {t('admin.field.category')}
                                 </th>
                                 <th className='px-4 py-3 w-20'></th>
                             </tr>
@@ -157,7 +160,7 @@ const AdminHistoryPage = () => {
                                         {item.year}
                                     </td>
                                     <td className='px-4 py-3 text-gray-900 dark:text-white font-medium'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </td>
                                     <td className='px-4 py-3'>
                                         <span className='px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded text-xs capitalize'>
@@ -190,7 +193,7 @@ const AdminHistoryPage = () => {
                                         colSpan={4}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        No data yet
+                                        {t('admin.crud.no_data')}
                                     </td>
                                 </tr>
                             )}
@@ -204,7 +207,7 @@ const AdminHistoryPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Event' : 'Add Event'}
+                                {editId ? t('admin.history.edit_event') : t('admin.history.add_event')}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -217,7 +220,7 @@ const AdminHistoryPage = () => {
                             <div className='grid grid-cols-2 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Year Hijriah
+                                        {t('admin.history.year_hijri')}
                                     </label>
                                     <input
                                         type='text'
@@ -231,7 +234,7 @@ const AdminHistoryPage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Category
+                                        {t('admin.field.category')}
                                     </label>
                                     <select
                                         value={form.category}
@@ -250,7 +253,7 @@ const AdminHistoryPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Title Peristiwa
+                                    {t('admin.history.event_title')}
                                 </label>
                                 <input
                                     type='text'
@@ -263,7 +266,7 @@ const AdminHistoryPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Description
+                                    {t('admin.field.description')}
                                 </label>
                                 <textarea
                                     value={form.description}
@@ -280,14 +283,14 @@ const AdminHistoryPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.title}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Saving...' : 'Save'}
+                                {saving ? t('common.saving') : t('common.save')}
                             </button>
                         </div>
                     </div>
@@ -298,23 +301,23 @@ const AdminHistoryPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Delete this event?
+                            {t('admin.crud.delete_title').replace('{item}', t('admin.history.event'))}
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Deleted data cannot be restored.
+                            {t('admin.crud.delete_body')}
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Delete
+                                {t('common.delete')}
                             </button>
                         </div>
                     </div>

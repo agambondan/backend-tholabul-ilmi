@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { adminBlogApi, blogApi } from '@/lib/api';
+import { useLocale } from '@/context/Locale';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -16,6 +17,7 @@ const slugify = (str) =>
 
 const BlogForm = ({ initialData = null, postId = null }) => {
     const router = useRouter();
+    const { t } = useLocale();
     const isEdit = !!postId;
 
     const [title, setTitle] = useState(initialData?.title ?? '');
@@ -78,7 +80,7 @@ const BlogForm = ({ initialData = null, postId = null }) => {
             }
             router.push('/admin/blog');
         } catch {
-            setError('Failed to save. Check the connection or submitted data.');
+            setError(t('admin.error.save'));
         } finally {
             setIsLoading(false);
         }
@@ -97,20 +99,20 @@ const BlogForm = ({ initialData = null, postId = null }) => {
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Title <span className='text-red-500'>*</span>
+                    {t('admin.field.title')} <span className='text-red-500'>*</span>
                 </label>
                 <input
                     required
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
                     className={inputCls}
-                    placeholder='Article title...'
+                    placeholder={t('admin.blog.title_placeholder')}
                 />
             </div>
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Slug
+                    {t('admin.field.slug')}
                 </label>
                 <input
                     value={slug}
@@ -128,20 +130,20 @@ const BlogForm = ({ initialData = null, postId = null }) => {
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Summary (Excerpt)
+                    {t('admin.field.summary')}
                 </label>
                 <textarea
                     value={excerpt}
                     onChange={(e) => setExcerpt(e.target.value)}
                     rows={2}
                     className={inputCls}
-                    placeholder='Brief article description...'
+                    placeholder={t('admin.blog.summary_placeholder')}
                 />
             </div>
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    Content <span className='text-red-500'>*</span>
+                    {t('admin.field.content')} <span className='text-red-500'>*</span>
                 </label>
                 <textarea
                     required
@@ -149,16 +151,16 @@ const BlogForm = ({ initialData = null, postId = null }) => {
                     onChange={(e) => setContent(e.target.value)}
                     rows={16}
                     className={`${inputCls} font-mono leading-relaxed`}
-                    placeholder='Write article content here...'
+                    placeholder={t('admin.blog.content_placeholder')}
                 />
                 <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                    Gunakan baris baru untuk memisahkan paragraf.
+                    {t('admin.form.paragraph_hint')}
                 </p>
             </div>
 
             <div>
                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                    URL Cover Image Cover
+                    {t('admin.field.cover_image_url')}
                 </label>
                 <input
                     value={coverImage}
@@ -179,14 +181,14 @@ const BlogForm = ({ initialData = null, postId = null }) => {
             <div className='grid sm:grid-cols-2 gap-4'>
                 <div>
                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                        Category
+                    {t('admin.field.category')}
                     </label>
                     <select
                         value={categoryId}
                         onChange={(e) => setCategoryId(e.target.value)}
                         className={inputCls}
                     >
-                        <option value=''>— Select Category —</option>
+                        <option value=''>— {t('admin.form.select_category')} —</option>
                         {categories.map((cat) => (
                             <option key={cat.id} value={cat.id}>
                                 {cat.name}
@@ -197,16 +199,16 @@ const BlogForm = ({ initialData = null, postId = null }) => {
 
                 <div>
                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                        Status
+                    {t('common.status')}
                     </label>
                     <select
                         value={status}
                         onChange={(e) => setStatus(e.target.value)}
                         className={inputCls}
                     >
-                        <option value='draft'>Draft</option>
-                        <option value='published'>Published</option>
-                        <option value='archived'>Archived</option>
+                        <option value='draft'>{t('admin.status.draft')}</option>
+                        <option value='published'>{t('admin.status.published')}</option>
+                        <option value='archived'>{t('admin.status.archived')}</option>
                     </select>
                 </div>
             </div>
@@ -214,7 +216,7 @@ const BlogForm = ({ initialData = null, postId = null }) => {
             {tags.length > 0 && (
                 <div>
                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-                        Tag
+                        {t('admin.field.tag')}
                     </label>
                     <div className='flex flex-wrap gap-2'>
                         {tags.map((tag) => (
@@ -241,13 +243,17 @@ const BlogForm = ({ initialData = null, postId = null }) => {
                     disabled={isLoading}
                     className='px-6 py-2.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors'
                 >
-                    {isLoading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Article'}
+                    {isLoading
+                        ? t('common.saving')
+                        : isEdit
+                          ? t('admin.form.save_changes')
+                          : t('admin.blog.create_article')}
                 </button>
                 <Link
                     href='/admin/blog'
                     className='px-6 py-2.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium transition-colors'
                 >
-                    Cancel
+                    {t('common.cancel')}
                 </Link>
             </div>
         </form>

@@ -3,7 +3,7 @@ export default function manifest() {
         name: "Thullaabul 'Ilmi",
         short_name: 'TI',
         description:
-            'Portal Ilmu Islam — Al-Quran, Hadith, Doa & Dzikir, Hafalan, dan lebih banyak lagi.',
+            'Islamic knowledge portal for Al-Quran, Hadith, duas, dhikr, memorization, and more.',
         start_url: '/',
         display: 'standalone',
         orientation: 'portrait',

@@ -1,6 +1,8 @@
 'use client';
 
 import { adminAsbabunNuzulApi } from '@/lib/api';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsPencil, BsPlusCircle, BsTrash, BsX } from 'react-icons/bs';
 
@@ -13,6 +15,7 @@ const EMPTY_FORM = {
 };
 
 const AdminAsbabunNuzulPage = () => {
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -108,7 +111,7 @@ const AdminAsbabunNuzulPage = () => {
                         Asbabun Nuzul
                     </h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.length} entries
+                        {items.length} {t('admin.crud.entries')}
                     </p>
                 </div>
                 <button
@@ -116,14 +119,14 @@ const AdminAsbabunNuzulPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Add
+                    {t('common.add')}
                 </button>
             </div>
 
             <div className='mb-4'>
                 <input
                     type='text'
-                    placeholder='Search title or surah number...'
+                    placeholder={t('admin.asbabun.search_placeholder')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -131,7 +134,7 @@ const AdminAsbabunNuzulPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Loading...</p>
+                <p className='text-sm text-gray-500'>{t('common.loading')}</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
@@ -141,13 +144,13 @@ const AdminAsbabunNuzulPage = () => {
                                     Surah
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-16'>
-                                    Ayat
+                                    {t('common.verse')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Title
+                                    {t('admin.field.title')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell'>
-                                    Source
+                                    {t('common.source')}
                                 </th>
                                 <th className='px-4 py-3 w-20'></th>
                             </tr>
@@ -165,7 +168,7 @@ const AdminAsbabunNuzulPage = () => {
                                         {item.ayah_number}
                                     </td>
                                     <td className='px-4 py-3 text-gray-900 dark:text-white font-medium max-w-xs truncate'>
-                                        {item.title}
+                                        {getLocalizedField(item, 'title', lang)}
                                     </td>
                                     <td className='px-4 py-3 text-gray-400 dark:text-gray-500 text-xs hidden md:table-cell max-w-xs truncate'>
                                         {item.source ?? '-'}
@@ -196,7 +199,7 @@ const AdminAsbabunNuzulPage = () => {
                                         colSpan={5}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        No data yet
+                                        {t('admin.crud.no_data')}
                                     </td>
                                 </tr>
                             )}
@@ -210,7 +213,9 @@ const AdminAsbabunNuzulPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Asbabun Nuzul' : 'Add Asbabun Nuzul'}
+                                {editId
+                                    ? `${t('common.edit')} ${t('admin.nav.asbabun')}`
+                                    : `${t('admin.crud.add')} ${t('admin.nav.asbabun')}`}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -223,7 +228,7 @@ const AdminAsbabunNuzulPage = () => {
                             <div className='grid grid-cols-2 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        No. Surah
+                                        {t('admin.asbabun.surah_number')}
                                     </label>
                                     <input
                                         type='number'
@@ -241,7 +246,7 @@ const AdminAsbabunNuzulPage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        No. Ayat
+                                        {t('admin.asbabun.ayah_number')}
                                     </label>
                                     <input
                                         type='number'
@@ -259,7 +264,7 @@ const AdminAsbabunNuzulPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Title
+                                    {t('admin.field.title')}
                                 </label>
                                 <input
                                     type='text'
@@ -272,7 +277,7 @@ const AdminAsbabunNuzulPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Content / Kisah
+                                    {t('admin.field.content')}
                                 </label>
                                 <textarea
                                     value={form.content}
@@ -285,7 +290,7 @@ const AdminAsbabunNuzulPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Source
+                                    {t('common.source')}
                                 </label>
                                 <input
                                     type='text'
@@ -303,14 +308,14 @@ const AdminAsbabunNuzulPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.title || !form.surah_number}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Saving...' : 'Save'}
+                                {saving ? t('common.saving') : t('common.save')}
                             </button>
                         </div>
                     </div>
@@ -321,23 +326,23 @@ const AdminAsbabunNuzulPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Delete this entry?
+                            {t('admin.crud.delete_title').replace('{item}', t('admin.nav.asbabun'))}
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Deleted data cannot be restored.
+                            {t('admin.crud.delete_body')}
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Delete
+                                {t('common.delete')}
                             </button>
                         </div>
                     </div>

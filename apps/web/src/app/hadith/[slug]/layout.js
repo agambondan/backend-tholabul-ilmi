@@ -11,7 +11,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
     const books = await getBooks();
     const book = books.find((k) => k.slug === params.slug);
-    const bookName = book?.translation?.idn ?? book?.translation?.en ?? null;
+    const bookName = book?.translation?.en ?? book?.translation?.idn ?? null;
     const title = bookName
         ? `${bookName} — Hadith`
         : `Hadith — Thullaabul 'Ilmi`;

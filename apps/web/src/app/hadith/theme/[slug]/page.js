@@ -2,6 +2,7 @@ import HadithPage from '@/app/hadith/[slug]/HadithPage';
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
+import HadithThemeError from './HadithThemeError';
 
 const Page = async ({ params }) => {
 	const slugLowercase = (params.slug ?? '').replaceAll('-', ' ').toLowerCase();
@@ -35,15 +36,7 @@ const Page = async ({ params }) => {
 			<NavbarTailwindCss />
 			<Section>
 				{isError ? (
-					<div className='flex flex-col items-center justify-center min-h-[50vh] text-center px-4'>
-						<p className='text-4xl mb-3'>⚠️</p>
-						<h2 className='text-lg font-bold text-emerald-900 dark:text-white mb-2'>
-							Gagal Memuat Hadith
-						</h2>
-						<p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>
-							Server API tidak dapat dijangkau. Pastikan backend berjalan lalu refresh halaman.
-						</p>
-					</div>
+					<HadithThemeError />
 				) : (
 				<div className='max-w-4xl mx-auto dark:text-white'>
 					<div className='flex flex-col pt-4'>

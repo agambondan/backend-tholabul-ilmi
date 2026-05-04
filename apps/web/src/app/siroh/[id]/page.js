@@ -5,10 +5,13 @@ import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonList } from '@/components/skeleton/Skeleton';
 import { sirohApi } from '@/lib/api';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const SirohDetailPage = ({ params }) => {
+    const { t, lang } = useLocale();
     const [content, setContent] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -33,13 +36,13 @@ const SirohDetailPage = ({ params }) => {
                         href='/siroh'
                         className='inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline mb-6'
                     >
-                        ← Kembali ke Siroh
+                        ← {t('siroh.back_to_siroh')}
                     </Link>
 
                     {error && (
                         <div className='text-center py-12'>
                             <p className='text-gray-500 dark:text-gray-400'>
-                                Konten tidak ditemukan.
+                                {t('siroh.not_found')}
                             </p>
                         </div>
                     )}
@@ -47,15 +50,15 @@ const SirohDetailPage = ({ params }) => {
                     {content && (
                         <article>
                             <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-2'>
-                                {content.title}
+                                {getLocalizedField(content, 'title', lang)}
                             </h1>
-                            {content.subtitle && (
+                            {getLocalizedField(content, 'subtitle', lang) && (
                                 <p className='text-gray-500 dark:text-gray-400 mb-6'>
-                                    {content.subtitle}
+                                    {getLocalizedField(content, 'subtitle', lang)}
                                 </p>
                             )}
                             <div className='prose dark:prose-invert prose-emerald max-w-none text-gray-700 dark:text-gray-300 leading-relaxed'>
-                                {content.content
+                                {(getLocalizedField(content, 'content', lang) || content.content)
                                     ?.split('\n')
                                     .filter(Boolean)
                                     .map((para, i) => (
@@ -66,7 +69,7 @@ const SirohDetailPage = ({ params }) => {
                             </div>
                             {content.source && (
                                 <p className='text-xs text-gray-400 dark:text-gray-500 mt-8 border-t border-gray-100 dark:border-slate-700 pt-4'>
-                                    Sumber: {content.source}
+                                    {t('common.source')}: {content.source}
                                 </p>
                             )}
                         </article>

@@ -254,7 +254,7 @@ const ProfilePage = () => {
                         >
                             <BsBookmark className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Bookmark
+                                {t('link.bookmarks')}
                             </span>
                         </Link>
                         <Link
@@ -264,7 +264,7 @@ const ProfilePage = () => {
                             <BsCheckCircle className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <div>
                                 <span className='text-sm font-medium text-emerald-900 dark:text-white block'>
-                                    Hafalan
+                                    {t('link.memorization')}
                                 </span>
                                 {hafalanSummary && (
                                     <span className='text-xs text-gray-500 dark:text-gray-400'>
@@ -279,7 +279,7 @@ const ProfilePage = () => {
                         >
                             <BsJournalCheck className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Tilawah
+                                {t('link.recitation')}
                             </span>
                         </Link>
                         <Link
@@ -297,7 +297,7 @@ const ProfilePage = () => {
                         >
                             <MdRefresh className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Muroja&apos;ah
+                                {t('link.review')}
                             </span>
                         </Link>
                         <Link
@@ -324,7 +324,7 @@ const ProfilePage = () => {
                         >
                             <FaCalculator className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Zakat
+                                {t('link.zakat')}
                             </span>
                         </Link>
                         <Link
@@ -333,7 +333,7 @@ const ProfilePage = () => {
                         >
                             <GiCompass className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Kiblat
+                                {t('link.qibla')}
                             </span>
                         </Link>
                         <Link
@@ -351,7 +351,7 @@ const ProfilePage = () => {
                         >
                             <MdMosque className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Sholat Tracker
+                                {t('link.sholat_tracker')}
                             </span>
                         </Link>
                         <Link
@@ -360,7 +360,7 @@ const ProfilePage = () => {
                         >
                             <MdSelfImprovement className='text-emerald-600 dark:text-emerald-400 text-xl' />
                             <span className='text-sm font-medium text-emerald-900 dark:text-white'>
-                                Muhasabah
+                                {t('link.muhasabah')}
                             </span>
                         </Link>
                         <Link

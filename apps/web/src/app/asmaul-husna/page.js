@@ -3,12 +3,15 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
+import { useLocale } from '@/context/Locale';
 import { asmaulHusnaApi } from '@/lib/api';
+import { getLocalizedField, getLocalizedText } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 
 
 const AsmaulHusnaPage = () => {
+    const { t, lang } = useLocale();
     const [names, setNames] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selected, setSelected] = useState(null);
@@ -35,8 +38,9 @@ const AsmaulHusnaPage = () => {
         return (
             name.arabic.includes(query) ||
             name.transliteration.toLowerCase().includes(query) ||
-            name.indonesian.toLowerCase().includes(query) ||
-            name.english.toLowerCase().includes(query)
+            getLocalizedText({ idn: name.indonesian, en: name.english }, lang)
+                .toLowerCase()
+                .includes(query)
         );
     });
 
@@ -56,7 +60,7 @@ const AsmaulHusnaPage = () => {
                             Asmaul Husna
                         </h1>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            99 Nama Allah yang Indah beserta artinya
+                            {t('asmaul.subtitle')}
                         </p>
                     </div>
 
@@ -66,7 +70,7 @@ const AsmaulHusnaPage = () => {
                             type='text'
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder='Cari nama, transliterasi, atau arti...'
+                            placeholder={t('asmaul.search_placeholder')}
                             className='flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none'
                         />
                     </div>
@@ -104,7 +108,7 @@ const AsmaulHusnaPage = () => {
                                         {name.transliteration}
                                     </p>
                                     <p className='text-sm font-medium text-gray-700 dark:text-gray-200'>
-                                        {name.indonesian}
+                                        {getLocalizedText({ idn: name.indonesian, en: name.english }, lang)}
                                     </p>
                                 </button>
                             ))}
@@ -113,7 +117,7 @@ const AsmaulHusnaPage = () => {
 
                     {!isLoading && filteredNames.length === 0 && (
                         <p className='text-center text-xs text-gray-400 dark:text-gray-600 py-4'>
-                            Tidak ada nama yang cocok dengan pencarian.
+                            {t('asmaul.not_found')}
                         </p>
                     )}
                 </div>
@@ -143,21 +147,24 @@ const AsmaulHusnaPage = () => {
                             {selected.transliteration}
                         </p>
                         <p className='text-base font-semibold text-emerald-800 dark:text-emerald-300 text-center mb-2'>
-                            {selected.indonesian}
+                            {getLocalizedText({ idn: selected.indonesian, en: selected.english }, lang)}
                         </p>
                         <p className='text-sm text-gray-500 dark:text-gray-400 text-center mb-4'>
-                            {selected.english}
+                            {getLocalizedText(
+                                { idn: selected.indonesian, en: selected.english },
+                                lang === 'EN' ? 'ID' : 'EN',
+                            )}
                         </p>
-                        {selected.description && (
+                        {getLocalizedField(selected, 'description', lang) && (
                             <p className='text-sm text-gray-600 dark:text-gray-300 leading-relaxed bg-gray-50 dark:bg-slate-700/50 rounded-lg p-3'>
-                                {selected.description}
+                                {getLocalizedField(selected, 'description', lang)}
                             </p>
                         )}
                         <button
                             onClick={() => setSelected(null)}
                             className='mt-5 w-full py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors'
                         >
-                            Tutup
+                            {t('common.close')}
                         </button>
                     </div>
                 </div>

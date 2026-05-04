@@ -1,6 +1,8 @@
 'use client';
 
 import { adminQuizApi } from '@/lib/api';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsPencil, BsPlusCircle, BsTrash, BsX } from 'react-icons/bs';
 
@@ -21,6 +23,7 @@ const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 const OPTION_KEYS = ['option_a', 'option_b', 'option_c', 'option_d'];
 
 const AdminQuizPage = () => {
+    const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -119,7 +122,7 @@ const AdminQuizPage = () => {
                 <div>
                     <h1 className='text-xl font-bold text-gray-900 dark:text-white'>Quiz</h1>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        {items.length} questions
+                        {items.length} {t('admin.quiz.questions_unit')}
                     </p>
                 </div>
                 <button
@@ -127,14 +130,14 @@ const AdminQuizPage = () => {
                     className='flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors'
                 >
                     <BsPlusCircle />
-                    Add Question
+                    {t('admin.quiz.add_question')}
                 </button>
             </div>
 
             <div className='mb-4'>
                 <input
                     type='text'
-                    placeholder='Search question or category...'
+                    placeholder={t('admin.quiz.search_placeholder')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className='w-full max-w-xs px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white'
@@ -142,20 +145,20 @@ const AdminQuizPage = () => {
             </div>
 
             {loading ? (
-                <p className='text-sm text-gray-500'>Loading...</p>
+                <p className='text-sm text-gray-500'>{t('common.loading')}</p>
             ) : (
                 <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
                     <table className='w-full text-sm'>
                         <thead className='bg-gray-50 dark:bg-slate-700'>
                             <tr>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300'>
-                                    Question
+                                    {t('admin.quiz.question')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 w-28'>
-                                    Category
+                                    {t('admin.field.category')}
                                 </th>
                                 <th className='text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell'>
-                                    Answer
+                                    {t('admin.quiz.answer')}
                                 </th>
                                 <th className='px-4 py-3 w-20'></th>
                             </tr>
@@ -167,7 +170,7 @@ const AdminQuizPage = () => {
                                     className='hover:bg-gray-50 dark:hover:bg-slate-750'
                                 >
                                     <td className='px-4 py-3 text-gray-900 dark:text-white max-w-xs truncate'>
-                                        {item.question}
+                                        {getLocalizedField(item, 'question', lang, ['question_text', 'text'])}
                                     </td>
                                     <td className='px-4 py-3'>
                                         <span className='px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded text-xs capitalize'>
@@ -203,7 +206,7 @@ const AdminQuizPage = () => {
                                         colSpan={4}
                                         className='px-4 py-8 text-center text-gray-400'
                                     >
-                                        No data yet
+                                        {t('admin.crud.no_data')}
                                     </td>
                                 </tr>
                             )}
@@ -217,7 +220,7 @@ const AdminQuizPage = () => {
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto'>
                         <div className='flex items-center justify-between p-5 border-b border-gray-100 dark:border-slate-700'>
                             <h2 className='font-bold text-gray-900 dark:text-white'>
-                                {editId ? 'Edit Question' : 'Add Question'}
+                                {editId ? t('admin.quiz.edit_question') : t('admin.quiz.add_question')}
                             </h2>
                             <button
                                 onClick={() => setShowModal(false)}
@@ -229,7 +232,7 @@ const AdminQuizPage = () => {
                         <div className='p-5 space-y-4'>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Question
+                                    {t('admin.quiz.question')}
                                 </label>
                                 <textarea
                                     value={form.question}
@@ -243,7 +246,7 @@ const AdminQuizPage = () => {
                             {OPTION_KEYS.map((key, idx) => (
                                 <div key={key}>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Options {OPTION_LABELS[idx]}
+                                        {t('admin.quiz.option')} {OPTION_LABELS[idx]}
                                     </label>
                                     <input
                                         type='text'
@@ -258,7 +261,7 @@ const AdminQuizPage = () => {
                             <div className='grid grid-cols-2 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Answer Correct
+                                        {t('admin.quiz.correct_answer')}
                                     </label>
                                     <select
                                         value={form.answer}
@@ -269,14 +272,14 @@ const AdminQuizPage = () => {
                                     >
                                         {OPTION_LABELS.map((label, idx) => (
                                             <option key={idx} value={String(idx)}>
-                                                Options {label}
+                                                {t('admin.quiz.option')} {label}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        Category
+                                        {t('admin.field.category')}
                                     </label>
                                     <select
                                         value={form.category}
@@ -295,7 +298,7 @@ const AdminQuizPage = () => {
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                    Explanation (opsional)
+                                    {t('admin.quiz.explanation_optional')}
                                 </label>
                                 <textarea
                                     value={form.explanation}
@@ -312,14 +315,14 @@ const AdminQuizPage = () => {
                                 onClick={() => setShowModal(false)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-700'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={save}
                                 disabled={saving || !form.question || !form.option_a}
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
-                                {saving ? 'Saving...' : 'Save'}
+                                {saving ? t('common.saving') : t('common.save')}
                             </button>
                         </div>
                     </div>
@@ -330,23 +333,23 @@ const AdminQuizPage = () => {
                 <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
                     <div className='bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm p-6'>
                         <h2 className='font-bold text-gray-900 dark:text-white mb-2'>
-                            Delete this question?
+                            {t('admin.crud.delete_title').replace('{item}', t('admin.quiz.question'))}
                         </h2>
                         <p className='text-sm text-gray-500 dark:text-gray-400 mb-5'>
-                            Deleted data cannot be restored.
+                            {t('admin.crud.delete_body')}
                         </p>
                         <div className='flex gap-3'>
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className='flex-1 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium'
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
                                 className='flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium'
                             >
-                                Delete
+                                {t('common.delete')}
                             </button>
                         </div>
                     </div>

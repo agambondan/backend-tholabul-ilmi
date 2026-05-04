@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
 import { doaApi } from '@/lib/api';
+import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 
@@ -44,8 +45,112 @@ const FALLBACK_DOAS = [
     { id: 20, title: 'Doa Keluar Kamar Mandi', arabic: 'غُفْرَانَكَ', transliteration: 'Ghufranaka', translation: 'Ya Allah, aku memohon ampunan-Mu.', category: 'ibadah', source: 'HR. Abu Daud & Tirmidzi' },
 ];
 
+const FALLBACK_DOAS_EN = {
+    1: {
+        title: 'Supplication Before Sleep (Tasbih)',
+        translation:
+            'Glory be to You, O Allah, and with Your praise. I testify that there is no deity worthy of worship except You. I seek Your forgiveness and repent to You.',
+    },
+    2: {
+        title: 'Supplication When Waking Up',
+        translation:
+            'All praise is for Allah who gave us life after causing us to die, and to Him is the resurrection.',
+    },
+    3: {
+        title: 'Morning Supplication',
+        translation:
+            'We have entered the morning and the dominion belongs to Allah. All praise is for Allah. There is no deity worthy of worship except Allah alone, without partner.',
+    },
+    4: {
+        title: 'Evening Supplication',
+        translation:
+            'We have entered the evening and the dominion belongs to Allah. All praise is for Allah. There is no deity except Allah alone, without partner.',
+    },
+    5: { title: 'Supplication Before Eating', translation: 'In the name of Allah.' },
+    6: {
+        title: 'Supplication After Eating',
+        translation:
+            'All praise is for Allah who fed us, gave us drink, and made us Muslims.',
+    },
+    7: {
+        title: 'Supplication When Entering the House',
+        translation:
+            'O Allah, I ask You for the best entry and the best exit. In the name of Allah we enter, in the name of Allah we leave, and upon Allah our Lord we rely.',
+    },
+    8: {
+        title: 'Supplication When Leaving the House',
+        translation:
+            'In the name of Allah, I rely upon Allah, and there is no power nor strength except through Allah.',
+    },
+    9: {
+        title: 'Supplication When Entering the Mosque',
+        translation: 'O Allah, open for me the doors of Your mercy.',
+    },
+    10: {
+        title: 'Supplication When Leaving the Mosque',
+        translation: 'O Allah, I ask You from Your bounty.',
+    },
+    11: {
+        title: 'Travel Supplication',
+        translation:
+            'Glory be to the One who has subjected this to us, though we could not have controlled it, and surely to our Lord we will return.',
+    },
+    12: {
+        title: 'Supplication When Entering a City or New Place',
+        translation:
+            'O Allah, Lord of the seven heavens and what they shade, Lord of the seven earths and what they carry...',
+    },
+    13: {
+        title: 'Supplication Before Sleep (Ayat Kursi)',
+        translation:
+            'Allah, there is no deity except Him, the Ever-Living, the Sustainer. Neither drowsiness nor sleep overtakes Him...',
+    },
+    14: {
+        title: 'Istikharah Supplication',
+        translation:
+            'O Allah, I seek Your guidance by Your knowledge, seek ability by Your power, and ask You from Your immense bounty.',
+    },
+    15: {
+        title: 'Supplication for Forgiveness (Sayyidul Istighfar)',
+        translation:
+            'O Allah, You are my Lord; there is no deity except You. You created me and I am Your servant. I remain upon Your covenant and promise as much as I am able.',
+    },
+    16: {
+        title: 'Supplication for Protection from Laziness',
+        translation:
+            'O Allah, I seek refuge in You from anxiety and sorrow, weakness and laziness, miserliness and cowardice.',
+    },
+    17: {
+        title: 'Supplication for Good in This World and the Hereafter',
+        translation:
+            'Our Lord, grant us good in this world and good in the Hereafter, and protect us from the punishment of the Fire.',
+    },
+    18: {
+        title: 'Supplication for Steadfastness of the Heart',
+        translation: 'O Turner of hearts, keep my heart firm upon Your religion.',
+    },
+    19: {
+        title: 'Supplication When Entering the Bathroom',
+        translation:
+            'O Allah, I seek refuge in You from male and female devils.',
+    },
+    20: {
+        title: 'Supplication When Leaving the Bathroom',
+        translation: 'O Allah, I ask Your forgiveness.',
+    },
+};
+
+const fallbackDoas = (cat) => {
+    const localized = FALLBACK_DOAS.map((item) => ({
+        ...item,
+        title_en: FALLBACK_DOAS_EN[item.id]?.title,
+        translation_en: FALLBACK_DOAS_EN[item.id]?.translation,
+    }));
+    return cat ? localized.filter((d) => d.category === cat) : localized;
+};
+
 const DoaPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const [doas, setDoas] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -67,10 +172,7 @@ const DoaPage = () => {
             .then((data) => {
                 const items = data?.items ?? data ?? [];
                 if (items.length === 0 && pageNum === 0 && !append) {
-                    const fallback = cat
-                        ? FALLBACK_DOAS.filter((d) => d.category === cat)
-                        : FALLBACK_DOAS;
-                    setDoas(fallback);
+                    setDoas(fallbackDoas(cat));
                     setHasMore(false);
                 } else {
                     setDoas((prev) => (append ? [...prev, ...items] : items));
@@ -79,10 +181,7 @@ const DoaPage = () => {
             })
             .catch(() => {
                 if (!append) {
-                    const fallback = cat
-                        ? FALLBACK_DOAS.filter((d) => d.category === cat)
-                        : FALLBACK_DOAS;
-                    setDoas(fallback);
+                    setDoas(fallbackDoas(cat));
                 }
                 setHasMore(false);
             })
@@ -122,8 +221,8 @@ const DoaPage = () => {
             if (!search) return true;
             const query = search.toLowerCase();
             const haystack = [
-                d.title,
-                d.translation,
+                getLocalizedField(d, 'title', lang, ['name']),
+                getLocalizedField(d, 'translation', lang, ['meaning', 'description']),
                 d.transliteration,
                 d.source,
                 d.category,
@@ -223,7 +322,7 @@ const DoaPage = () => {
                                 >
                                     <div>
                                         <span className='text-sm font-semibold text-emerald-900 dark:text-white'>
-                                            {doa.title}
+                                            {getLocalizedField(doa, 'title', lang, ['name'])}
                                         </span>
                                         {doa.category && (
                                             <span className='ml-2 text-xs px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full'>
@@ -250,7 +349,10 @@ const DoaPage = () => {
                                             </p>
                                         )}
                                         <p className='text-sm text-gray-700 dark:text-gray-300'>
-                                            {doa.translation}
+                                            {getLocalizedField(doa, 'translation', lang, [
+                                                'meaning',
+                                                'description',
+                                            ])}
                                         </p>
                                         {doa.source && (
                                             <p className='text-xs text-gray-400 dark:text-gray-500'>

@@ -2,10 +2,12 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { CopyImageToClipboard } from '@/lib/copy';
+import { useLocale } from '@/context/Locale';
 import { useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 
 export const ShareAyah = ({ images, isCopiedCallback, text }) => {
+    const { t } = useLocale();
     const [isCopied, SetIsCopied] = useState(false);
     const [isProcessing, SetIsProcessing] = useState(false);
 
@@ -150,7 +152,7 @@ export const ShareAyah = ({ images, isCopiedCallback, text }) => {
             >
                 <div className='flex items-center justify-between mb-3'>
                     <h3 className='text-sm font-semibold text-emerald-900 dark:text-white'>
-                        Pilih Gambar Latar
+                        {t('share_image.pick_background')}
                     </h3>
                     <button
                         onClick={isCopiedCallback}
@@ -177,12 +179,12 @@ export const ShareAyah = ({ images, isCopiedCallback, text }) => {
                 </div>
                 {isProcessing && (
                     <p className='text-center text-sm text-gray-500 dark:text-gray-400 mt-3'>
-                        Memproses gambar...
+                        {t('share_image.processing')}
                     </p>
                 )}
                 {isCopied && (
                     <p className='text-center text-sm text-emerald-600 dark:text-emerald-400 font-semibold mt-3'>
-                        Gambar tersalin ke clipboard!
+                        {t('share_image.copied_clipboard')}
                     </p>
                 )}
             </div>
@@ -191,9 +193,11 @@ export const ShareAyah = ({ images, isCopiedCallback, text }) => {
 };
 
 export const PopUpIsCopied = () => {
+    const { t } = useLocale();
+
     return (
         <div className='fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg'>
-            Gambar tersalin!
+            {t('share_image.copied')}
         </div>
     );
 };

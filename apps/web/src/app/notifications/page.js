@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonList, SkeletonInline } from '@/components/skeleton/Skeleton';
+import { useLocale } from '@/context/Locale';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notificationApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
@@ -12,20 +13,20 @@ import { BsBell, BsBellSlash } from 'react-icons/bs';
 const NOTIFICATION_TYPES = [
     {
         type: 'daily_quran',
-        label: 'Pengingat Baca Quran',
-        description: 'Ingatkan saya untuk membaca Al-Quran setiap hari',
+        labelKey: 'notifications.daily_quran',
+        descriptionKey: 'notifications.daily_quran_desc',
         icon: '📖',
     },
     {
         type: 'daily_hadith',
-        label: 'Pengingat Baca Hadith',
-        description: 'Ingatkan saya untuk membaca Hadith setiap hari',
+        labelKey: 'notifications.daily_hadith',
+        descriptionKey: 'notifications.daily_hadith_desc',
         icon: '📚',
     },
     {
         type: 'doa',
-        label: 'Pengingat Doa & Dzikir',
-        description: 'Ingatkan saya untuk membaca doa dan dzikir harian',
+        labelKey: 'notifications.doa_dzikir',
+        descriptionKey: 'notifications.doa_dzikir_desc',
         icon: '🤲',
     },
 ];
@@ -54,6 +55,7 @@ const defaultSetting = (type) => ({
 });
 
 const NotificationsPage = () => {
+    const { t } = useLocale();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [settings, setSettings] = useState(
         NOTIFICATION_TYPES.map((t) => defaultSetting(t.type)),
@@ -110,11 +112,11 @@ const NotificationsPage = () => {
         setSaveMsg({ type: '', text: '' });
         try {
             const res = await notificationApi.updateSettings(setting);
-            if (!res.ok) throw new Error('Gagal menyimpan pengaturan');
-            setSaveMsg({ type: 'success', text: 'Pengaturan tersimpan.' });
+            if (!res.ok) throw new Error(t('notifications.save_error'));
+            setSaveMsg({ type: 'success', text: t('notifications.save_success') });
             setTimeout(() => setSaveMsg({ type: '', text: '' }), 3000);
         } catch (err) {
-            setSaveMsg({ type: 'error', text: err.message || 'Terjadi kesalahan' });
+            setSaveMsg({ type: 'error', text: err.message || t('common.network_error') });
         } finally {
             setSaving(null);
         }
@@ -130,12 +132,12 @@ const NotificationsPage = () => {
                 ),
             );
             if (results.some(({ res }) => !res.ok)) {
-                throw new Error('Masih ada pengaturan yang gagal disimpan');
+                throw new Error(t('notifications.bulk_save_partial_error'));
             }
-            setSaveMsg({ type: 'success', text: 'Semua pengaturan notifikasi tersimpan.' });
+            setSaveMsg({ type: 'success', text: t('notifications.bulk_save_success') });
             setTimeout(() => setSaveMsg({ type: '', text: '' }), 3000);
         } catch (err) {
-            setSaveMsg({ type: 'error', text: err.message || 'Gagal menyimpan semua pengaturan' });
+            setSaveMsg({ type: 'error', text: err.message || t('notifications.bulk_save_error') });
         } finally {
             setBulkSaving(false);
         }
@@ -153,10 +155,10 @@ const NotificationsPage = () => {
                     <div className='text-center mb-8'>
                         <BsBell className='text-4xl text-emerald-600 dark:text-emerald-400 mx-auto mb-2' />
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>
-                            Pengaturan Notifikasi
+                            {t('notifications.title')}
                         </h1>
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
-                            Atur jadwal pengingat harian untuk menjaga konsistensi ibadahmu
+                            {t('notifications.subtitle')}
                         </p>
                     </div>
 
@@ -175,7 +177,7 @@ const NotificationsPage = () => {
                     <div className='grid grid-cols-3 gap-3 mb-4'>
                         <div className='rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3'>
                             <p className='text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500'>
-                                Total
+                                {t('notifications.total')}
                             </p>
                             <p className='text-lg font-bold text-emerald-700 dark:text-emerald-400'>
                                 {settings.length}
@@ -183,7 +185,7 @@ const NotificationsPage = () => {
                         </div>
                         <div className='rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3'>
                             <p className='text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500'>
-                                Aktif
+                                {t('common.active')}
                             </p>
                             <p className='text-lg font-bold text-emerald-700 dark:text-emerald-400'>
                                 {activeCount}
@@ -191,7 +193,7 @@ const NotificationsPage = () => {
                         </div>
                         <div className='rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3'>
                             <p className='text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500'>
-                                Nonaktif
+                                {t('common.inactive')}
                             </p>
                             <p className='text-lg font-bold text-emerald-700 dark:text-emerald-400'>
                                 {settings.length - activeCount}
@@ -205,14 +207,14 @@ const NotificationsPage = () => {
                             onClick={() => applyBulkActive(true)}
                             className='px-3 py-2 rounded-lg bg-emerald-700 text-white text-xs font-medium hover:bg-emerald-800 transition-colors'
                         >
-                            Aktifkan semua
+                            {t('notifications.enable_all')}
                         </button>
                         <button
                             type='button'
                             onClick={() => applyBulkActive(false)}
                             className='px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-medium hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors'
                         >
-                            Nonaktifkan semua
+                            {t('notifications.disable_all')}
                         </button>
                         <button
                             type='button'
@@ -220,7 +222,7 @@ const NotificationsPage = () => {
                             disabled={bulkSaving}
                             className='px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-xs font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-50 transition-colors'
                         >
-                            {bulkSaving ? 'Menyimpan...' : 'Simpan semua'}
+                            {bulkSaving ? t('common.saving') : t('notifications.save_all')}
                         </button>
                     </div>
 
@@ -242,10 +244,10 @@ const NotificationsPage = () => {
                                                 <span className='text-2xl mt-0.5'>{notif.icon}</span>
                                                 <div>
                                                     <p className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                                        {notif.label}
+                                                        {t(notif.labelKey)}
                                                     </p>
                                                     <p className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>
-                                                        {notif.description}
+                                                        {t(notif.descriptionKey)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -260,7 +262,7 @@ const NotificationsPage = () => {
                                         {setting.is_active && (
                                             <div className='mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center gap-3'>
                                                 <label className='text-xs font-medium text-gray-600 dark:text-gray-400 shrink-0'>
-                                                    Waktu pengingat
+                                                    {t('notifications.reminder_time')}
                                                 </label>
                                                 <input
                                                     type='time'
@@ -275,7 +277,7 @@ const NotificationsPage = () => {
                                                     disabled={saving === notif.type}
                                                     className='px-3 py-1.5 rounded-lg bg-emerald-700 text-white text-xs font-medium hover:bg-emerald-800 disabled:opacity-50 transition-colors shrink-0'
                                                 >
-                                                    {saving === notif.type ? 'Menyimpan...' : 'Simpan'}
+                                                    {saving === notif.type ? t('common.saving') : t('common.save')}
                                                 </button>
                                             </div>
                                         )}
@@ -283,7 +285,7 @@ const NotificationsPage = () => {
                                         {!setting.is_active && (
                                             <div className='mt-3 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500'>
                                                 <BsBellSlash className='shrink-0' />
-                                                Pengingat nonaktif
+                                                {t('notifications.inactive_reminder')}
                                             </div>
                                         )}
                                     </div>
@@ -293,11 +295,9 @@ const NotificationsPage = () => {
                     )}
 
                     <div className='mt-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs'>
-                        <p className='font-medium mb-1'>Catatan</p>
+                        <p className='font-medium mb-1'>{t('common.notes')}</p>
                         <p>
-                            Pengiriman via email atau push notification masih menunggu integrasi
-                            backend. Pastikan kamu mengizinkan notifikasi dari browser untuk
-                            menerima pengingat.
+                            {t('notifications.note')}
                         </p>
                     </div>
                 </div>

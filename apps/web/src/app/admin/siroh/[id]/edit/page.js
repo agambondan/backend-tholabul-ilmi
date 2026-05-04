@@ -3,11 +3,13 @@
 export const dynamic = 'force-dynamic';
 
 import { Spinner3 } from '@/components/spinner/Spinner';
+import { useLocale } from '@/context/Locale';
 import { adminSirohApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import SirahForm from '../../_SirohForm';
 
 const EditSirahPage = ({ params }) => {
+    const { t } = useLocale();
     const [item, setItem] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -31,7 +33,7 @@ const EditSirahPage = ({ params }) => {
     if (error) {
         return (
             <div className='p-8'>
-                <p className='text-red-500 dark:text-red-400'>Content not found.</p>
+                <p className='text-red-500 dark:text-red-400'>{t('admin.sirah.content_not_found')}</p>
             </div>
         );
     }
@@ -39,7 +41,7 @@ const EditSirahPage = ({ params }) => {
     return (
         <div className='p-8'>
             <h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-6'>
-                Edit Sirah Content
+                {t('admin.sirah.edit_content')}
             </h1>
             <SirahForm initialData={item} contentId={params.id} />
         </div>

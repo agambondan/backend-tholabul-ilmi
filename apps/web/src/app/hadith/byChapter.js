@@ -6,10 +6,13 @@ import classNames from 'classnames';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from '@/context/Locale';
+import { getLocalizedTranslation } from '@/lib/translation';
 
 const normalizeItems = (data) => data?.items ?? data ?? [];
 
 const ByChapter = () => {
+    const { t, lang } = useLocale();
     const router = useRouter();
     const [bookList, setBookList] = useState([]);
     const [selectedBookSlug, setSelectedBookSlug] = useState('');
@@ -112,7 +115,7 @@ const ByChapter = () => {
                 <div className='flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
                     <div className='flex-1'>
                         <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-                            Pilih Kitab
+                            {t('hadith.select_book')}
                         </label>
                         <select
                             value={selectedBookSlug}
@@ -121,7 +124,7 @@ const ByChapter = () => {
                         >
                             {bookList.map((book) => (
                                 <option key={book.slug} value={book.slug}>
-                                    {book.translation?.idn ?? book.slug}
+                                    {getLocalizedTranslation(book.translation, lang) || book.slug}
                                 </option>
                             ))}
                         </select>
@@ -132,7 +135,7 @@ const ByChapter = () => {
                             href={`/hadith/${selectedBookSlug}`}
                             className='inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-700 text-white text-sm font-medium hover:bg-emerald-600 transition-colors'
                         >
-                            Buka Reader
+                            {t('hadith.open_reader')}
                         </Link>
                     )}
                 </div>
@@ -144,10 +147,10 @@ const ByChapter = () => {
                 <div className='flex flex-col items-center justify-center min-h-[40vh] text-center px-4'>
                     <p className='text-4xl mb-3'>⚠️</p>
                     <h2 className='text-lg font-bold text-emerald-900 dark:text-white mb-2'>
-                        Gagal Memuat Bab
+                        {t('hadith.load_error_title')}
                     </h2>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        Server API tidak dapat dijangkau. Pastikan server backend berjalan.
+                        {t('hadith.load_error_desc')}
                     </p>
                 </div>
             ) : (
@@ -155,8 +158,7 @@ const ByChapter = () => {
                     <div className='flex flex-wrap gap-2'>
                         {themes.map((theme) => {
                             const themeLabel =
-                                theme?.theme?.translation?.en ??
-                                theme?.theme?.translation?.idn ??
+                                getLocalizedTranslation(theme?.theme?.translation, lang) ||
                                 `Theme ${theme?.theme?.id ?? ''}`;
                             return (
                                 <button
@@ -183,19 +185,18 @@ const ByChapter = () => {
                     ) : chapters.length === 0 ? (
                         <div className='flex flex-col items-center justify-center min-h-[36vh] text-center px-4'>
                             <h2 className='text-xl font-bold text-emerald-900 dark:text-white mb-2'>
-                                Bab belum tersedia
+                                {t('hadith.chapter_empty_title')}
                             </h2>
                             <p className='text-gray-500 dark:text-gray-400 max-w-sm text-sm leading-relaxed'>
-                                Pilih tema lain atau tunggu backend menyediakan daftar bab untuk tema ini.
+                                {t('hadith.chapter_empty_hint')}
                             </p>
                         </div>
                     ) : (
                         <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
                             {chapters.map((chapter) => {
                                 const chapterLabel =
-                                    chapter?.translation?.en ??
-                                    chapter?.translation?.idn ??
-                                    chapter?.name ??
+                                    getLocalizedTranslation(chapter?.translation, lang) ||
+                                    chapter?.name ||
                                     `Bab ${chapter?.id ?? ''}`;
                                 const hadithCount =
                                     chapter?.total_hadith ??
@@ -230,9 +231,9 @@ const ByChapter = () => {
                                             )}
                                         </div>
 
-                                        {chapter?.translation?.idn && (
+                                        {getLocalizedTranslation(chapter?.translation, lang) && (
                                             <p className='mt-2 text-sm text-gray-500 dark:text-gray-400 line-clamp-2'>
-                                                {chapter.translation.idn}
+                                                {getLocalizedTranslation(chapter.translation, lang)}
                                             </p>
                                         )}
 
