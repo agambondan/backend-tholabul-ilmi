@@ -3,7 +3,7 @@
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import SourceBadges from '@/components/SourceBadges';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BsChevronDown } from 'react-icons/bs';
 import { MdOutlineMenuBook } from 'react-icons/md';
 
@@ -14,96 +14,11 @@ const PRAYERS = [
         arabic: 'صَلَاةُ الْفَجْرِ',
         time: 'Fajar shadiq → terbit matahari',
         color: 'indigo',
-        steps: [
-            {
-                step: 'Niat',
-                arabic:
-                    'أُصَلِّي فَرْضَ الصُّبْحِ رَكْعَتَيْنِ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
-                latin: "Ushalli fardhas-shubhi rak'ataini mustaqbilal-qiblati adaa'an lillahi ta'ala",
-                terjemah:
-                    "Aku niat sholat fardhu Subuh 2 rakaat menghadap kiblat karena Allah Ta'ala",
-            },
-            {
-                step: 'Takbiratul Ihram',
-                arabic: 'اللهُ أَكْبَرُ',
-                latin: 'Allahu Akbar',
-                terjemah: 'Allah Maha Besar',
-                note: 'Angkat kedua tangan sejajar telinga/bahu',
-            },
-            {
-                step: 'Doa Iftitah',
-                arabic:
-                    'اللَّهُمَّ بَاعِدْ بَيْنِي وَبَيْنَ خَطَايَايَ كَمَا بَاعَدْتَ بَيْنَ الْمَشْرِقِ وَالْمَغْرِبِ، اللَّهُمَّ نَقِّنِي مِنْ خَطَايَايَ كَمَا يُنَقَّى الثَّوْبُ الأَبْيَضُ مِنَ الدَّنَسِ، اللَّهُمَّ اغْسِلْنِي مِنْ خَطَايَايَ بِالثَّلْجِ وَالْمَاءِ وَالْبَرَدِ',
-                latin: "Allahumma baa'id baini wa baina khataayaaya kamaa baa'adta bainal-masyriqi wal-maghrib...",
-                terjemah:
-                    'Ya Allah, jauhkanlah antara aku dan kesalahanku sebagaimana Engkau menjauhkan antara timur dan barat...',
-                note: 'Dibaca setelah takbiratul ihram (sunnah)',
-            },
-            {
-                step: 'Al-Fatihah',
-                arabic:
-                    'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ۝ ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ ۝ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ۝ مَٰلِكِ يَوْمِ ٱلدِّينِ ۝ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ ۝ ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ ۝ صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ',
-                latin: 'Bismillahir-rahmanir-rahim. Alhamdu lillahi rabbil-alamin...',
-                terjemah:
-                    'Dengan nama Allah Yang Maha Pengasih lagi Maha Penyayang. Segala puji bagi Allah, Tuhan semesta alam...',
-                note: "Wajib di setiap rakaat. Ucapkan 'Aamiin' setelah selesai",
-            },
-            {
-                step: 'Baca Surat',
-                note: 'Baca surat pendek setelah Al-Fatihah pada 2 rakaat pertama (sunnah muakkad)',
-            },
-            {
-                step: "Ruku'",
-                arabic: 'سُبْحَانَ رَبِّيَ الْعَظِيمِ',
-                latin: "Subhaana rabbiyal-'azhim",
-                terjemah: 'Maha Suci Tuhanku Yang Maha Agung',
-                note: 'Baca 3 kali. Bungkukkan badan, tangan memegang lutut, punggung rata',
-            },
-            {
-                step: "I'tidal",
-                arabic: 'سَمِعَ اللهُ لِمَنْ حَمِدَهُ ۝ رَبَّنَا وَلَكَ الْحَمْدُ',
-                latin: "Sami'allahu liman hamidah. Rabbana wa lakal-hamd",
-                terjemah:
-                    'Allah mendengar orang yang memuji-Nya. Wahai Tuhan kami, segala pujian untuk-Mu',
-                note: "Berdiri tegak kembali setelah ruku'",
-            },
-            {
-                step: 'Sujud',
-                arabic: 'سُبْحَانَ رَبِّيَ الْأَعْلَى',
-                latin: "Subhaana rabbiyal-a'laa",
-                terjemah: 'Maha Suci Tuhanku Yang Maha Tinggi',
-                note: 'Baca 3 kali. 7 anggota sujud: dahi+hidung, 2 telapak tangan, 2 lutut, 2 ujung kaki',
-            },
-            {
-                step: 'Duduk di Antara 2 Sujud',
-                arabic: 'رَبِّ اغْفِرْ لِي، رَبِّ اغْفِرْ لِي',
-                latin: 'Rabbighfir lii, rabbighfir lii',
-                terjemah: 'Tuhanku ampunilah aku, Tuhanku ampunilah aku',
-            },
-            {
-                step: 'Tasyahhud Akhir',
-                arabic:
-                    'التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ، السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ، السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللهِ الصَّالِحِينَ، أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',
-                latin: "At-tahiyyatu lillahi was-shalawatu wat-thayyibat, as-salamu 'alaika ayyuhan-nabiyyu...",
-                terjemah: 'Segala kehormatan, sholawat, dan kebaikan milik Allah...',
-                note: 'Duduk tasyahhud akhir pada rakaat terakhir',
-            },
-            {
-                step: 'Shalawat Ibrahim',
-                arabic:
-                    'اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّدٍ كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ',
-                latin: "Allahumma shalli 'ala Muhammad wa 'ala ali Muhammad...",
-                terjemah:
-                    'Ya Allah, berikanlah sholawat kepada Muhammad dan keluarga Muhammad sebagaimana Engkau bersholawat kepada Ibrahim...',
-            },
-            {
-                step: 'Salam',
-                arabic: 'السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ',
-                latin: "As-salamu 'alaikum wa rahmatullah",
-                terjemah: 'Semoga keselamatan dan rahmat Allah atas kalian',
-                note: 'Palingkan kepala ke kanan lalu ke kiri',
-            },
-        ],
+        niat: {
+            arabic: 'أُصَلِّي فَرْضَ الصُّبْحِ رَكْعَتَيْنِ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
+            latin: "Ushalli fardhas-shubhi rak'ataini mustaqbilal-qiblati adaa'an lillahi ta'ala",
+            terjemah: "Aku niat sholat fardhu Subuh 2 rakaat menghadap kiblat karena Allah Ta'ala",
+        },
     },
     {
         name: 'Sholat Dzuhur',
@@ -111,28 +26,11 @@ const PRAYERS = [
         arabic: 'صَلَاةُ الظُّهْرِ',
         time: 'Matahari tergelincir → bayangan sama panjang benda',
         color: 'yellow',
-        steps: [
-            {
-                step: 'Niat',
-                arabic:
-                    'أُصَلِّي فَرْضَ الظُّهْرِ أَرْبَعَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
-                latin: "Ushalli fardhadh-dhuhri arba'a raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
-                terjemah:
-                    "Aku niat sholat fardhu Dzuhur 4 rakaat menghadap kiblat karena Allah Ta'ala",
-            },
-            {
-                step: 'Gerakan & Bacaan',
-                note: 'Sama dengan Subuh. Perbedaan: 4 rakaat, rakaat 3 & 4 hanya baca Al-Fatihah (tanpa surat tambahan). Ada tasyahhud awal (rakaat ke-2) dan tasyahhud akhir (rakaat ke-4).',
-            },
-            {
-                step: 'Tasyahhud Awal (Rakaat ke-2)',
-                arabic:
-                    'التَّحِيَّاتُ لِلَّهِ وَالصَّلَوَاتُ وَالطَّيِّبَاتُ، السَّلَامُ عَلَيْكَ أَيُّهَا النَّبِيُّ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ، السَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللهِ الصَّالِحِينَ، أَشْهَدُ أَنْ لَا إِلَهَ إِلَّا اللهُ وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',
-                latin: "At-tahiyyatu lillahi was-shalawatu wat-thayyibat...",
-                terjemah: 'Segala kehormatan, sholawat, dan kebaikan milik Allah...',
-                note: 'Setelah tasyahhud awal, berdiri lanjut ke rakaat ke-3',
-            },
-        ],
+        niat: {
+            arabic: 'أُصَلِّي فَرْضَ الظُّهْرِ أَرْبَعَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
+            latin: "Ushalli fardhadh-dhuhri arba'a raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
+            terjemah: "Aku niat sholat fardhu Dzuhur 4 rakaat menghadap kiblat karena Allah Ta'ala",
+        },
     },
     {
         name: 'Sholat Ashar',
@@ -140,20 +38,11 @@ const PRAYERS = [
         arabic: 'صَلَاةُ الْعَصْرِ',
         time: 'Bayangan lebih panjang → terbenam matahari',
         color: 'orange',
-        steps: [
-            {
-                step: 'Niat',
-                arabic:
-                    'أُصَلِّي فَرْضَ الْعَصْرِ أَرْبَعَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
-                latin: "Ushalli fardhal-'ashri arba'a raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
-                terjemah:
-                    "Aku niat sholat fardhu Ashar 4 rakaat menghadap kiblat karena Allah Ta'ala",
-            },
-            {
-                step: 'Gerakan & Bacaan',
-                note: 'Sama persis dengan Sholat Dzuhur (4 rakaat). Bedanya hanya niat dan waktu pelaksanaan.',
-            },
-        ],
+        niat: {
+            arabic: 'أُصَلِّي فَرْضَ الْعَصْرِ أَرْبَعَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
+            latin: "Ushalli fardhal-'ashri arba'a raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
+            terjemah: "Aku niat sholat fardhu Ashar 4 rakaat menghadap kiblat karena Allah Ta'ala",
+        },
     },
     {
         name: 'Sholat Maghrib',
@@ -161,20 +50,11 @@ const PRAYERS = [
         arabic: 'صَلَاةُ الْمَغْرِبِ',
         time: 'Terbenam matahari → hilang mega merah',
         color: 'red',
-        steps: [
-            {
-                step: 'Niat',
-                arabic:
-                    'أُصَلِّي فَرْضَ الْمَغْرِبِ ثَلَاثَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
-                latin: "Ushalli fardhal-maghribi tsalaatsa raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
-                terjemah:
-                    "Aku niat sholat fardhu Maghrib 3 rakaat menghadap kiblat karena Allah Ta'ala",
-            },
-            {
-                step: 'Gerakan & Bacaan',
-                note: '3 rakaat. Rakaat 1 & 2 baca surat setelah Al-Fatihah. Tasyahhud awal di rakaat ke-2, tasyahhud akhir di rakaat ke-3.',
-            },
-        ],
+        niat: {
+            arabic: 'أُصَلِّي فَرْضَ الْمَغْرِبِ ثَلَاثَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
+            latin: "Ushalli fardhal-maghribi tsalaatsa raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
+            terjemah: "Aku niat sholat fardhu Maghrib 3 rakaat menghadap kiblat karena Allah Ta'ala",
+        },
     },
     {
         name: 'Sholat Isya',
@@ -182,20 +62,11 @@ const PRAYERS = [
         arabic: 'صَلَاةُ الْعِشَاءِ',
         time: 'Hilang mega merah → sebelum fajar',
         color: 'purple',
-        steps: [
-            {
-                step: 'Niat',
-                arabic:
-                    'أُصَلِّي فَرْضَ الْعِشَاءِ أَرْبَعَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
-                latin: "Ushalli fardhal-'isyaa'i arba'a raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
-                terjemah:
-                    "Aku niat sholat fardhu Isya 4 rakaat menghadap kiblat karena Allah Ta'ala",
-            },
-            {
-                step: 'Gerakan & Bacaan',
-                note: 'Sama persis dengan Dzuhur dan Ashar (4 rakaat). Bedanya hanya niat dan waktu.',
-            },
-        ],
+        niat: {
+            arabic: 'أُصَلِّي فَرْضَ الْعِشَاءِ أَرْبَعَ رَكَعَاتٍ مُسْتَقْبِلَ الْقِبْلَةِ أَدَاءً لِلهِ تَعَالَى',
+            latin: "Ushalli fardhal-'isyaa'i arba'a raka'aatin mustaqbilal-qiblati adaa'an lillahi ta'ala",
+            terjemah: "Aku niat sholat fardhu Isya 4 rakaat menghadap kiblat karena Allah Ta'ala",
+        },
     },
 ];
 
@@ -207,9 +78,33 @@ const COLOR_BADGE = {
     purple: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
 };
 
+const normalizeStep = (s) => ({
+    step: s.title ?? '',
+    arabic: s.arabic ?? '',
+    latin: s.transliteration ?? '',
+    terjemah: s.translation ?? '',
+    note: s.notes ?? s.description ?? '',
+    source: s.source ?? '',
+});
+
 export default function PanduanSholatPage() {
     const [openPrayer, setOpenPrayer] = useState(0);
     const [openStep, setOpenStep] = useState(null);
+    const [apiSteps, setApiSteps] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/panduan-sholat`)
+            .then((r) => r.json())
+            .then((data) => {
+                const items = (data?.items ?? data ?? [])
+                    .filter((s) => s.step !== 1)
+                    .map(normalizeStep);
+                setApiSteps(items);
+            })
+            .catch(() => {})
+            .finally(() => setIsLoading(false));
+    }, []);
 
     return (
         <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
@@ -248,9 +143,19 @@ export default function PanduanSholatPage() {
                     ))}
                 </div>
 
-                {/* Prayer info card */}
+                {/* Prayer info card + steps */}
                 {(() => {
                     const p = PRAYERS[openPrayer];
+                    const niatStep = {
+                        step: 'Niat',
+                        arabic: p.niat.arabic,
+                        latin: p.niat.latin,
+                        terjemah: p.niat.terjemah,
+                        note: '',
+                        source: '',
+                    };
+                    const steps = [niatStep, ...apiSteps];
+
                     return (
                         <div className='space-y-3'>
                             <div className='bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-slate-700 mb-4'>
@@ -277,61 +182,73 @@ export default function PanduanSholatPage() {
                                 </div>
                             </div>
 
-                            {/* Steps */}
-                            {p.steps.map((s, si) => (
-                                <div
-                                    key={si}
-                                    className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden shadow-sm'
-                                >
-                                    <button
-                                        onClick={() =>
-                                            setOpenStep(openStep === si ? null : si)
-                                        }
-                                        className='w-full flex items-center justify-between px-5 py-4 text-left'
-                                    >
-                                        <div className='flex items-center gap-3'>
-                                            <span className='w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold flex items-center justify-center flex-shrink-0'>
-                                                {si + 1}
-                                            </span>
-                                            <span className='font-semibold text-gray-800 dark:text-gray-100 text-sm'>
-                                                {s.step}
-                                            </span>
+                            {isLoading ? (
+                                <div className='space-y-2'>
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 px-5 py-4 animate-pulse'
+                                        >
+                                            <div className='h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/3' />
                                         </div>
-                                        <BsChevronDown
-                                            className={`text-gray-400 transition-transform flex-shrink-0 ${openStep === si ? 'rotate-180' : ''}`}
-                                        />
-                                    </button>
-                                    {openStep === si && (
-                                        <div className='px-5 pb-5 space-y-3 border-t border-gray-50 dark:border-slate-700'>
-                                            {s.arabic && (
-                                                <p
-                                                    className='text-right text-xl leading-loose text-gray-900 dark:text-white pt-3'
-                                                    style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}
-                                                >
-                                                    {s.arabic}
-                                                </p>
-                                            )}
-                                            {s.latin && (
-                                                <p className='text-sm text-emerald-700 dark:text-emerald-400 italic'>
-                                                    {s.latin}
-                                                </p>
-                                            )}
-                                            {s.terjemah && (
-                                                <p className='text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-700/50 rounded-xl p-3'>
-                                                    &ldquo;{s.terjemah}&rdquo;
-                                                </p>
-                                            )}
-                                            {s.note && (
-                                                <p className='text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 flex items-start gap-2'>
-                                                    <span className='text-amber-500 flex-shrink-0'>ℹ</span>
-                                                    {s.note}
-                                                </p>
-                                            )}
-                                            <SourceBadges source={s.source} />
-                                        </div>
-                                    )}
+                                    ))}
                                 </div>
-                            ))}
+                            ) : (
+                                steps.map((s, si) => (
+                                    <div
+                                        key={si}
+                                        className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden shadow-sm'
+                                    >
+                                        <button
+                                            onClick={() =>
+                                                setOpenStep(openStep === si ? null : si)
+                                            }
+                                            className='w-full flex items-center justify-between px-5 py-4 text-left'
+                                        >
+                                            <div className='flex items-center gap-3'>
+                                                <span className='w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold flex items-center justify-center flex-shrink-0'>
+                                                    {si + 1}
+                                                </span>
+                                                <span className='font-semibold text-gray-800 dark:text-gray-100 text-sm'>
+                                                    {s.step}
+                                                </span>
+                                            </div>
+                                            <BsChevronDown
+                                                className={`text-gray-400 transition-transform flex-shrink-0 ${openStep === si ? 'rotate-180' : ''}`}
+                                            />
+                                        </button>
+                                        {openStep === si && (
+                                            <div className='px-5 pb-5 space-y-3 border-t border-gray-50 dark:border-slate-700'>
+                                                {s.arabic && (
+                                                    <p
+                                                        className='text-right text-xl leading-loose text-gray-900 dark:text-white pt-3'
+                                                        style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}
+                                                    >
+                                                        {s.arabic}
+                                                    </p>
+                                                )}
+                                                {s.latin && (
+                                                    <p className='text-sm text-emerald-700 dark:text-emerald-400 italic'>
+                                                        {s.latin}
+                                                    </p>
+                                                )}
+                                                {s.terjemah && (
+                                                    <p className='text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-slate-700/50 rounded-xl p-3'>
+                                                        &ldquo;{s.terjemah}&rdquo;
+                                                    </p>
+                                                )}
+                                                {s.note && (
+                                                    <p className='text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 flex items-start gap-2'>
+                                                        <span className='text-amber-500 flex-shrink-0'>ℹ</span>
+                                                        {s.note}
+                                                    </p>
+                                                )}
+                                                <SourceBadges source={s.source} />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
                         </div>
                     );
                 })()}
