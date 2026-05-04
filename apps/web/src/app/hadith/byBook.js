@@ -2,7 +2,6 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
-import { listKitabHadith } from '@/lib/const';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -45,8 +44,7 @@ const ByBook = () => {
     return (
         <div className='container mx-auto grid xl:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4 px-4'>
             {(books?.items ?? []).map((book) => {
-                const kitab = listKitabHadith.find((k) => k.slug === book.slug);
-                if (!kitab) return null;
+                const label = book?.translation?.idn ?? book?.translation?.en ?? book.slug;
                 return (
                     <div
                         key={book.id}
@@ -54,20 +52,20 @@ const ByBook = () => {
                     >
                         <img
                             className='h-auto w-full max-w-[120px] object-cover'
-                            src={kitab.src}
-                            alt={kitab.alt}
+                            src={`/assets/images/kitab/hadith/${book.slug}.png`}
+                            alt={label}
                         />
                         <div className='flex flex-col justify-between p-4 flex-1'>
                             <div>
                                 <h5 className='text-base font-bold text-emerald-900 dark:text-white mb-1'>
-                                    {kitab.label}
+                                    {label}
                                 </h5>
                                 <p className='text-sm text-gray-500 dark:text-gray-400 mb-2'>
                                     {book.count} Hadith
                                 </p>
                             </div>
                             <Link
-                                href={kitab.href}
+                                href={`/hadith/${book.slug}`}
                                 className='bg-emerald-700 hover:bg-emerald-600 text-white text-sm text-center py-1.5 px-3 rounded-lg transition-colors'
                             >
                                 Baca Hadith

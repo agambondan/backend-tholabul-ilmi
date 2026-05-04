@@ -6,7 +6,6 @@ import Select, { SelectOptionWithLabel } from '@/components/select/Select';
 import { SkeletonReader } from '@/components/skeleton/Skeleton';
 import AutoScrollButton from '@/components/popup/AutoScrollButton';
 import SettingButton from '@/components/popup/SettingButton';
-import { listKitabHadith } from '@/lib/const';
 import { progressApi, streakApi } from '@/lib/api';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useRouter } from 'next/navigation';
@@ -15,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 	const { isWide } = useLayoutMode();
 	const router = useRouter();
+	const [bookList, setBookList] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isError, setIsError] = useState(false);
 	const [themes, setThemes] = useState({});
@@ -66,6 +66,13 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 		);
 		return await res.json();
 	};
+
+	useEffect(() => {
+		fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/books?size=20`)
+			.then((res) => res.json())
+			.then((data) => setBookList(data?.items ?? []))
+			.catch(() => {});
+	}, []);
 
 	useEffect(() => {
 		fetchThemes()
@@ -161,7 +168,7 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 				</p>
 			</div>
 		);
-	const book = listKitabHadith.find((x) => x.slug === params.slug);
+	const book = bookList.find((x) => x.slug === params.slug);
 	return (
 		<div className={isWide ? 'w-full' : 'max-w-4xl mx-auto'}>
 			{book && (
@@ -173,10 +180,10 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 						الْحَدِيث
 					</p>
 					<h1 className='text-xl font-bold text-emerald-900 dark:text-white mb-0.5'>
-						{book.label}
+						{book?.translation?.idn ?? params.slug}
 					</h1>
 					<p className='text-sm text-gray-500 dark:text-gray-400'>
-						Kumpulan hadith dari kitab {book.label}
+						Kumpulan hadith dari kitab {book?.translation?.idn ?? params.slug}
 					</p>
 				</div>
 			)}
@@ -190,10 +197,10 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 					}}
 					defaultValue={params.slug}
 				>
-					{listKitabHadith.map((item) => {
+					{bookList.map((item) => {
 						return (
 							<Select.Option key={item.slug} value={item.slug}>
-								{item.label}
+								{item.translation?.idn ?? item.slug}
 							</Select.Option>
 						);
 					})}

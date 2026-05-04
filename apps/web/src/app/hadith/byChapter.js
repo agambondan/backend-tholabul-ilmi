@@ -2,7 +2,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
-import { listKitabHadith } from '@/lib/const';
 import classNames from 'classnames';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -12,9 +11,8 @@ const normalizeItems = (data) => data?.items ?? data ?? [];
 
 const ByChapter = () => {
     const router = useRouter();
-    const [selectedBookSlug, setSelectedBookSlug] = useState(
-        listKitabHadith[0]?.slug ?? ''
-    );
+    const [bookList, setBookList] = useState([]);
+    const [selectedBookSlug, setSelectedBookSlug] = useState('');
     const [selectedThemeId, setSelectedThemeId] = useState('');
     const [themes, setThemes] = useState([]);
     const [chapters, setChapters] = useState([]);
@@ -23,9 +21,20 @@ const ByChapter = () => {
     const [isError, setIsError] = useState(false);
 
     const currentBook = useMemo(
-        () => listKitabHadith.find((book) => book.slug === selectedBookSlug),
-        [selectedBookSlug]
+        () => bookList.find((book) => book.slug === selectedBookSlug),
+        [bookList, selectedBookSlug]
     );
+
+    useEffect(() => {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/books?size=20`)
+            .then((res) => res.json())
+            .then((data) => {
+                const items = data?.items ?? [];
+                setBookList(items);
+                if (items.length > 0) setSelectedBookSlug(items[0].slug);
+            })
+            .catch(() => setIsError(true));
+    }, []);
 
     const fetchThemes = async (bookSlug) => {
         const res = await fetch(
@@ -110,17 +119,17 @@ const ByChapter = () => {
                             onChange={(e) => setSelectedBookSlug(e.target.value)}
                             className='w-full max-w-md px-3 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                         >
-                            {listKitabHadith.map((book) => (
+                            {bookList.map((book) => (
                                 <option key={book.slug} value={book.slug}>
-                                    {book.label}
+                                    {book.translation?.idn ?? book.slug}
                                 </option>
                             ))}
                         </select>
                     </div>
 
-                    {currentBook && (
+                    {selectedBookSlug && (
                         <Link
-                            href={currentBook.href}
+                            href={`/hadith/${selectedBookSlug}`}
                             className='inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-700 text-white text-sm font-medium hover:bg-emerald-600 transition-colors'
                         >
                             Buka Reader

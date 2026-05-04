@@ -2,7 +2,6 @@ import HadithPage from '@/app/hadith/[slug]/HadithPage';
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
-import { listKitabHadith } from '@/lib/const';
 
 const Page = async ({ params }) => {
 	const slugLowercase = (params.slug ?? '').replaceAll('-', ' ').toLowerCase();
@@ -12,7 +11,7 @@ const Page = async ({ params }) => {
 
 	try {
 		const res = await fetch(
-			`${process.env.NEXT_PUBLIC_API_URL}/api/v1/hadiths/theme/slug/${slugLowercase}?size=1`
+			`${(process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL)}/api/v1/hadiths/theme/slug/${slugLowercase}?size=1`
 		);
 		const tempHadiths = await res.json();
 		const total = tempHadiths?.total ?? 0;
@@ -20,7 +19,7 @@ const Page = async ({ params }) => {
 		let page = 0;
 		while (hadiths.length < total) {
 			const pageRes = await fetch(
-				`${process.env.NEXT_PUBLIC_API_URL}/api/v1/hadiths/theme/slug/${slugLowercase}?size=1000&page=${page}`
+				`${(process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL)}/api/v1/hadiths/theme/slug/${slugLowercase}?size=1000&page=${page}`
 			);
 			const data = await pageRes.json();
 			hadiths = hadiths.concat(data?.items ?? []);
@@ -48,12 +47,9 @@ const Page = async ({ params }) => {
 				) : (
 				<div className='max-w-4xl mx-auto dark:text-white'>
 					<div className='flex flex-col pt-4'>
-						{hadiths.map((hadith) => {
-							const book = listKitabHadith.find((x) => x.id === hadith.book_id);
-							return (
-								<HadithPage params={params} book={book} hadith={hadith} key={hadith.id} />
-							);
-						})}
+						{hadiths.map((hadith) => (
+							<HadithPage params={params} book={hadith.book} hadith={hadith} key={hadith.id} />
+						))}
 					</div>
 				</div>
 				)}

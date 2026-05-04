@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL;
 
 const getToken = () =>
     typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
@@ -450,3 +450,27 @@ export const adminFiqhApi = {
     update: (id, data) => authFetch(`/api/v1/fiqh/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => authFetch(`/api/v1/fiqh/${id}`, { method: 'DELETE' }),
 };
+
+export const booksApi = {
+    list: () => fetch(`${API_URL}/api/v1/books?size=20`),
+};
+
+export const getBooks = async () => {
+    try {
+        const res = await fetch(`${API_URL}/api/v1/books?size=20`, {
+            next: { revalidate: 3600 },
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data?.items ?? [];
+    } catch {
+        return [];
+    }
+};
+
+export const bookLabel = (book) =>
+    book?.translation?.idn ?? book?.translation?.en ?? book?.slug ?? '';
+
+export const bookImageSrc = (slug) => `/assets/images/kitab/hadith/${slug}.png`;
+
+export const bookHref = (slug) => `/hadith/${slug}`;

@@ -1,20 +1,23 @@
-import { listKitabHadith } from '@/lib/const';
+import { getBooks } from '@/lib/api';
 
 const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tholabul-ilmi.com';
 
 export async function generateStaticParams() {
-    return listKitabHadith.map((k) => ({ slug: k.slug }));
+    const books = await getBooks();
+    return books.map((k) => ({ slug: k.slug }));
 }
 
 export async function generateMetadata({ params }) {
-    const book = listKitabHadith.find((k) => k.slug === params.slug);
-    const title = book
-        ? `${book.label} — Hadith`
+    const books = await getBooks();
+    const book = books.find((k) => k.slug === params.slug);
+    const bookName = book?.translation?.idn ?? book?.translation?.en ?? null;
+    const title = bookName
+        ? `${bookName} — Hadith`
         : `Hadith — Thullaabul 'Ilmi`;
-    const description = book
-        ? `Baca koleksi lengkap hadith dari kitab ${book.label}. Telusuri berdasarkan tema dan bab.`
-        : `Baca dan pelajari hadith dari berbagai kitab utama: Bukhari, Muslim, Abu Daud, dan lainnya.`;
+    const description = bookName
+        ? `Read the complete hadith collection from ${bookName}. Browse by theme and chapter.`
+        : `Read and study hadith from major collections including Bukhari, Muslim, Abu Dawud, and others.`;
     const canonicalUrl = `${SITE_URL}/hadith/${params.slug}`;
 
     return {

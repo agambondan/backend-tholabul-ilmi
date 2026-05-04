@@ -1,8 +1,6 @@
-import { listKitabHadith } from '@/lib/const';
-
 const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tholabul-ilmi.com';
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL;
 
 const url = (path, priority = 0.7, changeFrequency = 'weekly') => ({
     url: `${SITE_URL}${path}`,
@@ -56,7 +54,16 @@ async function getSurahRoutes() {
 }
 
 async function getHadithRoutes() {
-    return listKitabHadith.map((k) => url(`/hadith/${k.slug}`, 0.8, 'weekly'));
+    try {
+        const res = await fetch(`${API_URL}/api/v1/books?size=20`, {
+            next: { revalidate: 86400 },
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data?.items ?? []).map((b) => url(`/hadith/${b.slug}`, 0.8, 'weekly'));
+    } catch {
+        return [];
+    }
 }
 
 async function getSirohRoutes() {

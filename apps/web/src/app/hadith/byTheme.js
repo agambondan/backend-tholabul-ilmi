@@ -1,7 +1,6 @@
 'use client';
 
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
-import { listKitabHadith } from '@/lib/const';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -55,10 +54,7 @@ const ByTheme = () => {
                 const themeBooksLabel =
                     themeBooks.length > 0
                         ? themeBooks
-                              .map((book) => {
-                                  const kitab = listKitabHadith.find((k) => k.id === book.id);
-                                  return kitab?.label ?? '';
-                              })
+                              .map((book) => book?.translation?.idn ?? book?.translation?.en ?? '')
                               .filter(Boolean)
                               .join(', ')
                         : '-';

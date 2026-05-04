@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
-import { listKitabHadith } from '@/lib/const';
+import { useLocale } from '@/context/Locale';
 import classNames from 'classnames';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -12,9 +12,9 @@ const PAGE_SIZE = 20;
 const normalizeItems = (data) => data?.items ?? data ?? [];
 
 const ByHadith = () => {
-    const [selectedBookSlug, setSelectedBookSlug] = useState(
-        listKitabHadith[0]?.slug ?? ''
-    );
+    const { t } = useLocale();
+    const [bookList, setBookList] = useState([]);
+    const [selectedBookSlug, setSelectedBookSlug] = useState('');
     const [query, setQuery] = useState('');
     const [page, setPage] = useState(0);
     const [hadiths, setHadiths] = useState([]);
@@ -24,9 +24,20 @@ const ByHadith = () => {
     const [isError, setIsError] = useState(false);
 
     const currentBook = useMemo(
-        () => listKitabHadith.find((book) => book.slug === selectedBookSlug),
-        [selectedBookSlug]
+        () => bookList.find((book) => book.slug === selectedBookSlug),
+        [bookList, selectedBookSlug]
     );
+
+    useEffect(() => {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/books?size=20`)
+            .then((res) => res.json())
+            .then((data) => {
+                const items = data?.items ?? [];
+                setBookList(items);
+                if (items.length > 0) setSelectedBookSlug(items[0].slug);
+            })
+            .catch(() => setIsError(true));
+    }, []);
 
     const fetchHadiths = async (bookSlug, pageNum, append) => {
         if (append) setIsLoadingMore(true);
@@ -79,8 +90,8 @@ const ByHadith = () => {
 
     const jumpToHadith = () => {
         const number = query.trim();
-        if (!number || !currentBook) return;
-        window.location.href = `/hadith/${currentBook.slug}#${encodeURIComponent(number)}`;
+        if (!number || !selectedBookSlug) return;
+        window.location.href = `/hadith/${selectedBookSlug}#${encodeURIComponent(number)}`;
     };
 
     return (
@@ -90,16 +101,16 @@ const ByHadith = () => {
                     <div className='grid gap-3 sm:grid-cols-2'>
                         <div>
                             <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-                                Pilih Kitab
+                                {t('hadith.select_book')}
                             </label>
                             <select
                                 value={selectedBookSlug}
                                 onChange={(e) => setSelectedBookSlug(e.target.value)}
                                 className='w-full px-3 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                             >
-                                {listKitabHadith.map((book) => (
+                                {bookList.map((book) => (
                                     <option key={book.slug} value={book.slug}>
-                                        {book.label}
+                                        {book.translation?.idn ?? book.slug}
                                     </option>
                                 ))}
                             </select>
@@ -107,24 +118,24 @@ const ByHadith = () => {
 
                         <div>
                             <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-                                Cari Nomor / Kata Kunci
+                                {t('hadith.search_label')}
                             </label>
                             <input
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder='Contoh: 1, rahmat, iman...'
+                                placeholder={t('hadith.search_example')}
                                 className='w-full px-3 py-2.5 text-sm rounded-xl border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
                             />
                         </div>
                     </div>
 
                     <div className='flex gap-2'>
-                        {currentBook && (
+                        {selectedBookSlug && (
                             <Link
-                                href={currentBook.href}
+                                href={`/hadith/${selectedBookSlug}`}
                                 className='inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-700 text-white text-sm font-medium hover:bg-emerald-600 transition-colors'
                             >
-                                Buka Reader
+                                {t('hadith.open_reader')}
                             </Link>
                         )}
                         <button
@@ -132,7 +143,7 @@ const ByHadith = () => {
                             onClick={jumpToHadith}
                             className='inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors'
                         >
-                            Lompat
+                            {t('hadith.jump')}
                         </button>
                     </div>
                 </div>
@@ -144,28 +155,29 @@ const ByHadith = () => {
                 <div className='flex flex-col items-center justify-center min-h-[40vh] text-center px-4'>
                     <p className='text-4xl mb-3'>⚠️</p>
                     <h2 className='text-lg font-bold text-emerald-900 dark:text-white mb-2'>
-                        Gagal Memuat Hadith
+                        {t('hadith.load_error_title')}
                     </h2>
                     <p className='text-sm text-gray-500 dark:text-gray-400'>
-                        Server API tidak dapat dijangkau. Pastikan server backend berjalan.
+                        {t('hadith.load_error_desc')}
                     </p>
                 </div>
             ) : (
                 <>
                     <div className='flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 px-1'>
                         <p>
-                            Menampilkan {filteredHadiths.length} dari {total} hadith
+                            {t('common.showing')} {filteredHadiths.length} {t('common.of')} {total}{' '}
+                            {t('hadith.unit')}
                         </p>
-                        <p>Pilih kitab lalu cari nomor atau kata kunci</p>
+                        <p>{t('hadith.search_hint')}</p>
                     </div>
 
                     {filteredHadiths.length === 0 ? (
                         <div className='flex flex-col items-center justify-center min-h-[36vh] text-center px-4'>
                             <h2 className='text-xl font-bold text-emerald-900 dark:text-white mb-2'>
-                                Hadith tidak ditemukan
+                                {t('hadith.not_found_title')}
                             </h2>
                             <p className='text-gray-500 dark:text-gray-400 max-w-sm text-sm leading-relaxed'>
-                                Coba ganti kata kunci, pilih kitab lain, atau buka reader langsung lalu lompat ke nomor hadith.
+                                {t('hadith.not_found_hint')}
                             </p>
                         </div>
                     ) : (
@@ -181,11 +193,11 @@ const ByHadith = () => {
                                     <div className='flex items-start justify-between gap-3 mb-3'>
                                         <div>
                                             <p className='text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500'>
-                                                {currentBook?.label ?? 'Hadith'} · No. {hadith.number}
+                                                {currentBook?.translation?.idn ?? 'Hadith'} · No. {hadith.number}
                                             </p>
                                         </div>
                                         <span className='rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold px-2.5 py-1'>
-                                            Buka
+                                            {t('common.open')}
                                         </span>
                                     </div>
 
@@ -197,7 +209,7 @@ const ByHadith = () => {
                                     </p>
 
                                     <p className='mt-3 text-sm text-gray-600 dark:text-gray-300 line-clamp-2'>
-                                        {hadith?.translation?.idn ?? 'Terjemahan belum tersedia.'}
+                                        {hadith?.translation?.idn ?? t('hadith.translation_unavailable')}
                                     </p>
                                 </Link>
                             ))}
@@ -213,7 +225,7 @@ const ByHadith = () => {
                                 onClick={handleLoadMore}
                                 className='px-5 py-2.5 rounded-xl bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors'
                             >
-                                Muat Hadith Lainnya
+                                {t('hadith.load_more')}
                             </button>
                         </div>
                     )}
