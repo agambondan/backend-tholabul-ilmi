@@ -1,0 +1,64 @@
+package repository
+
+import (
+	"github.com/agambondan/islamic-explorer/app/model"
+	"github.com/morkid/paginate"
+	"gorm.io/gorm"
+)
+
+type TafsirRepository interface {
+	FindByAyahID(int) (*model.Tafsir, error)
+	FindBySurahNumber(int) ([]model.Tafsir, error)
+	Save(*model.Tafsir) (*model.Tafsir, error)
+	UpdateByAyahID(int, *model.Tafsir) (*model.Tafsir, error)
+}
+
+type tafsirRepo struct {
+	db *gorm.DB
+	pg *paginate.Pagination
+}
+
+func NewTafsirRepository(db *gorm.DB, pg *paginate.Pagination) TafsirRepository {
+	return &tafsirRepo{db, pg}
+}
+
+func (r *tafsirRepo) FindByAyahID(ayahID int) (*model.Tafsir, error) {
+	var t model.Tafsir
+	err := r.db.
+		Preload("KemenagTranslation").
+		Preload("IbnuKatsirTranslation").
+		Preload("Ayah").Preload("Ayah.Translation").Preload("Ayah.Surah").
+		Where("ayah_id = ?", ayahID).First(&t).Error
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (r *tafsirRepo) FindBySurahNumber(surahNumber int) ([]model.Tafsir, error) {
+	var list []model.Tafsir
+	err := r.db.
+		Preload("KemenagTranslation").
+		Preload("IbnuKatsirTranslation").
+		Preload("Ayah").Preload("Ayah.Translation").
+		Joins("JOIN ayah ON ayah.id = tafsir.ayah_id").
+		Joins("JOIN surah ON surah.id = ayah.surah_id").
+		Where("surah.number = ?", surahNumber).
+		Order("ayah.number asc").
+		Find(&list).Error
+	return list, err
+}
+
+func (r *tafsirRepo) Save(t *model.Tafsir) (*model.Tafsir, error) {
+	if err := r.db.Create(t).Error; err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+func (r *tafsirRepo) UpdateByAyahID(ayahID int, t *model.Tafsir) (*model.Tafsir, error) {
+	if err := r.db.Model(&model.Tafsir{}).Where("ayah_id = ?", ayahID).Updates(t).Error; err != nil {
+		return nil, err
+	}
+	return r.FindByAyahID(ayahID)
+}

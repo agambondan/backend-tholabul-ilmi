@@ -1,0 +1,92 @@
+package repository
+
+import (
+	"github.com/agambondan/islamic-explorer/app/model"
+	"gorm.io/gorm"
+)
+
+type FiqhRepository interface {
+	FindAllCategories() ([]model.FiqhCategory, error)
+	FindCategoryBySlug(slug string) (*model.FiqhCategory, error)
+	FindItemBySlug(slug string) (*model.FiqhItem, error)
+	FindItemByCategoryAndID(slug string, id int) (*model.FiqhItem, error)
+	CreateCategory(cat *model.FiqhCategory) (*model.FiqhCategory, error)
+	UpdateCategory(id int, cat *model.FiqhCategory) (*model.FiqhCategory, error)
+	DeleteCategory(id int) error
+	CreateItem(item *model.FiqhItem) (*model.FiqhItem, error)
+	UpdateItem(id int, item *model.FiqhItem) (*model.FiqhItem, error)
+	DeleteItem(id int) error
+}
+
+type fiqhRepository struct {
+	db *gorm.DB
+}
+
+func NewFiqhRepository(db *gorm.DB) FiqhRepository {
+	return &fiqhRepository{db}
+}
+
+func (r *fiqhRepository) FindAllCategories() ([]model.FiqhCategory, error) {
+	var list []model.FiqhCategory
+	err := r.db.Order("id").Find(&list).Error
+	return list, err
+}
+
+func (r *fiqhRepository) FindCategoryBySlug(slug string) (*model.FiqhCategory, error) {
+	var cat model.FiqhCategory
+	err := r.db.Preload("Items", func(db *gorm.DB) *gorm.DB {
+		return db.Order("sort_order, id")
+	}).Where("slug = ?", slug).First(&cat).Error
+	return &cat, err
+}
+
+func (r *fiqhRepository) FindItemBySlug(slug string) (*model.FiqhItem, error) {
+	var item model.FiqhItem
+	err := r.db.Where("slug = ?", slug).First(&item).Error
+	return &item, err
+}
+
+func (r *fiqhRepository) FindItemByCategoryAndID(slug string, id int) (*model.FiqhItem, error) {
+	var item model.FiqhItem
+	err := r.db.
+		Joins("JOIN fiqh_categories ON fiqh_categories.id = fiqh_items.category_id").
+		Where("fiqh_categories.slug = ? AND fiqh_items.id = ?", slug, id).
+		First(&item).Error
+	return &item, err
+}
+
+func (r *fiqhRepository) CreateCategory(cat *model.FiqhCategory) (*model.FiqhCategory, error) {
+	err := r.db.Create(cat).Error
+	return cat, err
+}
+
+func (r *fiqhRepository) UpdateCategory(id int, cat *model.FiqhCategory) (*model.FiqhCategory, error) {
+	var existing model.FiqhCategory
+	if err := r.db.First(&existing, id).Error; err != nil {
+		return nil, err
+	}
+	err := r.db.Model(&existing).Updates(cat).Error
+	return &existing, err
+}
+
+func (r *fiqhRepository) DeleteCategory(id int) error {
+	return r.db.Delete(&model.FiqhCategory{}, id).Error
+}
+
+func (r *fiqhRepository) CreateItem(item *model.FiqhItem) (*model.FiqhItem, error) {
+	err := r.db.Create(item).Error
+	return item, err
+}
+
+func (r *fiqhRepository) UpdateItem(id int, item *model.FiqhItem) (*model.FiqhItem, error) {
+	var existing model.FiqhItem
+	if err := r.db.First(&existing, id).Error; err != nil {
+		return nil, err
+	}
+	err := r.db.Model(&existing).Updates(item).Error
+	return &existing, err
+}
+
+func (r *fiqhRepository) DeleteItem(id int) error {
+	return r.db.Delete(&model.FiqhItem{}, id).Error
+}

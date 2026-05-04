@@ -1,0 +1,34 @@
+package model
+
+type FiqhCategory struct {
+	BaseID
+	Name        string     `json:"name" gorm:"type:varchar(256);not null"`
+	Slug        string     `json:"slug" gorm:"type:varchar(256);uniqueIndex;not null"`
+	Description string     `json:"description" gorm:"type:text"`
+	Items       []FiqhItem `json:"items,omitempty" gorm:"foreignKey:CategoryID;-:migration"`
+}
+
+type FiqhItem struct {
+	BaseID
+	CategoryID      *int   `json:"category_id,omitempty" gorm:"not null;index"`
+	Title           string `json:"title" gorm:"type:varchar(512);not null"`
+	Slug            string `json:"slug" gorm:"type:varchar(512);uniqueIndex;not null"`
+	Content         string `json:"content" gorm:"type:text;not null"`
+	Source          string `json:"source" gorm:"type:varchar(256)"`
+	SortOrder       int    `json:"sort_order" gorm:"default:0"`
+}
+
+type CreateFiqhCategoryRequest struct {
+	Name        string `json:"name" validate:"required"`
+	Slug        string `json:"slug" validate:"required"`
+	Description string `json:"description"`
+}
+
+type CreateFiqhItemRequest struct {
+	CategoryID int    `json:"category_id" validate:"required"`
+	Title      string `json:"title" validate:"required"`
+	Slug       string `json:"slug" validate:"required"`
+	Content    string `json:"content" validate:"required"`
+	Source     string `json:"source"`
+	SortOrder  int    `json:"sort_order"`
+}

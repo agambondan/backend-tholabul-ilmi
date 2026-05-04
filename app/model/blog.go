@@ -1,0 +1,77 @@
+package model
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type BlogStatus string
+
+const (
+	BlogStatusDraft     BlogStatus = "draft"
+	BlogStatusPublished BlogStatus = "published"
+	BlogStatusArchived  BlogStatus = "archived"
+)
+
+type BlogCategory struct {
+	BaseID
+	Name        string `json:"name" gorm:"type:varchar(256);not null"`
+	Slug        string `json:"slug" gorm:"type:varchar(256);uniqueIndex;not null"`
+	Description string `json:"description" gorm:"type:text"`
+}
+
+type BlogTag struct {
+	BaseID
+	Name  string     `json:"name" gorm:"type:varchar(100);not null"`
+	Slug  string     `json:"slug" gorm:"type:varchar(100);uniqueIndex;not null"`
+	Posts []BlogPost `json:"posts,omitempty" gorm:"many2many:blog_post_tags"`
+}
+
+type BlogPost struct {
+	BaseUUID
+	AuthorID    uuid.UUID    `json:"author_id" gorm:"type:uuid;not null;index"`
+	CategoryID  *int         `json:"category_id,omitempty" gorm:"index"`
+	Title       string       `json:"title" gorm:"type:varchar(512);not null"`
+	Slug        string       `json:"slug" gorm:"type:varchar(512);uniqueIndex;not null"`
+	Excerpt     string       `json:"excerpt" gorm:"type:text"`
+	Content     string       `json:"content" gorm:"type:text;not null"`
+	CoverImage  *string      `json:"cover_image,omitempty" gorm:"type:varchar(512)"`
+	Status      BlogStatus   `json:"status" gorm:"type:varchar(50);default:'draft';index:idx_blog_status_published"`
+	PublishedAt *time.Time   `json:"published_at,omitempty" gorm:"index:idx_blog_status_published"`
+	ViewCount   int          `json:"view_count" gorm:"default:0"`
+	Author      *User        `json:"author,omitempty"`
+	Category    *BlogCategory `json:"category,omitempty"`
+	Tags        []BlogTag    `json:"tags,omitempty" gorm:"many2many:blog_post_tags"`
+}
+
+type CreateBlogPostRequest struct {
+	Title      string  `json:"title" validate:"required,max=512"`
+	Excerpt    string  `json:"excerpt" validate:"max=1000"`
+	Content    string  `json:"content" validate:"required,max=50000"`
+	CoverImage *string `json:"cover_image"`
+	CategoryID *int    `json:"category_id"`
+	Tags       []int   `json:"tags"`
+	Status     BlogStatus `json:"status"`
+}
+
+type UpdateBlogPostRequest struct {
+	Title      *string    `json:"title"`
+	Excerpt    *string    `json:"excerpt"`
+	Content    *string    `json:"content"`
+	CoverImage *string    `json:"cover_image"`
+	CategoryID *int       `json:"category_id"`
+	Tags       []int      `json:"tags"`
+	Status     *BlogStatus `json:"status"`
+}
+
+type CreateBlogCategoryRequest struct {
+	Name        string `json:"name" validate:"required"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+}
+
+type CreateBlogTagRequest struct {
+	Name string `json:"name" validate:"required"`
+	Slug string `json:"slug"`
+}
