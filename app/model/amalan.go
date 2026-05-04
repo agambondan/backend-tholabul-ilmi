@@ -14,10 +14,12 @@ const (
 
 type AmalanItem struct {
 	BaseID
-	Name        string         `json:"name" gorm:"type:varchar(256);not null;uniqueIndex:idx_amalan_item_category_name"`
-	Description string         `json:"description" gorm:"type:text"`
-	Category    AmalanCategory `json:"category" gorm:"type:varchar(50);not null;index;uniqueIndex:idx_amalan_item_category_name"`
-	IsActive    bool           `json:"is_active" gorm:"default:true"`
+	Name          string         `json:"name" gorm:"type:varchar(256);not null;uniqueIndex:idx_amalan_item_category_name"`
+	Description   string         `json:"description" gorm:"type:text"`
+	Category      AmalanCategory `json:"category" gorm:"type:varchar(50);not null;index;uniqueIndex:idx_amalan_item_category_name"`
+	IsActive      bool           `json:"is_active" gorm:"default:true"`
+	TranslationID *int           `json:"translation_id,omitempty" gorm:"index"`
+	Translation   *Translation   `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type AmalanLog struct {

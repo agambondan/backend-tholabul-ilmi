@@ -1,4 +1,4 @@
-version: "3.9"
+name: tholabul-ilmi
 
 services:
   tholabul-ilmi-be:
@@ -24,6 +24,9 @@ services:
       - REDIS_INDEX=3
       - PREFORK=false
       - CACHE_TTL_SECONDS=60
+      - ALLOW_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:23000
+      - ALLOW_METHODS=GET,POST,PUT,DELETE,OPTIONS
+      - ALLOW_HEADERS=Origin,Content-Type,Accept,Authorization
     depends_on:
       tholabul-ilmi-postgres:
         condition: service_healthy

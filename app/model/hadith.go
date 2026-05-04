@@ -1,5 +1,22 @@
 package model
 
+// HadithGrade derajat keshahihan hadits.
+type HadithGrade string
+
+const (
+	HadithGradeShahih           HadithGrade = "shahih"
+	HadithGradeShahihLighairihi HadithGrade = "shahih_lighairihi"
+	HadithGradeHasan            HadithGrade = "hasan"
+	HadithGradeHasanLighairihi  HadithGrade = "hasan_lighairihi"
+	HadithGradeHasanShahih      HadithGrade = "hasan_shahih"
+	HadithGradeDhaif            HadithGrade = "dhaif"
+	HadithGradeDhaifJiddan      HadithGrade = "dhaif_jiddan"
+	HadithGradeMunkar           HadithGrade = "munkar"
+	HadithGradeMaudhu           HadithGrade = "maudhu"
+	HadithGradeMatruk           HadithGrade = "matruk"
+	HadithGradeMajhul           HadithGrade = "majhul"
+)
+
 type Hadith struct {
 	BaseID
 	DefaultLanguage *string       `gorm:"default:Ar"`
@@ -13,6 +30,15 @@ type Hadith struct {
 	Chapter         *Chapter      `json:"chapter,omitempty"`
 	Translation     *Translation  `json:"translation,omitempty"`
 	Media           []HadithAsset `json:"media,omitempty"`
+
+	// Grading & authentication
+	Grade       *HadithGrade `json:"grade,omitempty" gorm:"type:varchar(30);index"`
+	ShahihBy    *string      `json:"shahih_by,omitempty" gorm:"type:text"`
+	DhaifBy     *string      `json:"dhaif_by,omitempty" gorm:"type:text"`
+	GradeNotes  *string      `json:"grade_notes,omitempty" gorm:"type:text"`
+
+	// Sanad (chain of narrators)
+	Sanad       *string      `json:"sanad,omitempty" gorm:"type:text"`
 }
 
 type HadithAsset struct {

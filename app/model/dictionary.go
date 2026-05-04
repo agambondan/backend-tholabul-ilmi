@@ -13,12 +13,14 @@ const (
 
 type IslamicTerm struct {
 	BaseID
-	Term        string       `json:"term" gorm:"type:varchar(256);uniqueIndex;not null"`
-	Category    TermCategory `json:"category" gorm:"type:varchar(50);index"`
-	Definition  string       `json:"definition" gorm:"type:text;not null"`
-	Example     string       `json:"example" gorm:"type:text"`
-	Source      string       `json:"source" gorm:"type:varchar(256)"`
-	Origin      string       `json:"origin" gorm:"type:varchar(100)"`
+	Term          string       `json:"term" gorm:"type:varchar(256);uniqueIndex;not null"`
+	Category      TermCategory `json:"category" gorm:"type:varchar(50);index"`
+	Definition    string       `json:"definition" gorm:"type:text;not null"`
+	Example       string       `json:"example" gorm:"type:text"`
+	Source        string       `json:"source" gorm:"type:varchar(256)"`
+	Origin        string       `json:"origin" gorm:"type:varchar(100)"`
+	TranslationID *int         `json:"translation_id,omitempty" gorm:"index"`
+	Translation   *Translation `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type CreateIslamicTermRequest struct {

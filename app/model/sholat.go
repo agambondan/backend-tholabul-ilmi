@@ -31,14 +31,16 @@ type SholatLog struct {
 
 type SholatGuide struct {
 	BaseID
-	Step            int    `json:"step" gorm:"uniqueIndex;not null"`
-	Title           string `json:"title" gorm:"type:varchar(256);not null"`
-	Arabic          string `json:"arabic" gorm:"type:text"`
-	Transliteration string `json:"transliteration" gorm:"type:text"`
-	Translation     string `json:"translation" gorm:"type:text"`
-	Description     string `json:"description" gorm:"type:text"`
-	Source          string `json:"source" gorm:"type:varchar(512)"`
-	Notes           string `json:"notes" gorm:"type:text"`
+	Step                int          `json:"step" gorm:"uniqueIndex;not null"`
+	Title               string       `json:"title" gorm:"type:varchar(256);not null"`
+	Arabic              string       `json:"arabic" gorm:"type:text"`
+	Transliteration     string       `json:"transliteration" gorm:"type:text"`
+	Translation         string       `json:"translation" gorm:"type:text"`
+	Description         string       `json:"description" gorm:"type:text"`
+	Source              string       `json:"source" gorm:"type:varchar(512)"`
+	Notes               string       `json:"notes" gorm:"type:text"`
+	TranslationID       *int         `json:"translation_id,omitempty" gorm:"index"`
+	TranslationRelation *Translation `json:"translation_rel,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type LogSholatRequest struct {

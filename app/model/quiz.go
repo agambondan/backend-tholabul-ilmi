@@ -18,13 +18,15 @@ const (
 
 type Quiz struct {
 	BaseID
-	Type           QuizType `json:"type" gorm:"type:varchar(50);not null;index"`
-	QuestionText   string   `json:"question_text" gorm:"type:text;not null"`
-	CorrectAnswer  string   `json:"correct_answer" gorm:"type:text;not null"`
-	Options        string   `json:"options" gorm:"type:jsonb"`
-	Explanation    string   `json:"explanation" gorm:"type:text"`
-	Difficulty     string   `json:"difficulty" gorm:"type:varchar(20);default:'medium'"`
-	RefID          *int     `json:"ref_id,omitempty" gorm:"index"`
+	Type          QuizType     `json:"type" gorm:"type:varchar(50);not null;index"`
+	QuestionText  string       `json:"question_text" gorm:"type:text;not null"`
+	CorrectAnswer string       `json:"correct_answer" gorm:"type:text;not null"`
+	Options       string       `json:"options" gorm:"type:jsonb"`
+	Explanation   string       `json:"explanation" gorm:"type:text"`
+	Difficulty    string       `json:"difficulty" gorm:"type:varchar(20);default:'medium'"`
+	RefID         *int         `json:"ref_id,omitempty" gorm:"index"`
+	TranslationID *int         `json:"translation_id,omitempty" gorm:"index"`
+	Translation   *Translation `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type UserQuizResult struct {

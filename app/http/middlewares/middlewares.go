@@ -1,10 +1,12 @@
 package middlewares
 
 import (
+	"strings"
+
 	"github.com/agambondan/islamic-explorer/app/lib"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/viper"
 )
 
@@ -24,15 +26,23 @@ func SecurityHeaders() fiber.Handler {
 }
 
 func Cors() fiber.Handler {
-	allowOrigins := viper.GetString("ALLOW_ORIGINS")
+	allowOrigins := strings.TrimSpace(viper.GetString("ALLOW_ORIGINS"))
 	if allowOrigins == "" {
-		allowOrigins = "http://localhost:3000,http://localhost:5173"
+		allowOrigins = "http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:23000,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:5173,http://127.0.0.1:23000"
+	}
+	allowMethods := strings.TrimSpace(viper.GetString("ALLOW_METHODS"))
+	if allowMethods == "" {
+		allowMethods = "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+	}
+	allowHeaders := strings.TrimSpace(viper.GetString("ALLOW_HEADERS"))
+	if allowHeaders == "" {
+		allowHeaders = "Origin,Content-Type,Accept,Authorization"
 	}
 	return cors.New(cors.Config{
-		AllowMethods:     viper.GetString("ALLOW_METHODS"),
+		AllowMethods:     allowMethods,
 		AllowOrigins:     allowOrigins,
-		AllowHeaders:     viper.GetString("ALLOW_HEADERS"),
-		ExposeHeaders:    viper.GetString("EXPOSE_HEADERS"),
+		AllowHeaders:     allowHeaders,
+		ExposeHeaders:    strings.TrimSpace(viper.GetString("EXPOSE_HEADERS")),
 		AllowCredentials: true,
 	})
 }

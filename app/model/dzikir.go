@@ -13,13 +13,15 @@ const (
 
 type Dzikir struct {
 	BaseID
-	Category        DzikirCategory `json:"category" gorm:"type:varchar(50);not null;index;uniqueIndex:idx_dzikir_category_title"`
-	Occasion        string         `json:"occasion,omitempty" gorm:"type:varchar(100);index"`
-	Title           string         `json:"title" gorm:"type:varchar(256);not null;uniqueIndex:idx_dzikir_category_title"`
-	Arabic          string         `json:"arabic" gorm:"type:text;not null"`
-	Transliteration string         `json:"transliteration" gorm:"type:text"`
-	Translation     string         `json:"translation" gorm:"type:text;not null"`
-	Count           int            `json:"count" gorm:"default:1"`
-	Fadhilah        string         `json:"fadhilah" gorm:"type:text"`
-	Source          string         `json:"source" gorm:"type:varchar(256)"`
+	Category            DzikirCategory `json:"category" gorm:"type:varchar(50);not null;index;uniqueIndex:idx_dzikir_category_title"`
+	Occasion            string         `json:"occasion,omitempty" gorm:"type:varchar(100);index"`
+	Title               string         `json:"title" gorm:"type:varchar(256);not null;uniqueIndex:idx_dzikir_category_title"`
+	Arabic              string         `json:"arabic" gorm:"type:text;not null"`
+	Transliteration     string         `json:"transliteration" gorm:"type:text"`
+	Translation         string         `json:"translation" gorm:"type:text;not null"`
+	Count               int            `json:"count" gorm:"default:1"`
+	Fadhilah            string         `json:"fadhilah" gorm:"type:text"`
+	Source              string         `json:"source" gorm:"type:varchar(256)"`
+	TranslationID       *int           `json:"translation_id,omitempty" gorm:"index"`
+	TranslationRelation *Translation   `json:"translation_rel,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }

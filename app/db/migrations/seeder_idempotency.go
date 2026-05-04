@@ -4,7 +4,10 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
+	"github.com/google/uuid"
+	"github.com/spf13/viper"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -37,6 +40,9 @@ func DeduplicateSeedData(db *gorm.DB) {
 }
 
 func UpsertSeedData(db *gorm.DB) error {
+	if err := upsertAdminUser(db); err != nil {
+		return err
+	}
 	if err := upsertDoaSeeds(db); err != nil {
 		return err
 	}
@@ -64,6 +70,28 @@ func tableName(db *gorm.DB, value interface{}) (string, bool) {
 		return "", false
 	}
 	return stmt.Schema.Table, true
+}
+
+func upsertAdminUser(db *gorm.DB) error {
+	password := viper.GetString("ADMIN_PASSWORD")
+	if password == "" {
+		password = "Admin@123"
+	}
+	hashed := lib.PasswordEncrypt(password)
+	name := "Admin"
+	email := "admin@tholabul-ilmi.com"
+	id := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	admin := model.User{
+		BaseUUID: model.BaseUUID{ID: id},
+		Name:     &name,
+		Email:    &email,
+		Password: &hashed,
+		Role:     model.RoleAdmin,
+	}
+	return db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "email"}},
+		DoUpdates: clause.AssignmentColumns([]string{"name", "role"}),
+	}).Create(&admin).Error
 }
 
 func upsertDoaSeeds(db *gorm.DB) error {
