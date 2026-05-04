@@ -10,6 +10,7 @@ import { useLocale } from '@/context/Locale';
 import { progressApi, streakApi } from '@/lib/api';
 import { getLocalizedTranslation } from '@/lib/translation';
 import { useLayoutMode } from '@/lib/useLayoutMode';
+import { useQuranFont } from '@/lib/useQuranFont';
 import classNames from 'classnames';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
@@ -22,6 +23,7 @@ const normalizeAyahs = (data) => data?.ayahs ?? data?.items ?? data ?? [];
 const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 	const { t, lang } = useLocale();
 	const { isWide } = useLayoutMode();
+	const { fontCls } = useQuranFont();
 	const [surah, setSurah] = useState(null);
 	const [ayahs, setAyahs] = useState([]);
 	const [page, setPage] = useState(0);
@@ -158,7 +160,7 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 						{surah?.revelation_type ?? ''}
 					</p>
 					<p
-						className='font-kitab text-5xl leading-[2] text-gray-900 dark:text-white'
+						className={`${fontCls} text-5xl leading-[2] text-gray-900 dark:text-white`}
 						style={{ direction: 'rtl' }}
 					>
 						{surah?.translation?.ar?.replace('سُورَةُ', '').trim() ?? ''}

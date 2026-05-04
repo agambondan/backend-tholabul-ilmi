@@ -8,6 +8,7 @@ import { listMasjidImage } from '@/lib/const';
 import { NumberToArabic } from '@/lib/converter';
 import { CopyImageToClipboard, CopyToClipboard } from '@/lib/copy';
 import { getLocalizedTranslation } from '@/lib/translation';
+import { useQuranFont } from '@/lib/useQuranFont';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
 import { useEffect, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import { IoIosLink, IoMdCopy, IoMdImages } from 'react-icons/io';
 
 const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
     const { t, lang } = useLocale();
+    const { fontCls } = useQuranFont();
     const cardRef = useRef();
     const audioRef = useRef(null);
     const [isCopied, SetIsCopied] = useState(false);
@@ -158,7 +160,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
 
             <ul
                 className={classNames({
-                    'flex flex-row justify-between font-kitab p-4 border-b border-gray-100 dark:border-slate-800': true,
+                    [`flex flex-row justify-between ${fontCls} p-4 border-b border-gray-100 dark:border-slate-800`]: true,
                     'bg-gray-50/60 dark:bg-slate-800/35': ayah.number % 2 === 1,
                     'bg-white dark:bg-slate-900': ayah.number % 2 === 0,
                     'text-gray-900 dark:text-white': true,
