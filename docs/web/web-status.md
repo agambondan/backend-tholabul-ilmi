@@ -1,4 +1,4 @@
-# Frontend Status
+# Web App Status
 
 ## Implemented
 
@@ -20,11 +20,11 @@
   - `stats`
   - `tafsir`
 - `notifications` now supports bulk enable/disable and bulk save actions.
-- Reader pages handle empty states and partial backend data more gracefully instead of exposing placeholder copy.
+- Reader pages handle empty states and partial API service data more gracefully instead of exposing placeholder copy.
 
-## Backend-dependent
+## API Service-dependent
 
-- Some pages still render empty states when their backend datasets are empty or incomplete.
-- That is expected fallback behavior, not a missing frontend route.
-- Remaining feature completeness is mostly a backend data/content issue rather than a missing UI shell.
-- The backend backlog that matches this frontend contract is documented in `docs/backend-gaps.md`.
+- Some pages still render empty states when their API service datasets are empty or incomplete.
+- That is expected fallback behavior, not a missing web app route.
+- Remaining feature completeness is mostly a API service data/content issue rather than a missing UI shell.
+- The API service backlog that matches this web app contract is documented in `docs/api-gaps.md`.

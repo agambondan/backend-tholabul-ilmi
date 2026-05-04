@@ -1,8 +1,8 @@
-# Frontend Task: Tampilkan Derajat Hadits, Sanad & Autentikasi
+# Web App Task: Tampilkan Derajat Hadits, Sanad & Autentikasi
 
 ## Context
 
-Backend sudah menambahkan field-field autentikasi hadits ke model `Hadith`:
+API Service sudah menambahkan field-field autentikasi hadits ke model `Hadith`:
 
 | Field | Type | Keterangan |
 |---|---|---|
@@ -18,7 +18,7 @@ Backend sudah menambahkan field-field autentikasi hadits ke model `Hadith`:
 - Muwatha' Malik (1.859 hadits) → `grade: "shahih"`, `shahih_by: "Imam Malik, Asy-Syafi'i, Ibn Abd Al-Barr"`
 - Sunan lainnya → `grade: null`, `grade_notes` berisi penjelasan bahwa grading bervariasi per-hadits
 
-**Catatan rebuild:** Backend Docker image perlu di-rebuild agar field baru muncul di response API.
+**Catatan rebuild:** API Service Docker image perlu di-rebuild agar field baru muncul di response API.
 
 ---
 
@@ -203,7 +203,7 @@ const gradeOptions = [
 // Append ?grade=shahih ke query params API
 ```
 
-Backend sudah support query param `grade` untuk filtering (perlu konfirmasi dengan backend team).
+API Service sudah support query param `grade` untuk filtering (perlu konfirmasi dengan API service team).
 
 ---
 
@@ -251,4 +251,4 @@ interface Hadith {
 - Field `grade` bisa `null` untuk kitab Sunan — handle gracefully, jangan tampilkan section kosong
 - `grade_notes` untuk Sunan berisi penjelasan umum kitab (bukan per-hadits) — tampilkan sebagai info/disclaimer
 - `sanad` saat ini masih `null` untuk semua hadits (akan diisi bertahap) — gunakan `<details>` agar tidak memakan space
-- Link ke sunnah.com: gunakan slug kitab dari `book.slug` + nomor → `https://sunnah.com/{slug}:{number}` (lihat task [frontend-task-hadith-source-links.md](./frontend-task-hadith-source-links.md))
+- Link ke sunnah.com: gunakan slug kitab dari `book.slug` + nomor → `https://sunnah.com/{slug}:{number}` (lihat task [web app-task-hadith-source-links.md](./web app-task-hadith-source-links.md))

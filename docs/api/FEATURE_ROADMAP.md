@@ -1,18 +1,18 @@
 # Feature Roadmap — Thalabul Ilmi
 
-Aplikasi Islamic knowledge untuk penuntut ilmu. Backend: Go/Fiber + PostgreSQL.
+Aplikasi Islamic knowledge untuk penuntut ilmu. API Service: Go/Fiber + PostgreSQL.
 
 ---
 
-## Ringkasan Status Frontend / Backend
+## Ringkasan Status Web App / API Service
 
-Review singkat yang dipisah antara frontend dan backend. Versi detailnya ada di [docs/roadmap-status.md](roadmap-status.md).
-Catatan: frontend dan backend dicatat terpisah supaya status UI tidak tercampur dengan implementasi API/backend.
+Review singkat yang dipisah antara web app dan API service. Versi detailnya ada di [docs/roadmap-status.md](roadmap-status.md).
+Catatan: web app dan API service dicatat terpisah supaya status UI tidak tercampur dengan implementasi API/API service.
 
 | Area | Status | Ringkasan |
 |---|---|---|
-| Frontend | Belum ada di repo ini | Tidak ditemukan tree frontend terpisah, jadi belum ada UI yang bisa ditandai selesai. |
-| Backend | Hampir semua ter-wire | Route dan controller sudah ada untuk seluruh roadmap utama; `#14` sudah punya settings + scheduler reminder email. |
+| Web App | Belum ada di repo ini | Tidak ditemukan tree web app terpisah, jadi belum ada UI yang bisa ditandai selesai. |
+| API Service | Hampir semua ter-wire | Route dan controller sudah ada untuk seluruh roadmap utama; `#14` sudah punya settings + scheduler reminder email. |
 
 ---
 
@@ -270,7 +270,7 @@ BlogPostTag {
 - Draft preview — author bisa lihat draft sebelum publish
 
 **Teknis:**
-- Content disimpan sebagai Markdown, parsing di frontend
+- Content disimpan sebagai Markdown, parsing di web app
 - Slug di-generate otomatis dari title (dengan suffix jika duplikat)
 - `AuthorID` menggunakan `User.ID` yang sudah ada
 - Status `published` dengan `PublishedAt` timestamp (bisa schedule post)
@@ -344,7 +344,7 @@ Simpan preferensi bahasa di profil user. API bisa otomatis filter terjemahan ses
 **Endpoint:**
 - `PUT /users/:id` — sudah ada, tambah field `preferred_lang` ke request body (JWT)
 
-**Catatan:** Frontend/mobile cukup set header `Accept-Language` atau query param `?lang=idn|en|ar`.
+**Catatan:** Web App/mobile cukup set header `Accept-Language` atau query param `?lang=idn|en|ar`.
 
 ---
 
@@ -420,13 +420,13 @@ Ranking hafalan dan streak di antara pengguna. Motivasi kompetitif yang sehat.
 ---
 
 ### 28. Sharing Card Metadata
-Endpoint khusus yang return data ayah/hadith dalam format siap render jadi gambar share (Instagram, WhatsApp). Tidak perlu image processing di backend.
+Endpoint khusus yang return data ayah/hadith dalam format siap render jadi gambar share (Instagram, WhatsApp). Tidak perlu image processing di API service.
 
 **Endpoint:**
 - `GET /share/ayah/:id` — return ayah lengkap + nama surah + nomor + terjemahan + font hints
 - `GET /share/hadith/:id` — return hadith + nama kitab + nomor + terjemahan
 
-**Teknis:** Response JSON biasa, frontend/mobile yang generate gambarnya. Backend cukup pastikan data lengkap dan konsisten.
+**Teknis:** Response JSON biasa, web app/mobile yang generate gambarnya. API Service cukup pastikan data lengkap dan konsisten.
 
 ---
 
@@ -600,7 +600,7 @@ TahlilItem { ID, CollectionID, Arabic, Transliteration, Translation, Order }
 ---
 
 ### 36. Koleksi Ceramah & Kajian
-Link ke ceramah/kajian Islam dari YouTube atau sumber eksternal. Backend hanya simpan metadata — tidak streaming sendiri.
+Link ke ceramah/kajian Islam dari YouTube atau sumber eksternal. API Service hanya simpan metadata — tidak streaming sendiri.
 
 **Model:**
 ```

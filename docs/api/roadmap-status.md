@@ -1,16 +1,16 @@
-# Roadmap Status Frontend / Backend
+# Roadmap Status Web App / API Service
 
 Dokumentasi ini merangkum hasil review roadmap untuk monorepo `thollabul-ilmi`.
-Status frontend dan backend dipisahkan supaya keputusan implementasi UI tidak tercampur dengan status API/backend.
+Status web app dan API service dipisahkan supaya keputusan implementasi UI tidak tercampur dengan status API/API service.
 
-## Frontend
+## Web App
 
 | Item | Status | Catatan |
 |---|---|---|
-| Aplikasi frontend | Ada | Frontend berada di `apps/frontend`. |
-| Implementasi UI untuk roadmap | Perlu review terpisah | Status roadmap backend tidak otomatis menandai parity UI. |
+| Aplikasi web app | Ada | Web App berada di `apps/web`. |
+| Implementasi UI untuk roadmap | Perlu review terpisah | Status roadmap API service tidak otomatis menandai parity UI. |
 
-## Backend
+## API Service
 
 ### Sudah ada / sudah ter-wire
 
@@ -64,11 +64,11 @@ Status frontend dan backend dipisahkan supaya keputusan implementasi UI tidak te
 
 ## Ringkasan
 
-- Frontend: artefak frontend sekarang berada di `apps/frontend`; parity UI perlu dinilai lewat dokumen frontend dan QA terpisah.
-- Backend: seluruh roadmap utama sudah ter-wire; sisa pekerjaan cenderung maintenance atau perluasan fitur, bukan gap fondasi.
+- Web App: artefak web app sekarang berada di `apps/web`; parity UI perlu dinilai lewat dokumen web app dan QA terpisah.
+- API Service: seluruh roadmap utama sudah ter-wire; sisa pekerjaan cenderung maintenance atau perluasan fitur, bukan gap fondasi.
 
 ### Interpretasi Prioritas
 
 - `P1` = paling mendesak; mengunci scope fondasi atau contract yang paling kelihatan bolong.
-- `P2` = penting, tetapi tidak memblokir fondasi backend utama.
+- `P2` = penting, tetapi tidak memblokir fondasi API service utama.
 - `P3` = low priority / maintenance saja.

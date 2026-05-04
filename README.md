@@ -1,11 +1,11 @@
 # Tholabul Ilmi
 
-Monorepo for the Tholabul Ilmi backend and frontend applications.
+Monorepo for the Tholabul Ilmi API service and web application.
 
 ## Layout
 
-- `apps/backend` - Go/Fiber API service.
-- `apps/frontend` - Next.js frontend.
+- `services/api` - Go/Fiber API service.
+- `apps/web` - Next.js website.
 - `docs` - Project documentation, setup notes, and task handoffs.
 - `.chronicle` - Chronicle project binding for the monorepo root.
 
@@ -17,14 +17,14 @@ Run the full stack with Docker:
 make docker-up
 ```
 
-Run backend only:
+Run API service only:
 
 ```bash
 make run-local
 ```
 
-Run frontend only:
+Run web app only:
 
 ```bash
-make frontend-dev
+make web-dev
 ```

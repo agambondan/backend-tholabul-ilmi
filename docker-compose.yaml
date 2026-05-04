@@ -1,10 +1,10 @@
 name: tholabul-ilmi
 
 services:
-  tholabul-ilmi-be:
-    image: tholabul-ilmi-be
+  tholabul-ilmi-api:
+    image: tholabul-ilmi-api
     build:
-      context: ./apps/backend
+      context: ./services/api
       dockerfile: Dockerfile
     ports:
       - "29900:9900"
@@ -36,10 +36,10 @@ services:
       - tholabul-ilmi-network
     restart: unless-stopped
 
-  tholabul-ilmi-fe:
-    image: tholabul-ilmi-fe
+  tholabul-ilmi-web:
+    image: tholabul-ilmi-web
     build:
-      context: ./apps/frontend
+      context: ./apps/web
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:29900
@@ -48,7 +48,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:29900
     depends_on:
-      - tholabul-ilmi-be
+      - tholabul-ilmi-api
     networks:
       - tholabul-ilmi-network
     restart: unless-stopped

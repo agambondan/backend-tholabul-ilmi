@@ -8,8 +8,8 @@ make docker-up
 
 The compose file builds:
 
-- Backend from `apps/backend`
-- Frontend from `apps/frontend`
+- API service from `services/api`
+- Web app from `apps/web`
 
 Default local ports:
 
@@ -18,14 +18,14 @@ Default local ports:
 - Postgres: `localhost:54320`
 - Redis: `localhost:63790`
 
-## Backend
+## API Service
 
 ```bash
 make run-local
 ```
 
-## Frontend
+## Web App
 
 ```bash
-make frontend-dev
+make web-dev
 ```

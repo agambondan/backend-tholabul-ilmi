@@ -1,14 +1,14 @@
-# Backend Gaps from the Frontend Contract
+# API Service Gaps from the Web App Contract
 
-Dokumen ini merangkum pekerjaan backend yang masih dibutuhkan supaya frontend yang sudah ada benar-benar penuh data dan tidak hanya bergantung pada empty state atau fallback lokal.
+Dokumen ini merangkum pekerjaan API service yang masih dibutuhkan supaya web app yang sudah ada benar-benar penuh data dan tidak hanya bergantung pada empty state atau fallback lokal.
 
-Untuk daftar yang lebih granular per endpoint dan route, lihat `docs/backend-endpoint-gaps.md`.
+Untuk daftar yang lebih granular per endpoint dan route, lihat `docs/api-endpoint-gaps.md`.
 
 ## Prioritas Tinggi
 
 ### 1) Hadith browsing and reader stack
 
-Frontend sudah punya alur:
+Web App sudah punya alur:
 - `src/app/hadith/byBook.js`
 - `src/app/hadith/byTheme.js`
 - `src/app/hadith/byChapter.js`
@@ -16,7 +16,7 @@ Frontend sudah punya alur:
 - `src/app/hadith/theme/[slug]/page.js`
 - `src/app/hadith/[slug]/HadithPage.js`
 
-Backend perlu memastikan data berikut tersedia dan konsisten:
+API Service perlu memastikan data berikut tersedia dan konsisten:
 - daftar kitab hadith
 - daftar theme lintas kitab
 - daftar chapter per kitab + theme
@@ -27,22 +27,22 @@ Backend perlu memastikan data berikut tersedia dan konsisten:
 
 ### 2) Quran enrichment stack
 
-Frontend sudah menyiapkan reader dan pencarian untuk:
+Web App sudah menyiapkan reader dan pencarian untuk:
 - `src/app/quran/page.js`
 - `src/app/quran/[...slug]/InfiniteScrollAyahPage.js`
 - `src/app/quran/[...slug]/AyahPage.js`
 - `src/app/search/SearchClient.js`
 
-Backend perlu memastikan:
+API Service perlu memastikan:
 - pencarian lintas ayah/hadith mengembalikan nested translation dengan struktur yang konsisten
 - tafsir per surah dan per ayah tersedia
 - mufrodat per ayah dan per root word tersedia
 - audio surah dan audio ayah tersedia bila fitur audio ingin tetap aktif
 - data pagination ayah mendukung navigasi prev/next dan deep-link reader
 
-### 3) Content catalogs yang masih bergantung data backend
+### 3) Content catalogs yang masih bergantung data API service
 
-Frontend sudah punya halaman browsing/filtering untuk:
+Web App sudah punya halaman browsing/filtering untuk:
 - `amalan`
 - `asbabun-nuzul`
 - `asmaul-husna`
@@ -55,7 +55,7 @@ Frontend sudah punya halaman browsing/filtering untuk:
 - `stats`
 - `tafsir`
 
-Backend perlu menutup gap data berikut:
+API Service perlu menutup gap data berikut:
 - katalog doa dan dzikir lengkap beserta kategori
 - daftar asmaul husna yang konsisten
 - daftar fiqh dengan topik, dalil, dan penjelasan
@@ -68,7 +68,7 @@ Backend perlu menutup gap data berikut:
 
 ## Persisted User Data
 
-Frontend sudah siap untuk data yang harus tersimpan per user, tapi backend masih harus memastikan persistence dan sinkronisasinya:
+Web App sudah siap untuk data yang harus tersimpan per user, tapi API service masih harus memastikan persistence dan sinkronisasinya:
 
 - `notes` → simpan, update, hapus, dan fallback lokal hanya sebagai cadangan
 - `goals` → daftar, create, update, delete
@@ -82,7 +82,7 @@ Frontend sudah siap untuk data yang harus tersimpan per user, tapi backend masih
 
 ## Notifications and Automation
 
-Frontend settings sudah ada, tetapi backend masih perlu:
+Web App settings sudah ada, tetapi API service masih perlu:
 - menyimpan notification settings user
 - menjalankan scheduler/worker untuk reminder
 - mengirim notifikasi browser ketika user mengizinkan
@@ -90,7 +90,7 @@ Frontend settings sudah ada, tetapi backend masih perlu:
 
 ## Admin, Sharing, and Developer Tools
 
-Frontend sudah memakai endpoint berikut dan backend perlu memastikan semuanya aktif:
+Web App sudah memakai endpoint berikut dan API service perlu memastikan semuanya aktif:
 
 - `blog` public list/detail dan admin CRUD kategori/tag/post
 - `siroh` public list/detail dan admin CRUD kategori/content

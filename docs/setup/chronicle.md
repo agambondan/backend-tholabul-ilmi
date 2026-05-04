@@ -6,6 +6,6 @@ Chronicle is bound at the monorepo root:
 /home/firman/works/me/thollabul-ilmi
 ```
 
-Project config lives in `.chronicle/config.json`. Backend and frontend should not keep separate Chronicle bindings unless they intentionally become independent projects again.
+Project config lives in `.chronicle/config.json`. The API service and web app should not keep separate Chronicle bindings unless they intentionally become independent projects again.
 
-For repo-wide work, run retrieval and sync from the monorepo root so Chronicle indexes `apps/backend`, `apps/frontend`, and `docs` together.
+For repo-wide work, run retrieval and sync from the monorepo root so Chronicle indexes `services/api`, `apps/web`, and `docs` together.

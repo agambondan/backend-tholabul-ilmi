@@ -1,6 +1,6 @@
-# Backend Endpoint Gaps
+# API Service Endpoint Gaps
 
-Dokumen ini memetakan endpoint backend yang dipakai frontend, supaya backend bisa dikerjakan per kontrak nyata.
+Dokumen ini memetakan endpoint API service yang dipakai web app, supaya API service bisa dikerjakan per kontrak nyata.
 
 Sumber utama:
 - `src/lib/api.js`
@@ -8,7 +8,7 @@ Sumber utama:
 
 ## Quran and Search
 
-| Endpoint | Dipakai oleh frontend | Catatan |
+| Endpoint | Dipakai oleh web app | Catatan |
 | --- | --- | --- |
 | `GET /api/v1/surah?size=114&sort=number` | `src/app/quran/page.js`, `src/app/tafsir/page.js` | Daftar surah dasar untuk landing Quran dan index tafsir. |
 | `GET /api/v1/surah/name/:slug?page=&size=` | `src/app/quran/[...slug]/InfiniteScrollAyahPage.js`, `src/app/tafsir/[slug]/page.js` | Reader ayah dan tafsir per surah bergantung ke ini. |
@@ -20,11 +20,11 @@ Sumber utama:
 | `GET /api/v1/audio/surah/:number` | `src/app/quran/[...slug]/AyahPage.js` | Audio surah. |
 | `GET /api/v1/audio/ayah/:ayahId` | `src/app/quran/[...slug]/AyahPage.js` | Audio per ayah. |
 | `GET /api/v1/asbabun-nuzul/surah/:number` | `src/lib/api.js`, `src/app/asbabun-nuzul/page.js` | Konten asbabun-nuzul per surah. |
-| `GET /api/v1/asbabun-nuzul/ayah/:ayahId` | `src/lib/api.js` | Konten asbabun-nuzul per ayah bila backend menyediakannya. |
+| `GET /api/v1/asbabun-nuzul/ayah/:ayahId` | `src/lib/api.js` | Konten asbabun-nuzul per ayah bila API service menyediakannya. |
 
 ## Hadith
 
-| Endpoint | Dipakai oleh frontend | Catatan |
+| Endpoint | Dipakai oleh web app | Catatan |
 | --- | --- | --- |
 | `GET /api/v1/books` | `src/app/hadith/byBook.js` | Daftar kitab hadith. |
 | `GET /api/v1/themes?size=250` | `src/app/hadith/byTheme.js` | Daftar theme hadith. |
@@ -37,7 +37,7 @@ Sumber utama:
 
 ## Content Catalogs
 
-| Endpoint | Dipakai oleh frontend | Catatan |
+| Endpoint | Dipakai oleh web app | Catatan |
 | --- | --- | --- |
 | `GET /api/v1/doa?page=&size=` | `src/lib/api.js`, `src/app/doa/page.js` | Daftar doa harian. |
 | `GET /api/v1/doa/category/:category?page=&size=` | `src/lib/api.js`, `src/app/doa/page.js` | Filter doa per kategori. |
@@ -47,7 +47,7 @@ Sumber utama:
 | `GET /api/v1/dzikir/:id` | `src/lib/api.js` | Detail dzikir. |
 | `GET /api/v1/asmaul-husna` | `src/lib/api.js`, `src/app/asmaul-husna/page.js` | 99 nama Allah dan artinya. |
 | `GET /api/v1/asmaul-husna/:number` | `src/lib/api.js` | Detail nama tertentu. |
-| `GET /api/v1/fiqh` | `src/app/fiqh/page.js` | Halaman fiqh bergantung daftar topik/dalil dari backend. |
+| `GET /api/v1/fiqh` | `src/app/fiqh/page.js` | Halaman fiqh bergantung daftar topik/dalil dari API service. |
 | `GET /api/v1/kajian` | `src/lib/api.js`, `src/app/kajian/page.js` | Katalog kajian. |
 | `GET /api/v1/kajian/:id` | `src/lib/api.js` | Detail kajian. |
 | `GET /api/v1/hijri/today` | `src/lib/api.js`, `src/app/hijri/page.js` | Tanggal hijriah hari ini. |
@@ -67,7 +67,7 @@ Sumber utama:
 
 ## User State and Personal Data
 
-| Endpoint | Dipakai oleh frontend | Catatan |
+| Endpoint | Dipakai oleh web app | Catatan |
 | --- | --- | --- |
 | `GET /api/v1/bookmarks` | `src/lib/api.js`, `src/app/bookmarks/page.js` | Daftar bookmark user. |
 | `POST /api/v1/bookmarks` | `src/lib/api.js`, bookmark UI | Tambah bookmark. |
@@ -104,7 +104,7 @@ Sumber utama:
 
 ## Admin, Developer, and Sharing
 
-| Endpoint | Dipakai oleh frontend | Catatan |
+| Endpoint | Dipakai oleh web app | Catatan |
 | --- | --- | --- |
 | `GET /api/v1/users` | `src/lib/api.js`, `src/app/admin/users/page.js` | Admin list user. |
 | `PUT /api/v1/users/:id` | `src/lib/api.js`, `src/app/profile/page.js`, admin user page | Update profil / admin edit user. |
@@ -141,7 +141,7 @@ Sumber utama:
 
 ## Ops Notes
 
-- Kalau backend ingin menutup gap paling cepat, urutkan dari:
+- Kalau API service ingin menutup gap paling cepat, urutkan dari:
   1. Hadith stack
   2. Quran enrichment
   3. Content catalogs

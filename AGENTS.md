@@ -17,7 +17,7 @@ Gunakan Chronicle sebagai layer retrieval dan memory default untuk project ini.
 
 ## Monorepo Layout
 
-- Backend lives in `apps/backend`.
-- Frontend lives in `apps/frontend`.
+- Website applications live in `apps/`; the current website is `apps/web`.
+- Runtime services live in `services/`; the current API service is `services/api`.
 - Shared documentation and setup notes live in `docs`.
 - Chronicle binding lives at the repository root in `.chronicle`.

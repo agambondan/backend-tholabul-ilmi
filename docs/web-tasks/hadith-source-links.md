@@ -1,4 +1,4 @@
-# Frontend Task: Tambah Link Referensi ke Nomor Hadits
+# Web App Task: Tambah Link Referensi ke Nomor Hadits
 
 ## Context
 
@@ -92,4 +92,4 @@ function SourceBadges({ source }) {
 
 ## API Response
 
-Field `source` sudah ada di response API backend. Tidak ada perubahan API yang diperlukan.
+Field `source` sudah ada di response API API service. Tidak ada perubahan API yang diperlukan.
