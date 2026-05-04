@@ -299,7 +299,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                         dangerouslySetInnerHTML={{
                             __html: (
                                 ayah.translation.ar_html ?? ayah.translation.ar
-                            ).concat(`&nbsp;&#x06DD;${NumberToArabic(ayah.number)}`),
+                            ).concat(`&nbsp;<span class="font-kitab">&#x06DD;${NumberToArabic(ayah.number)}</span>`),
                         }}
                     />
                     {ayah.translation.latin_idn && (
