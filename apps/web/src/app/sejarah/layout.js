@@ -1,6 +1,6 @@
 export const metadata = {
-    title: 'Sejarah Islam — Thullaabul Ilmi',
-    description: 'Garis waktu sejarah Islam dari era Nabi Muhammad ﷺ hingga era modern. Peristiwa penting, tokoh, dan dinasti Islam.',
+    title: 'Islamic History — Thullaabul Ilmi',
+    description: 'A timeline of Islamic history from the era of Prophet Muhammad ﷺ to the modern period, covering major events, figures, and dynasties.',
 };
 
 const SejarahLayout = ({ children }) => children;

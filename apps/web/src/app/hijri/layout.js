@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Kalender Hijriah',
+    title: 'Hijri Calendar',
     description:
-        'Konversi tanggal Masehi ke Hijriah, cek tanggal Hijriah hari ini, dan lihat hari-hari penting Islam sepanjang tahun.',
+        'Convert Gregorian dates to Hijri, check today in the Hijri calendar, and view important Islamic dates throughout the year.',
 };
 export default function HijriLayout({ children }) {
     return children;

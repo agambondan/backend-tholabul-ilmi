@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Jadwal Sholat',
+    title: 'Prayer Schedule',
     description:
-        'Jadwal waktu sholat 5 waktu untuk kota-kota di Indonesia. Deteksi otomatis lokasi, tampilkan sholat berikutnya, metode perhitungan Kemenag RI.',
+        'Five daily prayer times for cities in Indonesia, with automatic location detection, next prayer display, and the Kemenag RI calculation method.',
 };
 export default function JadwalSholatLayout({ children }) {
     return children;

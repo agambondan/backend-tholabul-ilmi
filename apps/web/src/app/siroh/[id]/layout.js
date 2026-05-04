@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL;
 const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tholabul-ilmi.com';
 
@@ -18,12 +18,12 @@ export async function generateMetadata({ params }) {
     const content = await getSirohContent(params.id);
 
     const title = content?.title
-        ? `${content.title} — Siroh Nabawiyah`
-        : `Siroh Nabawiyah — Thullaabul 'Ilmi`;
+        ? `${content.title} — Prophet's Biography`
+        : `Prophet's Biography — Thullaabul 'Ilmi`;
     const description =
         content?.summary ??
         content?.excerpt ??
-        `Baca Siroh Nabawiyah — biografi Nabi Muhammad ﷺ dalam format bab-bab yang mudah dipahami.`;
+        `Read the biography of Prophet Muhammad ﷺ in clear, chapter-based lessons.`;
 
     const canonicalUrl = `${SITE_URL}/siroh/${params.id}`;
 

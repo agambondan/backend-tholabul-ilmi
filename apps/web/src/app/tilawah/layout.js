@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Tilawah Tracker',
+    title: 'Recitation Tracker',
     description:
-        'Catat halaman dan juz yang dibaca setiap hari. Pantau statistik tilawah, estimasi khatam, dan rata-rata bacaan harian.',
+        'Record daily Quran pages and juz read, then track recitation statistics, khatam estimates, and daily averages.',
 };
 export default function TilawahLayout({ children }) {
     return children;

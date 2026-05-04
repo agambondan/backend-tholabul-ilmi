@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Daftar',
+    title: 'Register',
     description:
-        'Buat akun Thullaabul Ilmi gratis dan mulai perjalanan belajar Islam kamu — hafalan, tilawah, amalan harian, dan 40+ fitur tersedia.',
+        'Create a free Thullaabul Ilmi account and start your Islamic learning journey with memorization, recitation, daily deeds, and 40+ features.',
     robots: { index: false, follow: false },
 };
 export default function RegisterLayout({ children }) {

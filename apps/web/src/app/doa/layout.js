@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Kumpulan Doa',
+    title: 'Prayer Collection',
     description:
-        'Kumpulan doa harian dan doa situasional berdasarkan Al-Quran dan Sunnah — doa pagi, petang, makan, tidur, safar, dan ibadah.',
+        'A collection of daily and situational prayers from the Quran and Sunnah, including morning, evening, meal, sleep, travel, and worship prayers.',
 };
 export default function DoaLayout({ children }) {
     return children;

@@ -1,6 +1,6 @@
 export const metadata = {
-    title: 'Manasik Haji & Umrah — Thullaabul Ilmi',
-    description: 'Panduan lengkap tata cara haji dan umrah dari niat ihram sampai tahlul, beserta bacaan dan keterangan.',
+    title: 'Hajj & Umrah Manasik — Thullaabul Ilmi',
+    description: 'A complete guide to Hajj and Umrah rituals from ihram intention to tahallul, with readings and explanations.',
 };
 
 const ManasikLayout = ({ children }) => children;

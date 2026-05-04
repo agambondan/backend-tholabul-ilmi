@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Panduan Sholat',
+    title: 'Prayer Guide',
     description:
-        'Panduan tata cara sholat 5 waktu lengkap: niat, takbiratul ihram, bacaan setiap gerakan, dan terjemahan Bahasa Indonesia.',
+        'A complete five daily prayers guide with intentions, opening takbir, readings for each movement, and translations.',
 };
 export default function PanduanSholatLayout({ children }) {
     return children;

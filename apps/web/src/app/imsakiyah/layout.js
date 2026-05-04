@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Jadwal Imsakiyah — Thullaabul Ilmi',
+    title: 'Imsakiyah Schedule — Thullaabul Ilmi',
     description:
-        'Jadwal imsakiyah lengkap: imsak, subuh, syuruq, dzuhur, ashar, maghrib, dan isya untuk seluruh kota di Indonesia.',
+        'A complete imsakiyah schedule with imsak, fajr, sunrise, dhuhr, asr, maghrib, and isha times for cities across Indonesia.',
 };
 
 const ImsakiyahLayout = ({ children }) => children;

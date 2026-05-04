@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Statistik Belajar',
+    title: 'Learning Statistics',
     description:
-        'Pantau statistik aktivitas belajar Islam kamu — total ayah dibaca, hadith dibaca, streak harian, dan progress hafalan.',
+        'Track your Islamic learning activity, including verses read, hadiths read, daily streaks, and memorization progress.',
 };
 export default function StatsLayout({ children }) {
     return children;

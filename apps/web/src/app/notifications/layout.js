@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Pengaturan Notifikasi',
+    title: 'Notification Settings',
     description:
-        'Atur jadwal pengingat harian untuk membaca Al-Quran, Hadith, dan berdzikir. Jaga konsistensi ibadah dengan reminder otomatis.',
+        'Configure daily reminders for Quran reading, Hadith, and dhikr to maintain consistent worship habits.',
 };
 export default function NotificationsLayout({ children }) {
     return children;

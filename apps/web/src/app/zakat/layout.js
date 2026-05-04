@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Kalkulator Zakat',
+    title: 'Zakat Calculator',
     description:
-        'Hitung zakat maal, zakat fitrah, dan zakat profesi sesuai syariat Islam. Dilengkapi perhitungan nisab otomatis berdasarkan harga emas terkini.',
+        'Calculate maal, fitrah, and income zakat according to Islamic rules, with automatic nisab estimation based on current gold prices.',
 };
 export default function ZakatLayout({ children }) {
     return children;

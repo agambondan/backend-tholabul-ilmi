@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Wirid & Bacaan Sunnah',
+    title: 'Wird & Sunnah Readings',
     description:
-        'Kumpulan wirid dan bacaan sunnah untuk momen istimewa — hari Jumat, Ramadan, hari Arafah, Lailatul Qadar, Idul Fitri, dan Idul Adha.',
+        'A collection of wird and sunnah readings for special moments, including Friday, Ramadan, Arafah Day, Laylatul Qadr, Eid al-Fitr, and Eid al-Adha.',
 };
 export default function WiridLayout({ children }) {
     return children;

@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Blog Islami',
+    title: 'Islamic Blog',
     description:
-        'Artikel Islam — tazkiyah, fiqh praktis, sirah ringkas, dan ilmu-ilmu agama dari para penulis Thullaabul Ilmi.',
+        'Islamic articles on tazkiyah, practical fiqh, sirah, and religious learning from Thullaabul Ilmi writers.',
 };
 export default function BlogLayout({ children }) {
     return children;

@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Masuk',
+    title: 'Sign In',
     description:
-        'Masuk ke akun Thullaabul Ilmi untuk mengakses hafalan, tilawah tracker, amalan harian, dan fitur personal lainnya.',
+        'Sign in to Thullaabul Ilmi to access memorization, recitation tracking, daily deeds, and other personal features.',
     robots: { index: false, follow: false },
 };
 export default function LoginLayout({ children }) {

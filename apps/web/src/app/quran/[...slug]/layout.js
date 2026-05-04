@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL;
 const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tholabul-ilmi.com';
 
@@ -29,8 +29,8 @@ export async function generateMetadata({ params }) {
         ? `Surah ${name}${arabicName ? ` (${arabicName})` : ''} — Al-Quran`
         : `Al-Quran — Thullaabul 'Ilmi`;
     const description = surah
-        ? `Baca Surah ${name}${surahNumber ? ` (Surah ke-${surahNumber})` : ''}${meaning ? ` — artinya "${meaning}"` : ''} dengan tajweed berwarna, tafsir, terjemahan, dan audio murotal.`
-        : `Baca Al-Quran 30 Juz dengan tajweed berwarna, tafsir, terjemahan, dan audio murotal.`;
+        ? `Read Surah ${name}${surahNumber ? ` (surah no. ${surahNumber})` : ''}${meaning ? `, meaning "${meaning}"` : ''}, with color-coded Tajweed, tafsir, translation, and recitation audio.`
+        : `Read the complete 30 juz of the Quran with color-coded Tajweed, tafsir, translation, and recitation audio.`;
 
     const urlPath = surahSlug
         ? `/quran/surah/${surahSlug}`

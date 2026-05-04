@@ -1,7 +1,7 @@
 export const metadata = {
     title: 'Tahlil & Yasin',
     description:
-        'Bacaan Tahlil dan Surah Yasin lengkap dengan teks Arab, Latin, dan terjemahan. Panduan bacaan tahlilan digital untuk kirim doa kepada yang telah wafat.',
+        'Complete Tahlil and Surah Yasin readings with Arabic text, transliteration, and translation for digital remembrance and prayers.',
 };
 export default function TahlilLayout({ children }) {
     return children;

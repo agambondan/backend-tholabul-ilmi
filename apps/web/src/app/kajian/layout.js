@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Kajian Islam',
+    title: 'Islamic Studies',
     description:
-        'Kumpulan link ceramah dan kajian Islam dari ustadz terpercaya — aqidah, fiqh, tazkiyah, sirah, tafsir, dan hadith. Belajar Islam kapan saja dan di mana saja.',
+        'A curated collection of Islamic lecture and study links from trusted teachers across aqidah, fiqh, tazkiyah, sirah, tafsir, and hadith.',
 };
 export default function KajianLayout({ children }) {
     return children;

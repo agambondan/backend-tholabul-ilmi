@@ -1,7 +1,7 @@
 export const metadata = {
     title: "Al-Quran — Thullaabul 'Ilmi",
     description:
-        'Baca Al-Quran 30 Juz dengan tampilan Tajweed berwarna untuk memudahkan pembelajaran tilawah.',
+        'Read the complete 30 juz of the Quran with color-coded Tajweed to support recitation learning.',
 };
 
 export default function QuranLayout({ children }) {

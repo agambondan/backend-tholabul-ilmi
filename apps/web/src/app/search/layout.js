@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Cari',
+    title: 'Search',
     description:
-        'Cari ayat Al-Quran dan hadith dengan kata kunci dalam Bahasa Indonesia, Arab, atau Latin.',
+        'Search Quran verses and hadiths by keywords in Indonesian, Arabic, or transliteration.',
 };
 export default function SearchLayout({ children }) {
     return children;

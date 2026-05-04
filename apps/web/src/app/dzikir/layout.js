@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Dzikir & Wirid',
+    title: 'Dhikr & Wird',
     description:
-        'Koleksi dzikir pagi-petang, wirid harian, dan dzikir situasional dari Hisnul Muslim dan Al-Adzkar.',
+        'A collection of morning and evening dhikr, daily wird, and situational dhikr from Hisnul Muslim and Al-Adhkar.',
 };
 export default function DzikirLayout({ children }) {
     return children;

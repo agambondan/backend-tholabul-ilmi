@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Hafalan Tracker',
+    title: 'Memorization Tracker',
     description:
-        'Catat dan pantau progress hafalan Al-Quran per surah — tandai surah yang sudah hafal, sedang dihafal, atau belum dimulai.',
+        'Record and track Quran memorization progress by surah, including memorized, in progress, and not started statuses.',
 };
 export default function HafalanLayout({ children }) {
     return children;

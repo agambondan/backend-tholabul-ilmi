@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Target Belajar',
+    title: 'Learning Goals',
     description:
-        'Set dan pantau target hafalan, tilawah, dan belajar hadithmu. Capai tujuan belajar Islam dengan terstruktur dan konsisten di Thullaabul Ilmi.',
+        'Set and track memorization, recitation, and hadith learning goals. Build a structured and consistent Islamic learning journey with Thullaabul Ilmi.',
 };
 export default function GoalsLayout({ children }) {
     return children;

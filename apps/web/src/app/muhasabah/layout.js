@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Muhasabah Harian',
+    title: 'Daily Muhasabah',
     description:
-        'Tulis jurnal muhasabah dan refleksi diri setiap hari. Introspeksi amal dan niat untuk terus memperbaiki diri di jalan Islam.',
+        'Write daily muhasabah journals and reflections to review deeds, intentions, and personal growth.',
 };
 export default function MuhasabahLayout({ children }) {
     return children;

@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Kamus Arab',
+    title: 'Arabic Dictionary',
     description:
-        'Kamus Arab-Indonesia untuk kosakata Al-Quran dan Islam. Cari arti kata Arab, transliterasi Latin, dan akar kata dengan mudah.',
+        'An Arabic-Indonesian dictionary for Quranic and Islamic vocabulary, with meanings, transliteration, and roots.',
 };
 export default function KamusLayout({ children }) {
     return children;

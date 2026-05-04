@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Quiz Islami',
+    title: 'Islamic Quiz',
     description:
-        'Uji pengetahuan Islam kamu dengan kuis interaktif seputar Al-Quran, Hadith, Fiqh, dan Sejarah Islam. Soal diacak setiap sesi.',
+        'Test Islamic knowledge with interactive quizzes about the Quran, Hadith, Fiqh, and Islamic History. Questions are shuffled each session.',
 };
 export default function QuizLayout({ children }) {
     return children;

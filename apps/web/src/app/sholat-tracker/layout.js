@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Sholat Tracker',
+    title: 'Prayer Tracker',
     description:
-        'Catat dan pantau ibadah sholat lima waktu kamu setiap hari. Bangun kebiasaan sholat tepat waktu dengan tracker pribadi di Thullaabul Ilmi.',
+        'Record and track the five daily prayers to build a consistent prayer habit with a personal tracker in Thullaabul Ilmi.',
 };
 export default function SholatTrackerLayout({ children }) {
     return children;

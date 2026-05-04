@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Profil',
+    title: 'Profile',
     description:
-        'Kelola profil, pantau streak dan progress belajar, atur preferensi bahasa, dan ubah password akun Thullaabul Ilmi kamu.',
+        'Manage your profile, track streaks and learning progress, set language preferences, and update your Thullaabul Ilmi account password.',
 };
 export default function ProfileLayout({ children }) {
     return children;

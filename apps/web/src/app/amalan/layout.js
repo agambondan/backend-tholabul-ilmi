@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Amalan Harian',
+    title: 'Daily Deeds',
     description:
-        'Checklist amalan sunnah harian — tahajud, dhuha, puasa, dzikir, sedekah. Pantau konsistensi ibadahmu setiap hari.',
+        'A daily sunnah deeds checklist for tahajjud, dhuha, fasting, dhikr, and charity to track worship consistency.',
 };
 export default function AmalanLayout({ children }) {
     return children;

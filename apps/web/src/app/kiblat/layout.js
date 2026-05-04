@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Arah Kiblat',
+    title: 'Qibla Direction',
     description:
-        "Temukan arah kiblat (Ka'bah) dari lokasi kamu secara akurat menggunakan GPS dan kompas perangkat. Tampilkan jarak ke Mekkah.",
+        "Find the Qibla direction toward the Ka'bah from your location using GPS and your device compass, including distance to Makkah.",
 };
 export default function KiblatLayout({ children }) {
     return children;

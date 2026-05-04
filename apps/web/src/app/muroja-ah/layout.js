@@ -1,7 +1,7 @@
 export const metadata = {
-    title: "Muroja'ah",
+    title: 'Review',
     description:
-        "Jadwal dan tracker muroja'ah (review) hafalan Al-Quran. Lacak kapan terakhir mereview setiap surah dan prioritaskan yang belum direview.",
+        'Schedule and track Quran memorization review, including last reviewed surahs and review priorities.',
 };
 export default function MurojaahLayout({ children }) {
     return children;

@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Fiqh Ringkas',
+    title: 'Brief Fiqh',
     description:
-        'Panduan praktis hukum Islam sehari-hari: thaharah, sholat, puasa, zakat, haji, dan muamalah. Dilengkapi dalil dari Al-Quran dan Hadith.',
+        'A practical guide to daily Islamic rulings: purification, prayer, fasting, zakat, hajj, and transactions, supported by evidence from the Quran and Hadith.',
 };
 export default function FiqhLayout({ children }) {
     return children;

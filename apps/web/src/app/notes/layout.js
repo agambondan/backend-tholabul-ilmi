@@ -1,7 +1,7 @@
 export const metadata = {
-    title: 'Catatan Pribadi',
+    title: 'Personal Notes',
     description:
-        'Catat ayah favorit, hadith pilihan, pelajaran agama, dan renungan Islam. Catatan tersimpan aman dan dapat diakses kapan saja.',
+        'Save favorite verses, selected hadiths, Islamic lessons, and personal reflections in notes you can access anytime.',
 };
 export default function NotesLayout({ children }) {
     return children;

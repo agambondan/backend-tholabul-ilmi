@@ -1,7 +1,7 @@
 export const metadata = {
     title: "Hadith — Thullaabul 'Ilmi",
     description:
-        'Jelajahi koleksi Hadith Shahih dari 9 kitab utama: Bukhari, Muslim, Abu Daud, dan lebih banyak lagi.',
+        'Explore authentic hadith collections from 9 major books, including Bukhari, Muslim, Abu Dawud, and more.',
 };
 
 export default function HadithLayout({ children }) {

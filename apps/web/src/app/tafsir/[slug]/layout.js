@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL;
 const SITE_URL =
     process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tholabul-ilmi.com';
 
@@ -25,8 +25,8 @@ export async function generateMetadata({ params }) {
         ? `Tafsir Surah ${name}${arabicName ? ` (${arabicName})` : ''}`
         : `Tafsir Surah — Thullaabul 'Ilmi`;
     const description = surah
-        ? `Baca tafsir lengkap Surah ${name} — penjelasan makna dan konteks setiap ayat Al-Quran.`
-        : `Tafsir dan penjelasan makna ayat Al-Quran per surah di Thullaabul Ilmi.`;
+        ? `Read the complete tafsir of Surah ${name}, with explanations of the meaning and context of each Quranic verse.`
+        : `Read tafsir and explanations of Quranic meanings by surah on Thullaabul Ilmi.`;
     const canonicalUrl = `${SITE_URL}/tafsir/${params.slug}`;
 
     return {
