@@ -463,7 +463,7 @@ export const NavbarTailwindCss = () => {
                 />
                 <div
                     ref={mobileMenuRef}
-                    className='relative mx-3 mb-3 overflow-hidden rounded-3xl border border-emerald-700/60 bg-gradient-to-b from-emerald-900 via-emerald-950 to-gray-950 shadow-2xl'
+                    className='relative overflow-y-auto max-h-[calc(100svh-var(--navbar-height))] border-b border-emerald-700/60 bg-gradient-to-b from-emerald-900 via-emerald-950 to-gray-950 shadow-2xl'
                 >
                     <div className='px-4 pt-4 pb-5'>
                         <div className='mb-4 flex items-center justify-between'>

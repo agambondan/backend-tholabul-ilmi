@@ -12,6 +12,7 @@ const AutoScrollButton = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [speed, setSpeed] = useState(3);
     const [showPanel, setShowPanel] = useState(false);
+    const [navBarVisible, setNavBarVisible] = useState(false);
 
     const rafRef = useRef(null);
     const isPlayingRef = useRef(false);
@@ -86,6 +87,21 @@ const AutoScrollButton = () => {
         };
     }, []);
 
+    // Track prev/next nav bar visibility (same 2s timeout as ScrollableComponent)
+    useEffect(() => {
+        let tid;
+        const handler = () => {
+            setNavBarVisible(true);
+            clearTimeout(tid);
+            tid = setTimeout(() => setNavBarVisible(false), 2000);
+        };
+        window.addEventListener('scroll', handler);
+        return () => {
+            window.removeEventListener('scroll', handler);
+            clearTimeout(tid);
+        };
+    }, []);
+
     // Close panel on outside click
     useEffect(() => {
         if (!showPanel) return;
@@ -103,7 +119,10 @@ const AutoScrollButton = () => {
     };
 
     return (
-        <div id='auto-scroll-panel' className='fixed left-2 bottom-2 z-10'>
+        <div
+            id='auto-scroll-panel'
+            className={`fixed left-2 z-10 transition-[bottom] duration-200 ${navBarVisible ? 'bottom-[52px]' : 'bottom-2'}`}
+        >
             {showPanel && (
                 <div className='absolute left-0 bottom-16 bg-white dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 rounded-xl w-52 p-3 shadow-lg text-sm text-emerald-900 dark:text-white mb-1'>
                     <div className='flex items-center gap-1.5 mb-3'>

@@ -48,7 +48,7 @@ const SettingButton = ({ isShowFixedComponent }) => {
             ref={popupRef}
             className={classNames({
                 'fixed right-2 z-10': true,
-                'bottom-[70px]':
+                'bottom-[52px]':
                     showFixedComponent && isShowFixedComponent === undefined,
                 'bottom-2':
                     !showFixedComponent && isShowFixedComponent === undefined,
