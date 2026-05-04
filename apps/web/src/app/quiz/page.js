@@ -2,135 +2,56 @@
 
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
+import { useLocale } from '@/context/Locale';
 import { useState } from 'react';
 import { BsCheckCircleFill, BsXCircleFill } from 'react-icons/bs';
 import { FaBrain } from 'react-icons/fa';
 import { MdRefresh } from 'react-icons/md';
 
-const QUIZ_BANK = [
-    {
-        q: 'Berapa jumlah surat dalam Al-Quran?',
-        options: ['112', '114', '116', '120'],
-        answer: 1,
-        explanation: 'Al-Quran terdiri dari 114 surat, dimulai dari Al-Fatihah dan diakhiri dengan An-Nas.',
-    },
-    {
-        q: 'Surat apakah yang disebut "jantung Al-Quran"?',
-        options: ['Al-Fatihah', 'Al-Baqarah', 'Yasin', 'Al-Ikhlas'],
-        answer: 2,
-        explanation: 'Surat Yasin disebut jantung Al-Quran berdasarkan hadits riwayat Abu Dawud dan Tirmidzi.',
-    },
-    {
-        q: 'Berapa jumlah juz dalam Al-Quran?',
-        options: ['20', '25', '30', '35'],
-        answer: 2,
-        explanation: 'Al-Quran dibagi menjadi 30 juz untuk memudahkan pembacaan dan penghafalan.',
-    },
-    {
-        q: 'Surat Al-Quran yang paling panjang adalah...',
-        options: ['Ali Imran', 'Al-Baqarah', 'An-Nisa', 'Al-Maidah'],
-        answer: 1,
-        explanation: 'Al-Baqarah adalah surat terpanjang dengan 286 ayat.',
-    },
-    {
-        q: 'Surat Al-Quran yang paling pendek adalah...',
-        options: ['Al-Ikhlas', 'Al-Kawthar', 'Al-Asr', 'An-Nas'],
-        answer: 1,
-        explanation: 'Al-Kawthar (surat ke-108) hanya terdiri dari 3 ayat, menjadikannya surat terpendek.',
-    },
-    {
-        q: 'Berapa jumlah kitab hadith shahih dalam koleksi Kutub al-Sittah?',
-        options: ['4', '6', '8', '9'],
-        answer: 1,
-        explanation: 'Kutub al-Sittah adalah 6 kitab hadith utama: Shahih Bukhari, Shahih Muslim, Sunan Abu Dawud, Sunan Tirmidzi, Sunan Nasa\'i, dan Sunan Ibnu Majah.',
-    },
-    {
-        q: 'Apa arti dari kalimat "La ilaha illallah"?',
-        options: [
-            'Muhammad adalah utusan Allah',
-            'Tidak ada Tuhan selain Allah',
-            'Allah Maha Besar',
-            'Segala puji bagi Allah',
-        ],
-        answer: 1,
-        explanation: '"La ilaha illallah" berarti "Tidak ada Tuhan yang berhak disembah selain Allah". Ini adalah inti dari syahadat tauhid.',
-    },
-    {
-        q: 'Berapa rakaat sholat Subuh?',
-        options: ['2', '3', '4', '5'],
-        answer: 0,
-        explanation: 'Sholat Subuh terdiri dari 2 rakaat fardhu, dan diawali dengan adzan serta iqamah.',
-    },
-    {
-        q: 'Rukun Islam yang ke-4 adalah...',
-        options: ['Sholat', 'Puasa', 'Zakat', 'Haji'],
-        answer: 2,
-        explanation: 'Rukun Islam: (1) Syahadat, (2) Sholat, (3) Zakat, (4) Puasa, (5) Haji bagi yang mampu.',
-    },
-    {
-        q: 'Pada tanggal berapa diperingati Hari Raya Idul Adha?',
-        options: ['1 Syawal', '10 Dzulhijjah', '15 Sya\'ban', '27 Rajab'],
-        answer: 1,
-        explanation: 'Idul Adha diperingati pada tanggal 10 Dzulhijjah dan bersamaan dengan ibadah haji di Arafah.',
-    },
-    {
-        q: 'Asmaul Husna adalah nama-nama Allah yang berjumlah...',
-        options: ['66', '88', '99', '114'],
-        answer: 2,
-        explanation: 'Asmaul Husna adalah 99 nama Allah yang indah. HR. Tirmidzi: "Sesungguhnya Allah mempunyai 99 nama..."',
-    },
-    {
-        q: 'Siapakah sahabat Nabi yang dijuluki "As-Siddiq" (yang sangat membenarkan)?',
-        options: ['Umar bin Khattab', 'Abu Bakar', 'Ali bin Abi Thalib', 'Utsman bin Affan'],
-        answer: 1,
-        explanation: 'Abu Bakar As-Siddiq mendapat julukan tersebut karena beliau langsung membenarkan peristiwa Isra Mikraj Nabi.',
-    },
-    {
-        q: 'Kota Mekkah terletak di negara mana?',
-        options: ['Uni Emirat Arab', 'Kuwait', 'Arab Saudi', 'Qatar'],
-        answer: 2,
-        explanation: 'Mekkah Al-Mukarramah terletak di wilayah Hijaz, Arab Saudi. Di sini terdapat Masjidil Haram dan Ka\'bah.',
-    },
-    {
-        q: 'Apa nama malam yang lebih baik dari 1000 bulan?',
-        options: ['Malam Nisfu Sya\'ban', 'Malam Isra Mikraj', 'Lailatul Qadr', 'Malam Idul Fitri'],
-        answer: 2,
-        explanation: 'Lailatul Qadr terjadi di salah satu malam ganjil di 10 hari terakhir Ramadhan. QS. Al-Qadr: 1-5.',
-    },
-    {
-        q: 'Berapa bilangan nisab zakat maal dalam gram emas?',
-        options: ['65g', '75g', '85g', '95g'],
-        answer: 2,
-        explanation: 'Nisab zakat maal adalah 85 gram emas murni. Jika harta mencapai jumlah ini dan sudah 1 tahun (haul), wajib dizakati 2,5%.',
-    },
-];
-
-function shuffle(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-}
-
 const QUESTIONS_PER_ROUND = 10;
 
+const normalizeQuestion = (q) => {
+    const options = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options ?? []);
+    const answer = options.indexOf(q.correct_answer);
+    return {
+        q: q.question_text,
+        options,
+        answer,
+        explanation: q.explanation ?? '',
+    };
+};
+
 export default function QuizPage() {
+    const { t } = useLocale();
     const [phase, setPhase] = useState('intro'); // intro | quiz | result
     const [questions, setQuestions] = useState([]);
     const [current, setCurrent] = useState(0);
     const [selected, setSelected] = useState(null);
     const [answers, setAnswers] = useState([]);
     const [showExp, setShowExp] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [fetchError, setFetchError] = useState(false);
 
-    const startQuiz = () => {
-        setQuestions(shuffle(QUIZ_BANK).slice(0, QUESTIONS_PER_ROUND));
-        setCurrent(0);
-        setAnswers([]);
-        setSelected(null);
-        setShowExp(false);
-        setPhase('quiz');
+    const startQuiz = async () => {
+        setIsLoading(true);
+        setFetchError(false);
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/quiz/session?count=${QUESTIONS_PER_ROUND}`
+            );
+            const data = await res.json();
+            const items = data?.items ?? data ?? [];
+            setQuestions(items.map(normalizeQuestion));
+            setCurrent(0);
+            setAnswers([]);
+            setSelected(null);
+            setShowExp(false);
+            setPhase('quiz');
+        } catch {
+            setFetchError(true);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleAnswer = (idx) => {
@@ -158,11 +79,11 @@ export default function QuizPage() {
     const pct = Math.round((score / questions.length) * 100);
 
     const resultMessage = () => {
-        if (pct === 100) return { emoji: '🏆', msg: 'Sempurna! MasyaAllah!' };
-        if (pct >= 80) return { emoji: '⭐', msg: 'Luar biasa! Kamu sangat paham!' };
-        if (pct >= 60) return { emoji: '👍', msg: 'Bagus! Terus belajar!' };
-        if (pct >= 40) return { emoji: '📖', msg: 'Perlu lebih banyak belajar.' };
-        return { emoji: '💪', msg: 'Jangan menyerah, terus belajar Islam!' };
+        if (pct === 100) return { emoji: '🏆', msg: t('quiz.result_perfect') };
+        if (pct >= 80) return { emoji: '⭐', msg: t('quiz.result_great') };
+        if (pct >= 60) return { emoji: '👍', msg: t('quiz.result_good') };
+        if (pct >= 40) return { emoji: '📖', msg: t('quiz.result_learn_more') };
+        return { emoji: '💪', msg: t('quiz.result_keep_learning') };
     };
 
     if (phase === 'intro') {
@@ -174,19 +95,25 @@ export default function QuizPage() {
                         <FaBrain className='text-4xl text-purple-600 dark:text-purple-400' />
                     </div>
                     <h1 className='text-4xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-3'>
-                        Quiz Islami
+                        {t('quiz.title')}
                     </h1>
                     <p className='text-gray-500 dark:text-gray-400 mb-3 text-sm max-w-sm mx-auto'>
-                        Uji pengetahuan Islam kamu dengan {QUESTIONS_PER_ROUND} pertanyaan seputar Al-Quran, Hadith, Fiqh, dan Sejarah Islam.
+                        {t('quiz.intro_desc_prefix')} {QUESTIONS_PER_ROUND} {t('quiz.intro_desc_suffix')}
                     </p>
                     <p className='text-xs text-gray-400 dark:text-gray-500 mb-8'>
-                        {QUIZ_BANK.length} soal tersedia • Acak setiap sesi
+                        {t('quiz.random_each_session')}
                     </p>
+                    {fetchError && (
+                        <p className='text-sm text-red-500 dark:text-red-400 mb-4'>
+                            Gagal memuat soal. Pastikan server berjalan lalu coba lagi.
+                        </p>
+                    )}
                     <button
                         onClick={startQuiz}
-                        className='bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-2xl font-extrabold text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                        disabled={isLoading}
+                        className='bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-10 py-4 rounded-2xl font-extrabold text-lg transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5'
                     >
-                        Mulai Quiz
+                        {isLoading ? t('common.loading') : t('quiz.start')}
                     </button>
                 </div>
                 <Footer />
@@ -202,7 +129,7 @@ export default function QuizPage() {
                 <div className='max-w-lg flex-1 w-full flex-1 w-full mx-auto px-4 pt-24 pb-8 text-center'>
                     <div className='text-7xl mb-4'>{emoji}</div>
                     <h2 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-2'>
-                        Selesai!
+                        {t('quiz.finished')}
                     </h2>
                     <p className='text-gray-500 dark:text-gray-400 mb-6'>{msg}</p>
 
@@ -217,7 +144,7 @@ export default function QuizPage() {
                                 style={{ width: `${pct}%` }}
                             />
                         </div>
-                        <p className='text-gray-500 dark:text-gray-400 text-sm'>{pct}% benar</p>
+                        <p className='text-gray-500 dark:text-gray-400 text-sm'>{pct}% {t('quiz.correct')}</p>
                     </div>
 
                     <div className='space-y-2 text-left mb-8'>
@@ -242,9 +169,10 @@ export default function QuizPage() {
 
                     <button
                         onClick={startQuiz}
-                        className='flex items-center gap-2 mx-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-2xl font-bold transition-all'
+                        disabled={isLoading}
+                        className='flex items-center gap-2 mx-auto bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-8 py-3 rounded-2xl font-bold transition-all'
                     >
-                        <MdRefresh /> Ulangi Quiz
+                        <MdRefresh /> {isLoading ? t('common.loading') : t('quiz.retry')}
                     </button>
                 </div>
                 <Footer />
@@ -261,10 +189,10 @@ export default function QuizPage() {
                 {/* Progress */}
                 <div className='flex items-center justify-between mb-2'>
                     <span className='text-sm font-semibold text-gray-500 dark:text-gray-400'>
-                        Soal {current + 1} / {questions.length}
+                        {t('quiz.question')} {current + 1} / {questions.length}
                     </span>
                     <span className='text-sm font-semibold text-emerald-600 dark:text-emerald-400'>
-                        ✅ {answers.filter((a) => a.correct).length} benar
+                        ✅ {answers.filter((a) => a.correct).length} {t('quiz.correct')}
                     </span>
                 </div>
                 <div className='w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2 mb-6 overflow-hidden'>
@@ -320,7 +248,9 @@ export default function QuizPage() {
                         }`}
                     >
                         <p className='font-bold mb-1'>
-                            {selected === q.answer ? '✅ Benar!' : `❌ Kurang tepat. Jawaban: ${q.options[q.answer]}`}
+                            {selected === q.answer
+                                ? `✅ ${t('quiz.correct_answer')}`
+                                : `❌ ${t('quiz.wrong_answer')} ${q.options[q.answer]}`}
                         </p>
                         <p>{q.explanation}</p>
                     </div>
@@ -331,7 +261,7 @@ export default function QuizPage() {
                         onClick={nextQuestion}
                         className='w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl font-bold transition-all'
                     >
-                        {current + 1 < questions.length ? 'Soal Berikutnya →' : 'Lihat Hasil'}
+                        {current + 1 < questions.length ? t('quiz.next_question') : t('quiz.see_result')}
                     </button>
                 )}
             </div>
