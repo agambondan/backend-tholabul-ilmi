@@ -66,6 +66,34 @@ Status web app dan API service dipisahkan supaya keputusan implementasi UI tidak
 
 - Web App: artefak web app sekarang berada di `apps/web`; parity UI perlu dinilai lewat dokumen web app dan QA terpisah.
 - API Service: seluruh roadmap utama sudah ter-wire; sisa pekerjaan cenderung maintenance atau perluasan fitur, bukan gap fondasi.
+- Mobile App: artefak mobile berada di `apps/mobile`; baseline Expo sudah mencakup native tab Quran/Hadith/Prayer/Qibla/Explore, auth session, personal notes/bookmarks/progress, local adzan reminder, Quran audio fallback, Qibla compass, dan SQLite offline pack.
+
+## Mobile App
+
+### Sudah ada / sudah ter-wire
+
+| Item | Status | Evidence | Catatan |
+|---|---|---|---|
+| Expo mobile shell | Done | `apps/mobile/App.js` | Home, Quran, Hadith, Prayer, Qibla, dan Explore sudah jadi tab/screen mobile. Deep link scheme: `thullaabulilmi://`. |
+| Auth/session mobile | Done | `apps/mobile/src/context/SessionContext.js`, `apps/mobile/src/storage/session.js` | Token disimpan via SecureStore native dengan fallback AsyncStorage untuk web smoke. |
+| Quran mobile reader | Done | `apps/mobile/src/screens/QuranScreen.js`, `apps/mobile/src/api/client.js` | Surah list, ayah reader, page/hizb navigator, hafalan hide/reveal mode, progress, bookmark, notes, tafsir/asbab panel, font preference, dan audio ayah fallback EveryAyah. |
+| Hadith mobile detail | Done | `apps/mobile/src/screens/HadithScreen.js` | Detail, sanad, takhrij, perawi, jarh-ta'dil, related hadith, saved hadith, bookmark, dan notes. |
+| Prayer mobile | Done | `apps/mobile/src/screens/PrayerScreen.js` | Location-based schedule, method/madhhab selector, manual correction, prayer log, local notification reminder, dan SQLite jadwal 30 hari. |
+| Qibla mobile | Done | `apps/mobile/src/screens/QiblaScreen.js`, `apps/mobile/src/utils/compass.js` | Direction/distance plus native compass heading dengan web fallback. |
+| Explore parity mobile | Done | `apps/mobile/src/screens/ExploreScreen.js`, `apps/mobile/src/data/mobileFeatures.js` | Doa, Dzikir, Wirid, Tahlil, Asmaul Husna, Tafsir, Asbabun Nuzul, Siroh, Sejarah, Fiqh, Manasik, Kajian, Blog, Kamus, Quiz, Hijri, Tasbih, Zakat, Faraidh, personal features, dan leaderboard tersurface. |
+| SQLite offline pack | Done | `apps/mobile/src/storage/offlineContent.native.js`, `apps/mobile/src/components/OfflinePackCard.js` | Quran, Hadith, Doa/Dzikir/Wirid/Tahlil, bookmark snapshot, dan prayer cache 30 hari tersimpan lokal; web fallback tidak mengimpor SQLite. |
+| Deep link mobile | Done | `apps/mobile/src/utils/deepLinks.js`, `apps/mobile/App.js` | Mendukung tab route dan target awal: `thullaabulilmi://quran/surah/1`, `thullaabulilmi://quran/page/1`, `thullaabulilmi://quran/hizb/1`, `thullaabulilmi://hadith/12`, `thullaabulilmi://prayer`, `thullaabulilmi://qibla`, `thullaabulilmi://explore/dzikir`. |
+| Notification Center mobile | Done | `apps/mobile/src/components/NotificationCenter.js`, `apps/mobile/src/api/personal.js` | Explore Personal expose reminder settings, inbox list, mark-read, dan mark-all-read dari endpoint BE-backed notifications. |
+
+### Sisa perluasan mobile
+
+| Item | Prioritas | Catatan |
+|---|---|---|
+| Push notification server/FCM | P2 | Local notification sudah ada; push token registration dan backend delivery belum. |
+| Native adzan audio custom | P2 | Reminder sekarang memakai default notification sound. |
+| Universal link domain | P3 | URL scheme mobile sudah ada; universal link berbasis domain bisa ditambahkan setelah domain/app association siap. |
+| Hadith native audio player | P3 | Menunggu data media hadith/audio tersedia. |
+| AR qibla overlay | P3 | Compass baseline sudah cukup; AR bisa jadi enhancement nanti. |
 
 ### Interpretasi Prioritas
 

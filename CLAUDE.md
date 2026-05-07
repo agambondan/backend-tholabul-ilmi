@@ -12,12 +12,21 @@ mcp__chronicle__search    # sebelum Glob/Grep/Read manual yang lebar
 mcp__chronicle__sync      # jika search terlihat stale
 ```
 
+## Docs Index
+
+Navigasi semua dokumen project: [`docs/INDEX.md`](docs/INDEX.md)
+
+Baca ini sebelum mulai task supaya tidak salah acuan.
+
 ## Monorepo Layout
 
 ```
 apps/web/           # Next.js 13 frontend (App Router)
+apps/mobile/        # React Native / Expo mobile app
 services/api/       # Go/Fiber API service
 docs/               # Dokumentasi setup dan roadmap
+  INDEX.md          # ← Indeks semua dokumen (mulai dari sini)
+  MOBILE_IA_FINAL_APPROACH.md  # ← Arsitektur navigasi mobile (acuan utama)
   api/              # Feature roadmap dan status
   web/              # Status dan gap analysis web app
   setup/            # Local development, Chronicle, AI providers
@@ -86,6 +95,20 @@ Default ports:
 
 - **Go**: standard `gofmt`; follow existing package structure
 - **TS/JS/JSX**: 4-space indent, double quotes for imports, single quotes for JSX attrs, semicolons, trailing commas — see global `prettier-formatting.md`
+
+## Mobile IA (Keputusan Aktif)
+
+Dokumen acuan: [`docs/MOBILE_IA_FINAL_APPROACH.md`](docs/MOBILE_IA_FINAL_APPROACH.md)
+
+5 tab final: **Beranda · Quran · Hadis · Ibadah · Belajar**
+
+- Profil bukan tab — diakses via avatar di header Beranda/Belajar
+- Hadis dedicated tab setara Quran
+- Prayer → Ibadah hub (Harian / Alat / Rencana / Bacaan)
+- Explore → Belajar hub (Ilmu + Personal ringkas)
+
+Design pattern: `Card`, `CardTitle`, `Screen`, `Paper` components.
+Back navigation: `setBack`/`clearBack` wajib di semua sub-navigation.
 
 ## Feature Roadmap
 
