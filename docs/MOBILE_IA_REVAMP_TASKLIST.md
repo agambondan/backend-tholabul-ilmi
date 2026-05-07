@@ -108,6 +108,7 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
 - [x] Pastikan feature detail lama tetap bisa dibuka dari hub Ibadah.
   - Jadwal Sholat dan Qibla memakai sub-view internal Ibadah.
   - Fitur ibadah lain masih membuka detail existing lewat `Belajar` sebagai transisi agar logic tidak diduplikasi.
+  - Updated 2026-05-07: Zakat/Faraidh detail di Belajar/Ibadah entry dibuat lebih compact dengan field uang berprefix `Rp`, separator ribuan, dan panel ringkasan hasil.
 - [x] Pastikan permission/location/compass states tetap jelas.
   - Reuse `PrayerScreen` dan `QiblaScreen` existing states.
 - [x] Pastikan no long-scroll dump; gunakan section card/rows dan detail navigation.
@@ -240,6 +241,7 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - Belajar hub
   - Belajar feature detail
   - Profile/account surface
+  - Additional evidence 2026-05-07: `output/playwright/mobile-zakat-calculator-polish.png`, `output/playwright/mobile-faraidh-calculator-polish.png`
 - [ ] Deep link smoke untuk:
   - `#/profile`
   - `#/prayer`

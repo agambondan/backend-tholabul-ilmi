@@ -27,7 +27,7 @@ Artefak Expo berada di `apps/mobile`.
 | Profil | Summary, stats (poin/streak/tilawah/hafalan/sholat), badges, settings stack (Akun/Notif/Penyimpanan/Tampilan/Keamanan). |
 | Offline | SQLite pack untuk Quran, Hadith, Doa/Dzikir/Wirid/Tahlil, bookmark snapshot, jadwal shalat 30 hari. |
 | Deep link | Scheme `thullaabulilmi://` + hash `#/`. Alias: `prayer`→`ibadah`, `explore`→`belajar`, `qibla`→`ibadah/qibla`. Tambahan: `hadith/:id`, `quran/surah/:number`. |
-| Notifikasi | Notification Center di Profile > Notifikasi. Settings pengingat sholat, inbox, mark read. Push server/FCM belum. |
+| Notifikasi | Notification Center di Profile > Notifikasi. Settings pengingat, inbox, mark read, registrasi Expo push token, dan backend dispatch push untuk reminder harian. |
 | Discovery | Pinned shortcuts (max 4), recently opened (max 3) di Beranda. Catalog search di Belajar. Contextual shortcuts berbasis waktu & aktivitas. |
 
 ---

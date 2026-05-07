@@ -38,7 +38,7 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 
 - **Jadwal shalat**: backend sudah punya `method` dengan beberapa metode (`kemenag`, `mwl`, `isna`, `egypt`, `makkah`, `karachi`, `jakim`) dan param `madhab` (`shafi`/`hanafi`) di `services/api/app/services/prayer_times_service.go`, jadi gap bukan lagi "multi-metode BE kosong". Mobile sudah expose selector method, madhhab Ashar, dan koreksi manual lokal. Gap tersisa: parity web publik, adzan audio, push notification, dan kalkulasi masih custom internal, bukan `adhango`.
 - **Kiblat**: halaman web sudah menghitung dan menampilkan jarak ke Ka'bah di `apps/web/src/app/kiblat/page.js`; gap yang tersisa adalah response API `services/api/app/model/kiblat.go` belum punya `distance_km`.
-- **Notifikasi**: backend sudah punya `notification_settings`, `user_notifications` inbox, scheduler email, dan `DispatchDueReminders` untuk `daily_quran`, `daily_hadith`, dan `doa`. Mobile Explore sudah expose inbox/settings. Gap yang tersisa: `notification_templates`, `push_tokens`, Web Push/FCM, dan dashboard web inbox masih perlu audit.
+- **Notifikasi**: backend sudah punya `notification_settings`, `user_notifications` inbox, `push_tokens`, scheduler email/inbox/push, dan `DispatchDueReminders` untuk `daily_quran`, `daily_hadith`, dan `doa`. Mobile Explore sudah expose inbox/settings dan registrasi Expo push token. Gap yang tersisa: `notification_templates`, Web Push/FCM non-Expo, dan dashboard web inbox masih perlu audit.
 - **Hadis harian**: yang ada baru reminder tipe `daily_hadith`; belum ada konten/endpoint/widget "Hadis Harian" random/tematik di beranda.
 - **Integrasi eksternal**: belum ada status matrix untuk sumber data dari `integrasi-eksternal-opensource.md`. Secara implementasi saat ini belum terlihat pipeline seed/import eksplisit untuk Quran.com/fawazahmed0/hadith-api/Azkar DB, belum ada Meilisearch, belum ada `webpush-go`/ntfy, dan belum ada fetch harga emas `metals.live` + kurs `frankfurter.app`.
 
@@ -450,7 +450,7 @@ Status awal mobile per 2026-05-05:
 - ⚠️ `npm audit fix` sudah dijalankan. Audit mobile masih menyisakan 4 moderate dari transitive Expo stack; fix paksa tetap perlu dicek manual karena bisa membawa perubahan breaking.
 - ✅ Deep link mobile sudah ada dengan scheme `thullaabulilmi://` untuk membuka Quran surah/page/hizb, Hadith, Prayer, Qibla, dan Explore feature key.
 - ✅ Notification Center mobile sudah ada di Explore Personal: reminder settings `daily_quran`/`daily_hadith`/`doa`, inbox, mark read, dan mark all read.
-- ⚠️ Offline SQLite sudah mencakup Quran/Hadith/Doa/Dzikir/Wirid/Tahlil/bookmark snapshot/jadwal shalat 30 hari. Gap berikutnya: native audio adzan custom, push notification server/FCM, AR qibla overlay, Hadith native audio player, dan reader preferences yang lebih lengkap.
+- ⚠️ Offline SQLite sudah mencakup Quran/Hadith/Doa/Dzikir/Wirid/Tahlil/bookmark snapshot/jadwal shalat 30 hari. Gap berikutnya: native audio adzan custom, AR qibla overlay, Hadith native audio player, dan reader preferences yang lebih lengkap.
 
 Prioritas mobile berikutnya:
 
@@ -462,7 +462,7 @@ Prioritas mobile berikutnya:
 | 4 | Prayer settings native | Mobile+BE | Method selector, madhhab Ashar, manual correction lokal, dan local notification reminder sudah ada; lanjutkan native adzan audio custom. |
 | 5 | Qibla compass native | Mobile | Sensor heading/compass sudah ada; AR overlay nanti setelah baseline stabil. |
 | 6 | Offline dataset besar | Mobile | SQLite Quran/Hadith, Doa/Dzikir/Wirid/Tahlil, bookmark snapshot, dan prayer cache 30 hari sudah ada; lanjutkan offline reader consume path yang lebih dalam bila diperlukan. |
-| 7 | Push notification | Mobile+BE | Expo notifications/FCM + backend push token registration. |
+| 7 | Push notification | Mobile+BE | Expo push registration + backend dispatch sudah ada; lanjutkan receipt worker/FCM native bila perlu keluar dari Expo push service. |
 
 Catatan implementasi:
 

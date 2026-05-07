@@ -61,6 +61,7 @@ Data palsu yang tersimpan di lokal (hardcoded) harus dihapus total:
 - **`src/data/fallback.js`**: **Hapus File Ini.**
 - **Audio Fallback**: Gunakan data backend asli.
 - **Location Jakarta**: Minta input lokasi manual jika GPS mati.
+- **Status 2026-05-07:** Mobile content path sekarang hanya memakai backend/live request atau paket offline yang diunduh eksplisit; silent content cache dan offline fallback otomatis dihapus.
 
 ---
 
@@ -77,6 +78,7 @@ Data palsu yang tersimpan di lokal (hardcoded) harus dihapus total:
 ### 5.3 Kalkulator & Form (Input Friction)
 - **Keyboard Blockage:** Tidak ada `KeyboardAvoidingView`.
 - **Numeric Formatting:** Tidak ada ribuan separator (dot/comma) pada input Zakat/Faraidh.
+- **Status 2026-05-07:** `Screen` sudah memakai `KeyboardAvoidingView`; Zakat/Faraidh sudah memakai input numerik dengan separator ribuan, prefix `Rp`, dan panel ringkasan hasil.
 
 ---
 
@@ -103,7 +105,7 @@ Data palsu yang tersimpan di lokal (hardcoded) harus dihapus total:
 6. **Structural Navigation Refactor**: Pecah layar yang terlalu ramai (Hadith/Prayer) menjadi sub-halaman menggunakan pola "Settings" (Ref: Teal Design).
 7. **Correct Auth Messaging**: Ubah semua ke `"Sign in from Profile"`.
 8. **Register Flow**: Tambah tombol Daftar di `SessionCard.js`.
-9. **Numeric Formatting**: Tambahkan separator ribuan di kalkulator.
+9. **Numeric Formatting**: Selesai untuk Zakat/Faraidh; input memakai separator ribuan dan ringkasan hasil.
 
 ### Nice-to-have
 10. **Haptic Feedback** & **Native Time Picker**.

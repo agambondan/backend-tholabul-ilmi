@@ -77,6 +77,10 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
   - File: `apps/mobile/src/screens/QuranScreen.js`
 - [x] Batasi offline hadith download dan tambahkan guardrail ukuran/konfirmasi.
   - File: `apps/mobile/src/storage/offlineContent.native.js`, `apps/mobile/src/components/OfflinePackCard.js`
+  - Status 2026-05-07: paket offline sekarang bisa dipilih per modul. Al-Quran dapat diunduh penuh, sedangkan Hadis diunduh per kitab yang dipilih user.
+- [x] Tambahkan pagination/infinite load untuk tab Hadis dan prioritaskan data Hadis yang sudah diunduh.
+  - File: `apps/mobile/src/screens/HadithScreen.js`, `apps/mobile/src/api/client.js`, `apps/mobile/src/components/Screen.js`
+  - Status 2026-05-07: tab Hadis memakai SQLite offline pack jika tersedia; jika tidak, request backend `page=0` lalu auto-load `page=1+` saat scroll mendekati bawah.
 - [x] Tambahkan pagination/load-more untuk Explore list.
   - File: `apps/mobile/src/screens/ExploreScreen.js`, `apps/mobile/src/api/explore.js`
 
@@ -98,6 +102,8 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
 - [x] Tambahkan auto-hide bottom tab seperti taskbar desktop dan ubah warna aktif menjadi netral paper/ink.
   - File: `apps/mobile/src/components/TabBar.js`
   - Screenshot: `output/playwright/mobile-tabbar-autohide-neutral.png`
+  - Updated 2026-05-07: hidden tab tidak punya handle/touch target lagi; tab muncul saat user scroll dan hide lagi saat idle agar tidak bentrok dengan gesture Android.
+  - Native screenshot: `output/native/android-tabbar-idle-after-scroll-hidden.png`
 - [x] Pertahankan state per tab saat berpindah tab.
   - File: `apps/mobile/App.js`
 - [x] Standardisasi back button icon/action, bukan text panjang.
@@ -218,9 +224,9 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
   - File: `apps/mobile/src/components/OfflinePackCard.js`
 - [x] Tambahkan estimasi ukuran download sebelum mulai.
 - [x] Tambahkan konfirmasi untuk download besar dan clear data.
-- [x] Cache punya invalidation/refresh policy yang jelas.
-  - File: `apps/mobile/src/components/CacheStatusCard.js`, `apps/mobile/src/storage/cache.js`
-  - Catatan status: paket utama hanya membersihkan Quran/Hadith; data sementara, bookmark snapshot, daily pack, dan prayer pack tetap punya kontrol terpisah.
+- [x] Hilangkan cache/fallback konten mobile; data offline hanya lewat paket yang user unduh.
+  - File: `apps/mobile/src/components/OfflinePackCard.js`, `apps/mobile/src/storage/offlineContent.native.js`
+  - Catatan status: paket utama menyimpan pilihan Quran/Hadith; prayer pack tetap punya kontrol offline terpisah.
 
 ### Notes & Bookmarks
 
@@ -281,3 +287,4 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
 - 2026-05-07: Copy user-facing pada kartu data sementara dirapikan agar tidak memakai istilah `API`/cache teknis di UI; sisa temuan `endpoint`, `SQLite`, `SecureStore`, dan `fallback` di `apps/mobile/src` adalah identifier internal kode.
 - 2026-05-07: `SessionCard` dirapikan untuk auth journey: copy Masuk/Daftar/Lupa Sandi dibuat konsisten bahasa Indonesia, tombol mode dibuat wrap/compact, dan control auth diberi accessibility role/state.
 - 2026-05-07 (IA revamp selesai): Tab akhir 5 item adalah Beranda/Quran/Hadis/Ibadah/Belajar (bukan Profil). Profil diakses via avatar/header. Tasklist revamp lengkap di `docs/MOBILE_IA_REVAMP_TASKLIST.md`. Detail UI rule (anti-expand-inline) terdokumentasi di `docs/MOBILE_DESIGN_PATTERNS.md`.
+- 2026-05-07: Mobile fallback data policy diketatkan. Konten mobile tidak lagi memakai silent cache/offline fallback; sumber data hanya backend request atau paket offline yang diunduh eksplisit dari menu Penyimpanan.
