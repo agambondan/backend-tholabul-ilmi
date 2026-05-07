@@ -12,6 +12,9 @@ import (
 type NotificationRepository interface {
 	FindByUser(userID uuid.UUID) ([]model.NotificationSetting, error)
 	UpsertMany(settings []model.NotificationSetting) ([]model.NotificationSetting, error)
+	UpsertPushToken(token model.PushToken) (model.PushToken, error)
+	FindActivePushTokens(userID uuid.UUID) ([]model.PushToken, error)
+	DeactivatePushToken(id int) error
 	FindDue(now time.Time) ([]model.NotificationSetting, error)
 	MarkSent(id int, sentAt time.Time) error
 }
@@ -42,6 +45,41 @@ func (r *notificationRepository) UpsertMany(settings []model.NotificationSetting
 		return nil, err
 	}
 	return r.FindByUser(settings[0].UserID)
+}
+
+func (r *notificationRepository) UpsertPushToken(token model.PushToken) (model.PushToken, error) {
+	now := time.Now()
+	token.LastSeenAt = now
+	token.IsActive = true
+	err := r.db.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "user_id"}, {Name: "token"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"platform":     token.Platform,
+			"provider":     token.Provider,
+			"device_id":    token.DeviceID,
+			"is_active":    true,
+			"last_seen_at": now,
+			"updated_at":   now,
+		}),
+	}).Create(&token).Error
+	if err != nil {
+		return model.PushToken{}, err
+	}
+	return token, nil
+}
+
+func (r *notificationRepository) FindActivePushTokens(userID uuid.UUID) ([]model.PushToken, error) {
+	var items []model.PushToken
+	err := r.db.
+		Where("user_id = ? AND is_active = true", userID).
+		Order("last_seen_at DESC").
+		Limit(20).
+		Find(&items).Error
+	return items, err
+}
+
+func (r *notificationRepository) DeactivatePushToken(id int) error {
+	return r.db.Model(&model.PushToken{}).Where("id = ?", id).Update("is_active", false).Error
 }
 
 func (r *notificationRepository) FindDue(now time.Time) ([]model.NotificationSetting, error) {
@@ -104,5 +142,8 @@ func (r *notificationInboxRepository) MarkAllRead(userID uuid.UUID) error {
 }
 
 func (r *notificationInboxRepository) Create(n model.UserNotification) (model.UserNotification, error) {
+	if n.ID == uuid.Nil {
+		n.ID = uuid.New()
+	}
 	return n, r.db.Create(&n).Error
 }

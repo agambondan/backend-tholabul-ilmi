@@ -82,3 +82,32 @@ func TestCorsAllowsDefaultExpoWebOrigin(t *testing.T) {
 		t.Fatalf("expected allow credentials true, got %q", got)
 	}
 }
+
+func TestCorsAllowsDefaultExpoMetroOrigin(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+
+	app := fiber.New()
+	app.Use(Cors())
+	app.Get("/api/v1/hadiths", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	for _, origin := range []string{"http://localhost:8081", "http://127.0.0.1:8081"} {
+		req := httptest.NewRequest(fiber.MethodOptions, "/api/v1/hadiths?size=20&page=0", nil)
+		req.Header.Set(fiber.HeaderOrigin, origin)
+		req.Header.Set(fiber.HeaderAccessControlRequestMethod, fiber.MethodGet)
+		req.Header.Set(fiber.HeaderAccessControlRequestHeaders, "Authorization,Content-Type")
+
+		resp, err := app.Test(req)
+		if err != nil {
+			t.Fatalf("preflight request failed for %s: %v", origin, err)
+		}
+		if resp.StatusCode != fiber.StatusNoContent {
+			t.Fatalf("expected status %d for %s, got %d", fiber.StatusNoContent, origin, resp.StatusCode)
+		}
+		if got := resp.Header.Get(fiber.HeaderAccessControlAllowOrigin); got != origin {
+			t.Fatalf("expected allow origin %s, got %q", origin, got)
+		}
+	}
+}

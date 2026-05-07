@@ -16,6 +16,7 @@ var ModelMigrations []interface{} = []interface{}{
 	model.Ayah{},
 	model.Mufrodat{},
 	model.NotificationSetting{},
+	model.PushToken{},
 	model.UserNotification{},
 	model.FeedPost{},
 	model.Juz{},

@@ -9,6 +9,7 @@ import (
 
 type NotificationController interface {
 	FindSettings(ctx *fiber.Ctx) error
+	RegisterPushToken(ctx *fiber.Ctx) error
 	UpsertSettings(ctx *fiber.Ctx) error
 }
 
@@ -30,6 +31,22 @@ func (c *notificationController) FindSettings(ctx *fiber.Ctx) error {
 		return lib.ErrorInternal(ctx)
 	}
 	return lib.OK(ctx, items)
+}
+
+func (c *notificationController) RegisterPushToken(ctx *fiber.Ctx) error {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return lib.ErrorUnauthorized(ctx)
+	}
+	req := new(model.PushTokenRegisterRequest)
+	if err := lib.BodyParser(ctx, req); err != nil {
+		return lib.ErrorBadRequest(ctx, err)
+	}
+	item, err := c.svc.RegisterPushToken(userID, req)
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, err)
+	}
+	return lib.OK(ctx, item)
 }
 
 func (c *notificationController) UpsertSettings(ctx *fiber.Ctx) error {

@@ -34,6 +34,25 @@ type NotificationSettingsUpsertRequest struct {
 	Settings []NotificationSettingRequest `json:"settings" validate:"required,dive"`
 }
 
+type PushToken struct {
+	BaseID
+	UserID     uuid.UUID `json:"user_id" gorm:"type:uuid;not null;uniqueIndex:idx_push_user_token"`
+	Token      string    `json:"token" gorm:"type:varchar(512);not null;uniqueIndex:idx_push_user_token"`
+	Platform   string    `json:"platform" gorm:"type:varchar(24);not null"`
+	Provider   string    `json:"provider" gorm:"type:varchar(24);not null;default:'expo'"`
+	DeviceID   string    `json:"device_id,omitempty" gorm:"type:varchar(128);index"`
+	IsActive   bool      `json:"is_active" gorm:"default:true"`
+	LastSeenAt time.Time `json:"last_seen_at"`
+	User       *User     `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID"`
+}
+
+type PushTokenRegisterRequest struct {
+	Token    string `json:"token" validate:"required"`
+	Platform string `json:"platform" validate:"required"`
+	Provider string `json:"provider"`
+	DeviceID string `json:"device_id"`
+}
+
 // UserNotification — persisted inbox message per user
 type UserNotification struct {
 	BaseUUID

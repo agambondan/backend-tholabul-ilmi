@@ -1,11 +1,24 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/morkid/paginate"
 	"gorm.io/gorm"
 )
+
+func parseUpdatedAfter(ctx *fiber.Ctx) *time.Time {
+	raw := ctx.Query("updated_after")
+	if raw == "" {
+		return nil
+	}
+	if t, err := time.Parse(time.RFC3339, raw); err == nil {
+		return &t
+	}
+	return nil
+}
 
 type HadithRepository interface {
 	FindByOffset(int64) (*model.Hadith, error)
@@ -78,6 +91,9 @@ func (c *hadithRepo) FindByBookSlug(ctx *fiber.Ctx, bookSlug *string) (*paginate
 	mod := c.withRelations(c.db.Model(&model.Hadith{})).
 		Where(`"Book".slug = ?`, bookSlug).
 		Preload("Media").Order("id")
+	if updatedAfter := parseUpdatedAfter(ctx); updatedAfter != nil {
+		mod = mod.Where("hadith.updated_at > ?", *updatedAfter)
+	}
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
 
 	return &page, nil

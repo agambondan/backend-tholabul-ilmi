@@ -211,6 +211,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	// Notifications / Reminder
 	master.Get("/notifications/settings", jwt, newNotificationController.FindSettings)
 	master.Put("/notifications/settings", jwt, newNotificationController.UpsertSettings)
+	master.Put("/notifications/push-token", jwt, newNotificationController.RegisterPushToken)
 	// Notification inbox
 	master.Get("/notifications/inbox", jwt, newNotificationInboxController.List)
 	master.Put("/notifications/inbox/read-all", jwt, newNotificationInboxController.MarkAllRead)

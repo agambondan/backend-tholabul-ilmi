@@ -17,16 +17,18 @@ import (
 type NotificationService interface {
 	FindSettings(userID uuid.UUID) ([]model.NotificationSetting, error)
 	UpsertSettings(userID uuid.UUID, req *model.NotificationSettingsUpsertRequest) ([]model.NotificationSetting, error)
+	RegisterPushToken(userID uuid.UUID, req *model.PushTokenRegisterRequest) (model.PushToken, error)
 	DispatchDueReminders(now time.Time) (int, error)
 	StartReminderScheduler(ctx context.Context, interval time.Duration)
 }
 
 type notificationService struct {
-	repo repository.NotificationRepository
+	inboxRepo repository.NotificationInboxRepository
+	repo      repository.NotificationRepository
 }
 
-func NewNotificationService(repo repository.NotificationRepository) NotificationService {
-	return &notificationService{repo}
+func NewNotificationService(repo repository.NotificationRepository, inboxRepo repository.NotificationInboxRepository) NotificationService {
+	return &notificationService{repo: repo, inboxRepo: inboxRepo}
 }
 
 func (s *notificationService) FindSettings(userID uuid.UUID) ([]model.NotificationSetting, error) {
@@ -60,6 +62,30 @@ func (s *notificationService) UpsertSettings(userID uuid.UUID, req *model.Notifi
 	return s.repo.UpsertMany(items)
 }
 
+func (s *notificationService) RegisterPushToken(userID uuid.UUID, req *model.PushTokenRegisterRequest) (model.PushToken, error) {
+	token := strings.TrimSpace(req.Token)
+	platform := strings.ToLower(strings.TrimSpace(req.Platform))
+	if token == "" {
+		return model.PushToken{}, fmt.Errorf("token is required")
+	}
+	if platform == "" {
+		return model.PushToken{}, fmt.Errorf("platform is required")
+	}
+
+	provider := strings.ToLower(strings.TrimSpace(req.Provider))
+	if provider == "" {
+		provider = "expo"
+	}
+
+	return s.repo.UpsertPushToken(model.PushToken{
+		UserID:   userID,
+		Token:    token,
+		Platform: platform,
+		Provider: provider,
+		DeviceID: strings.TrimSpace(req.DeviceID),
+	})
+}
+
 func (s *notificationService) DispatchDueReminders(now time.Time) (int, error) {
 	items, err := s.repo.FindDue(now)
 	if err != nil {
@@ -68,13 +94,39 @@ func (s *notificationService) DispatchDueReminders(now time.Time) (int, error) {
 
 	sent := 0
 	for _, setting := range items {
-		if setting.User == nil || setting.User.Email == nil || strings.TrimSpace(*setting.User.Email) == "" {
-			continue
+		content := reminderMessage(setting.Type)
+		delivered := false
+
+		if s.inboxRepo != nil {
+			if _, err := s.inboxRepo.Create(model.UserNotification{
+				UserID: setting.UserID,
+				Title:  content.Title,
+				Body:   content.Description,
+				Type:   setting.Type,
+			}); err != nil {
+				slog.Warn("notification inbox create failed", "user_id", setting.UserID, "type", setting.Type, "err", err)
+			} else {
+				delivered = true
+			}
 		}
 
-		subject, body := reminderMessage(setting.Type)
-		if err := lib.SendHTMLEmail(*setting.User.Email, subject, body); err != nil {
-			slog.Warn("notification reminder failed", "user_id", setting.UserID, "type", setting.Type, "err", err)
+		if setting.User != nil && setting.User.Email != nil && strings.TrimSpace(*setting.User.Email) != "" {
+			if err := lib.SendHTMLEmail(*setting.User.Email, content.Title, content.EmailHTML); err != nil {
+				slog.Warn("notification email reminder failed", "user_id", setting.UserID, "type", setting.Type, "err", err)
+			} else {
+				delivered = true
+			}
+		}
+
+		pushSent, err := s.sendPushReminder(setting, content)
+		if err != nil {
+			slog.Warn("notification push reminder failed", "user_id", setting.UserID, "type", setting.Type, "err", err)
+		}
+		if pushSent > 0 {
+			delivered = true
+		}
+
+		if !delivered {
 			continue
 		}
 		if setting.ID != nil {
@@ -116,7 +168,13 @@ func normalizeReminderTime(value string) (string, error) {
 	return parsed.Format("15:04"), nil
 }
 
-func reminderMessage(notificationType model.NotificationType) (string, string) {
+type reminderContent struct {
+	Description string
+	EmailHTML   string
+	Title       string
+}
+
+func reminderMessage(notificationType model.NotificationType) reminderContent {
 	appURL := viper.GetString("APP_URL")
 	if appURL == "" {
 		appURL = "https://tholabul-ilmi.app"
@@ -143,5 +201,9 @@ func reminderMessage(notificationType model.NotificationType) (string, string) {
 <p>Buka aplikasi: <a href="%s">%s</a></p>
 `, title, description, appURL, appURL)
 
-	return title, body
+	return reminderContent{
+		Description: description,
+		EmailHTML:   body,
+		Title:       title,
+	}
 }
