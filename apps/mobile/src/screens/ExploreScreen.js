@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, HelpCircle, Star, StickyNote, UserCircle, Users, Video, X } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, HelpCircle, MoreVertical, Scale, Star, StickyNote, UserCircle, Users, Video, X } from 'lucide-react-native';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import {
@@ -34,6 +34,7 @@ const belajarFeatureIcons = {
   bookmarks: Bookmark,
   fiqh: BookOpen,
   goals: Star,
+  'jarh-tadil': Scale,
   kajian: Video,
   kamus: Star,
   leaderboard: Users,
@@ -130,6 +131,8 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [savingBookmark, setSavingBookmark] = useState('');
+  const [itemActionSheet, setItemActionSheet] = useState({ visible: false, item: null });
   const [focusDictionaryInput, setFocusDictionaryInput] = useState(false);
   const [dictionaryQuery, setDictionaryQuery] = useState('');
   const [tasbih, setTasbih] = useState({ count: 0, target: 33 });
@@ -137,7 +140,6 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [faraidh, setFaraidh] = useState({ estate: '', debts: '', bequest: '', heirs: 'Suami/istri, orang tua, anak' });
   const [answers, setAnswers] = useState({});
   const [bookmarks, setBookmarks] = useState({});
-  const [savingBookmark, setSavingBookmark] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [activeNoteRef, setActiveNoteRef] = useState('');
   const [pinnedFeatureKeys, setPinnedFeatureKeys] = useState({});
@@ -557,42 +559,125 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           ))}
         </View>
       ) : null}
-      <View style={styles.itemActions}>
-        {activeFeature?.type === 'bookmarks' || activeFeature?.type === 'notes' ? (
-          <ActionPill
-            Icon={ExternalLink}
-            label="Buka sumber"
-            onPress={() => openSource(item)}
-          />
-        ) : null}
-        {activeFeature?.type !== 'bookmarks' ? (
-          <ActionPill
-            Icon={BookOpen}
-            label="Detail"
-            onPress={() => {
-              setSelectedItem(item);
-              setActiveNoteRef('');
-            }}
-          />
-        ) : null}
-        <ActionPill
-          disabled={savingBookmark === refKey(getItemRef(activeFeature, item).refType, getItemRef(activeFeature, item).refId)}
-          Icon={
-            bookmarks[refKey(getItemRef(activeFeature, item).refType, getItemRef(activeFeature, item).refId)]
-              ? BookmarkCheck
-              : Bookmark
-          }
-          label={
-            bookmarks[refKey(getItemRef(activeFeature, item).refType, getItemRef(activeFeature, item).refId)]
-              ? 'Tersimpan'
-              : 'Bookmark'
-          }
-          onPress={() => toggleBookmark(item)}
-          active={Boolean(bookmarks[refKey(getItemRef(activeFeature, item).refType, getItemRef(activeFeature, item).refId)])}
-        />
+      <View style={styles.itemHeaderActions}>
+        <Pressable
+          accessibilityLabel="Aksi item"
+          accessibilityRole="button"
+          android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
+          onPress={() => setItemActionSheet({ visible: true, item })}
+          style={styles.itemMenuButton}
+        >
+          <MoreVertical color={colors.primary} size={18} strokeWidth={2.4} />
+        </Pressable>
       </View>
     </Card>
   );
+
+  const renderItemActionSheet = () => {
+    const { visible, item } = itemActionSheet;
+    if (!item) return null;
+
+    const ref = getItemRef(activeFeature, item);
+    const key = refKey(ref.refType, ref.refId);
+    const isBookmarked = Boolean(bookmarks[key]);
+
+    return (
+      <Modal
+        animationType="slide"
+        onRequestClose={() => setItemActionSheet({ visible: false, item: null })}
+        transparent
+        visible={visible}
+      >
+        <Pressable
+          onPress={() => setItemActionSheet({ visible: false, item: null })}
+          style={styles.modalOverlay}
+        />
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+          <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderCopy}>
+              <Text style={styles.modalTitle}>Aksi Konten</Text>
+              <Text style={styles.modalMeta} numberOfLines={1}>{item.title}</Text>
+            </View>
+            <Pressable
+              hitSlop={8}
+              onPress={() => setItemActionSheet({ visible: false, item: null })}
+              style={styles.modalClose}
+            >
+              <X color={colors.muted} size={18} strokeWidth={2.2} />
+            </Pressable>
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {activeFeature?.type !== 'bookmarks' ? (
+              <Pressable
+                accessibilityRole="button"
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                onPress={() => {
+                  setItemActionSheet({ visible: false, item: null });
+                  setSelectedItem(item);
+                  setActiveNoteRef('');
+                }}
+                style={styles.actionSheetRow}
+              >
+                <View style={styles.actionSheetIcon}>
+                  <BookOpen color={colors.primary} size={18} strokeWidth={2.3} />
+                </View>
+                <View style={styles.actionSheetCopy}>
+                  <Text style={styles.actionSheetTitle}>Detail</Text>
+                  <Text style={styles.actionSheetSubtitle}>Buka detail konten</Text>
+                </View>
+              </Pressable>
+            ) : null}
+
+            {activeFeature?.type === 'bookmarks' || activeFeature?.type === 'notes' ? (
+              <Pressable
+                accessibilityRole="button"
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                onPress={() => {
+                  setItemActionSheet({ visible: false, item: null });
+                  openSource(item);
+                }}
+                style={styles.actionSheetRow}
+              >
+                <View style={styles.actionSheetIcon}>
+                  <ExternalLink color={colors.primary} size={18} strokeWidth={2.3} />
+                </View>
+                <View style={styles.actionSheetCopy}>
+                  <Text style={styles.actionSheetTitle}>Buka Sumber</Text>
+                  <Text style={styles.actionSheetSubtitle}>Buka sumber asli konten ini</Text>
+                </View>
+              </Pressable>
+            ) : null}
+
+            <Pressable
+              accessibilityRole="button"
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+              disabled={savingBookmark === key}
+              onPress={() => toggleBookmark(item)}
+              style={[styles.actionSheetRow, isBookmarked ? styles.actionSheetRowActive : null]}
+            >
+              <View style={styles.actionSheetIcon}>
+                {isBookmarked ? (
+                  <BookmarkCheck color={colors.onPrimary} size={18} strokeWidth={2.3} />
+                ) : (
+                  <Bookmark color={colors.primary} size={18} strokeWidth={2.3} />
+                )}
+              </View>
+              <View style={styles.actionSheetCopy}>
+                <Text style={[styles.actionSheetTitle, isBookmarked ? styles.actionSheetTitleActive : null]}>
+                  {isBookmarked ? 'Hapus Bookmark' : 'Bookmark'}
+                </Text>
+                <Text style={[styles.actionSheetSubtitle, isBookmarked ? styles.actionSheetSubtitleActive : null]}>
+                  {isBookmarked ? 'Hapus dari koleksi' : 'Simpan ke koleksi pribadi'}
+                </Text>
+              </View>
+            </Pressable>
+            <View style={styles.modalBottomPad} />
+          </ScrollView>
+        </View>
+      </Modal>
+    );
+  };
 
   const closeDetailModal = () => {
     setSelectedItem(null);
@@ -913,6 +998,8 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     setActiveNoteRef('');
   };
 
+  const hasMoreItems = activeFeature && isPaginatedFeature(activeFeature) && items.length;
+
   return (
     <Screen
       title="Belajar"
@@ -1009,18 +1096,22 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         <Text style={styles.empty}>Belum ada data untuk surah ini.</Text>
       ) : null}
       {items.map(renderItem)}
-      {activeFeature && isPaginatedFeature(activeFeature) && items.length ? (
+
+      {hasMoreItems ? (
         <Pressable
-          disabled={pagination.loadingMore || !pagination.hasMore}
+          android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+          disabled={pagination.loadingMore}
           onPress={loadMoreFeature}
-          style={[styles.loadMoreButton, (!pagination.hasMore || pagination.loadingMore) && styles.loadMoreButtonDisabled]}
+          style={styles.loadMoreButton}
         >
           <Text style={styles.loadMoreText}>
-            {pagination.loadingMore ? 'Memuat...' : pagination.hasMore ? 'Muat lagi' : 'Semua data sudah ditampilkan'}
+            {pagination.loadingMore ? 'Memuat data berikutnya...' : 'Muat lebih banyak'}
           </Text>
         </Pressable>
       ) : null}
+
       {renderDetailModal()}
+      {renderItemActionSheet()}
     </Screen>
   );
 }
@@ -1411,5 +1502,51 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
     fontWeight: '900',
+  },
+  actionSheetRow: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    flexDirection: 'row',
+    padding: spacing.md,
+  },
+  actionSheetRowActive: {
+    backgroundColor: colors.primary,
+  },
+  actionSheetIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 24,
+  },
+  actionSheetCopy: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  actionSheetTitle: {
+    color: colors.ink,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  actionSheetTitleActive: {
+    color: colors.onPrimary,
+  },
+  actionSheetSubtitle: {
+    color: colors.muted,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  actionSheetSubtitleActive: {
+    color: colors.onPrimary,
+    opacity: 0.8,
+  },
+  itemHeaderActions: {
+    position: 'absolute',
+    right: spacing.sm,
+    top: spacing.sm,
+  },
+  itemMenuButton: {
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
   },
 });
