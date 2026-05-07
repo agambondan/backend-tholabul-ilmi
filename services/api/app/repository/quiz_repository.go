@@ -23,7 +23,7 @@ func NewQuizRepository(db *gorm.DB) QuizRepository {
 
 func (r *quizRepository) FindSession(quizType model.QuizType, count int) ([]model.Quiz, error) {
 	var items []model.Quiz
-	q := r.db.Order("RANDOM()")
+	q := r.db.Preload("Translation").Order("RANDOM()")
 	if quizType != "" {
 		q = q.Where("type = ?", quizType)
 	}
@@ -35,7 +35,7 @@ func (r *quizRepository) FindSession(quizType model.QuizType, count int) ([]mode
 
 func (r *quizRepository) FindByID(id int) (*model.Quiz, error) {
 	var item model.Quiz
-	return &item, r.db.First(&item, id).Error
+	return &item, r.db.Preload("Translation").First(&item, id).Error
 }
 
 func (r *quizRepository) SaveResult(res *model.UserQuizResult) error {

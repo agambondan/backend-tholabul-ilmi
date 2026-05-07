@@ -52,3 +52,33 @@ func TestCorsAllowsDefaultDockerFrontendOrigin(t *testing.T) {
 		}
 	}
 }
+
+func TestCorsAllowsDefaultExpoWebOrigin(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+
+	app := fiber.New()
+	app.Use(Cors())
+	app.Get("/api/v1/sholat-times", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	req := httptest.NewRequest(fiber.MethodOptions, "/api/v1/sholat-times", nil)
+	req.Header.Set(fiber.HeaderOrigin, "http://localhost:19006")
+	req.Header.Set(fiber.HeaderAccessControlRequestMethod, fiber.MethodGet)
+	req.Header.Set(fiber.HeaderAccessControlRequestHeaders, "Authorization,Content-Type")
+
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("preflight request failed: %v", err)
+	}
+	if resp.StatusCode != fiber.StatusNoContent {
+		t.Fatalf("expected status %d, got %d", fiber.StatusNoContent, resp.StatusCode)
+	}
+	if got := resp.Header.Get(fiber.HeaderAccessControlAllowOrigin); got != "http://localhost:19006" {
+		t.Fatalf("expected allow origin http://localhost:19006, got %q", got)
+	}
+	if got := resp.Header.Get(fiber.HeaderAccessControlAllowCredentials); got != "true" {
+		t.Fatalf("expected allow credentials true, got %q", got)
+	}
+}

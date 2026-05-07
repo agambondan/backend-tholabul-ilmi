@@ -27,7 +27,7 @@ func NewKajianRepository(db *gorm.DB, pg *paginate.Pagination) KajianRepository 
 
 func (r *kajianRepository) FindAll(ctx *fiber.Ctx, topic, kajianType string) *paginate.Page {
 	var list []model.Kajian
-	q := r.db.Model(&model.Kajian{}).Order("published_at DESC, id DESC")
+	q := r.db.Model(&model.Kajian{}).Preload("Translation").Order("published_at DESC, id DESC")
 	if topic != "" {
 		q = q.Where("topic ILIKE ?", "%"+topic+"%")
 	}
@@ -40,7 +40,7 @@ func (r *kajianRepository) FindAll(ctx *fiber.Ctx, topic, kajianType string) *pa
 
 func (r *kajianRepository) FindByID(id int) (*model.Kajian, error) {
 	var k model.Kajian
-	err := r.db.First(&k, id).Error
+	err := r.db.Preload("Translation").First(&k, id).Error
 	return &k, err
 }
 

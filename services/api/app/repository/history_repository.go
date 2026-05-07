@@ -23,7 +23,7 @@ func NewHistoryRepository(db *gorm.DB) HistoryRepository {
 
 func (r *historyRepository) FindAll(category string, yearFrom, yearTo int) ([]model.HistoryEvent, error) {
 	var items []model.HistoryEvent
-	q := r.db.Order("year_miladi ASC")
+	q := r.db.Preload("Translation").Order("year_miladi ASC")
 	if category != "" {
 		q = q.Where("category = ?", category)
 	}
@@ -38,12 +38,12 @@ func (r *historyRepository) FindAll(category string, yearFrom, yearTo int) ([]mo
 
 func (r *historyRepository) FindByID(id int) (*model.HistoryEvent, error) {
 	var item model.HistoryEvent
-	return &item, r.db.First(&item, id).Error
+	return &item, r.db.Preload("Translation").First(&item, id).Error
 }
 
 func (r *historyRepository) FindBySlug(slug string) (*model.HistoryEvent, error) {
 	var item model.HistoryEvent
-	return &item, r.db.Where("slug = ?", slug).First(&item).Error
+	return &item, r.db.Preload("Translation").Where("slug = ?", slug).First(&item).Error
 }
 
 func (r *historyRepository) Create(e *model.HistoryEvent) (*model.HistoryEvent, error) {

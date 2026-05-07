@@ -14,6 +14,8 @@ type AyahRepository interface {
 	FindManyByIds(ids []int) ([]model.Ayah, error)
 	FindByNumber(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindBySurahNumber(*fiber.Ctx, *int) (*paginate.Page, error)
+	FindByPage(page int) ([]model.Ayah, error)
+	FindByHizbQuarter(hizb int) ([]model.Ayah, error)
 	UpdateById(*int, *model.Ayah) (*model.Ayah, error)
 	DeleteById(*int, *string) error
 	Count() (*int64, error)
@@ -73,6 +75,30 @@ func (c *ayahRepo) FindBySurahNumber(ctx *fiber.Ctx, number *int) (*paginate.Pag
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&ayahs)
 
 	return &page, nil
+}
+
+func (c *ayahRepo) FindByPage(page int) ([]model.Ayah, error) {
+	var ayahs []model.Ayah
+	err := c.db.Model(&model.Ayah{}).
+		Joins("Translation").
+		Joins("Surah").
+		Joins("Surah.Translation").
+		Where(`"ayah".page = ?`, page).
+		Order(`"ayah".id`).
+		Find(&ayahs).Error
+	return ayahs, err
+}
+
+func (c *ayahRepo) FindByHizbQuarter(hizb int) ([]model.Ayah, error) {
+	var ayahs []model.Ayah
+	err := c.db.Model(&model.Ayah{}).
+		Joins("Translation").
+		Joins("Surah").
+		Joins("Surah.Translation").
+		Where(`"ayah".hizb_quarter = ?`, hizb).
+		Order(`"ayah".id`).
+		Find(&ayahs).Error
+	return ayahs, err
 }
 
 func (c *ayahRepo) UpdateById(id *int, Ayah *model.Ayah) (*model.Ayah, error) {

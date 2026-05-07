@@ -33,12 +33,21 @@ func (s *kiblatService) Calculate(lat, lng float64) (*model.KiblatResponse, erro
 	bearing := math.Atan2(x, y) * 180 / math.Pi
 	bearing = math.Mod(bearing+360, 360)
 
+	// Haversine — jarak ke Ka'bah dalam KM (radius bumi 6371 km).
+	const earthRadiusKM = 6371.0
+	dLat := kLat - latR
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
+		math.Cos(latR)*math.Cos(kLat)*math.Sin(dLng/2)*math.Sin(dLng/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	distance := earthRadiusKM * c
+
 	return &model.KiblatResponse{
 		Latitude:    lat,
 		Longitude:   lng,
 		Direction:   math.Round(bearing*100) / 100,
+		DistanceKM:  math.Round(distance*100) / 100,
 		Compass:     degreesToCompass(bearing),
-		Description: fmt.Sprintf("Arah kiblat dari koordinat (%.4f, %.4f) adalah %.2f° dari Utara (%s)", lat, lng, bearing, degreesToCompass(bearing)),
+		Description: fmt.Sprintf("Arah kiblat dari koordinat (%.4f, %.4f) adalah %.2f° dari Utara (%s), jarak ke Ka'bah ≈ %.0f km", lat, lng, bearing, degreesToCompass(bearing), distance),
 	}, nil
 }
 

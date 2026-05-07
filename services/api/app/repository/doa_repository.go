@@ -21,13 +21,13 @@ func NewDoaRepository(db *gorm.DB) DoaRepository {
 
 func (r *doaRepo) FindAll() ([]model.Doa, error) {
 	var list []model.Doa
-	err := r.db.Order("category, id").Limit(500).Find(&list).Error
+	err := r.db.Preload("Translation").Order("category, id").Limit(500).Find(&list).Error
 	return list, err
 }
 
 func (r *doaRepo) FindByID(id int) (*model.Doa, error) {
 	var d model.Doa
-	if err := r.db.First(&d, id).Error; err != nil {
+	if err := r.db.Preload("Translation").First(&d, id).Error; err != nil {
 		return nil, err
 	}
 	return &d, nil
@@ -35,6 +35,6 @@ func (r *doaRepo) FindByID(id int) (*model.Doa, error) {
 
 func (r *doaRepo) FindByCategory(category model.DoaCategory) ([]model.Doa, error) {
 	var list []model.Doa
-	err := r.db.Where("category = ?", category).Order("id").Limit(100).Find(&list).Error
+	err := r.db.Preload("Translation").Where("category = ?", category).Order("id").Limit(100).Find(&list).Error
 	return list, err
 }

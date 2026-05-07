@@ -13,6 +13,8 @@ type AyahService interface {
 	FindById(*int) (*model.Ayah, error)
 	FindByNumber(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindBySurahNumber(*fiber.Ctx, *int) (*paginate.Page, error)
+	FindByPage(page int) ([]model.Ayah, error)
+	FindByHizbQuarter(hizb int) ([]model.Ayah, error)
 	UpdateById(*int, *model.Ayah) (*model.Ayah, error)
 	DeleteById(*int, *string) error
 	Count() (*int64, error)
@@ -45,6 +47,14 @@ func (c *ayahService) FindByNumber(ctx *fiber.Ctx, number *int) (*paginate.Page,
 
 func (c *ayahService) FindBySurahNumber(ctx *fiber.Ctx, number *int) (*paginate.Page, error) {
 	return c.ayah.FindBySurahNumber(ctx, number)
+}
+
+func (c *ayahService) FindByPage(page int) ([]model.Ayah, error) {
+	return c.ayah.FindByPage(page)
+}
+
+func (c *ayahService) FindByHizbQuarter(hizb int) ([]model.Ayah, error) {
+	return c.ayah.FindByHizbQuarter(hizb)
 }
 
 func (c *ayahService) UpdateById(id *int, ayah *model.Ayah) (*model.Ayah, error) {

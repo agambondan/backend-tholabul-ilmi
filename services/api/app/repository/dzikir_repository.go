@@ -22,24 +22,24 @@ func NewDzikirRepository(db *gorm.DB) DzikirRepository {
 
 func (r *dzikirRepository) FindAll() ([]model.Dzikir, error) {
 	var list []model.Dzikir
-	err := r.db.Order("category, id").Limit(500).Find(&list).Error
+	err := r.db.Preload("Translation").Order("category, id").Limit(500).Find(&list).Error
 	return list, err
 }
 
 func (r *dzikirRepository) FindByID(id int) (*model.Dzikir, error) {
 	var d model.Dzikir
-	err := r.db.First(&d, id).Error
+	err := r.db.Preload("Translation").First(&d, id).Error
 	return &d, err
 }
 
 func (r *dzikirRepository) FindByCategory(category model.DzikirCategory) ([]model.Dzikir, error) {
 	var list []model.Dzikir
-	err := r.db.Where("category = ?", category).Order("id").Limit(100).Find(&list).Error
+	err := r.db.Preload("Translation").Where("category = ?", category).Order("id").Limit(100).Find(&list).Error
 	return list, err
 }
 
 func (r *dzikirRepository) FindByOccasion(occasion string) ([]model.Dzikir, error) {
 	var list []model.Dzikir
-	err := r.db.Where("occasion = ?", occasion).Order("id").Limit(100).Find(&list).Error
+	err := r.db.Preload("Translation").Where("occasion = ?", occasion).Order("id").Limit(100).Find(&list).Error
 	return list, err
 }

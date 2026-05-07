@@ -28,12 +28,13 @@ func (c *prayerTimesController) GetByDate(ctx *fiber.Ctx) error {
 		return lib.ErrorBadRequest(ctx, err.Error())
 	}
 	method := ctx.Query("method", "kemenag")
+	madhab := ctx.Query("madhab", "shafi")
 	dateStr := ctx.Query("date", time.Now().Format("2006-01-02"))
 	date, err := time.ParseInLocation("2006-01-02", dateStr, time.Now().Location())
 	if err != nil {
 		return lib.ErrorBadRequest(ctx, "format tanggal harus YYYY-MM-DD")
 	}
-	result, err := c.svc.GetByDate(lat, lng, date, method)
+	result, err := c.svc.GetByDate(lat, lng, date, method, madhab)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
@@ -46,7 +47,8 @@ func (c *prayerTimesController) GetWeekly(ctx *fiber.Ctx) error {
 		return lib.ErrorBadRequest(ctx, err.Error())
 	}
 	method := ctx.Query("method", "kemenag")
-	result, err := c.svc.GetWeekly(lat, lng, method)
+	madhab := ctx.Query("madhab", "shafi")
+	result, err := c.svc.GetWeekly(lat, lng, method, madhab)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
@@ -59,13 +61,14 @@ func (c *prayerTimesController) GetImsakiyah(ctx *fiber.Ctx) error {
 		return lib.ErrorBadRequest(ctx, err.Error())
 	}
 	method := ctx.Query("method", "kemenag")
+	madhab := ctx.Query("madhab", "shafi")
 	now := time.Now()
 	year, _ := strconv.Atoi(ctx.Query("year", strconv.Itoa(now.Year())))
 	month, _ := strconv.Atoi(ctx.Query("month", strconv.Itoa(int(now.Month()))))
 	if month < 1 || month > 12 {
 		return lib.ErrorBadRequest(ctx, "month harus antara 1 dan 12")
 	}
-	result, err := c.svc.GetImsakiyah(lat, lng, year, month, method)
+	result, err := c.svc.GetImsakiyah(lat, lng, year, month, method, madhab)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}

@@ -13,6 +13,7 @@ import (
 type HadithController interface {
 	Create(ctx *fiber.Ctx) error
 	FindAll(ctx *fiber.Ctx) error
+	FindDaily(ctx *fiber.Ctx) error
 	FindById(ctx *fiber.Ctx) error
 	FindByBookSlug(ctx *fiber.Ctx) error
 	FindByThemeId(ctx *fiber.Ctx) error
@@ -44,6 +45,14 @@ func (c *hadithController) Create(ctx *fiber.Ctx) error {
 		return lib.ErrorConflict(ctx, err)
 	}
 	return lib.OK(ctx, data)
+}
+
+func (c *hadithController) FindDaily(ctx *fiber.Ctx) error {
+	hadith, err := c.hadith.FindDaily()
+	if err != nil || hadith == nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, hadith)
 }
 
 func (c *hadithController) FindAll(ctx *fiber.Ctx) error {

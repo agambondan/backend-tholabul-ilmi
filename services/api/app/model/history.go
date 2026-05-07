@@ -14,11 +14,13 @@ type HistoryEvent struct {
 	BaseID
 	YearHijri     int             `json:"year_hijri" gorm:"index"`
 	YearMiladi    int             `json:"year_miladi" gorm:"index"`
-	Title         string          `json:"title" gorm:"type:varchar(256);not null"`
+	Title         string          `json:"-" gorm:"type:varchar(256);not null"`
 	Slug          string          `json:"slug" gorm:"type:varchar(256);uniqueIndex;not null"`
-	Description   string          `json:"description" gorm:"type:text"`
+	Description   string          `json:"-" gorm:"type:text"`
 	Category      HistoryCategory `json:"category" gorm:"type:varchar(50);index"`
 	IsSignificant bool            `json:"is_significant" gorm:"default:false"`
+	TranslationID *int            `json:"translation_id,omitempty" gorm:"index"`
+	Translation   *Translation    `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type CreateHistoryEventRequest struct {

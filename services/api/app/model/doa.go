@@ -15,14 +15,18 @@ const (
 	DoaCategoryUmum       DoaCategory = "umum"
 )
 
+// Doa adopts the Quran-style Translation relation pattern.
+// Bilingual fields (title, transliteration, meaning, Arabic) live on the Translation row.
+// Legacy string columns are kept in DB for backward compat but hidden from JSON output.
 type Doa struct {
 	BaseID
-	Category            DoaCategory  `json:"category" gorm:"type:varchar(100);not null;uniqueIndex:idx_doa_category_title"`
-	Title               string       `json:"title" gorm:"type:varchar(256);not null;uniqueIndex:idx_doa_category_title"`
-	Arabic              string       `json:"arabic" gorm:"type:text;not null"`
-	Transliteration     string       `json:"transliteration" gorm:"type:text"`
-	Translation         string       `json:"translation" gorm:"type:text;not null"`
-	Source              string       `json:"source" gorm:"type:varchar(256)"`
-	TranslationID       *int         `json:"translation_id,omitempty" gorm:"index"`
-	TranslationRelation *Translation `json:"translation_rel,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
+	Category        DoaCategory  `json:"category" gorm:"type:varchar(100);not null;uniqueIndex:idx_doa_category_title"`
+	Title           string       `json:"-" gorm:"type:varchar(256);not null;uniqueIndex:idx_doa_category_title"`
+	Arabic          string       `json:"-" gorm:"type:text;not null"`
+	Transliteration string       `json:"-" gorm:"type:text"`
+	TranslationText string       `json:"-" gorm:"column:translation;type:text;not null"`
+	Source          string       `json:"source" gorm:"type:varchar(256)"`
+	AudioURL        string       `json:"audio_url,omitempty" gorm:"type:varchar(500)"`
+	TranslationID   *int         `json:"translation_id,omitempty" gorm:"index"`
+	Translation     *Translation `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }

@@ -5,6 +5,7 @@ type PrayerTimesResponse struct {
 	Lat     float64    `json:"lat"`
 	Lng     float64    `json:"lng"`
 	Method  string     `json:"method"`
+	Madhab  string     `json:"madhab"`
 	Prayers PrayerTime `json:"prayers"`
 }
 
@@ -30,5 +31,6 @@ type ImsakiyahResponse struct {
 	Lat    float64        `json:"lat"`
 	Lng    float64        `json:"lng"`
 	Method string         `json:"method"`
+	Madhab string         `json:"madhab"`
 	Rows   []ImsakiyahRow `json:"schedule"`
 }

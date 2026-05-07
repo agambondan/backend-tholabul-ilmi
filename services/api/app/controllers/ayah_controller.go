@@ -15,6 +15,8 @@ type AyahController interface {
 	FindById(ctx *fiber.Ctx) error
 	FindByNumber(ctx *fiber.Ctx) error
 	FindBySurahNumber(ctx *fiber.Ctx) error
+	FindByPage(ctx *fiber.Ctx) error
+	FindByHizbQuarter(ctx *fiber.Ctx) error
 	UpdateById(ctx *fiber.Ctx) error
 	DeleteById(ctx *fiber.Ctx) error
 }
@@ -78,6 +80,30 @@ func (c *ayahController) FindBySurahNumber(ctx *fiber.Ctx) error {
 		return lib.ErrorNotFound(ctx)
 	}
 	return lib.OK(ctx, data)
+}
+
+func (c *ayahController) FindByPage(ctx *fiber.Ctx) error {
+	page, err := strconv.Atoi(ctx.Params("page"))
+	if err != nil || page < 1 || page > 604 {
+		return lib.ErrorBadRequest(ctx, "page must be between 1 and 604")
+	}
+	data, err := c.ayah.FindByPage(page)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, fiber.Map{"items": data, "page": page})
+}
+
+func (c *ayahController) FindByHizbQuarter(ctx *fiber.Ctx) error {
+	hizb, err := strconv.Atoi(ctx.Params("hizb"))
+	if err != nil || hizb < 1 || hizb > 240 {
+		return lib.ErrorBadRequest(ctx, "hizb must be between 1 and 240")
+	}
+	data, err := c.ayah.FindByHizbQuarter(hizb)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, fiber.Map{"items": data, "hizb_quarter": hizb})
 }
 
 func (c *ayahController) UpdateById(ctx *fiber.Ctx) error {

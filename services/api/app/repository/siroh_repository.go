@@ -32,13 +32,13 @@ func NewSirohRepository(db *gorm.DB, pg *paginate.Pagination) SirohRepository {
 
 func (r *sirohRepo) FindAllCategories() ([]model.SirohCategory, error) {
 	var list []model.SirohCategory
-	err := r.db.Order("\"order\" asc, id asc").Find(&list).Error
+	err := r.db.Preload("Translation").Order("\"order\" asc, id asc").Find(&list).Error
 	return list, err
 }
 
 func (r *sirohRepo) FindCategoryBySlug(slug string) (*model.SirohCategory, error) {
 	var c model.SirohCategory
-	err := r.db.Preload("Contents").Where("slug = ?", slug).First(&c).Error
+	err := r.db.Preload("Translation").Preload("Contents.Translation").Where("slug = ?", slug).First(&c).Error
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (r *sirohRepo) FindCategoryBySlug(slug string) (*model.SirohCategory, error
 
 func (r *sirohRepo) FindContentBySlug(slug string) (*model.SirohContent, error) {
 	var c model.SirohContent
-	err := r.db.Preload("Category").Where("slug = ?", slug).First(&c).Error
+	err := r.db.Preload("Translation").Preload("Category.Translation").Where("slug = ?", slug).First(&c).Error
 	if err != nil {
 		return nil, err
 	}
@@ -56,13 +56,13 @@ func (r *sirohRepo) FindContentBySlug(slug string) (*model.SirohContent, error) 
 
 func (r *sirohRepo) FindContentsByCategoryID(categoryID int) ([]model.SirohContent, error) {
 	var list []model.SirohContent
-	err := r.db.Where("category_id = ?", categoryID).Order("\"order\" asc, id asc").Limit(200).Find(&list).Error
+	err := r.db.Preload("Translation").Where("category_id = ?", categoryID).Order("\"order\" asc, id asc").Limit(200).Find(&list).Error
 	return list, err
 }
 
 func (r *sirohRepo) FindAllContents(ctx *fiber.Ctx) *paginate.Page {
 	var list []model.SirohContent
-	mod := r.db.Model(&model.SirohContent{}).Preload("Category").Order("category_id, \"order\" asc")
+	mod := r.db.Model(&model.SirohContent{}).Preload("Translation").Preload("Category.Translation").Order("category_id, \"order\" asc")
 	page := r.pg.With(mod).Request(ctx.Request()).Response(&list)
 	return &page
 }

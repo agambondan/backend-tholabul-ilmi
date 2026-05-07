@@ -24,7 +24,7 @@ func NewDictionaryRepository(db *gorm.DB) DictionaryRepository {
 
 func (r *dictionaryRepository) FindAll(category string, search string) ([]model.IslamicTerm, error) {
 	var items []model.IslamicTerm
-	q := r.db.Order("term ASC")
+	q := r.db.Preload("Translation").Order("term ASC")
 	if category != "" {
 		q = q.Where("category = ?", category)
 	}
@@ -36,17 +36,17 @@ func (r *dictionaryRepository) FindAll(category string, search string) ([]model.
 
 func (r *dictionaryRepository) FindByTerm(term string) (*model.IslamicTerm, error) {
 	var item model.IslamicTerm
-	return &item, r.db.Where("term ILIKE ?", term).First(&item).Error
+	return &item, r.db.Preload("Translation").Where("term ILIKE ?", term).First(&item).Error
 }
 
 func (r *dictionaryRepository) FindByCategory(category model.TermCategory) ([]model.IslamicTerm, error) {
 	var items []model.IslamicTerm
-	return items, r.db.Where("category = ?", category).Order("term ASC").Limit(200).Find(&items).Error
+	return items, r.db.Preload("Translation").Where("category = ?", category).Order("term ASC").Limit(200).Find(&items).Error
 }
 
 func (r *dictionaryRepository) FindByID(id int) (*model.IslamicTerm, error) {
 	var item model.IslamicTerm
-	return &item, r.db.First(&item, id).Error
+	return &item, r.db.Preload("Translation").First(&item, id).Error
 }
 
 func (r *dictionaryRepository) Create(t *model.IslamicTerm) (*model.IslamicTerm, error) {

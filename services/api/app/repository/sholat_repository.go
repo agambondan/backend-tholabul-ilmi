@@ -57,12 +57,12 @@ func (r *sholatRepository) FindByUserIDDateRange(userID uuid.UUID, from, to stri
 
 func (r *sholatRepository) FindAllGuides() ([]model.SholatGuide, error) {
 	var list []model.SholatGuide
-	err := r.db.Order("step").Find(&list).Error
+	err := r.db.Preload("Translation").Order("step").Find(&list).Error
 	return list, err
 }
 
 func (r *sholatRepository) FindGuideByStep(step int) (*model.SholatGuide, error) {
 	var g model.SholatGuide
-	err := r.db.Where("step = ?", step).First(&g).Error
+	err := r.db.Preload("Translation").Where("step = ?", step).First(&g).Error
 	return &g, err
 }

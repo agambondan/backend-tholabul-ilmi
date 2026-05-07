@@ -21,7 +21,7 @@ func TestDoaSeedsAreIdempotent(t *testing.T) {
 		t.Fatalf("open sqlite: %v", err)
 	}
 
-	if err := db.AutoMigrate(&model.Doa{}); err != nil {
+	if err := db.AutoMigrate(&model.Doa{}, &model.Translation{}); err != nil {
 		t.Fatalf("auto migrate: %v", err)
 	}
 

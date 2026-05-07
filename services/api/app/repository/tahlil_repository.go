@@ -26,7 +26,7 @@ func (r *tahlilRepository) FindAll() ([]model.TahlilCollection, error) {
 
 func (r *tahlilRepository) FindByID(id int) (*model.TahlilCollection, error) {
 	var col model.TahlilCollection
-	err := r.db.Preload("Items", func(db *gorm.DB) *gorm.DB {
+	err := r.db.Preload("Items.Translation").Preload("Items", func(db *gorm.DB) *gorm.DB {
 		return db.Order("sort_order, id")
 	}).First(&col, id).Error
 	return &col, err

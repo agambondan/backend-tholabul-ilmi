@@ -33,3 +33,14 @@ type NotificationSettingRequest struct {
 type NotificationSettingsUpsertRequest struct {
 	Settings []NotificationSettingRequest `json:"settings" validate:"required,dive"`
 }
+
+// UserNotification — persisted inbox message per user
+type UserNotification struct {
+	BaseUUID
+	UserID uuid.UUID        `json:"user_id" gorm:"type:uuid;not null;index"`
+	Title  string           `json:"title" gorm:"type:varchar(200)"`
+	Body   string           `json:"body" gorm:"type:text"`
+	Type   NotificationType `json:"type" gorm:"type:varchar(50)"`
+	RefID  string           `json:"ref_id,omitempty" gorm:"type:varchar(100)"`
+	IsRead bool             `json:"is_read" gorm:"default:false"`
+}

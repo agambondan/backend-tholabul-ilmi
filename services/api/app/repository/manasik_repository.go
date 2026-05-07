@@ -18,10 +18,10 @@ func NewManasikRepository(db *gorm.DB) ManasikRepository {
 
 func (r *manasikRepository) FindByType(t model.ManasikType) ([]model.ManasikStep, error) {
 	var steps []model.ManasikStep
-	return steps, r.db.Where("type = ?", t).Order("step_order ASC").Find(&steps).Error
+	return steps, r.db.Preload("Translation").Where("type = ?", t).Order("step_order ASC").Find(&steps).Error
 }
 
 func (r *manasikRepository) FindByTypeAndStep(t model.ManasikType, step int) (*model.ManasikStep, error) {
 	var s model.ManasikStep
-	return &s, r.db.Where("type = ? AND step_order = ?", t, step).First(&s).Error
+	return &s, r.db.Preload("Translation").Where("type = ? AND step_order = ?", t, step).First(&s).Error
 }

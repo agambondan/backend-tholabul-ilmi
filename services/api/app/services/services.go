@@ -14,12 +14,14 @@ type Services struct {
 	Chapter         ChapterService
 	Hadith          HadithService
 	Bookmark        BookmarkService
+	UserWird        UserWirdService
 	ReadingProgress ReadingProgressService
 	Hafalan         HafalanService
 	Streak          StreakService
 	Search          SearchService
 	Mufrodat        MufrodatService
-	Notification    NotificationService
+	Notification         NotificationService
+	NotificationInbox    NotificationInboxService
 	Feed            FeedService
 	Tafsir          TafsirService
 	Doa             DoaService
@@ -31,6 +33,8 @@ type Services struct {
 	Tilawah         TilawahService
 	Amalan          AmalanService
 	Dzikir          DzikirService
+	DzikirLog       DzikirLogService
+	Achievement     AchievementService
 	Leaderboard     LeaderboardService
 	Zakat           ZakatService
 	Sholat          SholatService
@@ -51,6 +55,10 @@ type Services struct {
 	Dictionary      DictionaryService
 	Comment         CommentService
 	APIKey          APIKeyService
+	Perawi          PerawiService
+	JarhTadil       JarhTadilService
+	Sanad           SanadService
+	Takhrij         TakhrijService
 }
 
 func NewServices(repo *repository.Repositories) *Services {
@@ -68,12 +76,14 @@ func NewServices(repo *repository.Repositories) *Services {
 		Chapter:         NewChapterService(repo.Chapter),
 		Hadith:          NewHadithService(repo.Hadith),
 		Bookmark:        NewBookmarkService(repo.Bookmark, repo.Ayah, repo.Hadith),
+		UserWird:        NewUserWirdService(repo.UserWird),
 		ReadingProgress: NewReadingProgressService(repo.ReadingProgress, repo.UserActivity),
 		Hafalan:         NewHafalanService(repo.Hafalan),
 		Streak:          streak,
 		Search:          NewSearchService(repo.Search),
 		Mufrodat:        NewMufrodatService(repo.Mufrodat),
-		Notification:    NewNotificationService(repo.Notification),
+		Notification:         NewNotificationService(repo.Notification),
+		NotificationInbox:    NewNotificationInboxService(repo.NotificationInbox),
 		Feed:            NewFeedService(repo.Feed, NewAyahService(repo.Ayah), NewHadithService(repo.Hadith)),
 		Tafsir:          NewTafsirService(repo.Tafsir),
 		Doa:             NewDoaService(repo.Doa),
@@ -85,6 +95,8 @@ func NewServices(repo *repository.Repositories) *Services {
 		Tilawah:         NewTilawahService(repo.Tilawah),
 		Amalan:          NewAmalanService(repo.Amalan),
 		Dzikir:          NewDzikirService(repo.Dzikir),
+		DzikirLog:       NewDzikirLogService(repo.DzikirLog),
+		Achievement:     NewAchievementService(repo.Achievement),
 		Leaderboard:     NewLeaderboardService(repo.Leaderboard),
 		Zakat:           NewZakatService(),
 		Sholat:          NewSholatService(repo.Sholat),
@@ -105,5 +117,9 @@ func NewServices(repo *repository.Repositories) *Services {
 		Dictionary:      NewDictionaryService(repo.Dictionary),
 		Comment:         NewCommentService(repo.Comment),
 		APIKey:          NewAPIKeyService(repo.APIKey),
+		Perawi:          NewPerawiService(repo.Perawi),
+		JarhTadil:       NewJarhTadilService(repo.JarhTadil),
+		Sanad:           NewSanadService(repo.Sanad),
+		Takhrij:         NewTakhrijService(repo.Takhrij),
 	}
 }

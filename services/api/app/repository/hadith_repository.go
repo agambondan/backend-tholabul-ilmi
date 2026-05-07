@@ -8,6 +8,7 @@ import (
 )
 
 type HadithRepository interface {
+	FindByOffset(int64) (*model.Hadith, error)
 	Save(*model.Hadith) (*model.Hadith, error)
 	FindAll(*fiber.Ctx) *paginate.Page
 	FindById(*int) (*model.Hadith, error)
@@ -175,4 +176,14 @@ func (c *hadithRepo) Count() (*int64, error) {
 	var count int64
 	c.db.Table("hadith").Count(&count)
 	return &count, nil
+}
+
+func (c *hadithRepo) FindByOffset(offset int64) (*model.Hadith, error) {
+	var hadith model.Hadith
+	err := c.db.Preload("Translation").Preload("Book").Preload("Theme").Preload("Chapter").
+		Order("id asc").Offset(int(offset)).Limit(1).First(&hadith).Error
+	if err != nil {
+		return nil, err
+	}
+	return &hadith, nil
 }

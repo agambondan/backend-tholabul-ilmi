@@ -96,15 +96,61 @@ func upsertAdminUser(db *gorm.DB) error {
 
 func upsertDoaSeeds(db *gorm.DB) error {
 	items := seedDoa()
+	englishMap := doaEnglishByKey()
 	for i := range items {
+		// Upsert Doa row first (matches existing on category+title via unique index).
 		if err := db.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "category"}, {Name: "title"}},
 			DoUpdates: clause.AssignmentColumns([]string{"arabic", "transliteration", "translation", "source"}),
 		}).Create(&items[i]).Error; err != nil {
 			return err
 		}
+
+		// Build/refresh the bilingual Translation row keyed by (category, title).
+		key := string(items[i].Category) + "|" + items[i].Title
+		en := englishMap[key]
+		latinEn := en.Latin
+		if latinEn == "" {
+			latinEn = items[i].Transliteration
+		}
+
+		var existing model.Doa
+		if err := db.Where("category = ? AND title = ?", items[i].Category, items[i].Title).First(&existing).Error; err != nil {
+			return err
+		}
+		tr := model.Translation{
+			Idn:            stringPtr(items[i].Title),
+			LatinIdn:       stringPtr(items[i].Transliteration),
+			DescriptionIdn: stringPtr(items[i].TranslationText),
+			Ar:             stringPtr(items[i].Arabic),
+			En:             stringPtr(en.Title),
+			LatinEn:        stringPtr(latinEn),
+			DescriptionEn:  stringPtr(en.Meaning),
+		}
+		if existing.TranslationID != nil {
+			tr.ID = existing.TranslationID
+			if err := db.Save(&tr).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := db.Create(&tr).Error; err != nil {
+				return err
+			}
+			if err := db.Model(&model.Doa{}).Where("id = ?", existing.ID).
+				Update("translation_id", tr.ID).Error; err != nil {
+				return err
+			}
+		}
 	}
 	return nil
+}
+
+func stringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	v := s
+	return &v
 }
 
 func upsertAmalanSeeds(db *gorm.DB) error {
@@ -122,11 +168,56 @@ func upsertAmalanSeeds(db *gorm.DB) error {
 
 func upsertDzikirSeeds(db *gorm.DB) error {
 	items := seedDzikir()
+	englishMap := dzikirEnglishByKey()
 	for i := range items {
 		if err := db.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "category"}, {Name: "title"}},
 			DoUpdates: clause.AssignmentColumns([]string{"occasion", "arabic", "transliteration", "translation", "count", "fadhilah", "source"}),
 		}).Create(&items[i]).Error; err != nil {
+			return err
+		}
+
+		key := string(items[i].Category) + "|" + items[i].Title
+		en := englishMap[key]
+		latinEn := en.Latin
+		if latinEn == "" {
+			latinEn = items[i].Transliteration
+		}
+
+		var existing model.Dzikir
+		if err := db.Where("category = ? AND title = ?", items[i].Category, items[i].Title).First(&existing).Error; err != nil {
+			return err
+		}
+		tr := model.Translation{
+			Idn:            stringPtr(items[i].Title),
+			LatinIdn:       stringPtr(items[i].Transliteration),
+			DescriptionIdn: stringPtr(items[i].TranslationText),
+			Ar:             stringPtr(items[i].Arabic),
+			En:             stringPtr(en.Title),
+			LatinEn:        stringPtr(latinEn),
+			DescriptionEn:  stringPtr(en.Meaning),
+		}
+		if existing.TranslationID != nil {
+			tr.ID = existing.TranslationID
+			if err := db.Save(&tr).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := db.Create(&tr).Error; err != nil {
+				return err
+			}
+			if err := db.Model(&model.Dzikir{}).Where("id = ?", existing.ID).
+				Update("translation_id", tr.ID).Error; err != nil {
+				return err
+			}
+		}
+
+		// Persist bilingual fadhilah back to the Dzikir row so the API can serve both.
+		updates := map[string]interface{}{
+			"fadhilah_idn": items[i].Fadhilah,
+			"fadhilah_en":  en.Fadhilah,
+		}
+		if err := db.Model(&model.Dzikir{}).Where("id = ?", existing.ID).Updates(updates).Error; err != nil {
 			return err
 		}
 	}

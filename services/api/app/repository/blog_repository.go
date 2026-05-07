@@ -48,7 +48,10 @@ func (r *blogRepo) postBase() *gorm.DB {
 	return r.db.Model(&model.BlogPost{}).
 		Preload("Author").
 		Preload("Category").
-		Preload("Tags")
+		Preload("Category.Translation").
+		Preload("Tags").
+		Preload("Tags.Translation").
+		Preload("Translation")
 }
 
 func (r *blogRepo) FindAllPosts(ctx *fiber.Ctx, categoryID *int, tagID *int, search string) *paginate.Page {
@@ -186,13 +189,13 @@ func (r *blogRepo) FindPostsByTagSlug(ctx *fiber.Ctx, slug string) *paginate.Pag
 
 func (r *blogRepo) FindAllCategories() ([]model.BlogCategory, error) {
 	var list []model.BlogCategory
-	err := r.db.Order("name asc").Find(&list).Error
+	err := r.db.Preload("Translation").Order("name asc").Find(&list).Error
 	return list, err
 }
 
 func (r *blogRepo) FindCategoryBySlug(slug string) (*model.BlogCategory, error) {
 	var c model.BlogCategory
-	err := r.db.Where("slug = ?", slug).First(&c).Error
+	err := r.db.Preload("Translation").Where("slug = ?", slug).First(&c).Error
 	if err != nil {
 		return nil, err
 	}
@@ -221,13 +224,13 @@ func (r *blogRepo) DeleteCategory(id int) error {
 
 func (r *blogRepo) FindAllTags() ([]model.BlogTag, error) {
 	var list []model.BlogTag
-	err := r.db.Order("name asc").Find(&list).Error
+	err := r.db.Preload("Translation").Order("name asc").Find(&list).Error
 	return list, err
 }
 
 func (r *blogRepo) FindTagBySlug(slug string) (*model.BlogTag, error) {
 	var t model.BlogTag
-	err := r.db.Where("slug = ?", slug).First(&t).Error
+	err := r.db.Preload("Translation").Where("slug = ?", slug).First(&t).Error
 	if err != nil {
 		return nil, err
 	}

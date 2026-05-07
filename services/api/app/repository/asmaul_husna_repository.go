@@ -20,13 +20,13 @@ func NewAsmaUlHusnaRepository(db *gorm.DB) AsmaUlHusnaRepository {
 
 func (r *asmaUlHusnaRepo) FindAll() ([]model.AsmaUlHusna, error) {
 	var list []model.AsmaUlHusna
-	err := r.db.Order("number asc").Find(&list).Error
+	err := r.db.Preload("Translation").Order("number asc").Find(&list).Error
 	return list, err
 }
 
 func (r *asmaUlHusnaRepo) FindByNumber(number int) (*model.AsmaUlHusna, error) {
 	var a model.AsmaUlHusna
-	if err := r.db.Where("number = ?", number).First(&a).Error; err != nil {
+	if err := r.db.Preload("Translation").Where("number = ?", number).First(&a).Error; err != nil {
 		return nil, err
 	}
 	return &a, nil

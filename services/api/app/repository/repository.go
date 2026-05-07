@@ -23,12 +23,14 @@ type Repositories struct {
 	Chapter         ChapterRepository
 	Hadith          HadithRepository
 	Bookmark        BookmarkRepository
+	UserWird        UserWirdRepository
 	ReadingProgress ReadingProgressRepository
 	Hafalan         HafalanRepository
 	UserActivity    UserActivityRepository
 	Search          SearchRepository
 	Mufrodat        MufrodatRepository
-	Notification    NotificationRepository
+	Notification         NotificationRepository
+	NotificationInbox    NotificationInboxRepository
 	Feed            FeedRepository
 	Tafsir          TafsirRepository
 	Doa             DoaRepository
@@ -39,6 +41,8 @@ type Repositories struct {
 	Tilawah         TilawahRepository
 	Amalan          AmalanRepository
 	Dzikir          DzikirRepository
+	DzikirLog       DzikirLogRepository
+	Achievement     AchievementRepository
 	Leaderboard     LeaderboardRepository
 	Sholat          SholatRepository
 	Murojaah        MurojaahRepository
@@ -56,6 +60,10 @@ type Repositories struct {
 	APIKey          APIKeyRepository
 	IslamicEvent    IslamicEventRepository
 	AsbabunNuzul    AsbabunNuzulRepository
+	Perawi          PerawiRepository
+	JarhTadil       JarhTadilRepository
+	Sanad           SanadRepository
+	Takhrij         TakhrijRepository
 	db              *gorm.DB
 	pg              *paginate.Pagination
 }
@@ -85,12 +93,14 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 		Chapter:         NewChapterRepository(db, pg),
 		Hadith:          NewHadithRepository(db, pg),
 		Bookmark:        NewBookmarkRepository(db),
+		UserWird:        NewUserWirdRepository(db),
 		ReadingProgress: NewReadingProgressRepository(db),
 		Hafalan:         NewHafalanRepository(db),
 		UserActivity:    NewUserActivityRepository(db),
 		Search:          NewSearchRepository(db),
 		Mufrodat:        NewMufrodatRepository(db),
-		Notification:    NewNotificationRepository(db),
+		Notification:         NewNotificationRepository(db),
+		NotificationInbox:    NewNotificationInboxRepository(db),
 		Feed:            NewFeedRepository(db, pg),
 		Tafsir:          NewTafsirRepository(db, pg),
 		Doa:             NewDoaRepository(db),
@@ -101,6 +111,8 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 		Tilawah:         NewTilawahRepository(db),
 		Amalan:          NewAmalanRepository(db),
 		Dzikir:          NewDzikirRepository(db),
+		DzikirLog:       NewDzikirLogRepository(db),
+		Achievement:     NewAchievementRepository(db),
 		Leaderboard:     NewLeaderboardRepository(db),
 		Sholat:          NewSholatRepository(db),
 		Murojaah:        NewMurojaahRepository(db),
@@ -118,6 +130,10 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 		APIKey:          NewAPIKeyRepository(db),
 		IslamicEvent:    NewIslamicEventRepository(db),
 		AsbabunNuzul:    NewAsbabunNuzulRepository(db),
+		Perawi:          NewPerawiRepository(db, pg),
+		JarhTadil:       NewJarhTadilRepository(db),
+		Sanad:           NewSanadRepository(db),
+		Takhrij:         NewTakhrijRepository(db),
 		db:              db,
 		pg:              pg,
 	}, nil
@@ -182,6 +198,9 @@ func (s *Repositories) Seeder() error {
 	}
 	migrations.SeedRelated(s.db)
 	migrations.SeedTier3(s.db)
+	if err := migrations.BackfillTranslations(s.db); err != nil {
+		return err
+	}
 	return nil
 }
 

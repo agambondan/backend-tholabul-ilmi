@@ -16,33 +16,39 @@ const (
 
 type BlogCategory struct {
 	BaseID
-	Name        string `json:"name" gorm:"type:varchar(256);not null"`
-	Slug        string `json:"slug" gorm:"type:varchar(256);uniqueIndex;not null"`
-	Description string `json:"description" gorm:"type:text"`
+	Name          string       `json:"-" gorm:"type:varchar(256);not null"`
+	Slug          string       `json:"slug" gorm:"type:varchar(256);uniqueIndex;not null"`
+	Description   string       `json:"-" gorm:"type:text"`
+	TranslationID *int         `json:"translation_id,omitempty" gorm:"index"`
+	Translation   *Translation `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type BlogTag struct {
 	BaseID
-	Name  string     `json:"name" gorm:"type:varchar(100);not null"`
-	Slug  string     `json:"slug" gorm:"type:varchar(100);uniqueIndex;not null"`
-	Posts []BlogPost `json:"posts,omitempty" gorm:"many2many:blog_post_tags"`
+	Name          string       `json:"-" gorm:"type:varchar(100);not null"`
+	Slug          string       `json:"slug" gorm:"type:varchar(100);uniqueIndex;not null"`
+	Posts         []BlogPost   `json:"posts,omitempty" gorm:"many2many:blog_post_tags"`
+	TranslationID *int         `json:"translation_id,omitempty" gorm:"index"`
+	Translation   *Translation `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type BlogPost struct {
 	BaseUUID
-	AuthorID    uuid.UUID    `json:"author_id" gorm:"type:uuid;not null;index"`
-	CategoryID  *int         `json:"category_id,omitempty" gorm:"index"`
-	Title       string       `json:"title" gorm:"type:varchar(512);not null"`
-	Slug        string       `json:"slug" gorm:"type:varchar(512);uniqueIndex;not null"`
-	Excerpt     string       `json:"excerpt" gorm:"type:text"`
-	Content     string       `json:"content" gorm:"type:text;not null"`
-	CoverImage  *string      `json:"cover_image,omitempty" gorm:"type:varchar(512)"`
-	Status      BlogStatus   `json:"status" gorm:"type:varchar(50);default:'draft';index:idx_blog_status_published"`
-	PublishedAt *time.Time   `json:"published_at,omitempty" gorm:"index:idx_blog_status_published"`
-	ViewCount   int          `json:"view_count" gorm:"default:0"`
-	Author      *User        `json:"author,omitempty"`
-	Category    *BlogCategory `json:"category,omitempty"`
-	Tags        []BlogTag    `json:"tags,omitempty" gorm:"many2many:blog_post_tags"`
+	AuthorID      uuid.UUID     `json:"author_id" gorm:"type:uuid;not null;index"`
+	CategoryID    *int          `json:"category_id,omitempty" gorm:"index"`
+	Title         string        `json:"-" gorm:"type:varchar(512);not null"`
+	Slug          string        `json:"slug" gorm:"type:varchar(512);uniqueIndex;not null"`
+	Excerpt       string        `json:"-" gorm:"type:text"`
+	Content       string        `json:"-" gorm:"type:text;not null"`
+	CoverImage    *string       `json:"cover_image,omitempty" gorm:"type:varchar(512)"`
+	Status        BlogStatus    `json:"status" gorm:"type:varchar(50);default:'draft';index:idx_blog_status_published"`
+	PublishedAt   *time.Time    `json:"published_at,omitempty" gorm:"index:idx_blog_status_published"`
+	ViewCount     int           `json:"view_count" gorm:"default:0"`
+	Author        *User         `json:"author,omitempty"`
+	Category      *BlogCategory `json:"category,omitempty"`
+	Tags          []BlogTag     `json:"tags,omitempty" gorm:"many2many:blog_post_tags"`
+	TranslationID *int          `json:"translation_id,omitempty" gorm:"index"`
+	Translation   *Translation  `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type CreateBlogPostRequest struct {

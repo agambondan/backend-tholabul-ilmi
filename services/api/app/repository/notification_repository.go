@@ -58,3 +58,51 @@ func (r *notificationRepository) FindDue(now time.Time) ([]model.NotificationSet
 func (r *notificationRepository) MarkSent(id int, sentAt time.Time) error {
 	return r.db.Model(&model.NotificationSetting{}).Where("id = ?", id).Update("last_sent_at", sentAt).Error
 }
+
+// Inbox repository
+
+type NotificationInboxRepository interface {
+	ListByUser(userID uuid.UUID, limit int) ([]model.UserNotification, error)
+	UnreadCount(userID uuid.UUID) (int64, error)
+	MarkRead(id uuid.UUID, userID uuid.UUID) error
+	MarkAllRead(userID uuid.UUID) error
+	Create(n model.UserNotification) (model.UserNotification, error)
+}
+
+type notificationInboxRepository struct {
+	db *gorm.DB
+}
+
+func NewNotificationInboxRepository(db *gorm.DB) NotificationInboxRepository {
+	return &notificationInboxRepository{db}
+}
+
+func (r *notificationInboxRepository) ListByUser(userID uuid.UUID, limit int) ([]model.UserNotification, error) {
+	var items []model.UserNotification
+	q := r.db.Where("user_id = ?", userID).Order("created_at DESC")
+	if limit > 0 {
+		q = q.Limit(limit)
+	}
+	return items, q.Find(&items).Error
+}
+
+func (r *notificationInboxRepository) UnreadCount(userID uuid.UUID) (int64, error) {
+	var count int64
+	return count, r.db.Model(&model.UserNotification{}).Where("user_id = ? AND is_read = false", userID).Count(&count).Error
+}
+
+func (r *notificationInboxRepository) MarkRead(id uuid.UUID, userID uuid.UUID) error {
+	return r.db.Model(&model.UserNotification{}).
+		Where("id = ? AND user_id = ?", id, userID).
+		Update("is_read", true).Error
+}
+
+func (r *notificationInboxRepository) MarkAllRead(userID uuid.UUID) error {
+	return r.db.Model(&model.UserNotification{}).
+		Where("user_id = ? AND is_read = false", userID).
+		Update("is_read", true).Error
+}
+
+func (r *notificationInboxRepository) Create(n model.UserNotification) (model.UserNotification, error) {
+	return n, r.db.Create(&n).Error
+}

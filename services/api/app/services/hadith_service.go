@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -11,6 +13,7 @@ type HadithService interface {
 	Create(*model.Hadith) (*model.Hadith, error)
 	FindAll(*fiber.Ctx) *paginate.Page
 	FindById(*int) (*model.Hadith, error)
+	FindDaily() (*model.Hadith, error)
 	FindByBookSlug(*fiber.Ctx, *string) (*paginate.Page, error)
 	FindByThemeId(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindByThemeName(*fiber.Ctx, *string) (*paginate.Page, error)
@@ -43,6 +46,18 @@ func (b *hadithService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 
 func (b *hadithService) FindById(id *int) (*model.Hadith, error) {
 	return b.hadith.FindById(id)
+}
+
+func (b *hadithService) FindDaily() (*model.Hadith, error) {
+	count, err := b.hadith.Count()
+	if err != nil || count == nil || *count == 0 {
+		return nil, err
+	}
+	// Deterministic offset by day-of-year so all users get the same hadith on the same day.
+	now := time.Now().UTC()
+	dayOfYear := int64(now.YearDay()) + int64(now.Year())*1000
+	offset := dayOfYear % *count
+	return b.hadith.FindByOffset(offset)
 }
 
 func (b *hadithService) FindByBookSlug(ctx *fiber.Ctx, bookSlug *string) (*paginate.Page, error) {

@@ -43,6 +43,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newSearchController := controllers.NewSearchController(newServices)
 	newMufrodatController := controllers.NewMufrodatController(newServices)
 	newNotificationController := controllers.NewNotificationController(newServices)
+	newNotificationInboxController := controllers.NewNotificationInboxController(newServices)
 	newFeedController := controllers.NewFeedController(newServices)
 	newTafsirController := controllers.NewTafsirController(newServices)
 	newDoaController := controllers.NewDoaController(newServices)
@@ -54,6 +55,8 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newTilawahController := controllers.NewTilawahController(newServices)
 	newAmalanController := controllers.NewAmalanController(newServices)
 	newDzikirController := controllers.NewDzikirController(newServices)
+	newDzikirLogController := controllers.NewDzikirLogController(newServices)
+	newAchievementController := controllers.NewAchievementController(newServices)
 	newLeaderboardController := controllers.NewLeaderboardController(newServices)
 	newShareController := controllers.NewShareController(newServices)
 	newZakatController := controllers.NewZakatController(newServices)
@@ -65,6 +68,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newMuhasabahController := controllers.NewMuhasabahController(newServices)
 	newGoalController := controllers.NewGoalController(newServices)
 	newKiblatController := controllers.NewKiblatController(newServices)
+	newUserWirdController := controllers.NewUserWirdController(newServices)
 	newPrayerTimesController := controllers.NewPrayerTimesController(newServices)
 	newHistoryController := controllers.NewHistoryController(newServices)
 	newManasikController := controllers.NewManasikController(newServices)
@@ -131,6 +135,8 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/ayah/:id", newAyahController.FindById)
 	master.Get("/ayah/number/:number", newAyahController.FindByNumber)
 	master.Get("/ayah/surah/number/:number", newAyahController.FindBySurahNumber)
+	master.Get("/ayah/page/:page", newAyahController.FindByPage)
+	master.Get("/ayah/hizb/:hizb", newAyahController.FindByHizbQuarter)
 	master.Put("/ayah/:id", admin, newAyahController.UpdateById)
 	master.Delete("/ayah/:id/:scoped", admin, newAyahController.DeleteById)
 
@@ -179,6 +185,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	// Hadith (read: public; write: admin)
 	master.Post("/hadiths", admin, newHadithController.Create)
 	master.Get("/hadiths", newHadithController.FindAll)
+	master.Get("/hadiths/daily", newHadithController.FindDaily)
 	master.Get("/hadiths/:id", newHadithController.FindById)
 	master.Get("/hadiths/book/:slug", newHadithController.FindByBookSlug)
 	master.Get("/hadiths/theme/:themeId", newHadithController.FindByThemeId)
@@ -204,6 +211,10 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	// Notifications / Reminder
 	master.Get("/notifications/settings", jwt, newNotificationController.FindSettings)
 	master.Put("/notifications/settings", jwt, newNotificationController.UpsertSettings)
+	// Notification inbox
+	master.Get("/notifications/inbox", jwt, newNotificationInboxController.List)
+	master.Put("/notifications/inbox/read-all", jwt, newNotificationInboxController.MarkAllRead)
+	master.Put("/notifications/inbox/:id/read", jwt, newNotificationInboxController.MarkRead)
 
 	// Share to Feed
 	master.Get("/feed", newFeedController.FindAll)
@@ -215,6 +226,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	// Bookmark
 	master.Post("/bookmarks", jwt, newBookmarkController.Add)
 	master.Get("/bookmarks", jwt, newBookmarkController.FindAll)
+	master.Put("/bookmarks/:id", jwt, newBookmarkController.Update)
 	master.Delete("/bookmarks/:id", jwt, newBookmarkController.Delete)
 
 	// Reading Progress
@@ -309,10 +321,20 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/dzikir/category/:category", newDzikirController.FindByCategory)
 	master.Get("/dzikir/:id", newDzikirController.FindByID)
 
+	// Dzikir Log (protected — daily tracker)
+	master.Post("/dzikir/log", jwt, newDzikirLogController.Log)
+	master.Get("/dzikir/log/today", jwt, newDzikirLogController.GetToday)
+	master.Delete("/dzikir/log/:id", jwt, newDzikirLogController.Delete)
+
 	// Leaderboard (public read, my-rank: protected)
 	master.Get("/leaderboard/streak", newLeaderboardController.TopStreak)
 	master.Get("/leaderboard/hafalan", newLeaderboardController.TopHafalan)
 	master.Get("/leaderboard/me", jwt, newLeaderboardController.MyRank)
+
+	// Achievements & Points (badges: public list; earned: protected)
+	master.Get("/achievements", newAchievementController.GetAll)
+	master.Get("/achievements/mine", jwt, newAchievementController.GetMine)
+	master.Get("/achievements/points", jwt, newAchievementController.GetMyPoints)
 
 	// Share / Card Metadata (public)
 	master.Get("/share/ayah/:id", newShareController.ShareAyah)
@@ -368,6 +390,12 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 
 	// Wirid Khusus (public — query dzikir by occasion)
 	master.Get("/wirid/occasion/:occasion", newDzikirController.FindByOccasion)
+
+	// User Custom Wirid
+	master.Post("/user-wird", jwt, newUserWirdController.Create)
+	master.Get("/user-wird", jwt, newUserWirdController.List)
+	master.Put("/user-wird/:id", jwt, newUserWirdController.Update)
+	master.Delete("/user-wird/:id", jwt, newUserWirdController.Delete)
 
 	// Muhasabah Harian (protected)
 	master.Post("/muhasabah", jwt, newMuhasabahController.Create)
@@ -478,4 +506,49 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 
 	// Muroja'ah session (protected)
 	master.Get("/murojaah/session", jwt, newMurojaahController.GetSession)
+
+	// Ilmu Rijal: Perawi, Sanad, Jarh wa Ta'dil, Takhrij
+	newPerawiController := controllers.NewPerawiController(newServices)
+	newJarhTadilController := controllers.NewJarhTadilController(newServices)
+	newSanadController := controllers.NewSanadController(newServices)
+	newTakhrijController := controllers.NewTakhrijController(newServices)
+
+	// #51 Perawi (public read, editor/admin write)
+	master.Get("/perawi", newPerawiController.FindAll)
+	master.Get("/perawi/search", newPerawiController.Search)
+	master.Get("/perawi/tabaqah/:tabaqah", newPerawiController.FindByTabaqah)
+	master.Get("/perawi/:id", newPerawiController.FindByID)
+	master.Get("/perawi/:id/guru", newPerawiController.FindGuru)
+	master.Get("/perawi/:id/murid", newPerawiController.FindMurid)
+	master.Get("/perawi/:id/jarh-tadil", newJarhTadilController.FindByPerawiID)
+	master.Post("/perawi", middlewares.EditorOrAdminMiddleware(), newPerawiController.Create)
+	master.Put("/perawi/:id", middlewares.EditorOrAdminMiddleware(), newPerawiController.UpdateByID)
+	master.Delete("/perawi/:id", middlewares.EditorOrAdminMiddleware(), newPerawiController.DeleteByID)
+
+	// #52 Jarh wa Ta'dil (public read, editor/admin write)
+	master.Get("/jarh-tadil", newJarhTadilController.FindAll)
+	master.Get("/jarh-tadil/:id", newJarhTadilController.FindByID)
+	master.Post("/jarh-tadil", middlewares.EditorOrAdminMiddleware(), newJarhTadilController.Create)
+	master.Put("/jarh-tadil/:id", middlewares.EditorOrAdminMiddleware(), newJarhTadilController.UpdateByID)
+	master.Delete("/jarh-tadil/:id", middlewares.EditorOrAdminMiddleware(), newJarhTadilController.DeleteByID)
+
+	// hadith sub-resources (sanad & takhrij)
+	master.Get("/hadiths/:id/sanad", newSanadController.FindByHadithID)
+	master.Get("/hadiths/:id/takhrij", newTakhrijController.FindByHadithID)
+
+	// #53 Sanad & Mata Sanad (public read, editor/admin write)
+	master.Get("/sanad/:id", newSanadController.FindByID)
+	master.Post("/sanad", middlewares.EditorOrAdminMiddleware(), newSanadController.Create)
+	master.Put("/sanad/:id", middlewares.EditorOrAdminMiddleware(), newSanadController.UpdateByID)
+	master.Delete("/sanad/:id", middlewares.EditorOrAdminMiddleware(), newSanadController.DeleteByID)
+	master.Post("/sanad/:id/mata-sanad", middlewares.EditorOrAdminMiddleware(), newSanadController.AddMataSanad)
+	master.Put("/mata-sanad/:id", middlewares.EditorOrAdminMiddleware(), newSanadController.UpdateMataSanad)
+	master.Delete("/mata-sanad/:id", middlewares.EditorOrAdminMiddleware(), newSanadController.DeleteMataSanad)
+
+	// #54 Takhrij (public read, editor/admin write)
+	master.Get("/takhrij", newTakhrijController.FindAll)
+	master.Get("/takhrij/:id", newTakhrijController.FindByID)
+	master.Post("/takhrij", middlewares.EditorOrAdminMiddleware(), newTakhrijController.Create)
+	master.Put("/takhrij/:id", middlewares.EditorOrAdminMiddleware(), newTakhrijController.UpdateByID)
+	master.Delete("/takhrij/:id", middlewares.EditorOrAdminMiddleware(), newTakhrijController.DeleteByID)
 }

@@ -9,9 +9,9 @@ import (
 )
 
 type PrayerTimesService interface {
-	GetByDate(lat, lng float64, date time.Time, method string) (*model.PrayerTimesResponse, error)
-	GetWeekly(lat, lng float64, method string) ([]model.PrayerTimesResponse, error)
-	GetImsakiyah(lat, lng float64, year, month int, method string) (*model.ImsakiyahResponse, error)
+	GetByDate(lat, lng float64, date time.Time, method, madhab string) (*model.PrayerTimesResponse, error)
+	GetWeekly(lat, lng float64, method, madhab string) ([]model.PrayerTimesResponse, error)
+	GetImsakiyah(lat, lng float64, year, month int, method, madhab string) (*model.ImsakiyahResponse, error)
 }
 
 type prayerTimesService struct{}
@@ -89,10 +89,16 @@ func hoursToTime(h float64, tz int) string {
 	return fmt.Sprintf("%02d:%02d", hh, mm)
 }
 
-func (s *prayerTimesService) calculate(lat, lng float64, date time.Time, method string) model.PrayerTime {
+func (s *prayerTimesService) calculate(lat, lng float64, date time.Time, method, madhab string) model.PrayerTime {
 	m, ok := methods[method]
 	if !ok {
 		m = methods["kemenag"]
+	}
+
+	// Asr shadow factor: Syafi'i/Maliki/Hanbali = 1 (default), Hanafi = 2.
+	asrFactor := 1.0
+	if madhab == "hanafi" {
+		asrFactor = 2.0
 	}
 
 	_, offset := date.Zone()
@@ -108,7 +114,7 @@ func (s *prayerTimesService) calculate(lat, lng float64, date time.Time, method 
 
 	fajr := transit - hourAngle(lat, decl, m.FajrAngle)
 	dhuhr := transit + 1.0/60
-	asr := transit + asrHourAngle(lat, decl, 1)
+	asr := transit + asrHourAngle(lat, decl, asrFactor)
 	maghrib := sunset
 	var isha float64
 	if m.IshaMinutes > 0 {
@@ -129,23 +135,33 @@ func (s *prayerTimesService) calculate(lat, lng float64, date time.Time, method 
 	}
 }
 
-func (s *prayerTimesService) GetByDate(lat, lng float64, date time.Time, method string) (*model.PrayerTimesResponse, error) {
+func normalizeMadhab(m string) string {
+	if m == "hanafi" {
+		return "hanafi"
+	}
+	return "shafi"
+}
+
+func (s *prayerTimesService) GetByDate(lat, lng float64, date time.Time, method, madhab string) (*model.PrayerTimesResponse, error) {
 	if _, ok := methods[method]; !ok {
 		method = "kemenag"
 	}
+	madhab = normalizeMadhab(madhab)
 	return &model.PrayerTimesResponse{
 		Date:    date.Format("2006-01-02"),
 		Lat:     lat,
 		Lng:     lng,
 		Method:  method,
-		Prayers: s.calculate(lat, lng, date, method),
+		Madhab:  madhab,
+		Prayers: s.calculate(lat, lng, date, method, madhab),
 	}, nil
 }
 
-func (s *prayerTimesService) GetWeekly(lat, lng float64, method string) ([]model.PrayerTimesResponse, error) {
+func (s *prayerTimesService) GetWeekly(lat, lng float64, method, madhab string) ([]model.PrayerTimesResponse, error) {
 	if _, ok := methods[method]; !ok {
 		method = "kemenag"
 	}
+	madhab = normalizeMadhab(madhab)
 	var result []model.PrayerTimesResponse
 	today := time.Now()
 	for i := 0; i < 7; i++ {
@@ -155,16 +171,18 @@ func (s *prayerTimesService) GetWeekly(lat, lng float64, method string) ([]model
 			Lat:     lat,
 			Lng:     lng,
 			Method:  method,
-			Prayers: s.calculate(lat, lng, d, method),
+			Madhab:  madhab,
+			Prayers: s.calculate(lat, lng, d, method, madhab),
 		})
 	}
 	return result, nil
 }
 
-func (s *prayerTimesService) GetImsakiyah(lat, lng float64, year, month int, method string) (*model.ImsakiyahResponse, error) {
+func (s *prayerTimesService) GetImsakiyah(lat, lng float64, year, month int, method, madhab string) (*model.ImsakiyahResponse, error) {
 	if _, ok := methods[method]; !ok {
 		method = "kemenag"
 	}
+	madhab = normalizeMadhab(madhab)
 	loc := time.Now().Location()
 	daysInMonth := time.Date(year, time.Month(month+1), 0, 0, 0, 0, 0, loc).Day()
 	var rows []model.ImsakiyahRow
@@ -172,7 +190,7 @@ func (s *prayerTimesService) GetImsakiyah(lat, lng float64, year, month int, met
 		date := time.Date(year, time.Month(month), d, 12, 0, 0, 0, loc)
 		rows = append(rows, model.ImsakiyahRow{
 			Date:    date.Format("2006-01-02"),
-			Prayers: s.calculate(lat, lng, date, method),
+			Prayers: s.calculate(lat, lng, date, method, madhab),
 		})
 	}
 	return &model.ImsakiyahResponse{
@@ -181,6 +199,7 @@ func (s *prayerTimesService) GetImsakiyah(lat, lng float64, year, month int, met
 		Lat:    lat,
 		Lng:    lng,
 		Method: method,
+		Madhab: madhab,
 		Rows:   rows,
 	}, nil
 }

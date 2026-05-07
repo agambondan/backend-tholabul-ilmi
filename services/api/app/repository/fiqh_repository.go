@@ -28,13 +28,13 @@ func NewFiqhRepository(db *gorm.DB) FiqhRepository {
 
 func (r *fiqhRepository) FindAllCategories() ([]model.FiqhCategory, error) {
 	var list []model.FiqhCategory
-	err := r.db.Order("id").Find(&list).Error
+	err := r.db.Preload("Translation").Order("id").Find(&list).Error
 	return list, err
 }
 
 func (r *fiqhRepository) FindCategoryBySlug(slug string) (*model.FiqhCategory, error) {
 	var cat model.FiqhCategory
-	err := r.db.Preload("Items", func(db *gorm.DB) *gorm.DB {
+	err := r.db.Preload("Translation").Preload("Items.Translation").Preload("Items", func(db *gorm.DB) *gorm.DB {
 		return db.Order("sort_order, id")
 	}).Where("slug = ?", slug).First(&cat).Error
 	return &cat, err
@@ -42,13 +42,14 @@ func (r *fiqhRepository) FindCategoryBySlug(slug string) (*model.FiqhCategory, e
 
 func (r *fiqhRepository) FindItemBySlug(slug string) (*model.FiqhItem, error) {
 	var item model.FiqhItem
-	err := r.db.Where("slug = ?", slug).First(&item).Error
+	err := r.db.Preload("Translation").Where("slug = ?", slug).First(&item).Error
 	return &item, err
 }
 
 func (r *fiqhRepository) FindItemByCategoryAndID(slug string, id int) (*model.FiqhItem, error) {
 	var item model.FiqhItem
 	err := r.db.
+		Preload("Translation").
 		Joins("JOIN fiqh_categories ON fiqh_categories.id = fiqh_items.category_id").
 		Where("fiqh_categories.slug = ? AND fiqh_items.id = ?", slug, id).
 		First(&item).Error

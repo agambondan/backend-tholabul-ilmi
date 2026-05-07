@@ -10,8 +10,10 @@ import (
 )
 
 type BookmarkService interface {
-	Add(userID uuid.UUID, refType model.BookmarkType, refID int) (*model.Bookmark, error)
+	Add(userID uuid.UUID, refType model.BookmarkType, refID int, color, label string) (*model.Bookmark, error)
+	AddBySlug(userID uuid.UUID, refType model.BookmarkType, slug, color, label string) (*model.Bookmark, error)
 	FindByUserID(userID uuid.UUID) ([]model.Bookmark, error)
+	UpdateMeta(id, userID uuid.UUID, color, label *string) (*model.Bookmark, error)
 	Delete(id, userID uuid.UUID) error
 }
 
@@ -25,18 +27,50 @@ func NewBookmarkService(repo repository.BookmarkRepository, ayah repository.Ayah
 	return &bookmarkService{repo, ayah, hadith}
 }
 
-func (s *bookmarkService) Add(userID uuid.UUID, refType model.BookmarkType, refID int) (*model.Bookmark, error) {
+func (s *bookmarkService) AddBySlug(userID uuid.UUID, refType model.BookmarkType, slug, color, label string) (*model.Bookmark, error) {
+	if existing, err := s.repo.FindByUserAndSlug(userID, refType, slug); err == nil && existing != nil {
+		return nil, errors.New("bookmark already exists")
+	}
 	b := &model.Bookmark{
 		BaseUUID: model.BaseUUID{ID: uuid.New()},
 		UserID:   userID,
 		RefType:  refType,
-		RefID:    refID,
+		RefSlug:  slug,
+		Color:    color,
+		Label:    label,
 	}
 	result, err := s.repo.Save(b)
 	if err != nil {
 		return nil, errors.New("bookmark already exists")
 	}
 	return result, nil
+}
+
+func (s *bookmarkService) Add(userID uuid.UUID, refType model.BookmarkType, refID int, color, label string) (*model.Bookmark, error) {
+	b := &model.Bookmark{
+		BaseUUID: model.BaseUUID{ID: uuid.New()},
+		UserID:   userID,
+		RefType:  refType,
+		RefID:    refID,
+		Color:    color,
+		Label:    label,
+	}
+	result, err := s.repo.Save(b)
+	if err != nil {
+		return nil, errors.New("bookmark already exists")
+	}
+	return result, nil
+}
+
+func (s *bookmarkService) UpdateMeta(id, userID uuid.UUID, color, label *string) (*model.Bookmark, error) {
+	b, err := s.repo.UpdateMeta(id, userID, color, label)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("bookmark not found")
+		}
+		return nil, err
+	}
+	return b, nil
 }
 
 func (s *bookmarkService) FindByUserID(userID uuid.UUID) ([]model.Bookmark, error) {
