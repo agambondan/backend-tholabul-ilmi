@@ -17,7 +17,7 @@ import { ActionPill, CompactRow, IconActionButton, PaperSearchInput, SectionHead
 import { Screen } from '../components/Screen';
 import { useSession } from '../context/SessionContext';
 import { allFeatures, belajarFeatureGroups } from '../data/mobileFeatures';
-import { readPinnedFeatures, rememberFeatureOpen, togglePinnedFeature } from '../storage/recentFeatures';
+import { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinnedFeature } from '../storage/recentFeatures';
 import { colors, radius, spacing } from '../theme';
 import { addBookmark, deleteBookmark, getBookmarks, getTodayPrayerLog, savePrayerLog } from '../api/personal';
 import { getAyahById, getSurahs } from '../api/client';
@@ -96,10 +96,15 @@ const getItemRef = (feature, item) => ({
 const getExploreItemKey = (item) => String(item?.id ?? item?.raw?.id ?? item?.raw?.slug ?? item?.title ?? item?.body);
 const isPaginatedFeature = (feature) => Boolean(feature?.endpoint) && ['list', 'protected-list'].includes(feature.type);
 const findFeature = (featureKey) => allFeatures.find((feature) => feature.key === featureKey);
-const getFeatureBadge = (feature) => {
-  if (['protected-list', 'bookmarks', 'notes'].includes(feature?.type)) return 'Akun';
-  if (localTools.includes(feature?.type)) return 'Lokal';
-  return feature?.group ?? '';
+const getFeatureBadges = (feature, recentFeatureKeys = {}) => {
+  const badges = [];
+
+  if (recentFeatureKeys[feature?.key]) badges.push('Terakhir');
+  if (Array.isArray(feature?.badges)) badges.push(...feature.badges);
+  if (['protected-list', 'bookmarks', 'notes'].includes(feature?.type)) badges.push('Akun');
+  if (localTools.includes(feature?.type)) badges.push('Lokal');
+
+  return [...new Set(badges)].slice(0, 3);
 };
 const matchesCatalogQuery = (section, feature, query) => {
   const text = [section.title, section.meta, feature?.title, feature?.subtitle, feature?.group, feature?.key]
@@ -143,6 +148,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [selectedItem, setSelectedItem] = useState(null);
   const [activeNoteRef, setActiveNoteRef] = useState('');
   const [pinnedFeatureKeys, setPinnedFeatureKeys] = useState({});
+  const [recentFeatureKeys, setRecentFeatureKeys] = useState({});
   const [surahs, setSurahs] = useState([]);
   const [selectedSurahNumber, setSelectedSurahNumber] = useState(null);
   const [sholatLog, setSholatLog] = useState({});
@@ -160,10 +166,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       .filter((section) => section.rows.length > 0);
   }, [featureSearch]);
 
-  const refreshPinnedFeatures = useCallback(async () => {
-    const pinned = await readPinnedFeatures();
+  const refreshDiscoveryState = useCallback(async () => {
+    const [pinned, recent] = await Promise.all([readPinnedFeatures(), readRecentFeatures()]);
     setPinnedFeatureKeys(
       pinned.reduce((acc, feature) => {
+        acc[feature.key] = true;
+        return acc;
+      }, {}),
+    );
+    setRecentFeatureKeys(
+      recent.reduce((acc, feature) => {
         acc[feature.key] = true;
         return acc;
       }, {}),
@@ -188,7 +200,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
 
   const loadFeature = useCallback(
     async (feature, options = {}) => {
-      rememberFeatureOpen(feature).catch(() => {});
+      rememberFeatureOpen(feature)
+        .then((recent) => {
+          setRecentFeatureKeys(
+            recent.reduce((acc, item) => {
+              acc[item.key] = true;
+              return acc;
+            }, {}),
+          );
+        })
+        .catch(() => {});
       setActiveFeature(feature);
       setItems([]);
       setAnswers({});
@@ -436,8 +457,8 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
 
   useEffect(() => {
     if (!isActive) return;
-    refreshPinnedFeatures();
-  }, [isActive, refreshPinnedFeatures]);
+    refreshDiscoveryState();
+  }, [isActive, refreshDiscoveryState]);
 
   useEffect(() => {
     const featureKey = deepLinkTarget?.params?.featureKey;
@@ -1039,11 +1060,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
               <Card style={styles.belajarCard}>
                 {section.rows.map((row) => {
                   const pinned = Boolean(pinnedFeatureKeys[row.feature.key]);
+                  const badges = getFeatureBadges(row.feature, recentFeatureKeys);
                   return (
                     <CompactRow
+                      badges={badges}
                       Icon={row.Icon}
                       key={row.feature.key}
-                      meta={getFeatureBadge(row.feature)}
                       onPress={() => loadFeature(row.feature)}
                       right={(
                         <Pressable
@@ -1135,6 +1157,7 @@ const styles = StyleSheet.create({
     borderColor: colors.faint,
     borderRadius: radius.sm,
     borderWidth: 1,
+    flexShrink: 0,
     height: 32,
     justifyContent: 'center',
     width: 32,

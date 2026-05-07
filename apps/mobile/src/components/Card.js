@@ -24,9 +24,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...Platform.select({
       web: {
+        alignSelf: 'stretch',
         boxSizing: 'border-box',
         maxWidth: '100%',
-        width: '100%',
       },
     }),
     ...shadows.paper,

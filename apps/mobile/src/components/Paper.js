@@ -1,5 +1,5 @@
 import { AlertCircle, Search } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors, radius, shadows, spacing } from '../theme';
 import { hapticSelection, hapticTap } from '../utils/haptics';
 
@@ -101,17 +101,10 @@ export function ActionPill({ Icon, label, onPress, disabled = false, active = fa
   );
 }
 
-export function CompactRow({ title, subtitle, meta, Icon, onPress, selected = false, right }) {
-  const Container = onPress ? Pressable : View;
-  return (
-    <Container
-      accessibilityLabel={[title, subtitle, meta].filter(Boolean).join(', ')}
-      accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityState={onPress ? { selected } : undefined}
-      android_ripple={onPress ? { color: 'rgba(91, 110, 91, 0.12)', borderless: false } : undefined}
-      onPress={onPress}
-      style={[styles.compactRow, selected && styles.compactRowSelected]}
-    >
+export function CompactRow({ title, subtitle, meta, Icon, onPress, selected = false, right, badges = [] }) {
+  const accessibilityLabel = [title, subtitle, meta, ...badges].filter(Boolean).join(', ');
+  const content = (
+    <>
       {Icon ? (
         <View style={styles.rowIcon}>
           <Icon color={colors.primary} size={18} strokeWidth={2.2} />
@@ -120,9 +113,68 @@ export function CompactRow({ title, subtitle, meta, Icon, onPress, selected = fa
       <View style={styles.rowCopy}>
         <Text style={styles.rowTitle}>{title}</Text>
         {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
+        {badges.length ? (
+          <View style={styles.rowBadges}>
+            {badges.map((badge) => (
+              <View
+                key={`${title}-${badge}`}
+                style={[
+                  styles.rowBadge,
+                  badge === 'Baru' && styles.rowBadgeActive,
+                  badge === 'Terakhir' && styles.rowBadgeRecent,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.rowBadgeText,
+                    badge === 'Baru' && styles.rowBadgeTextActive,
+                    badge === 'Terakhir' && styles.rowBadgeTextRecent,
+                  ]}
+                >
+                  {badge}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </View>
       {meta ? <Text style={styles.rowMeta}>{meta}</Text> : null}
-      {right}
+    </>
+  );
+
+  if (right) {
+    return (
+      <View style={[styles.compactRow, selected && styles.compactRowSelected]}>
+        {onPress ? (
+          <Pressable
+            accessibilityLabel={accessibilityLabel}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+            onPress={onPress}
+            style={styles.rowMain}
+          >
+            {content}
+          </Pressable>
+        ) : (
+          <View style={styles.rowMain}>{content}</View>
+        )}
+        {right}
+      </View>
+    );
+  }
+
+  const Container = onPress ? Pressable : View;
+  return (
+    <Container
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityState={onPress ? { selected } : undefined}
+      android_ripple={onPress ? { color: 'rgba(91, 110, 91, 0.12)', borderless: false } : undefined}
+      onPress={onPress}
+      style={[styles.compactRow, selected && styles.compactRowSelected]}
+    >
+      {content}
     </Container>
   );
 }
@@ -282,11 +334,25 @@ const styles = StyleSheet.create({
     minHeight: 58,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    ...Platform.select({
+      web: {
+        alignSelf: 'stretch',
+        boxSizing: 'border-box',
+        maxWidth: '100%',
+      },
+    }),
     ...shadows.paper,
   },
   compactRowSelected: {
     backgroundColor: colors.surfaceMuted,
     borderColor: colors.primary,
+  },
+  rowMain: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    minWidth: 0,
   },
   rowIcon: {
     alignItems: 'center',
@@ -300,6 +366,7 @@ const styles = StyleSheet.create({
   },
   rowCopy: {
     flex: 1,
+    minWidth: 0,
   },
   rowTitle: {
     color: colors.ink,
@@ -312,8 +379,43 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginTop: 2,
   },
+  rowBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 6,
+  },
+  rowBadge: {
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  rowBadgeActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  rowBadgeRecent: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.primary,
+  },
+  rowBadgeText: {
+    color: colors.muted,
+    fontSize: 9,
+    fontWeight: '900',
+    lineHeight: 11,
+  },
+  rowBadgeTextActive: {
+    color: colors.onPrimary,
+  },
+  rowBadgeTextRecent: {
+    color: colors.primary,
+  },
   rowMeta: {
     color: colors.primary,
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: '900',
   },

@@ -57,7 +57,7 @@ export function Screen({
           {searchSlot ? <View style={styles.searchSlot}>{searchSlot}</View> : null}
           {headerExtra ? <View style={styles.headerExtra}>{headerExtra}</View> : null}
         </View>
-        <View style={contentStyle}>{children}</View>
+        <View style={[styles.body, contentStyle]}>{children}</View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -73,9 +73,19 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     ...Platform.select({
       web: {
+        alignSelf: 'stretch',
         boxSizing: 'border-box',
         maxWidth: '100%',
-        width: '100%',
+      },
+    }),
+  },
+  body: {
+    minWidth: 0,
+    ...Platform.select({
+      web: {
+        alignSelf: 'stretch',
+        boxSizing: 'border-box',
+        maxWidth: '100%',
       },
     }),
   },

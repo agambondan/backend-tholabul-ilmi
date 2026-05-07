@@ -125,6 +125,7 @@ export const featureGroups = [
         key: 'jarh-tadil',
         title: "Jarh wa Ta'dil",
         subtitle: 'Penilaian ulama atas perawi',
+        badges: ['Baru'],
         type: 'list',
         endpoint: '/api/v1/jarh-tadil',
       },

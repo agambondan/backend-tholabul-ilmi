@@ -201,7 +201,7 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - Offline
   - Lokal
   - Group fallback
-  - Note: badge "Baru" dan "Terakhir dibuka" spesifik katalog belum dibuat; "Terakhir Dibuka" sekarang ada sebagai section Beranda.
+  - Updated 2026-05-08: katalog Belajar sekarang menampilkan badge `Baru`, `Terakhir`, `Akun`, dan `Lokal` langsung di feature row.
 - [x] Pastikan Home tetap ringkas dan tidak menjadi katalog semua fitur.
   - Pinned shortcuts dibatasi 4 item, recently opened dibatasi 3 item; katalog lengkap tetap di Belajar.
 
