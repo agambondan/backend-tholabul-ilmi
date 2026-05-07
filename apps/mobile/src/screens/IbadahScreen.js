@@ -2,6 +2,7 @@ import {
   BookOpenCheck,
   Calculator,
   CalendarDays,
+  ChevronRight,
   CheckSquare,
   Clock3,
   Compass,
@@ -171,7 +172,7 @@ function HeroAction({ Icon, title, subtitle, onPress }) {
         <Text style={styles.heroTitle}>{title}</Text>
         <Text style={styles.heroSubtitle}>{subtitle}</Text>
       </View>
-      <Text style={styles.heroArrow}>{'>'}</Text>
+      <ChevronRight color={colors.onPrimary} size={20} strokeWidth={2.5} />
     </Pressable>
   );
 }
@@ -255,11 +256,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     padding: spacing.lg,
-  },
-  heroArrow: {
-    color: colors.onPrimary,
-    fontSize: 24,
-    fontWeight: '800',
   },
   heroCopy: {
     flex: 1,

@@ -2,6 +2,7 @@ import {
   Bell,
   Book,
   BookOpenCheck,
+  ChevronRight,
   Clock3,
   Compass,
   FileText,
@@ -66,6 +67,11 @@ const formatCountdown = (minutesDelta) => {
   return `${hours}:${minutes}`;
 };
 
+const formatHadisSource = (value = '') => {
+  if (!value) return '';
+  return value.replace(/\bHadith\b/g, 'Hadis');
+};
+
 export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const { user } = useSession();
   const { notifyTabActivity } = useTabActivity();
@@ -108,6 +114,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   }, [locationLabel, recentFeatures]);
 
   const displayName = user?.name || 'Tamu';
+  const hasPrayerSchedule = nextPrayer.time !== '--:--' && nextPrayer.countdown !== '--:--';
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)
@@ -318,7 +325,8 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
             {prayerMessage ? <Text style={styles.prayerMessage}>{prayerMessage}</Text> : null}
           </View>
           <View style={styles.countdown}>
-            <Text style={styles.countdownText}>{`◷ -${nextPrayer.countdown}`}</Text>
+            <Clock3 color={colors.onPrimary} size={13} strokeWidth={2.4} />
+            <Text style={styles.countdownText}>{hasPrayerSchedule ? nextPrayer.countdown : 'Belum aktif'}</Text>
           </View>
         </View>
         <View style={styles.prayerFooter}>
@@ -395,7 +403,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
                 <Text style={styles.recentRowTitle}>{feature.title}</Text>
                 <Text style={styles.recentRowSubtitle}>{feature.subtitle || feature.group || 'Belajar'}</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />
             </Pressable>
           ))}
         </View>
@@ -424,7 +432,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
                 <Text style={styles.recentRowTitle}>{feature.title}</Text>
                 <Text style={styles.recentRowSubtitle}>{feature.subtitle || feature.group || 'Belajar'}</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              <ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />
             </Pressable>
           ))}
         </View>
@@ -442,13 +450,13 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
           <Text style={styles.journalTitle}>Jurnal Muhasabah</Text>
           <Text style={styles.journalDesc}>Bagaimana imanmu hari ini?</Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
+        <ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />
       </Pressable>
 
       <View style={styles.dailyCard}>
         <View style={styles.dailyHeader}>
           <Text style={styles.dailyTitle}>Bacaan Hari Ini</Text>
-          <Text style={styles.dailyMeta}>Quran & Hadith</Text>
+          <Text style={styles.dailyMeta}>Quran & Hadis</Text>
         </View>
         <Pressable
           android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
@@ -468,14 +476,14 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
         <Pressable android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }} onPress={() => onOpenTab('hadith')} style={styles.dailyItem}>
           <View style={styles.dailyAccent} />
           <View style={styles.dailyBody}>
-            <Text style={styles.dailyLabel}>Hadith Hari Ini</Text>
+            <Text style={styles.dailyLabel}>Hadis Hari Ini</Text>
             {dailyHadith?.arabic ? <Text style={styles.dailyArabic}>{dailyHadith.arabic}</Text> : null}
             <Text style={styles.dailyText}>
               {loadingDaily
-                ? 'Memuat hadith harian...'
-                : dailyHadith?.translation || 'Hadith harian belum tersedia dari server.'}
+                ? 'Memuat hadis harian...'
+                : dailyHadith?.translation || 'Hadis harian belum tersedia dari server.'}
             </Text>
-            {dailyHadith?.book ? <Text style={styles.dailySource}>{dailyHadith.book}</Text> : null}
+            {dailyHadith?.book ? <Text style={styles.dailySource}>{formatHadisSource(dailyHadith.book)}</Text> : null}
           </View>
         </Pressable>
       </View>
@@ -577,8 +585,11 @@ const styles = StyleSheet.create({
     maxWidth: 210,
   },
   countdown: {
+    alignItems: 'center',
     backgroundColor: 'rgba(44, 51, 44, 0.45)',
     borderRadius: radius.sm,
+    flexDirection: 'row',
+    gap: 4,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
@@ -814,11 +825,6 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     marginTop: 2,
-  },
-  chevron: {
-    color: colors.muted,
-    fontSize: 24,
-    fontWeight: '700',
   },
   dailyCard: {
     backgroundColor: colors.surface,
