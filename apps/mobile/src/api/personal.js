@@ -178,3 +178,14 @@ export const saveMurojaahResult = async ({ surahId, fromAyah, toAyah, score, dur
     },
     { auth: true },
   );
+
+export const getUserWirds = async () => {
+  const payload = await requestJson('/api/v1/user-wird', { auth: true });
+  return pickItems(payload);
+};
+
+export const createUserWird = async (payload) => postJson('/api/v1/user-wird', payload, { auth: true });
+
+export const updateUserWird = async (id, payload) => putJson(`/api/v1/user-wird/${id}`, payload, { auth: true });
+
+export const deleteUserWird = async (id) => deleteJson(`/api/v1/user-wird/${id}`, { auth: true });

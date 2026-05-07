@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, Heart, HelpCircle, MessageCircle, MoreVertical, Scale, Star, StickyNote, UserCircle, Users, Video, X } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, Heart, HelpCircle, ListChecks, MessageCircle, MoreVertical, Pencil, Scale, Star, StickyNote, Trash2, UserCircle, Users, Video, X } from 'lucide-react-native';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import {
@@ -20,7 +20,7 @@ import { useSession } from '../context/SessionContext';
 import { allFeatures, belajarFeatureGroups } from '../data/mobileFeatures';
 import { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinnedFeature } from '../storage/recentFeatures';
 import { colors, radius, spacing } from '../theme';
-import { addBookmark, deleteBookmark, getBookmarks, getTodayPrayerLog, savePrayerLog } from '../api/personal';
+import { addBookmark, createUserWird, deleteBookmark, deleteUserWird, getBookmarks, getTodayPrayerLog, getUserWirds, savePrayerLog, updateUserWird } from '../api/personal';
 import { getAyahById, getSurahs } from '../api/client';
 
 const quizOptions = ['A', 'B', 'C', 'D'];
@@ -49,6 +49,7 @@ const belajarFeatureIcons = {
   siroh: Users,
   stats: Globe,
   tafsir: BookOpen,
+  'user-wird': ListChecks,
 };
 
 const belajarSections = belajarFeatureGroups.map((group) => ({
@@ -68,6 +69,17 @@ const PRAYER_ITEMS = [
   { key: 'maghrib', label: 'Maghrib' },
   { key: 'isya', label: 'Isya' },
 ];
+
+const emptyUserWirdForm = {
+  arabic: '',
+  count: '1',
+  note: '',
+  occasion: '',
+  source: '',
+  title: '',
+  translation: '',
+  transliteration: '',
+};
 
 const hapticLight = () => {
     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -137,6 +149,15 @@ const mergeUniqueItems = (currentItems, nextItems) => {
   return merged;
 };
 
+const normalizeUserWirdItem = (item, index = 0) => ({
+  id: item?.id ?? `user-wird-${index}`,
+  title: item?.title ?? `Wirid ${index + 1}`,
+  arabic: item?.arabic ?? '',
+  body: [item?.transliteration, item?.translation, item?.note].filter(Boolean).join('\n'),
+  meta: [item?.occasion, item?.count ? `${item.count}x` : '', item?.source].filter(Boolean).join(' · '),
+  raw: item,
+});
+
 export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab }) {
   const { session } = useSession();
   const handledDeepLinkId = useRef(null);
@@ -164,6 +185,9 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentSaving, setCommentSaving] = useState(false);
   const [likingFeedId, setLikingFeedId] = useState('');
+  const [editingUserWirdId, setEditingUserWirdId] = useState('');
+  const [savingUserWird, setSavingUserWird] = useState(false);
+  const [userWirdForm, setUserWirdForm] = useState(emptyUserWirdForm);
   const [surahs, setSurahs] = useState([]);
   const [selectedSurahNumber, setSelectedSurahNumber] = useState(null);
   const [sholatLog, setSholatLog] = useState({});
@@ -232,6 +256,8 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       setActiveNoteRef('');
       setFeedComments([]);
       setCommentDraft('');
+      setEditingUserWirdId('');
+      setUserWirdForm(emptyUserWirdForm);
       setError('');
       setPagination({ page: 0, hasMore: false, loadingMore: false });
       setFocusDictionaryInput(Boolean(options.focusSearch && feature?.type === 'kamus'));
@@ -270,7 +296,8 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         return;
       }
 
-      if (['protected-list', 'bookmarks', 'notes'].includes(feature.type) && !session?.token) {
+      if (['protected-list', 'bookmarks', 'notes', 'user-wird'].includes(feature.type) && !session?.token) {
+        if (feature.type === 'user-wird') return;
         setError('Buka Profil untuk masuk dan membuka fitur personal ini.');
         return;
       }
@@ -293,6 +320,9 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
             hasMore: nextItems.length >= EXPLORE_PAGE_SIZE,
             loadingMore: false,
           });
+        } else if (feature.type === 'user-wird') {
+          const wirds = await getUserWirds();
+          nextItems = wirds.map(normalizeUserWirdItem);
         } else if (feature.endpoint) {
           const paginated = isPaginatedFeature(feature);
           nextItems = await getFeatureItems(
@@ -449,6 +479,86 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       setError(err?.message ?? 'Komentar belum bisa dikirim.');
     } finally {
       setCommentSaving(false);
+    }
+  };
+
+  const resetUserWirdForm = () => {
+    setEditingUserWirdId('');
+    setUserWirdForm(emptyUserWirdForm);
+  };
+
+  const fillUserWirdForm = (item) => {
+    const raw = item?.raw ?? {};
+    setEditingUserWirdId(raw.id ?? item.id);
+    setUserWirdForm({
+      arabic: raw.arabic ?? '',
+      count: `${raw.count ?? 1}`,
+      note: raw.note ?? '',
+      occasion: raw.occasion ?? '',
+      source: raw.source ?? '',
+      title: raw.title ?? item.title ?? '',
+      translation: raw.translation ?? '',
+      transliteration: raw.transliteration ?? '',
+    });
+  };
+
+  const submitUserWird = async () => {
+    const title = userWirdForm.title.trim();
+    if (!title) {
+      setError('Judul wirid wajib diisi.');
+      return;
+    }
+    if (!session?.token) {
+      setError('Buka Profil untuk masuk dan menyimpan wirid.');
+      return;
+    }
+
+    const payload = {
+      arabic: userWirdForm.arabic.trim(),
+      count: Number(digitsOnly(userWirdForm.count)) || 1,
+      note: userWirdForm.note.trim(),
+      occasion: userWirdForm.occasion.trim(),
+      source: userWirdForm.source.trim(),
+      title,
+      translation: userWirdForm.translation.trim(),
+      transliteration: userWirdForm.transliteration.trim(),
+    };
+
+    setSavingUserWird(true);
+    setError('');
+
+    try {
+      if (editingUserWirdId) {
+        const updated = await updateUserWird(editingUserWirdId, payload);
+        const normalized = normalizeUserWirdItem(updated?.data ?? updated);
+        setItems((current) => current.map((item) => (item.id === normalized.id ? normalized : item)));
+      } else {
+        const created = await createUserWird(payload);
+        setItems((current) => [normalizeUserWirdItem(created?.data ?? created), ...current]);
+      }
+      resetUserWirdForm();
+    } catch (err) {
+      setError(err?.message ?? 'Wirid belum bisa disimpan.');
+    } finally {
+      setSavingUserWird(false);
+    }
+  };
+
+  const removeUserWird = async (item) => {
+    const id = item?.raw?.id ?? item?.id;
+    if (!id) return;
+    if (!session?.token) {
+      setError('Buka Profil untuk masuk dan menghapus wirid.');
+      return;
+    }
+
+    setError('');
+    try {
+      await deleteUserWird(id);
+      setItems((current) => current.filter((entry) => entry.id !== item.id));
+      if (editingUserWirdId === id) resetUserWirdForm();
+    } catch (err) {
+      setError(err?.message ?? 'Wirid belum bisa dihapus.');
     }
   };
 
@@ -626,6 +736,20 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     </View>
   );
 
+  const renderUserWirdField = ({ field, label, multiline = false, placeholder }) => (
+    <View style={styles.wirdField}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <TextInput
+        multiline={multiline}
+        onChangeText={(value) => setUserWirdForm((current) => ({ ...current, [field]: value }))}
+        placeholder={placeholder}
+        placeholderTextColor={colors.muted}
+        style={[styles.input, multiline && styles.textArea, field === 'arabic' && styles.arabicInput]}
+        value={userWirdForm[field]}
+      />
+    </View>
+  );
+
   const getQuizChoices = (item) => {
     const raw = item?.raw ?? {};
     let options = [];
@@ -656,6 +780,23 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   };
 
   const renderItem = (item, index) => {
+    if (activeFeature?.type === 'user-wird') {
+      return (
+        <Card key={`${item.id}-${index}`} style={styles.itemCard}>
+          <View style={styles.itemTitleBlock}>
+            <Text style={styles.itemTitle}>{item.title}</Text>
+            {item.meta ? <Text style={styles.itemMeta}>{item.meta}</Text> : null}
+          </View>
+          {item.arabic ? <Text style={styles.arabic}>{item.arabic}</Text> : null}
+          {item.body ? <Text style={styles.body}>{item.body}</Text> : null}
+          <View style={styles.itemActions}>
+            <ActionPill Icon={Pencil} label="Edit" onPress={() => fillUserWirdForm(item)} />
+            <ActionPill Icon={Trash2} label="Hapus" onPress={() => removeUserWird(item)} />
+          </View>
+        </Card>
+      );
+    }
+
     if (activeFeature?.type === 'feed') {
       const ref = getItemRef({ type: 'feed' }, item);
       const isLiking = likingFeedId === item.id;
@@ -977,6 +1118,78 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const renderFeatureContent = () => {
     if (!activeFeature) {
       return null;
+    }
+
+    if (activeFeature.type === 'user-wird') {
+      if (!session?.token) {
+        return (
+          <Card>
+            <CardTitle meta="Akun">Wirid Saya</CardTitle>
+            <Text style={styles.body}>Masuk melalui Profil untuk membuat dan mengelola wirid pribadi.</Text>
+            <Pressable
+              accessibilityLabel="Buka Profil untuk masuk"
+              accessibilityRole="button"
+              android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
+              onPress={() => onOpenTab?.('profile')}
+              style={[styles.primaryButton, styles.loginButton]}
+            >
+              <Text style={styles.primaryButtonText}>Buka Profil</Text>
+            </Pressable>
+          </Card>
+        );
+      }
+
+      return (
+        <Card>
+          <CardTitle meta={editingUserWirdId ? 'Edit' : 'Baru'}>{activeFeature.title}</CardTitle>
+          <Text style={styles.body}>Buat koleksi wirid pribadi dengan target jumlah bacaan.</Text>
+          {renderUserWirdField({ field: 'title', label: 'Judul', placeholder: 'Contoh: Wirid pagi pribadi' })}
+          {renderUserWirdField({ field: 'arabic', label: 'Teks Arab', multiline: true, placeholder: 'اكتب الذكر هنا' })}
+          {renderUserWirdField({ field: 'transliteration', label: 'Transliterasi', multiline: true, placeholder: 'Tuliskan transliterasi jika ada' })}
+          {renderUserWirdField({ field: 'translation', label: 'Terjemahan', multiline: true, placeholder: 'Makna bacaan' })}
+          <View style={styles.wirdGrid}>
+            <View style={styles.wirdGridItem}>
+              <Text style={styles.inputLabel}>Jumlah</Text>
+              <TextInput
+                keyboardType="numeric"
+                onChangeText={(value) => setUserWirdForm((current) => ({ ...current, count: digitsOnly(value) }))}
+                placeholder="1"
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+                value={userWirdForm.count}
+              />
+            </View>
+            <View style={styles.wirdGridItem}>
+              {renderUserWirdField({ field: 'occasion', label: 'Waktu', placeholder: 'Pagi, petang...' })}
+            </View>
+          </View>
+          {renderUserWirdField({ field: 'source', label: 'Sumber', placeholder: 'Kitab/ustadz/rujukan' })}
+          {renderUserWirdField({ field: 'note', label: 'Catatan', multiline: true, placeholder: 'Catatan pribadi' })}
+          <View style={styles.formActions}>
+            <Pressable
+              accessibilityLabel={editingUserWirdId ? 'Simpan perubahan wirid' : 'Tambah wirid'}
+              accessibilityRole="button"
+              android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
+              disabled={savingUserWird}
+              onPress={submitUserWird}
+              style={[styles.primaryButton, styles.formPrimaryButton, savingUserWird && styles.disabledButton]}
+            >
+              <Text style={styles.primaryButtonText}>{savingUserWird ? 'Menyimpan...' : editingUserWirdId ? 'Simpan' : 'Tambah'}</Text>
+            </Pressable>
+            {editingUserWirdId ? (
+              <Pressable
+                accessibilityLabel="Batal edit wirid"
+                accessibilityRole="button"
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                onPress={resetUserWirdForm}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryButtonText}>Batal</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </Card>
+      );
     }
 
     if (activeFeature.type === 'kamus') {
@@ -1305,7 +1518,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           Dijawab {Object.keys(answers).length}/{items.length}, skor {scoreQuiz()}
         </Text>
       ) : null}
-      {!loading && activeFeature && !error && !items.length && !localTools.includes(activeFeature.type) ? (
+      {!loading && activeFeature && !error && !items.length && !localTools.includes(activeFeature.type) && !(activeFeature.type === 'user-wird' && !session?.token) ? (
         <Text style={styles.empty}>
           {activeFeature.type === 'bookmarks'
             ? 'Belum ada bookmark tersimpan. Buka suatu hadis atau ayat lalu simpan.'
@@ -1313,7 +1526,9 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
               ? 'Belum ada catatan. Buka detail konten untuk menambahkan catatan.'
               : activeFeature.type === 'feed'
                 ? 'Belum ada post komunitas dari server.'
-                : 'Belum ada data untuk fitur ini.'}
+                : activeFeature.type === 'user-wird'
+                  ? 'Belum ada wirid pribadi. Tambahkan bacaan pertamamu dari form di atas.'
+                  : 'Belum ada data untuk fitur ini.'}
         </Text>
       ) : null}
       {!loading && activeFeature?.type === 'surah-content' && selectedSurahNumber && !error && !items.length ? (
@@ -1393,12 +1608,32 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: spacing.md,
   },
+  textArea: {
+    minHeight: 86,
+    paddingTop: spacing.sm,
+    textAlignVertical: 'top',
+  },
+  arabicInput: {
+    fontSize: 18,
+    lineHeight: 28,
+    textAlign: 'right',
+  },
   inputLabel: {
     color: colors.muted,
     fontSize: 12,
     fontWeight: '800',
     marginBottom: spacing.xs,
     marginTop: spacing.md,
+  },
+  wirdField: {
+    flex: 1,
+  },
+  wirdGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  wirdGridItem: {
+    flex: 1,
   },
   currencyField: {
     marginTop: spacing.md,
@@ -1438,6 +1673,38 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 13,
     fontWeight: '900',
+  },
+  formActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  formPrimaryButton: {
+    flex: 1,
+    minHeight: 42,
+  },
+  loginButton: {
+    marginTop: spacing.md,
+    minHeight: 42,
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+    minHeight: 42,
+    paddingHorizontal: spacing.md,
+  },
+  secondaryButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   itemCard: {
     marginBottom: spacing.md,

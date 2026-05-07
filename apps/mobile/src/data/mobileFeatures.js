@@ -25,6 +25,13 @@ export const featureGroups = [
         endpoint: '/api/v1/wirid',
       },
       {
+        key: 'user-wird',
+        title: 'Wirid Saya',
+        subtitle: 'Susun bacaan wirid pribadi',
+        badges: ['Akun'],
+        type: 'user-wird',
+      },
+      {
         key: 'tahlil',
         title: 'Tahlil',
         subtitle: 'Referensi tahlil dan yasin',
@@ -296,7 +303,7 @@ export const belajarFeatureGroups = [
     key: 'fiqh-panduan',
     label: 'Fiqh & Panduan',
     meta: 'Amaliah praktis',
-    features: pickFeatures(['fiqh', 'panduan-sholat']),
+    features: pickFeatures(['fiqh', 'panduan-sholat', 'user-wird']),
   },
   {
     key: 'referensi',

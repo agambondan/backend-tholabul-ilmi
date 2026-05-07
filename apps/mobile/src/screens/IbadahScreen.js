@@ -83,6 +83,12 @@ const sections = [
         title: 'Wirid',
       },
       {
+        Icon: ListChecks,
+        featureKey: 'user-wird',
+        subtitle: 'Susun bacaan wirid pribadi',
+        title: 'Wirid Saya',
+      },
+      {
         Icon: BookOpenCheck,
         featureKey: 'tahlil',
         subtitle: 'Tahlil dan Yasin digital',
