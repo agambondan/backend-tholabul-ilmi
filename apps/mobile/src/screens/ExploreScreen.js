@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, HelpCircle, MoreVertical, Scale, Star, StickyNote, UserCircle, Users, Video, X } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, Heart, HelpCircle, MessageCircle, MoreVertical, Scale, Star, StickyNote, UserCircle, Users, Video, X } from 'lucide-react-native';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import {
@@ -10,6 +10,7 @@ import {
   getQuizQuestions,
   searchDictionary,
 } from '../api/explore';
+import { createComment, getCommentsByRef, getFeedPosts, likeFeedPost } from '../api/social';
 import { Card, CardTitle } from '../components/Card';
 import { NotesPanel } from '../components/NotesPanel';
 import { NotificationCenter } from '../components/NotificationCenter';
@@ -32,6 +33,7 @@ const belajarFeatureIcons = {
   'asmaul-husna': Star,
   blog: BookOpen,
   bookmarks: Bookmark,
+  'community-feed': MessageCircle,
   fiqh: BookOpen,
   goals: Star,
   'jarh-tadil': Scale,
@@ -89,12 +91,20 @@ const formatDetailLabel = (key = '') =>
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
-const getItemRef = (feature, item) => ({
-  refType: feature?.refType ?? feature?.key ?? 'explore',
-  refId: String(item?.id ?? item?.raw?.id ?? item?.raw?.slug ?? item?.title),
-});
+const getItemRef = (feature, item) => {
+  if (feature?.type === 'feed') {
+    return {
+      refId: String(item?.raw?.ref_id ?? item?.id ?? ''),
+      refType: item?.raw?.ref_type ?? 'feed',
+    };
+  }
+  return {
+    refType: feature?.refType ?? feature?.key ?? 'explore',
+    refId: String(item?.id ?? item?.raw?.id ?? item?.raw?.slug ?? item?.title),
+  };
+};
 const getExploreItemKey = (item) => String(item?.id ?? item?.raw?.id ?? item?.raw?.slug ?? item?.title ?? item?.body);
-const isPaginatedFeature = (feature) => Boolean(feature?.endpoint) && ['list', 'protected-list'].includes(feature.type);
+const isPaginatedFeature = (feature) => feature?.type === 'feed' || (Boolean(feature?.endpoint) && ['list', 'protected-list'].includes(feature.type));
 const findFeature = (featureKey) => allFeatures.find((feature) => feature.key === featureKey);
 const getFeatureBadges = (feature, recentFeatureKeys = {}) => {
   const badges = [];
@@ -149,6 +159,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [activeNoteRef, setActiveNoteRef] = useState('');
   const [pinnedFeatureKeys, setPinnedFeatureKeys] = useState({});
   const [recentFeatureKeys, setRecentFeatureKeys] = useState({});
+  const [feedComments, setFeedComments] = useState([]);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [commentSaving, setCommentSaving] = useState(false);
+  const [likingFeedId, setLikingFeedId] = useState('');
   const [surahs, setSurahs] = useState([]);
   const [selectedSurahNumber, setSelectedSurahNumber] = useState(null);
   const [sholatLog, setSholatLog] = useState({});
@@ -215,6 +230,8 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       setAnswers({});
       setSelectedItem(null);
       setActiveNoteRef('');
+      setFeedComments([]);
+      setCommentDraft('');
       setError('');
       setPagination({ page: 0, hasMore: false, loadingMore: false });
       setFocusDictionaryInput(Boolean(options.focusSearch && feature?.type === 'kamus'));
@@ -269,6 +286,13 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           nextItems = await getQuizQuestions();
         } else if (feature.type === 'hijri') {
           nextItems = await getHijriOverview();
+        } else if (feature.type === 'feed') {
+          nextItems = await getFeedPosts({ page: 0, size: EXPLORE_PAGE_SIZE });
+          setPagination({
+            page: 0,
+            hasMore: nextItems.length >= EXPLORE_PAGE_SIZE,
+            loadingMore: false,
+          });
         } else if (feature.endpoint) {
           const paginated = isPaginatedFeature(feature);
           nextItems = await getFeatureItems(
@@ -301,7 +325,10 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     setError('');
 
     try {
-      const nextItems = await getFeatureItems(activeFeature, { page: nextPage, size: EXPLORE_PAGE_SIZE });
+      const nextItems =
+        activeFeature.type === 'feed'
+          ? await getFeedPosts({ page: nextPage, size: EXPLORE_PAGE_SIZE })
+          : await getFeatureItems(activeFeature, { page: nextPage, size: EXPLORE_PAGE_SIZE });
       const merged = mergeUniqueItems(items, nextItems);
       const addedCount = merged.length - items.length;
       setItems(merged);
@@ -363,6 +390,65 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       setError(err?.message ?? 'Bookmark belum bisa diperbarui.');
     } finally {
       setSavingBookmark('');
+    }
+  };
+
+  const handleLikeFeedItem = async (item) => {
+    if (!session?.token) {
+      setError('Buka Profil untuk masuk dan menyukai post komunitas.');
+      return;
+    }
+
+    setLikingFeedId(item.id);
+    setError('');
+
+    try {
+      const updated = await likeFeedPost(item.raw?.id ?? item.id);
+      setItems((current) => current.map((entry) => (entry.id === item.id ? updated : entry)));
+      if (selectedItem?.id === item.id) {
+        setSelectedItem(updated);
+      }
+    } catch (err) {
+      setError(err?.message ?? 'Post belum bisa disukai.');
+    } finally {
+      setLikingFeedId('');
+    }
+  };
+
+  const loadFeedComments = useCallback(async (item) => {
+    const ref = getItemRef({ type: 'feed' }, item);
+    if (!ref.refType || !ref.refId) return;
+
+    setCommentLoading(true);
+    try {
+      setFeedComments(await getCommentsByRef(ref));
+    } catch {
+      setFeedComments([]);
+    } finally {
+      setCommentLoading(false);
+    }
+  }, []);
+
+  const submitFeedComment = async () => {
+    const content = commentDraft.trim();
+    if (!selectedItem || !content) return;
+    if (!session?.token) {
+      setError('Buka Profil untuk masuk dan menulis komentar.');
+      return;
+    }
+
+    const ref = getItemRef({ type: 'feed' }, selectedItem);
+    setCommentSaving(true);
+    setError('');
+
+    try {
+      const created = await createComment({ content, refId: ref.refId, refType: ref.refType });
+      setFeedComments((current) => [...current, created]);
+      setCommentDraft('');
+    } catch (err) {
+      setError(err?.message ?? 'Komentar belum bisa dikirim.');
+    } finally {
+      setCommentSaving(false);
     }
   };
 
@@ -483,6 +569,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   }, [activeFeature?.type, focusDictionaryInput]);
 
   useEffect(() => {
+    if (activeFeature?.type !== 'feed' || !selectedItem) {
+      setFeedComments([]);
+      setCommentDraft('');
+      return;
+    }
+
+    loadFeedComments(selectedItem);
+  }, [activeFeature?.type, loadFeedComments, selectedItem]);
+
+  useEffect(() => {
     if (!isActive) return;
     if (selectedItem) {
       navigation?.setBack(() => { setSelectedItem(null); return true; });
@@ -559,45 +655,92 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     }));
   };
 
-  const renderItem = (item, index) => (
-    <Card key={`${item.id}-${index}`} style={styles.itemCard}>
-      <View style={styles.itemTitleBlock}>
-        <Text style={styles.itemTitle}>{item.title}</Text>
-        {item.meta || activeFeature?.title ? (
-          <Text style={styles.itemMeta}>{item.meta || activeFeature?.title}</Text>
-        ) : null}
-      </View>
-      {item.arabic ? <Text style={styles.arabic}>{item.arabic}</Text> : null}
-      {item.body ? <Text style={styles.body}>{item.body}</Text> : null}
-      {activeFeature?.type === 'quiz' ? (
-        <View style={styles.answerRow}>
-          {getQuizChoices(item).map((option) => (
-            <Pressable
-              android_ripple={{ color: 'rgba(91, 110, 91, 0.14)', borderless: false }}
-              key={`${item.id}-${option.key}`}
-              onPress={() => setAnswers((current) => ({ ...current, [item.id]: option }))}
-              style={[styles.answerButton, answers[item.id]?.key === option.key && styles.answerButtonActive]}
-            >
-              <Text style={[styles.answerText, answers[item.id]?.key === option.key && styles.answerTextActive]}>
-                {`${option.key}. ${option.label}`}
-              </Text>
-            </Pressable>
-          ))}
+  const renderItem = (item, index) => {
+    if (activeFeature?.type === 'feed') {
+      const ref = getItemRef({ type: 'feed' }, item);
+      const isLiking = likingFeedId === item.id;
+
+      return (
+        <Card key={`${item.id}-${index}`} style={styles.itemCard}>
+          <View style={styles.feedHeader}>
+            <View style={styles.feedAvatar}>
+              <Text style={styles.feedAvatarText}>{item.title?.[0]?.toUpperCase() ?? 'U'}</Text>
+            </View>
+            <View style={styles.feedTitleBlock}>
+              <Text style={styles.itemTitle}>{item.title}</Text>
+              <Text style={styles.itemMeta}>{item.meta}</Text>
+            </View>
+          </View>
+          <Text style={styles.body}>{item.body}</Text>
+          <View style={styles.feedRefPanel}>
+            <Text style={styles.feedRefLabel}>{ref.refType === 'ayah' ? 'Ayat Quran' : 'Hadis'}</Text>
+            <Text style={styles.feedRefText}>{ref.refType} #{ref.refId}</Text>
+          </View>
+          <View style={styles.itemActions}>
+            <ActionPill
+              Icon={Heart}
+              label={isLiking ? 'Menyukai...' : 'Suka'}
+              disabled={isLiking}
+              onPress={() => handleLikeFeedItem(item)}
+            />
+            <ActionPill
+              Icon={MessageCircle}
+              label="Komentar"
+              onPress={() => {
+                setSelectedItem(item);
+                setActiveNoteRef('');
+              }}
+            />
+            <ActionPill
+              Icon={ExternalLink}
+              label="Sumber"
+              onPress={() => openSource(item)}
+            />
+          </View>
+        </Card>
+      );
+    }
+
+    return (
+      <Card key={`${item.id}-${index}`} style={styles.itemCard}>
+        <View style={styles.itemTitleBlock}>
+          <Text style={styles.itemTitle}>{item.title}</Text>
+          {item.meta || activeFeature?.title ? (
+            <Text style={styles.itemMeta}>{item.meta || activeFeature?.title}</Text>
+          ) : null}
         </View>
-      ) : null}
-      <View style={styles.itemHeaderActions}>
-        <Pressable
-          accessibilityLabel="Aksi item"
-          accessibilityRole="button"
-          android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
-          onPress={() => setItemActionSheet({ visible: true, item })}
-          style={styles.itemMenuButton}
-        >
-          <MoreVertical color={colors.primary} size={18} strokeWidth={2.4} />
-        </Pressable>
-      </View>
-    </Card>
-  );
+        {item.arabic ? <Text style={styles.arabic}>{item.arabic}</Text> : null}
+        {item.body ? <Text style={styles.body}>{item.body}</Text> : null}
+        {activeFeature?.type === 'quiz' ? (
+          <View style={styles.answerRow}>
+            {getQuizChoices(item).map((option) => (
+              <Pressable
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.14)', borderless: false }}
+                key={`${item.id}-${option.key}`}
+                onPress={() => setAnswers((current) => ({ ...current, [item.id]: option }))}
+                style={[styles.answerButton, answers[item.id]?.key === option.key && styles.answerButtonActive]}
+              >
+                <Text style={[styles.answerText, answers[item.id]?.key === option.key && styles.answerTextActive]}>
+                  {`${option.key}. ${option.label}`}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+        <View style={styles.itemHeaderActions}>
+          <Pressable
+            accessibilityLabel="Aksi item"
+            accessibilityRole="button"
+            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
+            onPress={() => setItemActionSheet({ visible: true, item })}
+            style={styles.itemMenuButton}
+          >
+            <MoreVertical color={colors.primary} size={18} strokeWidth={2.4} />
+          </Pressable>
+        </View>
+      </Card>
+    );
+  };
 
   const renderItemActionSheet = () => {
     const { visible, item } = itemActionSheet;
@@ -708,6 +851,55 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const closeDetailModal = () => {
     setSelectedItem(null);
     setActiveNoteRef('');
+    setFeedComments([]);
+    setCommentDraft('');
+  };
+
+  const renderFeedCommentsPanel = () => {
+    if (activeFeature?.type !== 'feed' || !selectedItem) return null;
+
+    return (
+      <View style={styles.commentsPanel}>
+        <View style={styles.commentsHeader}>
+          <Text style={styles.detailTitle}>Komentar</Text>
+          {commentLoading ? <ActivityIndicator color={colors.primary} size="small" /> : null}
+        </View>
+        {!commentLoading && !feedComments.length ? (
+          <Text style={styles.empty}>Belum ada komentar untuk rujukan ini.</Text>
+        ) : null}
+        {feedComments.map((comment) => (
+          <View key={comment.id} style={styles.commentRow}>
+            <View style={styles.commentAvatar}>
+              <Text style={styles.commentAvatarText}>{comment.author?.[0]?.toUpperCase() ?? 'U'}</Text>
+            </View>
+            <View style={styles.commentCopy}>
+              <Text style={styles.commentAuthor}>{comment.author}</Text>
+              <Text style={styles.commentText}>{comment.content}</Text>
+            </View>
+          </View>
+        ))}
+        <View style={styles.commentForm}>
+          <TextInput
+            multiline
+            onChangeText={setCommentDraft}
+            placeholder={session?.token ? 'Tulis komentar...' : 'Masuk untuk menulis komentar'}
+            placeholderTextColor={colors.muted}
+            style={styles.commentInput}
+            value={commentDraft}
+          />
+          <Pressable
+            accessibilityLabel="Kirim komentar"
+            accessibilityRole="button"
+            android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
+            disabled={!commentDraft.trim() || commentSaving}
+            onPress={submitFeedComment}
+            style={[styles.commentSubmit, (!commentDraft.trim() || commentSaving) && styles.commentSubmitDisabled]}
+          >
+            <Text style={styles.commentSubmitText}>{commentSaving ? 'Mengirim...' : 'Kirim'}</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
   };
 
   const renderDetailModal = () => {
@@ -756,13 +948,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
                 ))}
               </View>
             ) : null}
+            {renderFeedCommentsPanel()}
             <View style={styles.modalActions}>
-              <ActionPill
-                Icon={StickyNote}
-                label="Catatan"
-                onPress={() => setActiveNoteRef(activeNoteRef === noteKey ? '' : noteKey)}
-                active={activeNoteRef === noteKey}
-              />
+              {activeFeature?.type !== 'feed' ? (
+                <ActionPill
+                  Icon={StickyNote}
+                  label="Catatan"
+                  onPress={() => setActiveNoteRef(activeNoteRef === noteKey ? '' : noteKey)}
+                  active={activeNoteRef === noteKey}
+                />
+              ) : null}
               <ActionPill
                 Icon={ExternalLink}
                 label="Buka sumber"
@@ -1116,7 +1311,9 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
             ? 'Belum ada bookmark tersimpan. Buka suatu hadis atau ayat lalu simpan.'
             : activeFeature.type === 'notes'
               ? 'Belum ada catatan. Buka detail konten untuk menambahkan catatan.'
-              : 'Belum ada data untuk fitur ini.'}
+              : activeFeature.type === 'feed'
+                ? 'Belum ada post komunitas dari server.'
+                : 'Belum ada data untuk fitur ini.'}
         </Text>
       ) : null}
       {!loading && activeFeature?.type === 'surah-content' && selectedSurahNumber && !error && !items.length ? (
@@ -1270,6 +1467,50 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
+  feedHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  feedAvatar: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  feedAvatarText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  feedTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  feedRefPanel: {
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.md,
+    padding: spacing.sm,
+  },
+  feedRefLabel: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+    marginBottom: 2,
+  },
+  feedRefText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+  },
   detailPanel: {
     borderTopColor: colors.faint,
     borderTopWidth: 1,
@@ -1342,6 +1583,83 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.md,
+  },
+  commentsPanel: {
+    borderTopColor: colors.faint,
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+  },
+  commentsHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  commentRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  commentAvatar: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
+  },
+  commentAvatarText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  commentCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  commentAuthor: {
+    color: colors.ink,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  commentText: {
+    color: colors.text,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  commentForm: {
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  commentInput: {
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    color: colors.ink,
+    fontSize: 13,
+    minHeight: 70,
+    padding: spacing.sm,
+    textAlignVertical: 'top',
+  },
+  commentSubmit: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    minHeight: 38,
+  },
+  commentSubmitDisabled: {
+    opacity: 0.55,
+  },
+  commentSubmitText: {
+    color: colors.onPrimary,
+    fontSize: 12,
+    fontWeight: '900',
   },
   modalBottomPad: {
     height: spacing.xl * 2,

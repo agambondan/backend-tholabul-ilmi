@@ -130,6 +130,7 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
 - [x] Pindahkan/ekspos feature berikut ke Belajar:
   - Kajian, Blog/Artikel, Siroh, Sejarah, Fiqh, Manasik, Kamus, Quiz, Tafsir, Asbabun Nuzul, Perawi, Asmaul Husna
   - Jarh wa Ta'dil: added 2026-05-08 as Referensi entry via `/api/v1/jarh-tadil`
+  - Komunitas/feed: added 2026-05-08 as Kajian & Artikel entry via `/api/v1/feed`, with like and comment surface.
 - [x] Tambahkan Personal Ringkas lengkap:
   - Goals, Stats, Leaderboard, Bookmarks, Notes
 - [x] Pastikan Hadis tetap primary tab; Belajar hanya boleh menampilkan shortcut ilmu hadis/perawi.
@@ -216,6 +217,7 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - Source truth: `apps/mobile/src/utils/deepLinks.js`
 - [x] Catat screenshot/native evidence path setelah QA.
   - Web Hadis compact smoke: `output/playwright/mobile-hadith-compact-list.png`
+  - Web Komunitas catalog/feed smoke: `output/playwright/mobile-belajar-community-catalog.png`, `output/playwright/mobile-belajar-community-feed.png`
   - Native full smoke masih pending di Phase 8 karena ADB input Xiaomi diblok `INJECT_EVENTS`.
 - [ ] Jalankan `chronicle.sync` setelah perubahan signifikan.
   - Attempted 2026-05-07 after Hadis compact/search slice.

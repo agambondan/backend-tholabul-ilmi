@@ -101,6 +101,13 @@ export const featureGroups = [
         endpoint: '/api/v1/manasik',
       },
       {
+        key: 'community-feed',
+        title: 'Komunitas',
+        subtitle: 'Refleksi ayat dan hadis',
+        badges: ['Baru'],
+        type: 'feed',
+      },
+      {
         key: 'kajian',
         title: 'Kajian',
         subtitle: 'Sesi belajar Islam',
@@ -277,7 +284,7 @@ export const belajarFeatureGroups = [
     key: 'kajian-artikel',
     label: 'Kajian & Artikel',
     meta: 'Belajar rutin',
-    features: pickFeatures(['kajian', 'blog']),
+    features: pickFeatures(['community-feed', 'kajian', 'blog']),
   },
   {
     key: 'siroh-sejarah',
