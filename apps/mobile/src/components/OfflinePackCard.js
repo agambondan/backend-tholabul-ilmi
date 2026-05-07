@@ -1,26 +1,45 @@
-import { useCallback, useEffect, useState } from 'react';
-import { BookOpen, Database, Trash2 } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BookOpen, CheckCircle2, Database, Trash2 } from 'lucide-react-native';
+import { getHadithBooks } from '../api/client';
 import {
   buildOfflinePack,
   clearOfflinePack,
+  getOfflineHadithCountsBySlug,
   getOfflineOverview,
 } from '../storage/offlineContent';
 import { colors, radius, spacing } from '../theme';
 import { Card, CardTitle } from './Card';
 
-const PACK_ESTIMATE = {
+const QURAN_ESTIMATE = {
   ayahs: 6236,
-  hadiths: 2000,
-  size: '15-25 MB',
   surahs: 114,
+  sizeMb: 5,
 };
 
-const PACK_SCOPE = [
-  { key: 'quran', label: 'Al-Quran', value: '114 surah' },
-  { key: 'hadith', label: 'Hadis', value: 'maks. 2.000' },
-  { key: 'excluded', label: 'Terpisah', value: 'cache & personal' },
-];
+const HADITH_BYTES_PER_ITEM = 1500;
+const HADITH_FALLBACK_COUNT = 5000;
+
+const formatSizeLabel = (mb) => {
+  if (!Number.isFinite(mb) || mb <= 0) return '0 MB';
+  if (mb >= 1000) return `${(mb / 1024).toFixed(1)} GB`;
+  if (mb >= 100) return `${Math.round(mb)} MB`;
+  return `${mb.toFixed(1)} MB`;
+};
+
+const estimatePackSize = ({ includeQuran, selectedBooks }) => {
+  let bytes = 0;
+  if (includeQuran) bytes += QURAN_ESTIMATE.sizeMb * 1024 * 1024;
+  for (const book of selectedBooks) {
+    const count = book.count || HADITH_FALLBACK_COUNT;
+    bytes += count * HADITH_BYTES_PER_ITEM;
+  }
+  return {
+    bytes,
+    mb: bytes / (1024 * 1024),
+    hadithCount: selectedBooks.reduce((sum, b) => sum + (b.count || HADITH_FALLBACK_COUNT), 0),
+  };
+};
 
 const formatNumber = (value) => Number(value ?? 0).toLocaleString('en-US');
 
@@ -43,38 +62,159 @@ const statsFor = (overview) => [
   { key: 'surahs', label: 'Surah', value: overview.quranSurahs },
   { key: 'ayahs', label: 'Ayat', value: overview.quranAyahs },
   { key: 'hadiths', label: 'Hadis', value: overview.hadiths },
+  { key: 'books', label: 'Kitab', value: overview.hadithBooks?.length ?? 0 },
 ];
+
+const selectionFromBooks = (books = []) =>
+  books.reduce((acc, book) => {
+    if (book.slug) acc[book.slug] = true;
+    return acc;
+  }, {});
+
+const QURAN_TOTAL_AYAHS = 6236;
+const QURAN_TOTAL_SURAHS = 114;
 
 export function OfflinePackCard() {
   const [overview, setOverview] = useState(null);
+  const [books, setBooks] = useState([]);
+  const [booksLoading, setBooksLoading] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('Siap menyimpan Al-Qur\'an dan hadis untuk dibaca offline.');
+  const [includeQuran, setIncludeQuran] = useState(true);
+  const [message, setMessage] = useState('Pilih data yang ingin disimpan di perangkat.');
   const [progress, setProgress] = useState(0);
+  const [selectedBookSlugs, setSelectedBookSlugs] = useState({});
+  const [localBookCounts, setLocalBookCounts] = useState({});
 
   const load = useCallback(async () => {
-    const data = await getOfflineOverview();
+    const [data, perBookCounts] = await Promise.all([
+      getOfflineOverview(),
+      getOfflineHadithCountsBySlug(),
+    ]);
     setOverview(data);
+    setLocalBookCounts(perBookCounts);
     if (!data.supported) {
       setMessage(data.error ?? 'Mode offline belum tersedia di perangkat ini.');
       return;
     }
+
     if (data.savedAt) {
+      setIncludeQuran(Boolean(data.includeQuran));
+      setSelectedBookSlugs(selectionFromBooks(data.hadithBooks));
       setMessage(`Terakhir diunduh ${formatDate(data.savedAt)}.`);
+    }
+
+    setBooksLoading(true);
+    try {
+      const items = await getHadithBooks();
+      setBooks(items);
+    } catch (error) {
+      setBooks(Array.isArray(data.hadithBooks) ? data.hadithBooks : []);
+      setMessage(error?.message ?? 'Daftar kitab hadis belum bisa dimuat.');
+    } finally {
+      setBooksLoading(false);
     }
   }, []);
 
-  const download = async () => {
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const selectedBooks = useMemo(
+    () => books.filter((book) => Boolean(selectedBookSlugs[book.slug])),
+    [books, selectedBookSlugs],
+  );
+  const isSupported = overview?.supported ?? true;
+  const hasSelection = includeQuran || selectedBooks.length > 0;
+  const stats = statsFor(overview ?? {});
+
+  const quranComplete =
+    (overview?.quranSurahs ?? 0) >= QURAN_TOTAL_SURAHS &&
+    (overview?.quranAyahs ?? 0) >= QURAN_TOTAL_AYAHS;
+  const quranNeedsDownload = includeQuran && !quranComplete;
+
+  const booksToFetch = useMemo(
+    () =>
+      selectedBooks.filter((book) => {
+        const local = localBookCounts[book.slug] ?? 0;
+        const expected = Number(book.count) || 0;
+        return expected > 0 ? local < expected : local === 0;
+      }),
+    [selectedBooks, localBookCounts],
+  );
+
+  const pendingHadithCount = booksToFetch.reduce((sum, book) => {
+    const local = localBookCounts[book.slug] ?? 0;
+    const expected = Number(book.count) || HADITH_FALLBACK_COUNT;
+    return sum + Math.max(expected - local, 0);
+  }, 0);
+
+  const everythingComplete = !quranNeedsDownload && booksToFetch.length === 0;
+
+  const estimate = useMemo(
+    () =>
+      estimatePackSize({
+        includeQuran: quranNeedsDownload,
+        selectedBooks: booksToFetch.map((book) => ({
+          ...book,
+          count: Math.max((Number(book.count) || HADITH_FALLBACK_COUNT) - (localBookCounts[book.slug] ?? 0), 0),
+        })),
+      }),
+    [quranNeedsDownload, booksToFetch, localBookCounts],
+  );
+  const sizeLabel = formatSizeLabel(estimate.mb);
+  const isLargeDownload = estimate.mb > 100;
+
+  const bookStatus = (book) => {
+    const local = localBookCounts[book.slug] ?? 0;
+    const expected = Number(book.count) || 0;
+    if (local === 0) return { kind: 'none' };
+    if (expected > 0 && local >= expected) return { kind: 'complete', local };
+    if (expected > 0 && local < expected) return { kind: 'update', delta: expected - local, local };
+    return { kind: 'partial', local };
+  };
+
+  const toggleBook = (slug) => {
+    setSelectedBookSlugs((current) => ({
+      ...current,
+      [slug]: !current[slug],
+    }));
+  };
+
+  const selectAllBooks = () => {
+    setSelectedBookSlugs(selectionFromBooks(books));
+  };
+
+  const clearBookSelection = () => {
+    setSelectedBookSlugs({});
+  };
+
+  const download = async ({ checkUpdates = false } = {}) => {
     setBusy(true);
     setProgress(0);
     try {
       const data = await buildOfflinePack({
+        hadithBooks: selectedBooks,
+        includeQuran,
+        checkUpdates,
         onProgress: (event) => {
           setMessage(event.label);
           setProgress(event.value ?? 0);
         },
       });
       setOverview(data);
-      setMessage(`Paket offline siap: ${data.quranAyahs} ayat dan ${data.hadiths} hadis.`);
+      const refreshedCounts = await getOfflineHadithCountsBySlug();
+      setLocalBookCounts(refreshedCounts);
+      if (checkUpdates) {
+        setMessage(
+          data.deltaCount > 0
+            ? `${formatNumber(data.deltaCount)} hadis diperbarui dari backend.`
+            : 'Sudah versi terbaru. Tidak ada update dari backend.',
+        );
+      } else {
+        setMessage(
+          `Paket offline siap: ${formatNumber(data.quranAyahs)} ayat, ${formatNumber(data.hadiths)} hadis, ${data.hadithBooks.length} kitab.`,
+        );
+      }
       setProgress(100);
     } catch (error) {
       setMessage(error?.message ?? 'Paket offline belum bisa diunduh.');
@@ -98,20 +238,38 @@ export function OfflinePackCard() {
   };
 
   const confirmDownload = () => {
+    if (!hasSelection) {
+      setMessage('Pilih Al-Quran atau minimal satu kitab hadis dulu.');
+      return;
+    }
+
+    const summaryLines = [
+      `Al-Quran: ${quranNeedsDownload ? '114 surah baru' : quranComplete ? 'sudah lengkap' : 'tidak diunduh'}`,
+      `Hadis: ${booksToFetch.length} kitab${pendingHadithCount > 0 ? ` (~${formatNumber(pendingHadithCount)} hadis baru)` : ''}`,
+      `Perkiraan ukuran: ${sizeLabel}`,
+    ];
     Alert.alert(
-      'Unduh paket offline?',
-      `Paket utama menyimpan ${PACK_ESTIMATE.surahs} surah, sekitar ${formatNumber(PACK_ESTIMATE.ayahs)} ayat, dan maksimal ${formatNumber(PACK_ESTIMATE.hadiths)} hadis. Perkiraan ukuran ${PACK_ESTIMATE.size}. Cache harian, bookmark, dan jadwal sholat tidak ikut paket ini.`,
+      'Unduh update offline?',
+      `${summaryLines.join('\n')}\n\nData yang sudah ada tetap dipertahankan, hanya yang belum diunduh yang akan diambil.`,
       [
         { text: 'Batal', style: 'cancel' },
-        { text: 'Unduh utama', onPress: download },
+        { text: 'Unduh', onPress: () => download() },
       ],
     );
+  };
+
+  const checkUpdates = () => {
+    if (!hasSelection) {
+      setMessage('Pilih kitab dulu untuk mengecek update.');
+      return;
+    }
+    download({ checkUpdates: true });
   };
 
   const confirmClear = () => {
     Alert.alert(
       'Hapus paket offline?',
-      'Data Al-Quran dan hadis offline akan dihapus dari perangkat. Cache otomatis, bookmark snapshot, dan jadwal sholat offline tetap memakai kontrolnya masing-masing.',
+      'Data Al-Quran dan hadis offline akan dihapus dari perangkat.',
       [
         { text: 'Batal', style: 'cancel' },
         { text: 'Hapus', onPress: clear, style: 'destructive' },
@@ -119,36 +277,120 @@ export function OfflinePackCard() {
     );
   };
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const isSupported = overview?.supported ?? true;
-  const stats = statsFor(overview ?? {});
-
   return (
     <Card>
       <CardTitle meta="Penyimpanan perangkat">Paket Offline</CardTitle>
       <Text style={styles.muted}>
-        Simpan paket utama Al-Quran dan hadis agar tetap bisa dibaca saat offline. Konten personal, cache harian, dan jadwal sholat dikelola terpisah.
+        Simpan data dari backend sesuai kebutuhan: Al-Quran penuh atau kitab hadis tertentu.
       </Text>
-      <View style={styles.scopeRow}>
-        {PACK_SCOPE.map((item) => (
-          <View key={item.key} style={styles.scopePill}>
-            <Text style={styles.scopeLabel}>{item.label}</Text>
-            <Text style={styles.scopeValue}>{item.value}</Text>
+
+      <View style={styles.selectorSection}>
+        <Pressable
+          disabled={busy || !isSupported}
+          onPress={() => setIncludeQuran((value) => !value)}
+          style={({ pressed }) => [
+            styles.packageRow,
+            includeQuran && styles.packageRowActive,
+            (busy || !isSupported) && styles.disabled,
+            pressed && styles.pressed,
+          ]}
+        >
+          <View style={[styles.packageIcon, includeQuran && styles.packageIconActive]}>
+            <BookOpen color={includeQuran ? colors.onPrimary : colors.primary} size={18} strokeWidth={2.5} />
           </View>
-        ))}
+          <View style={styles.packageText}>
+            <Text style={styles.packageTitle}>Al-Quran lengkap</Text>
+            <Text style={styles.packageMeta}>
+              {QURAN_ESTIMATE.surahs} surah · {formatNumber(QURAN_ESTIMATE.ayahs)} ayat
+            </Text>
+          </View>
+          <CheckCircle2
+            color={includeQuran ? colors.primary : colors.muted}
+            size={20}
+            strokeWidth={includeQuran ? 2.8 : 1.8}
+          />
+        </Pressable>
+
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Kitab Hadis</Text>
+            <Text style={styles.sectionMeta}>
+              {selectedBooks.length} dipilih dari {books.length} kitab
+            </Text>
+          </View>
+          <View style={styles.selectionActions}>
+            <Pressable disabled={busy || !books.length} onPress={selectAllBooks} style={styles.linkButton}>
+              <Text style={[styles.linkText, (busy || !books.length) && styles.disabledText]}>Semua</Text>
+            </Pressable>
+            <Pressable disabled={busy} onPress={clearBookSelection} style={styles.linkButton}>
+              <Text style={[styles.linkText, busy && styles.disabledText]}>Kosongkan</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {booksLoading ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.primary} size="small" />
+            <Text style={styles.meta}>Memuat daftar kitab hadis...</Text>
+          </View>
+        ) : books.length ? (
+          <View style={styles.bookGrid}>
+            {books.map((book) => {
+              const selected = Boolean(selectedBookSlugs[book.slug]);
+              const status = bookStatus(book);
+              return (
+                <Pressable
+                  disabled={busy || !isSupported}
+                  key={book.slug}
+                  onPress={() => toggleBook(book.slug)}
+                  style={({ pressed }) => [
+                    styles.bookChip,
+                    selected && styles.bookChipActive,
+                    (busy || !isSupported) && styles.disabled,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={[styles.bookChipText, selected && styles.bookChipTextActive]} numberOfLines={2}>
+                    {book.name}
+                  </Text>
+                  {status.kind === 'complete' ? (
+                    <Text style={[styles.bookChipBadge, styles.bookChipBadgeComplete]}>Lengkap</Text>
+                  ) : status.kind === 'update' ? (
+                    <Text style={[styles.bookChipBadge, styles.bookChipBadgeUpdate]}>+{status.delta} baru</Text>
+                  ) : status.kind === 'partial' ? (
+                    <Text style={[styles.bookChipBadge, styles.bookChipBadgeUpdate]}>{status.local} tersimpan</Text>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <Text style={styles.meta}>Daftar kitab hadis belum tersedia dari backend.</Text>
+        )}
       </View>
+
       <View style={styles.estimateBox}>
         <View style={styles.estimateTitleRow}>
           <Database color={colors.primary} size={16} strokeWidth={2.4} />
-          <Text style={styles.estimateTitle}>Estimasi download</Text>
+          <Text style={styles.estimateTitle}>
+            {everythingComplete ? 'Sudah lengkap, tidak ada update' : 'Yang akan diunduh'}
+          </Text>
+          {!everythingComplete ? (
+            <Text style={[styles.estimateSize, isLargeDownload && styles.estimateSizeWarn]}>
+              {sizeLabel}
+            </Text>
+          ) : null}
         </View>
         <Text style={styles.estimateText}>
-          {PACK_ESTIMATE.surahs} surah · {formatNumber(PACK_ESTIMATE.ayahs)} ayat · maksimal{' '}
-          {formatNumber(PACK_ESTIMATE.hadiths)} hadis · {PACK_ESTIMATE.size}
+          {everythingComplete
+            ? 'Pilihan ini sudah komplit. Tap "Cek update" untuk tarik perubahan terbaru dari backend.'
+            : `${quranNeedsDownload ? 'Quran · ' : ''}${booksToFetch.length} kitab${pendingHadithCount > 0 ? ` · ~${formatNumber(pendingHadithCount)} hadis baru` : ''}`}
         </Text>
+        {!everythingComplete && isLargeDownload ? (
+          <Text style={styles.estimateWarn}>
+            Ukuran besar. Pastikan jaringan stabil dan ruang penyimpanan cukup.
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.stats}>
@@ -167,12 +409,12 @@ export function OfflinePackCard() {
 
       <View style={styles.actions}>
         <Pressable
-          disabled={busy || !isSupported}
-          onPress={confirmDownload}
+          disabled={busy || !isSupported || !hasSelection}
+          onPress={everythingComplete ? checkUpdates : confirmDownload}
           style={({ pressed }) => [
             styles.button,
             styles.primaryButton,
-            (busy || !isSupported) && styles.disabled,
+            (busy || !isSupported || !hasSelection) && styles.disabled,
             pressed && styles.pressed,
           ]}
         >
@@ -181,7 +423,9 @@ export function OfflinePackCard() {
           ) : (
             <View style={styles.buttonContent}>
               <BookOpen color="#ffffff" size={16} strokeWidth={2.5} />
-              <Text style={styles.primaryButtonText}>Unduh utama</Text>
+              <Text style={styles.primaryButtonText}>
+                {everythingComplete ? 'Cek update' : pendingHadithCount > 0 || quranNeedsDownload ? 'Unduh update' : 'Unduh pilihan'}
+              </Text>
             </View>
           )}
         </Pressable>
@@ -201,109 +445,55 @@ export function OfflinePackCard() {
 }
 
 const styles = StyleSheet.create({
-  muted: {
-    color: colors.muted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  stats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  scopeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  scopePill: {
-    backgroundColor: colors.surfaceMuted,
-    borderColor: colors.faint,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexBasis: '30%',
-    flexGrow: 1,
-    minHeight: 52,
-    padding: spacing.sm,
-  },
-  scopeLabel: {
-    color: colors.primaryDark,
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  scopeValue: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: '700',
-    lineHeight: 15,
-    marginTop: 2,
-  },
-  estimateBox: {
-    backgroundColor: colors.bg,
-    borderColor: colors.faint,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    marginTop: spacing.md,
-    padding: spacing.md,
-  },
-  estimateTitleRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  estimateTitle: {
-    color: colors.ink,
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  estimateText: {
-    color: colors.muted,
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  stat: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.md,
-    flexBasis: '30%',
-    flexGrow: 1,
-    padding: spacing.md,
-  },
-  statValue: {
-    color: colors.primaryDark,
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  statLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: spacing.xs,
-  },
-  progressTrack: {
-    backgroundColor: colors.faint,
-    borderRadius: radius.sm,
-    height: 7,
-    marginTop: spacing.md,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    backgroundColor: colors.primary,
-    height: '100%',
-  },
-  meta: {
-    color: colors.muted,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: spacing.sm,
-  },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.md,
+  },
+  bookChip: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexBasis: '30%',
+    flexGrow: 1,
+    justifyContent: 'center',
+    minHeight: 42,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  bookChipActive: {
+    backgroundColor: colors.primaryDark,
+    borderColor: colors.primaryDark,
+  },
+  bookChipText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 14,
+    textAlign: 'center',
+  },
+  bookChipTextActive: {
+    color: colors.onPrimary,
+  },
+  bookChipBadge: {
+    fontSize: 9,
+    fontWeight: '800',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  bookChipBadgeComplete: {
+    color: '#3a8a4f',
+  },
+  bookChipBadgeUpdate: {
+    color: '#b8731a',
+  },
+  bookGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   button: {
     alignItems: 'center',
@@ -322,24 +512,192 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     justifyContent: 'center',
   },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
   buttonText: {
     color: colors.primary,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  primaryButtonText: {
-    color: '#ffffff',
     fontSize: 13,
     fontWeight: '800',
   },
   disabled: {
     opacity: 0.55,
   },
+  disabledText: {
+    color: colors.muted,
+  },
+  estimateBox: {
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.md,
+    padding: spacing.md,
+  },
+  estimateText: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  estimateTitle: {
+    color: colors.ink,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  estimateTitleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  estimateSize: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: '900',
+    marginLeft: 'auto',
+  },
+  estimateSizeWarn: {
+    color: colors.danger,
+  },
+  estimateWarn: {
+    color: colors.danger,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: spacing.xs,
+  },
+  linkButton: {
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
+  linkText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  loadingRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 44,
+  },
+  meta: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: spacing.sm,
+  },
+  muted: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  packageIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  packageIconActive: {
+    backgroundColor: colors.primary,
+  },
+  packageMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  packageRow: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 62,
+    padding: spacing.md,
+  },
+  packageRowActive: {
+    borderColor: colors.primary,
+  },
+  packageText: {
+    flex: 1,
+  },
+  packageTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
   pressed: {
     opacity: 0.8,
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  progressFill: {
+    backgroundColor: colors.primary,
+    height: '100%',
+  },
+  progressTrack: {
+    backgroundColor: colors.faint,
+    borderRadius: radius.sm,
+    height: 7,
+    marginTop: spacing.md,
+    overflow: 'hidden',
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  sectionMeta: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 1,
+  },
+  sectionTitle: {
+    color: colors.primaryDark,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  selectionActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  selectorSection: {
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  stat: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    flexBasis: '22%',
+    flexGrow: 1,
+    padding: spacing.md,
+  },
+  statLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: spacing.xs,
+  },
+  statValue: {
+    color: colors.primaryDark,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  stats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
 });

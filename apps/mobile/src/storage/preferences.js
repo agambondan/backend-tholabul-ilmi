@@ -19,13 +19,13 @@ export const preferenceKeys = {
   quranMemorizationMode: 'quran-memorization-mode',
 };
 
-export const readPreference = async (key, fallback) => {
+export const readPreference = async (key, defaultValue) => {
   try {
     const raw = await AsyncStorage.getItem(keyFor(key));
-    if (!raw) return fallback;
+    if (!raw) return defaultValue;
     return JSON.parse(raw);
   } catch {
-    return fallback;
+    return defaultValue;
   }
 };
 

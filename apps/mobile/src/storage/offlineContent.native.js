@@ -1,23 +1,21 @@
 import { normalizeAyah, normalizeHadith, normalizeSurah, pickItems, requestJson } from '../api/client';
-import { getBookmarks } from '../api/personal';
 import * as SQLite from 'expo-sqlite';
 
 const DB_NAME = 'tholabul_offline.db';
-const DAILY_TYPES = ['doa', 'dzikir', 'wirid', 'tahlil'];
 const MAIN_PACK_TYPES = ['quran_surah', 'quran_ayah', 'hadith'];
 const HADITH_PAGE_SIZE = 100;
-const HADITH_MAX_PAGES = 20;
+const HADITH_SAFETY_MAX_PAGES = 5000;
 const PRAYER_PACK_DAYS = 30;
 
 let dbPromise;
 
 const emptyOverview = (extra = {}) => ({
   supported: false,
-  bookmarkSnapshots: 0,
-  dailyItems: 0,
+  includeQuran: false,
   quranSurahs: 0,
   quranAyahs: 0,
   hadiths: 0,
+  hadithBooks: [],
   prayerDays: 0,
   savedAt: null,
   ...extra,
@@ -91,26 +89,57 @@ const deleteItemTypes = async (db, types) => {
   );
 };
 
+export const getOfflineHadithCountByBook = async (bookSlug) => {
+  if (!bookSlug) return 0;
+  try {
+    const db = await openDb();
+    const row = await db.getFirstAsync(
+      "SELECT COUNT(*) AS c FROM offline_items WHERE type = 'hadith' AND key LIKE ?",
+      [`hadith:${bookSlug}:%`],
+    );
+    return Number(row?.c ?? 0);
+  } catch {
+    return 0;
+  }
+};
+
+export const getOfflineHadithCountsBySlug = async () => {
+  try {
+    const db = await openDb();
+    const rows = await db.getAllAsync(
+      "SELECT key FROM offline_items WHERE type = 'hadith'",
+    );
+    const counts = {};
+    for (const row of rows) {
+      const match = /^hadith:([^:]+):/.exec(String(row?.key ?? ''));
+      if (!match) continue;
+      const slug = match[1];
+      counts[slug] = (counts[slug] ?? 0) + 1;
+    }
+    return counts;
+  } catch {
+    return {};
+  }
+};
+
 export const getOfflineOverview = async () => {
   try {
     const db = await openDb();
-    const [quranSurahs, quranAyahs, hadiths, prayerDays, bookmarkSnapshots, meta, ...dailyCounts] = await Promise.all([
+    const [quranSurahs, quranAyahs, hadiths, prayerDays, meta] = await Promise.all([
       countByType(db, 'quran_surah'),
       countByType(db, 'quran_ayah'),
       countByType(db, 'hadith'),
       countByType(db, 'prayer_day'),
-      countByType(db, 'bookmark_snapshot'),
       getMeta(db, 'offline_pack'),
-      ...DAILY_TYPES.map((type) => countByType(db, type)),
     ]);
 
     return {
       supported: true,
-      bookmarkSnapshots,
-      dailyItems: dailyCounts.reduce((total, count) => total + count, 0),
+      includeQuran: Boolean(meta?.includeQuran ?? (quranSurahs || quranAyahs)),
       quranSurahs,
       quranAyahs,
       hadiths,
+      hadithBooks: Array.isArray(meta?.hadithBooks) ? meta.hadithBooks : [],
       prayerDays,
       savedAt: meta?.savedAt ?? null,
     };
@@ -152,6 +181,7 @@ export const clearOfflinePack = async () => {
   const db = await openDb();
   await deleteItemTypes(db, MAIN_PACK_TYPES);
   await db.runAsync('DELETE FROM offline_meta WHERE key = ?', ['offline_pack']);
+  await db.runAsync("DELETE FROM offline_meta WHERE key LIKE 'hadith_book:%'");
   return getOfflineOverview();
 };
 
@@ -178,99 +208,16 @@ const roundedCoord = (value) => Number(value ?? 0).toFixed(3);
 const prayerLocationKey = ({ lat, lng, method = 'kemenag', madhab = 'shafi' }) =>
   `${method}:${madhab}:${roundedCoord(lat)}:${roundedCoord(lng)}`;
 
-const normalizePrayerDay = (payload, fallbackDate) => {
+const normalizePrayerDay = (payload, requestedDate) => {
   const data = payload?.data ?? payload;
   return {
-    date: data?.date ?? fallbackDate,
+    date: data?.date ?? requestedDate,
     lat: data?.lat,
     lng: data?.lng,
     madhab: data?.madhab,
     method: data?.method,
     prayers: data?.prayers ?? data,
   };
-};
-
-const pickText = (...values) => values.find((value) => typeof value === 'string' && value.trim()) ?? '';
-
-const normalizeDailyItem = (item, type, index = 0) => {
-  const translation = item?.translation ?? {};
-  return {
-    arabic: pickText(translation.arab, translation.ar, item?.arabic, item?.arab, item?.text_arab),
-    body: pickText(
-      translation.text_en,
-      translation.text_idn,
-      translation.en,
-      translation.idn,
-      translation.text,
-      item?.content,
-      item?.description,
-      item?.meaning,
-      item?.answer,
-      item?.text,
-      item?.body,
-    ),
-    id: item?.id ?? item?.number ?? item?.slug ?? `${type}-${index + 1}`,
-    meta: pickText(item?.category, item?.occasion, item?.source, item?.type),
-    raw: item,
-    title:
-      pickText(
-        translation.title_en,
-        translation.title_idn,
-        translation.latin_en,
-        translation.latin_idn,
-        translation.name_en,
-        translation.name_idn,
-        item?.title,
-        item?.name,
-        item?.latin,
-        item?.slug,
-      ) || `${type} ${index + 1}`,
-    type,
-  };
-};
-
-const dailySources = [
-  { endpoint: '/api/v1/doa?page=0&size=200', type: 'doa' },
-  { endpoint: '/api/v1/dzikir?page=0&size=200', type: 'dzikir' },
-  { endpoint: '/api/v1/wirid', type: 'wirid' },
-  { endpoint: '/api/v1/tahlil', type: 'tahlil' },
-];
-
-export const buildDailyOfflinePack = async ({ onProgress } = {}) => {
-  const db = await openDb();
-  const savedAt = new Date().toISOString();
-  let total = 0;
-
-  for (let index = 0; index < dailySources.length; index += 1) {
-    const source = dailySources[index];
-    onProgress?.({
-      label: `Mengunduh ${source.type}`,
-      value: Math.round((index / dailySources.length) * 100),
-    });
-    const payload = await requestJson(source.endpoint);
-    const items = pickItems(payload).map((item, itemIndex) => normalizeDailyItem(item, source.type, itemIndex));
-    await db.runAsync('DELETE FROM offline_items WHERE type = ?', [source.type]);
-    for (const item of items) {
-      await upsertItem(db, source.type, `${source.type}:${item.id}`, item, savedAt);
-    }
-    total += items.length;
-  }
-
-  await setMeta(db, 'daily_pack', { savedAt, total }, savedAt);
-  onProgress?.({ label: 'Paket harian offline siap', value: 100 });
-  return getOfflineOverview();
-};
-
-export const saveBookmarkSnapshot = async () => {
-  const db = await openDb();
-  const savedAt = new Date().toISOString();
-  const bookmarks = await getBookmarks();
-  await db.runAsync('DELETE FROM offline_items WHERE type = ?', ['bookmark_snapshot']);
-  for (const bookmark of bookmarks) {
-    await upsertItem(db, 'bookmark_snapshot', `bookmark:${bookmark.id ?? `${bookmark.ref_type}:${bookmark.ref_id}`}`, bookmark, savedAt);
-  }
-  await setMeta(db, 'bookmark_snapshot', { count: bookmarks.length, savedAt }, savedAt);
-  return getOfflineOverview();
 };
 
 export const buildPrayerOfflinePack = async ({
@@ -335,8 +282,34 @@ export const getOfflinePrayerForDate = async ({
   }
 };
 
-const saveQuranPack = async ({ db, onProgress, savedAt }) => {
-  onProgress?.({ label: 'Mengunduh daftar surah', phase: 'quran', value: 0 });
+const progressValue = (base, span, current, total) =>
+  base + Math.round((current / Math.max(total, 1)) * span);
+
+const normalizeBookOption = (book) => {
+  const slug = String(book?.slug ?? '').trim();
+  if (!slug) return null;
+
+  return {
+    id: book?.id ?? slug,
+    name: book?.name ?? book?.label ?? slug,
+    slug,
+  };
+};
+
+const uniqueBooks = (books = []) => {
+  const seen = new Set();
+  return books
+    .map(normalizeBookOption)
+    .filter(Boolean)
+    .filter((book) => {
+      if (seen.has(book.slug)) return false;
+      seen.add(book.slug);
+      return true;
+    });
+};
+
+const saveQuranPack = async ({ db, onProgress, progressBase = 0, progressSpan = 50, savedAt }) => {
+  onProgress?.({ label: 'Mengunduh daftar surah', phase: 'quran', value: progressBase });
   const surahPayload = await requestJson('/api/v1/surah?size=114&sort=number');
   const surahs = pickItems(surahPayload).map(normalizeSurah).filter((item) => item.number);
   let ayahCount = 0;
@@ -350,7 +323,7 @@ const saveQuranPack = async ({ db, onProgress, savedAt }) => {
     onProgress?.({
       label: `Mengunduh ${surah.name}`,
       phase: 'quran',
-      value: surahs.length ? Math.round((index / surahs.length) * 50) : 0,
+      value: progressValue(progressBase, progressSpan, index, surahs.length),
     });
 
     const ayahPayload = await requestJson(`/api/v1/ayah/surah/number/${surah.number}?size=300&page=0`);
@@ -365,45 +338,164 @@ const saveQuranPack = async ({ db, onProgress, savedAt }) => {
   return { surahCount: surahs.length, ayahCount };
 };
 
-const saveHadithPack = async ({ db, onProgress, savedAt }) => {
-  let page = 0;
-  let totalPages = 1;
+const SYNC_SAFETY_BUFFER_MS = 5 * 60 * 1000;
+
+const saveHadithPack = async ({ books = [], db, onProgress, progressBase = 50, progressSpan = 45, savedAt }) => {
+  const hadithBooks = uniqueBooks(books);
   let hadithCount = 0;
 
-  while (page < totalPages && page < HADITH_MAX_PAGES) {
-    onProgress?.({
-      label: `Mengunduh halaman hadis ${page + 1}`,
-      phase: 'hadith',
-      value: 50 + Math.round((page / Math.max(totalPages, 1)) * 45),
-    });
-
-    const payload = await requestJson(`/api/v1/hadiths?size=${HADITH_PAGE_SIZE}&page=${page}`);
-    const items = pickItems(payload).map(normalizeHadith).filter((item) => item.id);
-    totalPages = Number(payload?.total_pages ?? payload?.data?.total_pages ?? totalPages) || totalPages;
-
-    for (const hadith of items) {
-      await upsertItem(db, 'hadith', `hadith:${hadith.id}`, hadith, savedAt);
-    }
-
-    hadithCount += items.length;
-    if (!items.length) break;
-    page += 1;
+  if (!hadithBooks.length) {
+    return { hadithBooks, hadithCount };
   }
 
-  return { hadithCount };
+  for (let bookIndex = 0; bookIndex < hadithBooks.length; bookIndex += 1) {
+    const book = hadithBooks[bookIndex];
+    let page = 0;
+    let totalPages = 1;
+    const syncStart = Date.now();
+    const lastSyncMeta = await getMeta(db, `hadith_book:${book.slug}`);
+    const lastSyncAt = lastSyncMeta?.lastSyncAt;
+    const updatedAfter = lastSyncAt
+      ? new Date(new Date(lastSyncAt).getTime() - SYNC_SAFETY_BUFFER_MS).toISOString()
+      : null;
+
+    while (page < totalPages && page < HADITH_SAFETY_MAX_PAGES) {
+      onProgress?.({
+        label: updatedAfter
+          ? `Cek update ${book.name} halaman ${page + 1}`
+          : `Mengunduh ${book.name} halaman ${page + 1}`,
+        phase: 'hadith',
+        value: progressValue(
+          progressBase,
+          progressSpan,
+          bookIndex + page / Math.max(totalPages, 1),
+          hadithBooks.length,
+        ),
+      });
+
+      const params = new URLSearchParams({ size: String(HADITH_PAGE_SIZE), page: String(page) });
+      if (updatedAfter) params.set('updated_after', updatedAfter);
+      const payload = await requestJson(
+        `/api/v1/hadiths/book/${encodeURIComponent(book.slug)}?${params.toString()}`,
+      );
+      const items = pickItems(payload).map(normalizeHadith).filter((item) => item.id);
+      totalPages = Number(
+        payload?.total_pages ??
+          payload?.totalPages ??
+          payload?.data?.total_pages ??
+          payload?.data?.totalPages ??
+          totalPages,
+      ) || totalPages;
+
+      for (const hadith of items) {
+        await upsertItem(
+          db,
+          'hadith',
+          `hadith:${book.slug}:${hadith.id}`,
+          { ...hadith, bookName: hadith.bookName ?? book.name, bookSlug: hadith.bookSlug ?? book.slug },
+          savedAt,
+        );
+      }
+
+      hadithCount += items.length;
+      if (!items.length) break;
+      page += 1;
+    }
+
+    await setMeta(
+      db,
+      `hadith_book:${book.slug}`,
+      { lastSyncAt: new Date(syncStart).toISOString(), slug: book.slug, name: book.name },
+      savedAt,
+    );
+  }
+
+  return { hadithBooks, hadithCount };
 };
 
-export const buildOfflinePack = async ({ onProgress } = {}) => {
+const QURAN_TOTAL_AYAHS = 6236;
+const QURAN_TOTAL_SURAHS = 114;
+
+export const buildOfflinePack = async ({
+  hadithBooks = [],
+  includeQuran = true,
+  onProgress,
+  force = false,
+  checkUpdates = false,
+} = {}) => {
+  const books = uniqueBooks(hadithBooks);
+  if (!includeQuran && !books.length) {
+    throw new Error('Pilih minimal satu paket data untuk diunduh.');
+  }
+
   const db = await openDb();
   const savedAt = new Date().toISOString();
 
-  await deleteItemTypes(db, MAIN_PACK_TYPES);
-  const quran = await saveQuranPack({ db, onProgress, savedAt });
-  const hadith = await saveHadithPack({ db, onProgress, savedAt });
-  await setMeta(db, 'offline_pack', { ...quran, ...hadith, savedAt }, savedAt);
+  const [existingQuranSurahs, existingQuranAyahs, localHadithCounts] = await Promise.all([
+    countByType(db, 'quran_surah'),
+    countByType(db, 'quran_ayah'),
+    getOfflineHadithCountsBySlug(),
+  ]);
 
-  onProgress?.({ label: 'Paket utama offline siap', phase: 'done', value: 100 });
-  return getOfflineOverview();
+  const quranComplete =
+    existingQuranSurahs >= QURAN_TOTAL_SURAHS && existingQuranAyahs >= QURAN_TOTAL_AYAHS;
+  const shouldSaveQuran = includeQuran && (force || !quranComplete);
+
+  const booksToFetch = force || checkUpdates
+    ? books
+    : books.filter((book) => {
+        const local = localHadithCounts[book.slug] ?? 0;
+        const expected = Number(book.count) || 0;
+        if (expected <= 0) return local === 0;
+        return local < expected;
+      });
+
+  if (!shouldSaveQuran && booksToFetch.length === 0) {
+    onProgress?.({ label: 'Sudah lengkap, tidak ada yang perlu diunduh', phase: 'done', value: 100 });
+    const overview = await getOfflineOverview();
+    return { ...overview, deltaCount: 0, checkedForUpdates: checkUpdates };
+  }
+
+  const quranSpan = shouldSaveQuran && booksToFetch.length ? 48 : shouldSaveQuran ? 95 : 0;
+  const hadithBase = shouldSaveQuran ? quranSpan : 0;
+  const hadithSpan = booksToFetch.length ? 95 - hadithBase : 0;
+  const quran = shouldSaveQuran
+    ? await saveQuranPack({ db, onProgress, progressBase: 0, progressSpan: quranSpan, savedAt })
+    : { ayahCount: existingQuranAyahs, surahCount: existingQuranSurahs };
+  const hadith = booksToFetch.length
+    ? await saveHadithPack({
+        books: booksToFetch,
+        db,
+        onProgress,
+        progressBase: hadithBase,
+        progressSpan: hadithSpan,
+        savedAt,
+      })
+    : { hadithBooks: [], hadithCount: 0 };
+
+  const allBooksSaved = uniqueBooks([...books, ...(hadith.hadithBooks ?? [])]);
+  await setMeta(
+    db,
+    'offline_pack',
+    {
+      ...quran,
+      hadithBooks: allBooksSaved,
+      hadithCount: hadith.hadithCount,
+      includeQuran: includeQuran || quranComplete,
+      savedAt,
+    },
+    savedAt,
+  );
+
+  const deltaLabel =
+    checkUpdates && hadith.hadithCount === 0 && !shouldSaveQuran
+      ? 'Sudah versi terbaru'
+      : checkUpdates
+        ? `${hadith.hadithCount} hadis diperbarui`
+        : 'Paket offline siap';
+  onProgress?.({ label: deltaLabel, phase: 'done', value: 100 });
+  const overview = await getOfflineOverview();
+  return { ...overview, deltaCount: hadith.hadithCount, checkedForUpdates: checkUpdates };
 };
 
 export const getOfflineItems = async (type) => {
