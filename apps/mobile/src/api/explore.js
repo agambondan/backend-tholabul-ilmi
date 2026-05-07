@@ -1,0 +1,149 @@
+import { requestJson } from './client';
+import { getBookmarks } from './personal';
+import { getOfflineItems } from '../storage/offlineContent';
+
+const pickItems = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data?.items)) return payload.data.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.questions)) return payload.questions;
+  if (Array.isArray(payload?.events)) return payload.events;
+  return payload ? [payload?.data ?? payload] : [];
+};
+
+const pickText = (...values) => values.find((value) => typeof value === 'string' && value.trim()) ?? '';
+
+const withPagination = (endpoint, { page = 0, size = 20 } = {}) => {
+  if (!endpoint) return endpoint;
+
+  const [path, query = ''] = endpoint.split('?');
+  const params = new URLSearchParams(query);
+  params.set('page', `${page}`);
+  params.set('size', `${size}`);
+  return `${path}?${params.toString()}`;
+};
+
+export const normalizeExploreItem = (item, index = 0) => {
+  if (item?.raw && (item?.title || item?.body || item?.arabic)) {
+    return item;
+  }
+
+  const translation = item?.translation ?? {};
+  const title = pickText(
+    translation.title_en,
+    translation.title_idn,
+    translation.latin_en,
+    translation.latin_idn,
+    translation.name_en,
+    translation.name_idn,
+    item?.title,
+    item?.name,
+    item?.latin,
+    item?.ref_type && item?.ref_id ? `${item.ref_type} ${item.ref_id}` : '',
+    item?.slug,
+    item?.category,
+    item?.question,
+    `Item ${index + 1}`,
+  );
+  const arabic = pickText(translation.arab, translation.ar, item?.arabic, item?.arab, item?.text_arab);
+  const body = pickText(
+    translation.text_en,
+    translation.text_idn,
+    translation.en,
+    translation.idn,
+    translation.text,
+    item?.content,
+    item?.description,
+    item?.meaning,
+    item?.answer,
+    item?.text,
+    item?.body,
+  );
+  const meta = pickText(
+    item?.type,
+    item?.category,
+    item?.occasion,
+    item?.source,
+    item?.author,
+    item?.label,
+    item?.ref_type,
+    item?.status,
+    item?.date,
+  );
+
+  return {
+    id: item?.id ?? item?.number ?? item?.slug ?? `${title}-${index}`,
+    title,
+    arabic,
+    body,
+    meta,
+    raw: item,
+  };
+};
+
+export const getFeatureItems = async (feature, pagination) => {
+  try {
+    const endpoint = pagination ? withPagination(feature.endpoint, pagination) : feature.endpoint;
+    const payload = await requestJson(endpoint, { auth: feature.type === 'protected-list' });
+    return pickItems(payload).map(normalizeExploreItem);
+  } catch (error) {
+    if (!feature.offlineType) throw error;
+    const offlineItems = await getOfflineItems(feature.offlineType);
+    if (!offlineItems.length) throw error;
+    return offlineItems.map(normalizeExploreItem);
+  }
+};
+
+export const getAllNotes = async () => {
+  const payload = await requestJson('/api/v1/notes', { auth: true });
+  return pickItems(payload).map(normalizeExploreItem);
+};
+
+export const getBookmarkItems = async () => {
+  try {
+    const items = await getBookmarks();
+    return items.map(normalizeExploreItem);
+  } catch (error) {
+    const offlineItems = await getOfflineItems('bookmark_snapshot');
+    if (!offlineItems.length) throw error;
+    return offlineItems.map(normalizeExploreItem);
+  }
+};
+
+export const searchDictionary = async (query) => {
+  if (!query.trim()) return [];
+  const payload = await requestJson(`/api/v1/kamus?q=${encodeURIComponent(query.trim())}`);
+  return pickItems(payload).map(normalizeExploreItem);
+};
+
+export const getQuizQuestions = async () => {
+  const payload = await requestJson('/api/v1/quiz/session?count=5');
+  return pickItems(payload).map(normalizeExploreItem);
+};
+
+export const getHijriOverview = async () => {
+  const [today, events] = await Promise.allSettled([
+    requestJson('/api/v1/hijri/today'),
+    requestJson('/api/v1/hijri/events'),
+  ]);
+
+  const items = [];
+  if (today.status === 'fulfilled') {
+    items.push(
+      normalizeExploreItem({
+        title: 'Today',
+        description:
+          today.value?.date_hijri ??
+          today.value?.hijri ??
+          today.value?.data?.hijri ??
+          today.value?.date ??
+          JSON.stringify(today.value),
+      }),
+    );
+  }
+  if (events.status === 'fulfilled') {
+    items.push(...pickItems(events.value).map(normalizeExploreItem));
+  }
+  return items;
+};

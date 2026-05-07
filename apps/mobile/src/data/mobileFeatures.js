@@ -1,0 +1,308 @@
+export const featureGroups = [
+  {
+    key: 'bacaan',
+    label: 'Bacaan',
+    features: [
+      {
+        key: 'doa',
+        title: 'Doa',
+        subtitle: 'Doa harian dan pilahan',
+        type: 'list',
+        endpoint: '/api/v1/doa?page=0&size=30',
+        offlineType: 'doa',
+      },
+      {
+        key: 'dzikir',
+        title: 'Dzikir',
+        subtitle: 'Kumpulan dzikir',
+        type: 'list',
+        endpoint: '/api/v1/dzikir?page=0&size=30',
+        offlineType: 'dzikir',
+      },
+      {
+        key: 'wirid',
+        title: 'Wirid',
+        subtitle: 'Bacaan wirid rutin',
+        type: 'list',
+        endpoint: '/api/v1/wirid',
+        offlineType: 'wirid',
+      },
+      {
+        key: 'tahlil',
+        title: 'Tahlil',
+        subtitle: 'Referensi tahlil dan yasin',
+        type: 'list',
+        endpoint: '/api/v1/tahlil',
+        offlineType: 'tahlil',
+      },
+      {
+        key: 'amalan',
+        title: 'Amalan Harian',
+        subtitle: 'Checklist ibadah harian',
+        type: 'protected-list',
+        endpoint: '/api/v1/amalan/today',
+      },
+    ],
+  },
+  {
+    key: 'ilmu',
+    label: 'Ilmu',
+    features: [
+      {
+        key: 'asmaul-husna',
+        title: 'Asmaul Husna',
+        subtitle: '99 nama Allah',
+        type: 'list',
+        endpoint: '/api/v1/asmaul-husna',
+      },
+      {
+        key: 'tafsir',
+        title: 'Tafsir',
+        subtitle: 'Tafsir per surah',
+        type: 'surah-content',
+        contentType: 'tafsir',
+      },
+      {
+        key: 'asbabun-nuzul',
+        title: 'Asbabun Nuzul',
+        subtitle: 'Sebab turunnya ayat',
+        type: 'surah-content',
+        contentType: 'asbabun-nuzul',
+      },
+      {
+        key: 'panduan-sholat',
+        title: 'Panduan Sholat',
+        subtitle: 'Tata cara sholat',
+        type: 'list',
+        endpoint: '/api/v1/panduan-sholat',
+      },
+      {
+        key: 'siroh',
+        title: 'Siroh',
+        subtitle: 'Biografi Nabi',
+        type: 'list',
+        endpoint: '/api/v1/siroh/contents?page=0&size=20',
+      },
+      {
+        key: 'sejarah',
+        title: 'Sejarah Islam',
+        subtitle: 'Referensi sejarah',
+        type: 'list',
+        endpoint: '/api/v1/sejarah',
+      },
+      {
+        key: 'fiqh',
+        title: 'Fiqh Ringkas',
+        subtitle: 'Pelajaran fiqh ringkas',
+        type: 'list',
+        endpoint: '/api/v1/fiqh',
+      },
+      {
+        key: 'manasik',
+        title: 'Manasik',
+        subtitle: 'Panduan haji dan umrah',
+        type: 'list',
+        endpoint: '/api/v1/manasik',
+      },
+      {
+        key: 'kajian',
+        title: 'Kajian',
+        subtitle: 'Sesi belajar Islam',
+        type: 'list',
+        endpoint: '/api/v1/kajian?page=0&size=20',
+      },
+      {
+        key: 'blog',
+        title: 'Artikel',
+        subtitle: 'Tulisan dan pembaruan',
+        type: 'list',
+        endpoint: '/api/v1/blog/posts?page=0&size=20',
+      },
+      {
+        key: 'perawi',
+        title: 'Perawi Hadith',
+        subtitle: 'Basis data perawi',
+        type: 'list',
+        endpoint: '/api/v1/perawi',
+      },
+    ],
+  },
+  {
+    key: 'alat',
+    label: 'Alat',
+    features: [
+      {
+        key: 'kamus',
+        title: 'Kamus Arab',
+        subtitle: 'Cari kosakata Arab',
+        type: 'kamus',
+      },
+      {
+        key: 'quiz',
+        title: 'Quiz Islami',
+        subtitle: 'Latihan soal',
+        type: 'quiz',
+      },
+      {
+        key: 'hijri',
+        title: 'Kalender Hijri',
+        subtitle: 'Hari ini dan peristiwa Islam',
+        type: 'hijri',
+      },
+      {
+        key: 'imsakiyah',
+        title: 'Imsakiyah',
+        subtitle: 'Jadwal imsak dan sholat',
+        type: 'list',
+        endpoint: '/api/v1/imsakiyah',
+      },
+      {
+        key: 'tasbih',
+        title: 'Tasbih',
+        subtitle: 'Penghitung dengan target',
+        type: 'tasbih',
+      },
+      {
+        key: 'zakat',
+        title: 'Kalkulator Zakat',
+        subtitle: 'Hitung zakat maal',
+        type: 'zakat',
+      },
+      {
+        key: 'faraidh',
+        title: 'Faraidh',
+        subtitle: 'Planner pembagian waris',
+        type: 'faraidh',
+      },
+    ],
+  },
+  {
+    key: 'personal',
+    label: 'Personal',
+    features: [
+      {
+        key: 'sholat-tracker',
+        title: 'Sholat Tracker',
+        subtitle: 'Catat sholat hari ini',
+        type: 'sholat-tracker',
+      },
+      {
+        key: 'bookmarks',
+        title: 'Bookmark',
+        subtitle: 'Quran dan hadith tersimpan',
+        type: 'bookmarks',
+      },
+      {
+        key: 'notes',
+        title: 'Catatan',
+        subtitle: 'Catatan pribadi',
+        type: 'notes',
+      },
+      {
+        key: 'notifications',
+        title: 'Notifikasi',
+        subtitle: 'Inbox dan pengingat',
+        type: 'notifications',
+      },
+      {
+        key: 'goals',
+        title: 'Target Belajar',
+        subtitle: 'Target pembelajaran personal',
+        type: 'protected-list',
+        endpoint: '/api/v1/goals',
+      },
+      {
+        key: 'muhasabah',
+        title: 'Muhasabah',
+        subtitle: 'Jurnal refleksi diri',
+        type: 'protected-list',
+        endpoint: '/api/v1/muhasabah',
+      },
+      {
+        key: 'hafalan',
+        title: 'Hafalan',
+        subtitle: 'Ringkasan hafalan Quran',
+        type: 'protected-list',
+        endpoint: '/api/v1/hafalan/summary',
+      },
+      {
+        key: 'murojaah',
+        title: 'Murojaah',
+        subtitle: 'Jadwal ulang hafalan',
+        type: 'protected-list',
+        endpoint: '/api/v1/murojaah/session',
+      },
+      {
+        key: 'tilawah',
+        title: 'Tilawah',
+        subtitle: 'Log dan ringkasan tilawah',
+        type: 'protected-list',
+        endpoint: '/api/v1/tilawah/summary',
+      },
+      {
+        key: 'stats',
+        title: 'Statistik',
+        subtitle: 'Ringkasan aktivitas',
+        type: 'protected-list',
+        endpoint: '/api/v1/stats',
+      },
+      {
+        key: 'leaderboard',
+        title: 'Leaderboard',
+        subtitle: 'Streak komunitas',
+        type: 'list',
+        endpoint: '/api/v1/leaderboard/streak',
+      },
+    ],
+  },
+];
+
+export const allFeatures = featureGroups.flatMap((group) =>
+  group.features.map((feature) => ({
+    ...feature,
+    group: group.label,
+  })),
+);
+
+const featureByKey = new Map(allFeatures.map((feature) => [feature.key, feature]));
+
+const pickFeatures = (keys) => keys.map((key) => featureByKey.get(key)).filter(Boolean);
+
+export const belajarFeatureGroups = [
+  {
+    key: 'kajian-artikel',
+    label: 'Kajian & Artikel',
+    meta: 'Belajar rutin',
+    features: pickFeatures(['kajian', 'blog']),
+  },
+  {
+    key: 'siroh-sejarah',
+    label: 'Siroh & Sejarah',
+    meta: 'Kisah dan perjalanan',
+    features: pickFeatures(['siroh', 'sejarah', 'manasik']),
+  },
+  {
+    key: 'fiqh-panduan',
+    label: 'Fiqh & Panduan',
+    meta: 'Amaliah praktis',
+    features: pickFeatures(['fiqh', 'panduan-sholat']),
+  },
+  {
+    key: 'referensi',
+    label: 'Referensi',
+    meta: 'Kamus dan katalog',
+    features: pickFeatures(['kamus', 'tafsir', 'asbabun-nuzul', 'perawi', 'asmaul-husna']),
+  },
+  {
+    key: 'evaluasi',
+    label: 'Evaluasi',
+    meta: 'Latihan',
+    features: pickFeatures(['quiz']),
+  },
+  {
+    key: 'personal-ringkas',
+    label: 'Personal Ringkas',
+    meta: 'Progress belajar',
+    features: pickFeatures(['goals', 'stats', 'leaderboard', 'bookmarks', 'notes']),
+  },
+];

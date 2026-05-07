@@ -1,0 +1,46 @@
+import { StyleSheet, Text, View } from 'react-native';
+import { colors, radius, shadows, spacing } from '../theme';
+
+export function Card({ children, style }) {
+  return <View style={[styles.card, style]}>{children}</View>;
+}
+
+export function CardTitle({ children, meta }) {
+  return (
+    <View style={styles.titleRow}>
+      <Text style={styles.title}>{children}</Text>
+      {meta ? <Text style={styles.meta}>{meta}</Text> : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.lg,
+    ...shadows.paper,
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  title: {
+    color: colors.ink,
+    flex: 1,
+    fontFamily: 'serif',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  meta: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    marginLeft: spacing.md,
+  },
+});

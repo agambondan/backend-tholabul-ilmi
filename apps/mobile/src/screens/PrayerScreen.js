@@ -1,0 +1,1059 @@
+import * as Location from 'expo-location';
+import { ArrowLeft, RefreshCw, Settings } from 'lucide-react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { getPrayerTimes } from '../api/client';
+import { getPrayerStats, getTodayPrayerLog, savePrayerLog } from '../api/personal';
+import { Card, CardTitle } from '../components/Card';
+import { IconActionButton } from '../components/Paper';
+import { Screen } from '../components/Screen';
+import { useSession } from '../context/SessionContext';
+import {
+  buildPrayerOfflinePack,
+  clearPrayerOfflinePack,
+  getOfflinePrayerForDate,
+  getPrayerOfflineOverview,
+} from '../storage/offlineContent';
+import { preferenceKeys, readPreference, writePreference } from '../storage/preferences';
+import { colors, radius, spacing } from '../theme';
+import { cancelPrayerReminders, notificationsSupported, schedulePrayerReminders } from '../utils/prayerNotifications';
+
+const scheduleRows = [
+  ['imsak', 'Imsak'],
+  ['fajr', 'Subuh'],
+  ['sunrise', 'Terbit'],
+  ['dhuhr', 'Dzuhur'],
+  ['asr', 'Asr'],
+  ['maghrib', 'Maghrib'],
+  ['isha', 'Isya'],
+];
+
+const logRows = [
+  ['subuh', 'Subuh'],
+  ['dzuhur', 'Dzuhur'],
+  ['ashar', 'Ashar'],
+  ['maghrib', 'Maghrib'],
+  ['isya', 'Isya'],
+];
+
+const statuses = [
+  ['berjamaah', 'Jamaah'],
+  ['munfarid', 'Sendiri'],
+  ['qadha', 'Qadha'],
+  ['missed', 'Terlewat'],
+];
+
+const methods = [
+  ['kemenag', 'Kemenag'],
+  ['mwl', 'MWL'],
+  ['makkah', 'Makkah'],
+  ['isna', 'ISNA'],
+];
+
+const madhabs = [
+  ['shafi', 'Shafi'],
+  ['hanafi', 'Hanafi'],
+];
+
+const defaultAdjustments = scheduleRows.reduce(
+  (acc, [key]) => ({
+    ...acc,
+    [key]: 0,
+  }),
+  {},
+);
+
+const prayerLabels = Object.fromEntries(scheduleRows);
+const defaultReminderPrayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+const reminderLeadOptions = [0, 5, 10, 15, 30];
+
+const today = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const toMinutes = (time) => {
+  const match = /^(\d{1,2}):(\d{2})/.exec(time ?? '');
+  if (!match) return null;
+
+  return Number(match[1]) * 60 + Number(match[2]);
+};
+
+const formatMinutes = (value) => {
+  const wrapped = ((value % 1440) + 1440) % 1440;
+  const hours = `${Math.floor(wrapped / 60)}`.padStart(2, '0');
+  const minutes = `${wrapped % 60}`.padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+export function PrayerScreen({ isActive, navigation }) {
+  const { user } = useSession();
+  const [coords, setCoords] = useState(null);
+  const [prayers, setPrayers] = useState(null);
+  const [dailyLog, setDailyLog] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [savingPrayer, setSavingPrayer] = useState(null);
+  const [method, setMethod] = useState('kemenag');
+  const [madhab, setMadhab] = useState('shafi');
+  const [adjustments, setAdjustments] = useState(defaultAdjustments);
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderLeadMinutes, setReminderLeadMinutes] = useState(10);
+  const [reminderPrayers, setReminderPrayers] = useState(defaultReminderPrayers);
+  const [notificationIds, setNotificationIds] = useState([]);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const [view, setView] = useState('main');
+  const [manualLatInput, setManualLatInput] = useState('');
+  const [manualLngInput, setManualLngInput] = useState('');
+  const [prayerOffline, setPrayerOffline] = useState(null);
+  const [offlineBusy, setOfflineBusy] = useState(false);
+  const [offlineProgress, setOfflineProgress] = useState(0);
+  const [offlineMessage, setOfflineMessage] = useState('Simpan jadwal 30 hari berikutnya untuk akses offline.');
+
+  useEffect(() => {
+    if (navigation?.current?.view === 'settings') {
+      setView('settings');
+    }
+  }, [navigation?.current?.id, navigation?.current?.view]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    if (view !== 'main') {
+      navigation?.setBack(() => { setView('main'); return true; });
+    } else {
+      navigation?.clearBack?.();
+    }
+  }, [isActive, view, navigation]);
+
+  const loadPrayerOfflineStatus = useCallback(
+    async (currentCoords) => {
+      if (!currentCoords) return;
+
+      const overview = await getPrayerOfflineOverview({
+        ...currentCoords,
+        method,
+        madhab,
+      });
+      setPrayerOffline(overview);
+      if (!overview.supported) {
+        setOfflineMessage(overview.error ?? 'Fitur jadwal offline tersedia di aplikasi mobile.');
+      } else if (overview.savedAt) {
+        setOfflineMessage(`${overview.days} hari tersimpan untuk lokasi dan metode ini.`);
+      }
+    },
+    [madhab, method],
+  );
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setMessage('');
+    let currentCoords = null;
+
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status === 'granted') {
+        const position = await Location.getCurrentPositionAsync({});
+        currentCoords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setCoords(currentCoords);
+      } else {
+        setCoords(null);
+        setPrayers(null);
+        setMessage('Aktifkan lokasi untuk memuat jadwal sholat sesuai tempatmu.');
+        setLoading(false);
+        return;
+      }
+    } catch {
+      setCoords(null);
+      setPrayers(null);
+      setMessage('Lokasi belum terbaca. Aktifkan GPS lalu muat ulang jadwal sholat.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const next = await getPrayerTimes({ ...currentCoords, method, madhab });
+      setPrayers(next);
+      await loadPrayerOfflineStatus(currentCoords);
+    } catch (error) {
+      setPrayers(null);
+      setMessage(error?.message ?? 'Jadwal sholat belum tersedia.');
+    } finally {
+      setLoading(false);
+    }
+  }, [loadPrayerOfflineStatus, madhab, method]);
+
+  const applyManualLocation = useCallback(async () => {
+    const lat = parseFloat(manualLatInput.replace(',', '.'));
+    const lng = parseFloat(manualLngInput.replace(',', '.'));
+
+    if (!isFinite(lat) || !isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      setMessage('Masukkan koordinat yang valid. Contoh: -6.2088, 106.8456');
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+    const currentCoords = { lat, lng };
+    setCoords(currentCoords);
+
+    try {
+      const next = await getPrayerTimes({ ...currentCoords, method, madhab });
+      setPrayers(next);
+      await loadPrayerOfflineStatus(currentCoords);
+    } catch (err) {
+      setPrayers(null);
+      setMessage(err?.message ?? 'Jadwal sholat belum tersedia untuk lokasi ini.');
+    } finally {
+      setLoading(false);
+    }
+  }, [loadPrayerOfflineStatus, madhab, manualLatInput, manualLngInput, method]);
+
+  const loadLog = useCallback(async () => {
+    if (!user) {
+      setDailyLog(null);
+      setStats(null);
+      return;
+    }
+
+    try {
+      const [nextLog, nextStats] = await Promise.all([getTodayPrayerLog(), getPrayerStats()]);
+      setDailyLog(nextLog);
+      setStats(nextStats);
+    } catch {
+      setDailyLog(null);
+      setStats(null);
+    }
+  }, [user]);
+
+  const refreshAll = useCallback(async () => {
+    await load();
+    await loadLog();
+  }, [load, loadLog]);
+
+  const setPrayerStatus = async (prayer, status) => {
+    if (!user) return;
+
+    setSavingPrayer(`${prayer}:${status}`);
+    setMessage('');
+
+    try {
+      const log = await savePrayerLog({ date: today(), prayer, status });
+      setDailyLog((current) => ({
+        date: current?.date ?? today(),
+        prayers: {
+          ...(current?.prayers ?? {}),
+          [prayer]: log,
+        },
+      }));
+      setMessage(`${prayerLabels[prayer] ?? prayer} disimpan sebagai ${status}.`);
+      try {
+        setStats(await getPrayerStats());
+      } catch {
+        // The log itself is already saved; stats can refresh on next pull.
+      }
+    } catch (err) {
+      setMessage(err?.message ?? 'Log sholat belum bisa disimpan.');
+    } finally {
+      setSavingPrayer(null);
+    }
+  };
+
+  const selectMethod = async (nextMethod) => {
+    setMethod(nextMethod);
+    await writePreference(preferenceKeys.prayerMethod, nextMethod);
+  };
+
+  const selectMadhab = async (nextMadhab) => {
+    setMadhab(nextMadhab);
+    await writePreference(preferenceKeys.prayerMadhab, nextMadhab);
+  };
+
+  const adjustPrayer = async (key, delta) => {
+    const next = {
+      ...adjustments,
+      [key]: Math.max(-30, Math.min(30, (adjustments[key] ?? 0) + delta)),
+    };
+    setAdjustments(next);
+    await writePreference(preferenceKeys.prayerAdjustments, next);
+    if (reminderEnabled) {
+      await syncPrayerReminders({ nextAdjustments: next, silent: true });
+    }
+  };
+
+  const resetAdjustments = async () => {
+    setAdjustments(defaultAdjustments);
+    await writePreference(preferenceKeys.prayerAdjustments, defaultAdjustments);
+    if (reminderEnabled) {
+      await syncPrayerReminders({ nextAdjustments: defaultAdjustments, silent: true });
+    }
+  };
+
+  const adjustedPrayerTime = (key) => {
+    const raw = prayers?.[key];
+    const minutes = toMinutes(raw);
+    if (minutes === null) return raw ?? '--:--';
+    return formatMinutes(minutes + (adjustments[key] ?? 0));
+  };
+
+  const adjustedPrayerTimes = (nextAdjustments = adjustments) =>
+    scheduleRows.reduce((acc, [key]) => {
+      const raw = prayers?.[key];
+      const minutes = toMinutes(raw);
+      return {
+        ...acc,
+        [key]: minutes === null ? raw : formatMinutes(minutes + (nextAdjustments[key] ?? 0)),
+      };
+    }, {});
+
+  const syncPrayerReminders = async ({
+    enabled = reminderEnabled,
+    leadMinutes = reminderLeadMinutes,
+    nextAdjustments = adjustments,
+    previous = notificationIds,
+    selectedPrayers = reminderPrayers,
+    silent = false,
+  } = {}) => {
+    if (!enabled) {
+      await cancelPrayerReminders(previous);
+      setNotificationIds([]);
+      await writePreference(preferenceKeys.prayerReminderIds, []);
+      if (!silent) setMessage('Pengingat sholat dinonaktifkan.');
+      return;
+    }
+
+    if (!notificationsSupported()) {
+      if (!silent) setMessage('Pengingat lokal tersedia di aplikasi mobile.');
+      return;
+    }
+
+    if (!prayers) {
+      if (!silent) setMessage('Muat jadwal sholat sebelum mengatur pengingat.');
+      return;
+    }
+
+    const result = await schedulePrayerReminders({
+      leadMinutes,
+      labels: prayerLabels,
+      previous,
+      selectedPrayers,
+      times: adjustedPrayerTimes(nextAdjustments),
+    });
+
+    if (result.status !== 'scheduled') {
+      if (!silent) setMessage('Izin notifikasi belum aktif.');
+      return;
+    }
+
+    setNotificationIds(result.scheduled);
+    await writePreference(preferenceKeys.prayerReminderIds, result.scheduled);
+    if (!silent) setMessage(`${result.scheduled.length} pengingat sholat dijadwalkan.`);
+  };
+
+  const toggleReminder = async () => {
+    if (!reminderEnabled && !notificationsSupported()) {
+      setMessage('Pengingat lokal tersedia di aplikasi mobile.');
+      return;
+    }
+
+    const next = !reminderEnabled;
+    setReminderEnabled(next);
+    await writePreference(preferenceKeys.prayerReminderEnabled, next);
+    await syncPrayerReminders({ enabled: next });
+  };
+
+  const selectReminderLead = async (minutes) => {
+    setReminderLeadMinutes(minutes);
+    await writePreference(preferenceKeys.prayerReminderLeadMinutes, minutes);
+    if (reminderEnabled) {
+      await syncPrayerReminders({ leadMinutes: minutes, silent: true });
+    }
+  };
+
+  const toggleReminderPrayer = async (key) => {
+    const exists = reminderPrayers.includes(key);
+    const next = exists ? reminderPrayers.filter((item) => item !== key) : [...reminderPrayers, key];
+    if (!next.length) return;
+
+    setReminderPrayers(next);
+    await writePreference(preferenceKeys.prayerReminderPrayers, next);
+    if (reminderEnabled) {
+      await syncPrayerReminders({ selectedPrayers: next, silent: true });
+    }
+  };
+
+  const downloadPrayerPack = async () => {
+    if (!coords) {
+      setOfflineMessage('Muat lokasi sebelum menyimpan jadwal sholat.');
+      return;
+    }
+
+    setOfflineBusy(true);
+    setOfflineProgress(0);
+    try {
+      const overview = await buildPrayerOfflinePack({
+        ...coords,
+        days: 30,
+        method,
+        madhab,
+        onProgress: (event) => {
+          setOfflineMessage(event.label);
+          setOfflineProgress(event.value ?? 0);
+        },
+      });
+      setPrayerOffline(overview);
+      setOfflineMessage(`${overview.days} hari jadwal sholat tersimpan.`);
+      setOfflineProgress(100);
+    } catch (error) {
+      setOfflineMessage(error?.message ?? 'Jadwal sholat belum bisa disimpan.');
+    } finally {
+      setOfflineBusy(false);
+    }
+  };
+
+  const clearPrayerPack = async () => {
+    if (!coords) return;
+
+    setOfflineBusy(true);
+    try {
+      const overview = await clearPrayerOfflinePack({ ...coords, method, madhab });
+      setPrayerOffline(overview);
+      setOfflineMessage('Jadwal sholat offline dihapus.');
+      setOfflineProgress(0);
+    } catch (error) {
+      setOfflineMessage(error?.message ?? 'Jadwal sholat offline belum bisa dihapus.');
+    } finally {
+      setOfflineBusy(false);
+    }
+  };
+
+  const useOfflineToday = async () => {
+    if (!coords) return;
+
+    try {
+      const offlinePrayers = await getOfflinePrayerForDate({ ...coords, method, madhab, date: today() });
+      if (!offlinePrayers) {
+        setOfflineMessage('Jadwal offline hari ini belum tersimpan.');
+        return;
+      }
+      setPrayers(offlinePrayers);
+      setOfflineMessage('Jadwal hari ini dimuat dari data offline.');
+    } catch (error) {
+      setOfflineMessage(error?.message ?? 'Jadwal offline belum bisa dimuat.');
+    }
+  };
+
+  useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
+
+  useEffect(() => {
+    if (!preferencesReady || !reminderEnabled || !prayers || !notificationsSupported()) return;
+    syncPrayerReminders({ silent: true });
+  }, [adjustments, preferencesReady, prayers, reminderEnabled, reminderLeadMinutes, reminderPrayers]);
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      readPreference(preferenceKeys.prayerMethod, 'kemenag'),
+      readPreference(preferenceKeys.prayerMadhab, 'shafi'),
+      readPreference(preferenceKeys.prayerAdjustments, defaultAdjustments),
+      readPreference(preferenceKeys.prayerReminderEnabled, false),
+      readPreference(preferenceKeys.prayerReminderLeadMinutes, 10),
+      readPreference(preferenceKeys.prayerReminderPrayers, defaultReminderPrayers),
+      readPreference(preferenceKeys.prayerReminderIds, []),
+    ]).then(([savedMethod, savedMadhab, savedAdjustments, savedReminderEnabled, savedLeadMinutes, savedReminderPrayers, savedNotificationIds]) => {
+      if (!mounted) return;
+      if (methods.some(([key]) => key === savedMethod)) {
+        setMethod(savedMethod);
+      }
+      if (madhabs.some(([key]) => key === savedMadhab)) {
+        setMadhab(savedMadhab);
+      }
+      setAdjustments({
+        ...defaultAdjustments,
+        ...(savedAdjustments && typeof savedAdjustments === 'object' ? savedAdjustments : {}),
+      });
+      setReminderEnabled(Boolean(savedReminderEnabled));
+      if (reminderLeadOptions.includes(savedLeadMinutes)) {
+        setReminderLeadMinutes(savedLeadMinutes);
+      }
+      if (Array.isArray(savedReminderPrayers) && savedReminderPrayers.some((key) => prayerLabels[key])) {
+        setReminderPrayers(savedReminderPrayers.filter((key) => prayerLabels[key]));
+      }
+      if (Array.isArray(savedNotificationIds)) {
+        setNotificationIds(savedNotificationIds);
+      }
+      setPreferencesReady(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (view === 'settings') {
+    return (
+      <Screen
+        title="Pengaturan Sholat"
+        subtitle="Atur metode jadwal, koreksi waktu, pengingat, dan jadwal offline."
+        refreshing={loading}
+        onRefresh={refreshAll}
+        actions={<IconActionButton Icon={ArrowLeft} label="Kembali ke jadwal sholat" onPress={() => setView('main')} />}
+      >
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+
+        <Card>
+          <CardTitle meta="Metode">Metode Jadwal</CardTitle>
+          <Text style={styles.settingsLabel}>Metode Perhitungan</Text>
+          <View style={styles.methodGrid}>
+            {methods.map(([key, label]) => (
+              <Pressable
+                key={key}
+                onPress={() => selectMethod(key)}
+                style={[styles.methodButton, method === key ? styles.methodButtonActive : null]}
+              >
+                <Text style={[styles.methodText, method === key ? styles.methodTextActive : null]}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.settingsLabel}>Mazhab Ashar</Text>
+          <View style={styles.methodGrid}>
+            {madhabs.map(([key, label]) => (
+              <Pressable
+                key={key}
+                onPress={() => selectMadhab(key)}
+                style={[styles.methodButton, madhab === key ? styles.methodButtonActive : null]}
+              >
+                <Text style={[styles.methodText, madhab === key ? styles.methodTextActive : null]}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Card>
+
+        <Card>
+          <CardTitle meta="Menit">Koreksi Manual</CardTitle>
+          <Text style={styles.statsText}>Sesuaikan jadwal jika masjid setempat memakai koreksi waktu tertentu.</Text>
+          {scheduleRows.map(([key, label]) => (
+            <View key={key} style={styles.correctionRow}>
+              <Text style={styles.prayerLabel}>{label}</Text>
+              <View style={styles.correctionButtons}>
+                <Pressable onPress={() => adjustPrayer(key, -1)} style={styles.correctionButton}>
+                  <Text style={styles.correctionText}>-1</Text>
+                </Pressable>
+                <Text style={styles.correctionValue}>
+                  {(adjustments[key] ?? 0) > 0 ? '+' : ''}
+                  {adjustments[key] ?? 0}
+                </Text>
+                <Pressable onPress={() => adjustPrayer(key, 1)} style={styles.correctionButton}>
+                  <Text style={styles.correctionText}>+1</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+          <Pressable onPress={resetAdjustments} style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>Reset koreksi</Text>
+          </Pressable>
+        </Card>
+
+        <Card>
+          <CardTitle meta={notificationsSupported() ? `${notificationIds.length} aktif` : 'Aplikasi mobile'}>
+            Pengingat Adzan
+          </CardTitle>
+          <View style={styles.reminderHeader}>
+            <View>
+              <Text style={styles.prayerLabel}>Notifikasi Lokal</Text>
+              <Text style={styles.originalTime}>{reminderEnabled ? 'Aktif' : 'Nonaktif'}</Text>
+            </View>
+            <Pressable
+              onPress={toggleReminder}
+              style={[styles.toggleButton, reminderEnabled ? styles.toggleButtonActive : null]}
+            >
+              <Text style={[styles.toggleText, reminderEnabled ? styles.methodTextActive : null]}>
+                {reminderEnabled ? 'Aktif' : 'Mati'}
+              </Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.settingsLabel}>Jeda Pengingat</Text>
+          <View style={styles.methodGrid}>
+            {reminderLeadOptions.map((minutes) => (
+              <Pressable
+                key={minutes}
+                onPress={() => selectReminderLead(minutes)}
+                style={[styles.methodButton, reminderLeadMinutes === minutes ? styles.methodButtonActive : null]}
+              >
+                <Text style={[styles.methodText, reminderLeadMinutes === minutes ? styles.methodTextActive : null]}>
+                  {minutes ? `${minutes} menit` : 'Saat waktu masuk'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.settingsLabel}>Waktu Sholat</Text>
+          <View style={styles.methodGrid}>
+            {defaultReminderPrayers.map((key) => {
+              const selected = reminderPrayers.includes(key);
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => toggleReminderPrayer(key)}
+                  style={[styles.methodButton, selected ? styles.methodButtonActive : null]}
+                >
+                  <Text style={[styles.methodText, selected ? styles.methodTextActive : null]}>{prayerLabels[key]}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Pressable onPress={() => syncPrayerReminders()} style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>Atur ulang pengingat</Text>
+          </Pressable>
+        </Card>
+
+        <Card>
+          <CardTitle meta={prayerOffline?.supported === false ? 'Aplikasi mobile' : `${prayerOffline?.days ?? 0} hari`}>
+            Jadwal Offline 30 Hari
+          </CardTitle>
+          <Text style={styles.statsText}>
+            Simpan jadwal 30 hari untuk lokasi, metode hitung, dan mazhab Ashar saat ini.
+          </Text>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${Math.min(offlineProgress, 100)}%` }]} />
+          </View>
+          <Text style={styles.originalTime}>{offlineMessage}</Text>
+          <View style={styles.offlineActions}>
+            <Pressable
+              disabled={offlineBusy || prayerOffline?.supported === false}
+              onPress={downloadPrayerPack}
+              style={[styles.offlineButton, styles.offlinePrimaryButton, offlineBusy || prayerOffline?.supported === false ? styles.disabled : null]}
+            >
+              {offlineBusy ? <ActivityIndicator color="#ffffff" size="small" /> : <Text style={styles.offlinePrimaryText}>Simpan 30 hari</Text>}
+            </Pressable>
+            <Pressable
+              disabled={offlineBusy || prayerOffline?.supported === false}
+              onPress={useOfflineToday}
+              style={[styles.offlineButton, offlineBusy || prayerOffline?.supported === false ? styles.disabled : null]}
+            >
+              <Text style={styles.secondaryButtonText}>Pakai hari ini</Text>
+            </Pressable>
+            <Pressable
+              disabled={offlineBusy || prayerOffline?.supported === false}
+              onPress={clearPrayerPack}
+              style={[styles.offlineButton, offlineBusy || prayerOffline?.supported === false ? styles.disabled : null]}
+            >
+              <Text style={styles.secondaryButtonText}>Hapus</Text>
+            </Pressable>
+          </View>
+        </Card>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen
+      title="Jadwal Sholat"
+      subtitle="Lihat jadwal sholat hari ini dan catat progres ibadah."
+      refreshing={loading}
+      onRefresh={refreshAll}
+      actions={
+        <>
+          <IconActionButton Icon={RefreshCw} label="Muat ulang jadwal" onPress={refreshAll} disabled={loading} />
+          <IconActionButton Icon={Settings} label="Buka pengaturan sholat" onPress={() => setView('settings')} />
+        </>
+      }
+    >
+      {message ? <Text style={styles.message}>{message}</Text> : null}
+
+      {!coords && !loading ? (
+        <Card>
+          <CardTitle meta="Koordinat GPS">Lokasi Manual</CardTitle>
+          <Text style={styles.statsText}>
+            Aktifkan GPS atau masukkan koordinat lokasimu untuk memuat jadwal sholat.
+          </Text>
+          <View style={styles.manualLocRow}>
+            <TextInput
+              keyboardType="decimal-pad"
+              onChangeText={setManualLatInput}
+              placeholder="-6.2088 (Lintang)"
+              placeholderTextColor={colors.muted}
+              returnKeyType="next"
+              style={styles.manualLocInput}
+              value={manualLatInput}
+            />
+            <TextInput
+              keyboardType="decimal-pad"
+              onChangeText={setManualLngInput}
+              placeholder="106.8456 (Bujur)"
+              placeholderTextColor={colors.muted}
+              returnKeyType="done"
+              style={styles.manualLocInput}
+              value={manualLngInput}
+            />
+          </View>
+          <Pressable
+            disabled={!manualLatInput || !manualLngInput}
+            onPress={applyManualLocation}
+            style={[styles.button, !manualLatInput || !manualLngInput ? styles.disabled : null]}
+          >
+            <Text style={styles.buttonText}>Terapkan Lokasi</Text>
+          </Pressable>
+        </Card>
+      ) : null}
+
+      <Card>
+        <CardTitle
+          meta={`${methods.find(([key]) => key === method)?.[1] ?? method} · ${madhabs.find(([key]) => key === madhab)?.[1] ?? madhab}`}
+        >
+          {`Hari ini · ${today()}`}
+        </CardTitle>
+        {loading && !prayers ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : (
+          scheduleRows.map(([key, label]) => {
+            const adjustment = adjustments[key] ?? 0;
+            return (
+              <View key={key} style={styles.prayerRow}>
+                <View>
+                  <Text style={styles.prayerLabel}>{label}</Text>
+                  {adjustment ? <Text style={styles.originalTime}>Dasar {prayers?.[key] ?? '--:--'}</Text> : null}
+                </View>
+                <View style={styles.timeBlock}>
+                  <Text style={styles.prayerTime}>{adjustedPrayerTime(key)}</Text>
+                  {adjustment ? (
+                    <Text style={styles.adjustmentText}>
+                      {adjustment > 0 ? '+' : ''}
+                      {adjustment} min
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })
+        )}
+      </Card>
+
+      {user ? (
+        <Card>
+          <CardTitle meta={dailyLog?.date ?? today()}>Log Sholat</CardTitle>
+          {stats ? (
+            <Text style={styles.statsText}>
+              {stats.total_days || 0} hari tercatat · {Math.round(stats.berjamaah_pct || 0)}% jamaah
+            </Text>
+          ) : null}
+          {logRows.map(([prayer, label]) => {
+            const selected = dailyLog?.prayers?.[prayer]?.status;
+            return (
+              <View key={prayer} style={styles.logBlock}>
+                <View style={styles.logHeader}>
+                  <Text style={styles.prayerLabel}>{label}</Text>
+                  <Text style={styles.currentStatus}>{selected || 'belum dicatat'}</Text>
+                </View>
+                <View style={styles.statusGrid}>
+                  {statuses.map(([status, labelText]) => (
+                    <Pressable
+                      disabled={savingPrayer === `${prayer}:${status}`}
+                      key={status}
+                      onPress={() => setPrayerStatus(prayer, status)}
+                      style={[styles.statusButton, selected === status ? styles.statusButtonActive : null]}
+                    >
+                      <Text style={[styles.statusText, selected === status ? styles.statusTextActive : null]}>
+                        {savingPrayer === `${prayer}:${status}` ? '...' : labelText}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            );
+          })}
+        </Card>
+      ) : (
+        <Card>
+          <CardTitle meta="Masuk akun">Log Sholat</CardTitle>
+          <Text style={styles.statsText}>Buka Profil untuk masuk dan mencatat status sholat harian.</Text>
+        </Card>
+      )}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  message: {
+    backgroundColor: '#fffbeb',
+    borderColor: '#fde68a',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    color: colors.accent,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  prayerRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.faint,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+  },
+  prayerLabel: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  prayerTime: {
+    color: colors.primary,
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  timeBlock: {
+    alignItems: 'flex-end',
+  },
+  originalTime: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  adjustmentText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+  statsText: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: spacing.md,
+  },
+  settingsLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '900',
+    marginBottom: spacing.sm,
+    marginTop: spacing.md,
+    textTransform: 'uppercase',
+  },
+  methodGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  methodButton: {
+    alignItems: 'center',
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    flexBasis: '48%',
+    minHeight: 34,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  methodButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  methodText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  advancedToggle: {
+    marginBottom: spacing.sm,
+  },
+  methodTextActive: {
+    color: '#ffffff',
+  },
+  logBlock: {
+    borderTopColor: colors.faint,
+    borderTopWidth: 1,
+    paddingVertical: spacing.md,
+  },
+  logHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  currentStatus: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  statusGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  statusButton: {
+    alignItems: 'center',
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    flexBasis: '48%',
+    minHeight: 34,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  statusButtonActive: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.primary,
+  },
+  statusText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  statusTextActive: {
+    color: colors.primaryDark,
+  },
+  correctionRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.faint,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  correctionButtons: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  correctionButton: {
+    alignItems: 'center',
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    width: 44,
+  },
+  correctionText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  correctionValue: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '900',
+    minWidth: 28,
+    textAlign: 'center',
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: spacing.md,
+    minHeight: 44,
+  },
+  secondaryButtonText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  disabled: {
+    opacity: 0.55,
+  },
+  offlineActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  offlineButton: {
+    alignItems: 'center',
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexGrow: 1,
+    minHeight: 42,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  offlinePrimaryButton: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  offlinePrimaryText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  progressTrack: {
+    backgroundColor: colors.faint,
+    borderRadius: radius.sm,
+    height: 7,
+    marginBottom: spacing.sm,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    backgroundColor: colors.primary,
+    height: '100%',
+  },
+  reminderHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  toggleButton: {
+    alignItems: 'center',
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 38,
+    minWidth: 70,
+  },
+  toggleButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  toggleText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  button: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    minHeight: 48,
+    justifyContent: 'center',
+    marginTop: spacing.md,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  manualLocRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  manualLocInput: {
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    color: colors.ink,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+  },
+});

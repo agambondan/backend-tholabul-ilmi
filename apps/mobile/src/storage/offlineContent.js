@@ -1,0 +1,45 @@
+const unsupportedOverview = {
+  supported: false,
+  bookmarkSnapshots: 0,
+  dailyItems: 0,
+  quranSurahs: 0,
+  quranAyahs: 0,
+  hadiths: 0,
+  prayerDays: 0,
+  savedAt: null,
+  error: 'Fitur offline tersedia di aplikasi mobile.',
+};
+
+export const getOfflineOverview = async () => unsupportedOverview;
+
+export const buildOfflinePack = async () => {
+  throw new Error(unsupportedOverview.error);
+};
+
+export const clearOfflinePack = async () => unsupportedOverview;
+
+export const buildDailyOfflinePack = async () => {
+  throw new Error(unsupportedOverview.error);
+};
+
+export const saveBookmarkSnapshot = async () => {
+  throw new Error(unsupportedOverview.error);
+};
+
+export const getPrayerOfflineOverview = async () => ({
+  days: 0,
+  error: unsupportedOverview.error,
+  locationKey: null,
+  savedAt: null,
+  supported: false,
+});
+
+export const buildPrayerOfflinePack = async () => {
+  throw new Error(unsupportedOverview.error);
+};
+
+export const clearPrayerOfflinePack = async () => getPrayerOfflineOverview();
+
+export const getOfflinePrayerForDate = async () => null;
+
+export const getOfflineItems = async () => [];
