@@ -50,3 +50,7 @@ services/api/update_sources
 .firecrawl/
 .claude/
 .vercel/
+
+# test artifacts
+output/
+test-results/
