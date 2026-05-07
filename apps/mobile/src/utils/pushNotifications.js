@@ -91,6 +91,20 @@ const resolveDeviceId = () => {
   return [Platform.OS, host].filter(Boolean).join(':');
 };
 
+const resolveExpoProjectId = () => {
+  try {
+    const Constants = require('expo-constants').default;
+    return (
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      Constants?.easConfig?.projectId ??
+      Constants?.manifest2?.extra?.eas?.projectId ??
+      ''
+    );
+  } catch {
+    return '';
+  }
+};
+
 export const getPushNotificationRegistration = async () => {
   const availability = getPushNotificationAvailability();
   if (!availability.supported) {
@@ -132,29 +146,37 @@ export const getPushNotificationRegistration = async () => {
   }
 
   let token = '';
-  let provider = 'expo';
+  let tokenError = null;
   try {
-    const expoToken = await nativeNotifications.getExpoPushTokenAsync();
+    const projectId = resolveExpoProjectId();
+    const expoToken = projectId
+      ? await nativeNotifications.getExpoPushTokenAsync({ projectId })
+      : await nativeNotifications.getExpoPushTokenAsync();
     token = expoToken?.data ?? '';
-  } catch {
+  } catch (error) {
+    tokenError = error;
     token = '';
   }
 
   if (!token) {
-    try {
-      const deviceToken = await nativeNotifications.getDevicePushTokenAsync();
-      token = `${deviceToken?.data ?? ''}`;
-      provider = Platform.OS;
-    } catch {
-      token = '';
-    }
+    return {
+      deviceId: resolveDeviceId(),
+      granted: true,
+      message:
+        tokenError?.message ??
+        'Expo push token belum tersedia. Pastikan development build memakai konfigurasi Expo/EAS push.',
+      platform: Platform.OS,
+      provider: 'expo',
+      reason: 'token_unavailable',
+      token: '',
+    };
   }
 
   return {
     deviceId: resolveDeviceId(),
     granted: true,
     platform: Platform.OS,
-    provider,
+    provider: 'expo',
     reason: token ? 'ready' : 'token_unavailable',
     token,
   };

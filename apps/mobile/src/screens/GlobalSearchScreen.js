@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { ArrowLeft, Book, BookOpen, Languages, Layers, Search } from 'lucide-react-native';
+import { ArrowLeft, Book, BookOpen, Languages, Layers, Search, UserRound } from 'lucide-react-native';
 import { searchGlobal } from '../api/client';
-import { searchDictionary } from '../api/explore';
 import { IconActionButton, PaperSearchInput } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { allFeatures } from '../data/mobileFeatures';
@@ -59,8 +58,7 @@ const ResultRow = ({ Icon, meta, onPress, subtitle, title }) => (
 
 export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
   const [query, setQuery] = useState(initialQuery);
-  const [remoteResults, setRemoteResults] = useState({ ayahs: [], hadiths: [], total: 0 });
-  const [dictionaryResults, setDictionaryResults] = useState([]);
+  const [remoteResults, setRemoteResults] = useState({ ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -70,7 +68,8 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
   const totalResults =
     remoteResults.ayahs.length +
     remoteResults.hadiths.length +
-    dictionaryResults.length +
+    remoteResults.dictionaries.length +
+    remoteResults.perawis.length +
     featureResults.length;
 
   useEffect(() => {
@@ -79,8 +78,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
 
   useEffect(() => {
     if (!hasQuery) {
-      setRemoteResults({ ayahs: [], hadiths: [], total: 0 });
-      setDictionaryResults([]);
+      setRemoteResults({ ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 });
       setLoading(false);
       setMessage('');
       return undefined;
@@ -91,24 +89,18 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
     setMessage('');
 
     const timer = setTimeout(async () => {
-      const [globalResult, dictionaryResult] = await Promise.allSettled([
-        searchGlobal(trimmedQuery, { limit: 10 }),
-        searchDictionary(trimmedQuery),
-      ]);
+      const globalResult = await Promise.resolve(searchGlobal(trimmedQuery, { limit: 16 })).then(
+        (value) => ({ status: 'fulfilled', value }),
+        (reason) => ({ status: 'rejected', reason }),
+      );
 
       if (cancelled) return;
 
       if (globalResult.status === 'fulfilled') {
         setRemoteResults(globalResult.value);
       } else {
-        setRemoteResults({ ayahs: [], hadiths: [], total: 0 });
+        setRemoteResults({ ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 });
         setMessage(globalResult.reason?.message ?? 'Pencarian server belum bisa dimuat.');
-      }
-
-      if (dictionaryResult.status === 'fulfilled') {
-        setDictionaryResults(dictionaryResult.value.slice(0, 4));
-      } else {
-        setDictionaryResults([]);
       }
 
       setLoading(false);
@@ -199,13 +191,26 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
         ))}
       </ResultSection>
 
-      <ResultSection count={dictionaryResults.length} title="Kamus">
-        {dictionaryResults.map((item) => (
+      <ResultSection count={remoteResults.dictionaries.length} title="Kamus">
+        {remoteResults.dictionaries.map((item) => (
           <ResultRow
             Icon={Languages}
             key={`dictionary-${item.id}`}
-            meta="Kamus"
+            meta={item.category || 'Kamus'}
             onPress={() => onOpenTab('belajar', { featureKey: 'kamus', focusSearch: true })}
+            subtitle={item.body}
+            title={item.title}
+          />
+        ))}
+      </ResultSection>
+
+      <ResultSection count={remoteResults.perawis.length} title="Perawi">
+        {remoteResults.perawis.map((item) => (
+          <ResultRow
+            Icon={UserRound}
+            key={`perawi-${item.id}`}
+            meta={item.status || 'Perawi'}
+            onPress={() => onOpenTab('belajar', { featureKey: 'perawi' })}
             subtitle={item.body}
             title={item.title}
           />

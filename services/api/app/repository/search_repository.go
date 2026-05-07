@@ -8,6 +8,8 @@ import (
 type SearchRepository interface {
 	SearchAyah(query string, limit int) ([]model.Ayah, error)
 	SearchHadith(query string, limit int) ([]model.Hadith, error)
+	SearchDictionary(query string, limit int) ([]model.IslamicTerm, error)
+	SearchPerawi(query string, limit int) ([]model.Perawi, error)
 }
 
 type searchRepo struct {
@@ -50,4 +52,27 @@ func (r *searchRepo) SearchHadith(query string, limit int) ([]model.Hadith, erro
 		Limit(limit).
 		Find(&hadiths).Error
 	return hadiths, err
+}
+
+func (r *searchRepo) SearchDictionary(query string, limit int) ([]model.IslamicTerm, error) {
+	var terms []model.IslamicTerm
+	err := r.db.
+		Preload("Translation").
+		Where("term ILIKE ? OR definition ILIKE ? OR example ILIKE ? OR source ILIKE ?",
+			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%").
+		Order("term ASC").
+		Limit(limit).
+		Find(&terms).Error
+	return terms, err
+}
+
+func (r *searchRepo) SearchPerawi(query string, limit int) ([]model.Perawi, error) {
+	var perawis []model.Perawi
+	err := r.db.
+		Where("nama_latin ILIKE ? OR nama_arab ILIKE ? OR nama_lengkap ILIKE ? OR kunyah ILIKE ? OR laqab ILIKE ? OR nisbah ILIKE ?",
+			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%").
+		Order("nama_latin ASC").
+		Limit(limit).
+		Find(&perawis).Error
+	return perawis, err
 }

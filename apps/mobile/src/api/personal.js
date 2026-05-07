@@ -115,6 +115,21 @@ export const registerPushToken = async ({ deviceId = '', platform, provider = 'e
     { auth: true },
   );
 
+export const getPushTokenStatus = async () => {
+  const payload = await requestJson('/api/v1/notifications/push-tokens', { auth: true });
+  const data = payload?.data ?? payload;
+  return {
+    activeCount: Number(data?.active_count ?? data?.activeCount ?? 0),
+    hasActive: Boolean(data?.has_active ?? data?.hasActive),
+    items: pickItems(data),
+  };
+};
+
+export const sendPushTest = async () => {
+  const payload = await postJson('/api/v1/notifications/push-test', {}, { auth: true });
+  return payload?.data ?? payload;
+};
+
 export const getNotificationInbox = async () => {
   const payload = await requestJson('/api/v1/notifications/inbox', { auth: true });
   return {

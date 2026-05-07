@@ -53,6 +53,27 @@ type PushTokenRegisterRequest struct {
 	DeviceID string `json:"device_id"`
 }
 
+type PushTokenStatus struct {
+	DeviceID    string    `json:"device_id,omitempty"`
+	ID          *int      `json:"id,omitempty"`
+	IsActive    bool      `json:"is_active"`
+	LastSeenAt  time.Time `json:"last_seen_at"`
+	Platform    string    `json:"platform"`
+	Provider    string    `json:"provider"`
+	TokenSuffix string    `json:"token_suffix,omitempty"`
+}
+
+type PushTokenStatusResponse struct {
+	Items       []PushTokenStatus `json:"items"`
+	HasActive   bool              `json:"has_active"`
+	ActiveCount int               `json:"active_count"`
+}
+
+type PushTestResponse struct {
+	Message string `json:"message"`
+	Sent    int    `json:"sent"`
+}
+
 // UserNotification — persisted inbox message per user
 type UserNotification struct {
 	BaseUUID

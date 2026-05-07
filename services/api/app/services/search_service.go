@@ -6,9 +6,11 @@ import (
 )
 
 type SearchResult struct {
-	Ayahs   []model.Ayah   `json:"ayahs"`
-	Hadiths []model.Hadith `json:"hadiths"`
-	Total   int            `json:"total"`
+	Ayahs        []model.Ayah        `json:"ayahs"`
+	Hadiths      []model.Hadith      `json:"hadiths"`
+	Dictionaries []model.IslamicTerm `json:"dictionaries"`
+	Perawis      []model.Perawi      `json:"perawis"`
+	Total        int                 `json:"total"`
 }
 
 type SearchService interface {
@@ -29,8 +31,10 @@ func (s *searchService) Search(query, searchType string, limit int) (*SearchResu
 	}
 
 	result := &SearchResult{
-		Ayahs:   []model.Ayah{},
-		Hadiths: []model.Hadith{},
+		Ayahs:        []model.Ayah{},
+		Hadiths:      []model.Hadith{},
+		Dictionaries: []model.IslamicTerm{},
+		Perawis:      []model.Perawi{},
 	}
 
 	switch searchType {
@@ -46,23 +50,45 @@ func (s *searchService) Search(query, searchType string, limit int) (*SearchResu
 			return nil, err
 		}
 		result.Hadiths = hadiths
-	default:
-		half := limit / 2
-		if half < 1 {
-			half = 1
-		}
-		ayahs, err := s.repo.SearchAyah(query, half)
+	case "dictionary", "kamus":
+		terms, err := s.repo.SearchDictionary(query, limit)
 		if err != nil {
 			return nil, err
 		}
-		hadiths, err := s.repo.SearchHadith(query, half)
+		result.Dictionaries = terms
+	case "perawi", "rawi", "rijal":
+		perawis, err := s.repo.SearchPerawi(query, limit)
+		if err != nil {
+			return nil, err
+		}
+		result.Perawis = perawis
+	default:
+		each := limit / 4
+		if each < 2 {
+			each = 2
+		}
+		ayahs, err := s.repo.SearchAyah(query, each)
+		if err != nil {
+			return nil, err
+		}
+		hadiths, err := s.repo.SearchHadith(query, each)
+		if err != nil {
+			return nil, err
+		}
+		terms, err := s.repo.SearchDictionary(query, each)
+		if err != nil {
+			return nil, err
+		}
+		perawis, err := s.repo.SearchPerawi(query, each)
 		if err != nil {
 			return nil, err
 		}
 		result.Ayahs = ayahs
 		result.Hadiths = hadiths
+		result.Dictionaries = terms
+		result.Perawis = perawis
 	}
 
-	result.Total = len(result.Ayahs) + len(result.Hadiths)
+	result.Total = len(result.Ayahs) + len(result.Hadiths) + len(result.Dictionaries) + len(result.Perawis)
 	return result, nil
 }

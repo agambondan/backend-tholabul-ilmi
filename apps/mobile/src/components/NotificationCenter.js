@@ -5,10 +5,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   getNotificationInbox,
   getNotificationSettings,
+  getPushTokenStatus,
   markAllNotificationsRead,
   markNotificationRead,
   registerPushToken,
   saveNotificationSettings,
+  sendPushTest,
 } from '../api/personal';
 import { useSession } from '../context/SessionContext';
 import { colors, radius, spacing } from '../theme';
@@ -62,9 +64,11 @@ export function NotificationCenter() {
   const [saving, setSaving] = useState(false);
   const pushAvailability = getPushNotificationAvailability();
   const [pushState, setPushState] = useState({
+    activeCount: 0,
     loading: false,
     message: pushAvailability.message,
     status: 'idle',
+    testLoading: false,
   });
   const [unreadCount, setUnreadCount] = useState(0);
   const [pickerState, setPickerState] = useState({ open: false, type: null, value: toTimeDate('06:00') });
@@ -75,10 +79,25 @@ export function NotificationCenter() {
     setLoading(true);
     setMessage('');
     try {
-      const [nextSettings, nextInbox] = await Promise.all([getNotificationSettings(), getNotificationInbox()]);
+      const [nextSettings, nextInbox, nextPush] = await Promise.all([
+        getNotificationSettings(),
+        getNotificationInbox(),
+        getPushTokenStatus(),
+      ]);
       setSettings(normalizeSettings(nextSettings));
       setInbox(nextInbox.items);
       setUnreadCount(nextInbox.unreadCount);
+      if (nextPush.hasActive) {
+        setPushState((current) => ({
+          ...current,
+          activeCount: nextPush.activeCount,
+          message:
+            nextPush.activeCount > 1
+              ? `${nextPush.activeCount} perangkat aktif untuk push native.`
+              : 'Push native aktif untuk perangkat ini.',
+          status: 'enabled',
+        }));
+      }
     } catch (error) {
       setMessage(error?.message ?? 'Notifikasi belum bisa dimuat.');
     } finally {
@@ -141,36 +160,72 @@ export function NotificationCenter() {
   const enablePush = async () => {
     if (!session?.token) return;
 
-    setPushState({ loading: true, message: 'Meminta izin notifikasi...', status: 'loading' });
+    setPushState((current) => ({ ...current, loading: true, message: 'Meminta izin notifikasi...', status: 'loading' }));
     try {
       const registration = await getPushNotificationRegistration();
       if (!registration.granted) {
         const nextMessage = registration.message ?? 'Izin notifikasi belum diberikan dari sistem.';
-        setPushState({ loading: false, message: nextMessage, status: registration.reason ?? 'denied' });
+        setPushState((current) => ({
+          ...current,
+          loading: false,
+          message: nextMessage,
+          status: registration.reason ?? 'denied',
+        }));
         return;
       }
 
       if (!registration.token) {
-        setPushState({
+        setPushState((current) => ({
+          ...current,
           loading: false,
-          message: 'Token push belum tersedia. Pastikan app berjalan di device native.',
+          message: registration.message ?? 'Token push belum tersedia. Pastikan app berjalan di device native.',
           status: 'token_unavailable',
-        });
+        }));
         return;
       }
 
       await registerPushToken(registration);
-      setPushState({
+      const nextPush = await getPushTokenStatus();
+      setPushState((current) => ({
+        ...current,
+        activeCount: nextPush.activeCount || 1,
         loading: false,
         message: 'Push native aktif untuk perangkat ini.',
         status: 'enabled',
-      });
+      }));
     } catch (error) {
-      setPushState({
+      setPushState((current) => ({
+        ...current,
         loading: false,
         message: error?.message ?? 'Push native belum bisa diaktifkan.',
         status: 'error',
-      });
+      }));
+    }
+  };
+
+  const testPush = async () => {
+    if (!session?.token) return;
+
+    setPushState((current) => ({
+      ...current,
+      message: 'Mengirim test push ke perangkat...',
+      testLoading: true,
+    }));
+    try {
+      const result = await sendPushTest();
+      setPushState((current) => ({
+        ...current,
+        message: result?.sent ? `Test push terkirim ke ${result.sent} perangkat.` : 'Test push terkirim.',
+        status: 'enabled',
+        testLoading: false,
+      }));
+      load();
+    } catch (error) {
+      setPushState((current) => ({
+        ...current,
+        message: error?.message ?? 'Test push belum bisa dikirim.',
+        testLoading: false,
+      }));
     }
   };
 
@@ -251,6 +306,23 @@ export function NotificationCenter() {
               <Text style={styles.pushButtonText}>{pushState.status === 'enabled' ? 'Aktif' : 'Aktifkan'}</Text>
             )}
           </Pressable>
+        </View>
+        <View style={styles.pushActions}>
+          <Pressable
+            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+            disabled={pushState.testLoading || pushState.status !== 'enabled'}
+            onPress={testPush}
+            style={[styles.secondaryButtonCompact, (pushState.testLoading || pushState.status !== 'enabled') ? styles.disabled : null]}
+          >
+            {pushState.testLoading ? (
+              <ActivityIndicator color={colors.primary} size="small" />
+            ) : (
+              <Text style={styles.secondaryText}>Kirim test push</Text>
+            )}
+          </Pressable>
+          <Text style={styles.pushHint}>
+            {pushState.activeCount ? `${pushState.activeCount} token aktif tersimpan di backend.` : 'Aktifkan dulu untuk menyimpan token perangkat.'}
+          </Text>
         </View>
         {settings.map((item) => (
           <View key={item.type} style={styles.settingRow}>
@@ -466,6 +538,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 34,
   },
+  pushActions: {
+    marginBottom: spacing.sm,
+  },
+  pushHint: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 16,
+    marginTop: spacing.xs,
+  },
   secondaryButton: {
     alignItems: 'center',
     borderColor: colors.faint,
@@ -474,6 +556,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: spacing.md,
     minHeight: 42,
+  },
+  secondaryButtonCompact: {
+    alignItems: 'center',
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 38,
   },
   secondaryText: {
     color: colors.primary,

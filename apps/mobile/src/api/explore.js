@@ -99,7 +99,7 @@ export const getBookmarkItems = async () => {
 
 export const searchDictionary = async (query) => {
   if (!query.trim()) return [];
-  const payload = await requestJson(`/api/v1/kamus?q=${encodeURIComponent(query.trim())}`);
+  const payload = await requestJson(`/api/v1/dictionary?q=${encodeURIComponent(query.trim())}`);
   return pickItems(payload).map(normalizeExploreItem);
 };
 

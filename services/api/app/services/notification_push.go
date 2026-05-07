@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/agambondan/islamic-explorer/app/model"
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 )
 
@@ -44,6 +45,10 @@ type expoPushResponse struct {
 }
 
 func (s *notificationService) sendPushReminder(setting model.NotificationSetting, content reminderContent) (int, error) {
+	return s.sendPushToUser(setting.UserID, setting.Type, content)
+}
+
+func (s *notificationService) sendPushToUser(userID uuid.UUID, notificationType model.NotificationType, content reminderContent) (int, error) {
 	if strings.EqualFold(viper.GetString("EXPO_PUSH_ENABLED"), "false") {
 		return 0, nil
 	}
@@ -51,7 +56,7 @@ func (s *notificationService) sendPushReminder(setting model.NotificationSetting
 		return 0, nil
 	}
 
-	tokens, err := s.repo.FindActivePushTokens(setting.UserID)
+	tokens, err := s.repo.FindActivePushTokens(userID)
 	if err != nil {
 		return 0, err
 	}
@@ -59,10 +64,7 @@ func (s *notificationService) sendPushReminder(setting model.NotificationSetting
 	messages := make([]expoPushMessage, 0, len(tokens))
 	tokenIDs := make([]int, 0, len(tokens))
 	for _, token := range tokens {
-		if !strings.EqualFold(token.Provider, "expo") {
-			continue
-		}
-		if !strings.HasPrefix(token.Token, "ExponentPushToken[") && !strings.HasPrefix(token.Token, "ExpoPushToken[") {
+		if !isDeliverableExpoPushToken(token) {
 			continue
 		}
 
@@ -79,7 +81,7 @@ func (s *notificationService) sendPushReminder(setting model.NotificationSetting
 			ChannelID: viper.GetString("EXPO_PUSH_CHANNEL_ID"),
 			Data: map[string]interface{}{
 				"type":              "daily_reminder",
-				"notification_type": setting.Type,
+				"notification_type": notificationType,
 			},
 		})
 	}
@@ -101,6 +103,13 @@ func (s *notificationService) sendPushReminder(setting model.NotificationSetting
 		sent += batchSent
 	}
 	return sent, nil
+}
+
+func isDeliverableExpoPushToken(token model.PushToken) bool {
+	if !token.IsActive || !strings.EqualFold(token.Provider, "expo") {
+		return false
+	}
+	return strings.HasPrefix(token.Token, "ExponentPushToken[") || strings.HasPrefix(token.Token, "ExpoPushToken[")
 }
 
 func (s *notificationService) sendExpoPushBatch(messages []expoPushMessage, tokenIDs []int) (int, error) {

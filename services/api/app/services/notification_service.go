@@ -16,8 +16,10 @@ import (
 
 type NotificationService interface {
 	FindSettings(userID uuid.UUID) ([]model.NotificationSetting, error)
+	FindPushTokenStatus(userID uuid.UUID) (model.PushTokenStatusResponse, error)
 	UpsertSettings(userID uuid.UUID, req *model.NotificationSettingsUpsertRequest) ([]model.NotificationSetting, error)
 	RegisterPushToken(userID uuid.UUID, req *model.PushTokenRegisterRequest) (model.PushToken, error)
+	SendTestPush(userID uuid.UUID) (model.PushTestResponse, error)
 	DispatchDueReminders(now time.Time) (int, error)
 	StartReminderScheduler(ctx context.Context, interval time.Duration)
 }
@@ -33,6 +35,36 @@ func NewNotificationService(repo repository.NotificationRepository, inboxRepo re
 
 func (s *notificationService) FindSettings(userID uuid.UUID) ([]model.NotificationSetting, error) {
 	return s.repo.FindByUser(userID)
+}
+
+func (s *notificationService) FindPushTokenStatus(userID uuid.UUID) (model.PushTokenStatusResponse, error) {
+	tokens, err := s.repo.FindPushTokensByUser(userID)
+	if err != nil {
+		return model.PushTokenStatusResponse{}, err
+	}
+
+	items := make([]model.PushTokenStatus, 0, len(tokens))
+	activeCount := 0
+	for _, token := range tokens {
+		if isDeliverableExpoPushToken(token) {
+			activeCount++
+		}
+		items = append(items, model.PushTokenStatus{
+			DeviceID:    token.DeviceID,
+			ID:          token.ID,
+			IsActive:    token.IsActive,
+			LastSeenAt:  token.LastSeenAt,
+			Platform:    token.Platform,
+			Provider:    token.Provider,
+			TokenSuffix: tokenSuffix(token.Token),
+		})
+	}
+
+	return model.PushTokenStatusResponse{
+		Items:       items,
+		HasActive:   activeCount > 0,
+		ActiveCount: activeCount,
+	}, nil
 }
 
 func (s *notificationService) UpsertSettings(userID uuid.UUID, req *model.NotificationSettingsUpsertRequest) ([]model.NotificationSetting, error) {
@@ -84,6 +116,31 @@ func (s *notificationService) RegisterPushToken(userID uuid.UUID, req *model.Pus
 		Provider: provider,
 		DeviceID: strings.TrimSpace(req.DeviceID),
 	})
+}
+
+func (s *notificationService) SendTestPush(userID uuid.UUID) (model.PushTestResponse, error) {
+	content := reminderContent{
+		Title:       "Tes Push Thullaabul Ilmi",
+		Description: "Push native berhasil aktif di perangkat ini.",
+		EmailHTML:   "",
+	}
+	sent, err := s.sendPushToUser(userID, model.NotificationTypeDoa, content)
+	if err != nil {
+		return model.PushTestResponse{}, err
+	}
+	if sent == 0 {
+		return model.PushTestResponse{}, fmt.Errorf("no active Expo push token found")
+	}
+	if s.inboxRepo != nil {
+		_, _ = s.inboxRepo.Create(model.UserNotification{
+			UserID: userID,
+			Title:  content.Title,
+			Body:   content.Description,
+			Type:   model.NotificationTypeDoa,
+			RefID:  "push-test",
+		})
+	}
+	return model.PushTestResponse{Message: "test push sent", Sent: sent}, nil
 }
 
 func (s *notificationService) DispatchDueReminders(now time.Time) (int, error) {
@@ -166,6 +223,13 @@ func normalizeReminderTime(value string) (string, error) {
 		return "", fmt.Errorf("time must use HH:MM format")
 	}
 	return parsed.Format("15:04"), nil
+}
+
+func tokenSuffix(token string) string {
+	if len(token) <= 10 {
+		return token
+	}
+	return token[len(token)-10:]
 }
 
 type reminderContent struct {

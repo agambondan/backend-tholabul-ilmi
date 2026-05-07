@@ -171,6 +171,8 @@ export const searchGlobal = async (query, { limit = 12, type = 'all' } = {}) => 
   return {
     ayahs: pickItems(data?.ayahs ?? data?.data?.ayahs ?? []).map(normalizeAyah),
     hadiths: pickItems(data?.hadiths ?? data?.data?.hadiths ?? []).map(normalizeHadith),
+    dictionaries: pickItems(data?.dictionaries ?? data?.dictionary ?? []).map(normalizeDictionary),
+    perawis: pickItems(data?.perawis ?? data?.perawi ?? []).map(normalizePerawi),
     total: Number(data?.total ?? data?.data?.total ?? 0),
   };
 };
@@ -312,6 +314,29 @@ export const normalizeHadith = (item) => ({
   chapterName: item.chapter?.translation?.en ?? item.chapter?.translation?.idn ?? item.chapter?.name ?? '',
   number: item.number ?? item.nomor_hadis,
   sanad: item.sanad ?? '',
+});
+
+export const normalizeDictionary = (item) => ({
+  id: item.id ?? item.term,
+  title: item.term ?? item.title ?? 'Istilah',
+  body: pickText(
+    item.definition,
+    item.translation?.text_en,
+    item.translation?.text_idn,
+    item.translation?.idn,
+    item.translation?.en,
+  ),
+  category: item.category ?? '',
+  meta: [item.category, item.origin].filter(Boolean).join(' · '),
+});
+
+export const normalizePerawi = (item) => ({
+  id: item.id ?? item.nama_latin ?? item.nama_arab,
+  title: pickText(item.nama_latin, item.nama_arab, item.nama_lengkap, 'Perawi'),
+  body: pickText(item.nama_lengkap, item.biografis, item.kunyah, item.laqab),
+  meta: [item.status, item.tabaqah].filter(Boolean).join(' · '),
+  status: item.status ?? '',
+  tabaqah: item.tabaqah ?? '',
 });
 
 export const getDailyHadith = async () => {
