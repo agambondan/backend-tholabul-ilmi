@@ -4,10 +4,9 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import {
   getHadithBooks,
   getHadithDetail,
-  getHadithsByBook,
+  getHadithPage,
   getRelatedHadiths,
   getHadithSanad,
-  getHadiths,
   getHadithTakhrij,
   normalizeHadith,
   getPerawiDetail,
@@ -21,9 +20,11 @@ import { NotesPanel } from '../components/NotesPanel';
 import { ActionPill, IconActionButton, PaperSearchInput } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { useSession } from '../context/SessionContext';
+import { getOfflineItems, getOfflineOverview } from '../storage/offlineContent';
 import { colors, radius, spacing } from '../theme';
+import { hapticError, hapticSuccess } from '../utils/haptics';
 
-const HADITH_LIST_PAGE_SIZE = 10;
+const HADITH_LIST_PAGE_SIZE = 20;
 
 const HADITH_DETAIL_TABS = [
   { key: 'text', label: 'Teks' },
@@ -38,6 +39,7 @@ const normalizeSearchText = (value) => String(value ?? '').trim().toLowerCase();
 export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   const { user } = useSession();
   const handledDeepLinkId = useRef(null);
+  const loadingMoreRef = useRef(false);
   const [books, setBooks] = useState([]);
   const [selectedBook, setSelectedBook] = useState(null);
   const [hadiths, setHadiths] = useState([]);
@@ -53,31 +55,83 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   const [noteCounts, setNoteCounts] = useState({});
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(HADITH_LIST_PAGE_SIZE);
+  const [hadithSource, setHadithSource] = useState('backend');
+  const [remotePage, setRemotePage] = useState(0);
+  const [hasMoreRemote, setHasMoreRemote] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailTab, setDetailTab] = useState('text');
   const [savingId, setSavingId] = useState(null);
   const [message, setMessage] = useState('');
 
-  const load = useCallback(async (bookSlug = null) => {
-    setLoading(true);
-    setVisibleCount(HADITH_LIST_PAGE_SIZE);
+  const loadOfflineHadiths = useCallback(async (bookSlug = null) => {
+    const overview = await getOfflineOverview();
+    if (!overview.supported || !overview.hadiths) return null;
+
+    const items = (await getOfflineItems('hadith'))
+      .map(normalizeHadith)
+      .filter((item) => item.id)
+      .filter((item) => !bookSlug || item.bookSlug === bookSlug)
+      .sort((a, b) => {
+        if (a.bookSlug !== b.bookSlug) return String(a.bookSlug).localeCompare(String(b.bookSlug));
+        return Number(a.number ?? a.id ?? 0) - Number(b.number ?? b.id ?? 0);
+      });
+
+    return items.length ? items : null;
+  }, []);
+
+  const load = useCallback(async ({ append = false, bookSlug = null, page = 0, preferOffline = true } = {}) => {
+    if (append) {
+      loadingMoreRef.current = true;
+      setLoadingMore(true);
+    } else {
+      loadingMoreRef.current = false;
+      setLoading(true);
+      setVisibleCount(HADITH_LIST_PAGE_SIZE);
+      setMessage('');
+    }
+
     try {
-      const items = bookSlug ? await getHadithsByBook(bookSlug) : await getHadiths();
-      setHadiths(items);
-    } catch {
-      setHadiths([]);
+      if (preferOffline && !append) {
+        const offlineItems = await loadOfflineHadiths(bookSlug);
+        if (offlineItems) {
+          setHadiths(offlineItems);
+          setHadithSource('offline');
+          setRemotePage(0);
+          setHasMoreRemote(false);
+          return;
+        }
+      }
+
+      const result = await getHadithPage({ bookSlug, page, size: HADITH_LIST_PAGE_SIZE });
+      setHadithSource('backend');
+      setRemotePage(result.page);
+      setHasMoreRemote(result.hasMore);
+      setHadiths((current) => (append ? [...current, ...result.items] : result.items));
+      setVisibleCount((current) => (append ? current + result.items.length : HADITH_LIST_PAGE_SIZE));
+    } catch (error) {
+      if (!append) {
+        setHadiths([]);
+        setHasMoreRemote(false);
+      }
+      setMessage(error?.message ?? 'Daftar hadis belum bisa dimuat.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+      if (append) {
+        loadingMoreRef.current = false;
+      }
     }
-  }, []);
+  }, [loadOfflineHadiths]);
 
   const loadBooks = useCallback(async () => {
     try {
       const items = await getHadithBooks();
       setBooks(items);
     } catch {
-      setBooks([]);
+      const overview = await getOfflineOverview();
+      setBooks(Array.isArray(overview.hadithBooks) ? overview.hadithBooks : []);
     }
   }, []);
 
@@ -123,7 +177,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   }, [user]);
 
   const refreshAll = useCallback(async () => {
-    await load(selectedBook);
+    await load({ bookSlug: selectedBook, page: 0, preferOffline: true });
     await loadBooks();
     await loadBookmarks();
     await loadNoteCounts();
@@ -134,10 +188,8 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
       const next = slug === selectedBook ? null : slug;
       setSelectedBook(next);
       setSelectedHadith(null);
-      setVisibleCount(HADITH_LIST_PAGE_SIZE);
-      load(next);
     },
-    [load, selectedBook],
+    [selectedBook],
   );
 
   const openHadith = async (hadith) => {
@@ -194,7 +246,9 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
         setMessage('Hadis disimpan ke bookmark.');
         await loadBookmarks();
       }
+      hapticSuccess();
     } catch (err) {
+      hapticError();
       setMessage(err?.message ?? 'Bookmark belum bisa diperbarui.');
     } finally {
       setSavingId(null);
@@ -263,6 +317,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     .slice(0, 5);
 
   const selectedBookName = books.find((book) => book.slug === selectedBook)?.name ?? 'Semua kitab';
+  const sourceLabel = hadithSource === 'offline' ? 'Perangkat' : 'Backend';
 
   const filteredHadiths = useMemo(() => {
     const term = normalizeSearchText(query);
@@ -286,7 +341,36 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   }, [hadiths, query]);
 
   const visibleHadiths = filteredHadiths.slice(0, visibleCount);
-  const hasMoreHadiths = visibleCount < filteredHadiths.length;
+  const hasBufferedHadiths = visibleCount < filteredHadiths.length;
+  const hasMoreHadiths = hasBufferedHadiths || (hadithSource === 'backend' && hasMoreRemote);
+
+  const loadMoreHadiths = useCallback(() => {
+    if (loading || loadingMore || loadingMoreRef.current || detailLoading) return;
+
+    if (hasBufferedHadiths) {
+      setVisibleCount((current) => current + HADITH_LIST_PAGE_SIZE);
+      return;
+    }
+
+    if (hadithSource === 'backend' && hasMoreRemote) {
+      load({
+        append: true,
+        bookSlug: selectedBook,
+        page: remotePage + 1,
+        preferOffline: false,
+      });
+    }
+  }, [
+    detailLoading,
+    hadithSource,
+    hasBufferedHadiths,
+    hasMoreRemote,
+    load,
+    loading,
+    loadingMore,
+    remotePage,
+    selectedBook,
+  ]);
 
   const renderCompactHadithCard = (hadith, meta = '') => (
     <Pressable key={`${meta}-${hadith.id}`} onPress={() => openHadith(hadith)} style={styles.compactHadith}>
@@ -562,6 +646,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
       subtitle="Baca hadis beserta sanad, perawi, dan rujukan takhrij."
       refreshing={loading}
       onRefresh={refreshAll}
+      onEndReached={loadMoreHadiths}
       searchSlot={
         <PaperSearchInput
           value={query}
@@ -617,10 +702,15 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
         <View>
           <Text style={styles.listSummaryTitle}>{selectedBookName}</Text>
           <Text style={styles.listSummaryMeta}>
-            {loading ? 'Memuat hadis...' : `${filteredHadiths.length} hadis ditampilkan`}
+            {loading
+              ? 'Memuat hadis...'
+              : `${filteredHadiths.length} hadis ditampilkan · ${sourceLabel}`}
           </Text>
         </View>
-        {query ? <Text style={styles.queryBadge}>Cari</Text> : null}
+        <View style={styles.summaryBadges}>
+          <Text style={styles.queryBadge}>{sourceLabel}</Text>
+          {query ? <Text style={styles.queryBadge}>Cari</Text> : null}
+        </View>
       </View>
 
       {loading && hadiths.length === 0 ? (
@@ -664,11 +754,16 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
           {hasMoreHadiths ? (
             <Pressable
               android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-              onPress={() => setVisibleCount((current) => current + HADITH_LIST_PAGE_SIZE)}
+              disabled={loadingMore}
+              onPress={loadMoreHadiths}
               style={styles.loadMoreButton}
             >
               <Text style={styles.loadMoreText}>
-                Muat lagi ({filteredHadiths.length - visibleCount} tersisa)
+                {loadingMore
+                  ? 'Memuat hadis berikutnya...'
+                  : hasBufferedHadiths
+                    ? `Muat lagi (${filteredHadiths.length - visibleCount} tersisa)`
+                    : 'Muat hadis berikutnya'}
               </Text>
             </Pressable>
           ) : null}
@@ -744,6 +839,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  summaryBadges: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    justifyContent: 'flex-end',
   },
   listSummaryTitle: {
     color: colors.ink,

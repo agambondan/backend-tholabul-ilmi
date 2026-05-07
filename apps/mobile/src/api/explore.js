@@ -1,6 +1,5 @@
 import { requestJson } from './client';
 import { getBookmarks } from './personal';
-import { getOfflineItems } from '../storage/offlineContent';
 
 const pickItems = (payload) => {
   if (Array.isArray(payload)) return payload;
@@ -83,16 +82,9 @@ export const normalizeExploreItem = (item, index = 0) => {
 };
 
 export const getFeatureItems = async (feature, pagination) => {
-  try {
-    const endpoint = pagination ? withPagination(feature.endpoint, pagination) : feature.endpoint;
-    const payload = await requestJson(endpoint, { auth: feature.type === 'protected-list' });
-    return pickItems(payload).map(normalizeExploreItem);
-  } catch (error) {
-    if (!feature.offlineType) throw error;
-    const offlineItems = await getOfflineItems(feature.offlineType);
-    if (!offlineItems.length) throw error;
-    return offlineItems.map(normalizeExploreItem);
-  }
+  const endpoint = pagination ? withPagination(feature.endpoint, pagination) : feature.endpoint;
+  const payload = await requestJson(endpoint, { auth: feature.type === 'protected-list' });
+  return pickItems(payload).map(normalizeExploreItem);
 };
 
 export const getAllNotes = async () => {
@@ -101,14 +93,8 @@ export const getAllNotes = async () => {
 };
 
 export const getBookmarkItems = async () => {
-  try {
-    const items = await getBookmarks();
-    return items.map(normalizeExploreItem);
-  } catch (error) {
-    const offlineItems = await getOfflineItems('bookmark_snapshot');
-    if (!offlineItems.length) throw error;
-    return offlineItems.map(normalizeExploreItem);
-  }
+  const items = await getBookmarks();
+  return items.map(normalizeExploreItem);
 };
 
 export const searchDictionary = async (query) => {

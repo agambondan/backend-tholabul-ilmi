@@ -22,7 +22,6 @@ import {
     View,
 } from 'react-native';
 import { getHafalanSummary, getMyPoints, getMyStreak, getPrayerStats, getTilawahSummary } from '../api/personal';
-import { CacheStatusCard } from '../components/CacheStatusCard';
 import { Card } from '../components/Card';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { OfflinePackCard } from '../components/OfflinePackCard';
@@ -106,7 +105,7 @@ function SettingsList({ onNavigate }) {
         {
             Icon: HardDrive,
             label: 'Penyimpanan',
-            meta: 'Konten offline dan cache',
+            meta: 'Paket offline perangkat',
             screen: 'settings-storage',
         },
         {
@@ -250,8 +249,6 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
         return (
             <SubScreen title="Penyimpanan" onBack={pop}>
                 <OfflinePackCard />
-                <View style={styles.gap} />
-                <CacheStatusCard />
             </SubScreen>
         );
     }

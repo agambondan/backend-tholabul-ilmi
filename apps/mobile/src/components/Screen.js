@@ -1,4 +1,6 @@
+import { useCallback } from 'react';
 import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTabActivity } from '../context/TabActivityContext';
 import { colors, spacing } from '../theme';
 
 export function Screen({
@@ -7,11 +9,24 @@ export function Screen({
   children,
   refreshing,
   onRefresh,
+  onEndReached,
   actions,
   headerExtra,
   searchSlot,
   contentStyle,
 }) {
+  const { notifyTabActivity } = useTabActivity();
+  const handleScrollActivity = useCallback((event) => {
+    notifyTabActivity();
+    if (!onEndReached) return;
+
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const distanceFromEnd = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+    if (distanceFromEnd < 520) {
+      onEndReached();
+    }
+  }, [notifyTabActivity, onEndReached]);
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -21,11 +36,15 @@ export function Screen({
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        onMomentumScrollBegin={handleScrollActivity}
+        onScroll={handleScrollActivity}
+        onScrollBeginDrag={handleScrollActivity}
         refreshControl={
           onRefresh ? (
             <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           ) : undefined
         }
+        scrollEventThrottle={250}
       >
         <View style={styles.header}>
           <View style={styles.headerTop}>

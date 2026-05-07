@@ -9,7 +9,6 @@ export const featureGroups = [
         subtitle: 'Doa harian dan pilahan',
         type: 'list',
         endpoint: '/api/v1/doa?page=0&size=30',
-        offlineType: 'doa',
       },
       {
         key: 'dzikir',
@@ -17,7 +16,6 @@ export const featureGroups = [
         subtitle: 'Kumpulan dzikir',
         type: 'list',
         endpoint: '/api/v1/dzikir?page=0&size=30',
-        offlineType: 'dzikir',
       },
       {
         key: 'wirid',
@@ -25,7 +23,6 @@ export const featureGroups = [
         subtitle: 'Bacaan wirid rutin',
         type: 'list',
         endpoint: '/api/v1/wirid',
-        offlineType: 'wirid',
       },
       {
         key: 'tahlil',
@@ -33,7 +30,6 @@ export const featureGroups = [
         subtitle: 'Referensi tahlil dan yasin',
         type: 'list',
         endpoint: '/api/v1/tahlil',
-        offlineType: 'tahlil',
       },
       {
         key: 'amalan',

@@ -15,11 +15,13 @@ import {
   Video,
 } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getDailyAyah, getDailyHadith, getPrayerTimes } from '../api/client';
 import { useSession } from '../context/SessionContext';
+import { useTabActivity } from '../context/TabActivityContext';
 import { getTodayPrayerLog } from '../api/personal';
+import { GlobalSearchScreen } from './GlobalSearchScreen';
 import { readPinnedFeatures, readRecentFeatures } from '../storage/recentFeatures';
 import { colors, radius, shadows, spacing } from '../theme';
 
@@ -64,8 +66,9 @@ const formatCountdown = (minutesDelta) => {
   return `${hours}:${minutes}`;
 };
 
-export function HomeScreen({ isActive, onOpenTab }) {
+export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const { user } = useSession();
+  const { notifyTabActivity } = useTabActivity();
   const [dailyHadith, setDailyHadith] = useState(null);
   const [dailyAyah, setDailyAyah] = useState(null);
   const [locationLabel, setLocationLabel] = useState('Memuat lokasi');
@@ -76,6 +79,9 @@ export function HomeScreen({ isActive, onOpenTab }) {
   const [prayerMessage, setPrayerMessage] = useState('');
   const [pinnedFeatures, setPinnedFeatures] = useState([]);
   const [recentFeatures, setRecentFeatures] = useState([]);
+  const handleScrollActivity = useCallback(() => {
+    notifyTabActivity();
+  }, [notifyTabActivity]);
   const contextualShortcuts = useMemo(() => {
     const hour = new Date().getHours();
     const items = [];
@@ -242,8 +248,39 @@ export function HomeScreen({ isActive, onOpenTab }) {
     };
   }, [isActive]);
 
+  useEffect(() => {
+    if (!isActive || navigation?.current?.view !== 'global-search') return undefined;
+
+    navigation?.setBack?.(() => {
+      navigation?.close?.('home');
+      return true;
+    });
+
+    return () => {
+      navigation?.clearBack?.();
+    };
+  }, [isActive, navigation, navigation?.current?.view]);
+
+  if (navigation?.current?.view === 'global-search') {
+    return (
+      <GlobalSearchScreen
+        initialQuery={navigation?.current?.params?.query ?? ''}
+        onBack={() => navigation?.close?.('home')}
+        onOpenTab={onOpenTab}
+      />
+    );
+  }
+
   return (
-    <ScrollView contentContainerStyle={styles.screen} showsVerticalScrollIndicator={false} style={styles.scroll}>
+    <ScrollView
+      contentContainerStyle={styles.screen}
+      onMomentumScrollBegin={handleScrollActivity}
+      onScroll={handleScrollActivity}
+      onScrollBeginDrag={handleScrollActivity}
+      scrollEventThrottle={250}
+      showsVerticalScrollIndicator={false}
+      style={styles.scroll}
+    >
       <View style={styles.header}>
         <Pressable android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }} onPress={() => onOpenTab('profile')} style={styles.profile}>
           <View style={styles.avatar}>
@@ -257,7 +294,13 @@ export function HomeScreen({ isActive, onOpenTab }) {
         <View style={styles.headerActions}>
           <Pressable
             android_ripple={{ color: 'rgba(91, 110, 91, 0.16)', borderless: true }}
-            onPress={() => onOpenTab('belajar', { featureKey: 'kamus', focusSearch: true })}
+            onPress={() => {
+              if (navigation?.open) {
+                navigation.open('home', 'global-search');
+              } else {
+                onOpenTab('belajar', { featureKey: 'kamus', focusSearch: true });
+              }
+            }}
           >
             <Search color={colors.muted} size={18} strokeWidth={2.2} />
           </Pressable>

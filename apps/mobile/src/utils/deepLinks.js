@@ -56,6 +56,16 @@ export const parseDeepLink = (url) => {
 
   if (!knownTabs.includes(tab)) return null;
 
+  if (tab === 'home') {
+    return {
+      params:
+        second === 'search' || second === 'global-search'
+          ? { query: third ?? '', view: 'global-search' }
+          : {},
+      tab,
+    };
+  }
+
   if (tab === 'quran') {
     if (second === 'page') {
       return {

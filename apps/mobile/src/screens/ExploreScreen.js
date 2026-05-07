@@ -82,6 +82,7 @@ const formatNumericInput = (value = '') => {
   if (!normalized) return '';
   return Number(normalized).toLocaleString('id-ID');
 };
+const formatCurrency = (value = 0) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
 const formatDetailLabel = (key = '') =>
   `${key}`
     .replace(/[_-]+/g, ' ')
@@ -96,7 +97,6 @@ const isPaginatedFeature = (feature) => Boolean(feature?.endpoint) && ['list', '
 const findFeature = (featureKey) => allFeatures.find((feature) => feature.key === featureKey);
 const getFeatureBadge = (feature) => {
   if (['protected-list', 'bookmarks', 'notes'].includes(feature?.type)) return 'Akun';
-  if (feature?.offlineType) return 'Offline';
   if (localTools.includes(feature?.type)) return 'Lokal';
   return feature?.group ?? '';
 };
@@ -489,6 +489,24 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     }, 0);
   };
 
+  const renderCurrencyInput = ({ label, value, onChangeText, placeholder }) => (
+    <View style={styles.currencyField}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={styles.currencyInputShell}>
+        <Text style={styles.currencyPrefix}>Rp</Text>
+        <TextInput
+          keyboardType="numeric"
+          onChangeText={(nextValue) => onChangeText(digitsOnly(nextValue))}
+          placeholder={placeholder}
+          placeholderTextColor={colors.muted}
+          returnKeyType="done"
+          style={styles.currencyInput}
+          value={formatNumericInput(value)}
+        />
+      </View>
+    </View>
+  );
+
   const getQuizChoices = (item) => {
     const raw = item?.raw ?? {};
     let options = [];
@@ -743,36 +761,48 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       const debts = parseNumericInput(zakat.debts);
       const nisab = parseNumericInput(zakat.nisab);
       const net = Math.max(0, assets - debts);
-      const due = net >= nisab ? net * 0.025 : 0;
+      const isZakatDue = nisab > 0 && net >= nisab;
+      const due = isZakatDue ? net * 0.025 : 0;
       return (
         <Card>
-          <CardTitle meta={due > 0 ? 'Wajib Zakat' : 'Belum Mencapai Nisab'}>{activeFeature.title}</CardTitle>
-          <TextInput
-            keyboardType="numeric"
-            onChangeText={(assetsValue) => setZakat((current) => ({ ...current, assets: digitsOnly(assetsValue) }))}
-            placeholder="Total harta (Rp)"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            value={formatNumericInput(zakat.assets)}
-          />
-          <TextInput
-            keyboardType="numeric"
-            onChangeText={(debtsValue) => setZakat((current) => ({ ...current, debts: digitsOnly(debtsValue) }))}
-            placeholder="Utang yang jatuh tempo (Rp)"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            value={formatNumericInput(zakat.debts)}
-          />
-          <TextInput
-            keyboardType="numeric"
-            onChangeText={(nisabValue) => setZakat((current) => ({ ...current, nisab: digitsOnly(nisabValue) }))}
-            placeholder="Nisab (Rp)"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            value={formatNumericInput(zakat.nisab)}
-          />
-          <Text style={styles.result}>Harta bersih: Rp {net.toLocaleString('id-ID')}</Text>
-          <Text style={styles.result}>Zakat maal 2,5%: Rp {due.toLocaleString('id-ID')}</Text>
+          <CardTitle meta={isZakatDue ? 'Wajib Zakat' : 'Belum Mencapai Nisab'}>{activeFeature.title}</CardTitle>
+          <Text style={styles.body}>Masukkan harta dan kewajiban yang jatuh tempo. Nilai zakat dihitung 2,5% dari harta bersih.</Text>
+          {renderCurrencyInput({
+            label: 'Total harta',
+            value: zakat.assets,
+            placeholder: '0',
+            onChangeText: (assetsValue) => setZakat((current) => ({ ...current, assets: assetsValue })),
+          })}
+          {renderCurrencyInput({
+            label: 'Utang jatuh tempo',
+            value: zakat.debts,
+            placeholder: '0',
+            onChangeText: (debtsValue) => setZakat((current) => ({ ...current, debts: debtsValue })),
+          })}
+          {renderCurrencyInput({
+            label: 'Nisab',
+            value: zakat.nisab,
+            placeholder: '85.000.000',
+            onChangeText: (nisabValue) => setZakat((current) => ({ ...current, nisab: nisabValue })),
+          })}
+          <View style={styles.resultPanel}>
+            <View style={styles.resultRow}>
+              <Text style={styles.resultLabel}>Harta bersih</Text>
+              <Text style={styles.resultValue}>{formatCurrency(net)}</Text>
+            </View>
+            <View style={styles.resultRow}>
+              <Text style={styles.resultLabel}>Nisab</Text>
+              <Text style={styles.resultValue}>{formatCurrency(nisab)}</Text>
+            </View>
+            <View style={styles.resultDivider} />
+            <View style={styles.resultRow}>
+              <Text style={styles.resultLabelStrong}>Zakat maal 2,5%</Text>
+              <Text style={styles.resultValueStrong}>{formatCurrency(due)}</Text>
+            </View>
+            <Text style={[styles.statusNote, isZakatDue && styles.statusNoteActive]}>
+              {isZakatDue ? 'Harta bersih sudah mencapai nisab.' : 'Harta bersih belum mencapai nisab.'}
+            </Text>
+          </View>
         </Card>
       );
     }
@@ -780,35 +810,34 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     if (activeFeature.type === 'faraidh') {
       const estate = parseNumericInput(faraidh.estate);
       const debts = parseNumericInput(faraidh.debts);
-      const bequest = Math.min(parseNumericInput(faraidh.bequest), estate / 3);
+      const requestedBequest = parseNumericInput(faraidh.bequest);
+      const maxBequest = Math.floor(estate / 3);
+      const bequest = Math.min(requestedBequest, maxBequest);
       const distributable = Math.max(0, estate - debts - bequest);
+      const bequestCapped = estate > 0 && requestedBequest > maxBequest;
       return (
         <Card>
           <CardTitle meta="Perencana Waris">{activeFeature.title}</CardTitle>
-          <TextInput
-            keyboardType="numeric"
-            onChangeText={(estateValue) => setFaraidh((current) => ({ ...current, estate: digitsOnly(estateValue) }))}
-            placeholder="Nilai harta warisan (Rp)"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            value={formatNumericInput(faraidh.estate)}
-          />
-          <TextInput
-            keyboardType="numeric"
-            onChangeText={(debtValue) => setFaraidh((current) => ({ ...current, debts: digitsOnly(debtValue) }))}
-            placeholder="Utang dan biaya pengurusan jenazah (Rp)"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            value={formatNumericInput(faraidh.debts)}
-          />
-          <TextInput
-            keyboardType="numeric"
-            onChangeText={(bequestValue) => setFaraidh((current) => ({ ...current, bequest: digitsOnly(bequestValue) }))}
-            placeholder="Wasiat, maks. 1/3 harta (Rp)"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            value={formatNumericInput(faraidh.bequest)}
-          />
+          <Text style={styles.body}>Hitung harta bersih yang siap dibagikan setelah utang dan wasiat. Wasiat otomatis dibatasi maksimal 1/3 harta.</Text>
+          {renderCurrencyInput({
+            label: 'Harta warisan',
+            value: faraidh.estate,
+            placeholder: '0',
+            onChangeText: (estateValue) => setFaraidh((current) => ({ ...current, estate: estateValue })),
+          })}
+          {renderCurrencyInput({
+            label: 'Utang dan biaya',
+            value: faraidh.debts,
+            placeholder: '0',
+            onChangeText: (debtValue) => setFaraidh((current) => ({ ...current, debts: debtValue })),
+          })}
+          {renderCurrencyInput({
+            label: 'Wasiat',
+            value: faraidh.bequest,
+            placeholder: '0',
+            onChangeText: (bequestValue) => setFaraidh((current) => ({ ...current, bequest: bequestValue })),
+          })}
+          <Text style={styles.inputLabel}>Ahli waris</Text>
           <TextInput
             onChangeText={(heirsValue) => setFaraidh((current) => ({ ...current, heirs: heirsValue }))}
             placeholder="Daftar ahli waris (cth: suami, ibu, anak)"
@@ -816,8 +845,26 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
             style={styles.input}
             value={faraidh.heirs}
           />
-          <Text style={styles.result}>Harta yang dibagikan: Rp {distributable.toLocaleString('id-ID')}</Text>
-          <Text style={styles.body}>Ahli waris: {faraidh.heirs}</Text>
+          <View style={styles.resultPanel}>
+            <View style={styles.resultRow}>
+              <Text style={styles.resultLabel}>Harta awal</Text>
+              <Text style={styles.resultValue}>{formatCurrency(estate)}</Text>
+            </View>
+            <View style={styles.resultRow}>
+              <Text style={styles.resultLabel}>Wasiat dihitung</Text>
+              <Text style={styles.resultValue}>{formatCurrency(bequest)}</Text>
+            </View>
+            <View style={styles.resultDivider} />
+            <View style={styles.resultRow}>
+              <Text style={styles.resultLabelStrong}>Harta dibagikan</Text>
+              <Text style={styles.resultValueStrong}>{formatCurrency(distributable)}</Text>
+            </View>
+            <Text style={[styles.statusNote, bequestCapped && styles.statusNoteWarning]}>
+              {bequestCapped
+                ? `Wasiat melebihi batas, dihitung maksimal ${formatCurrency(maxBequest)}.`
+                : `Ahli waris: ${faraidh.heirs || '-'}`}
+            </Text>
+          </View>
         </Card>
       );
     }
@@ -897,7 +944,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
             catalogSections.map((section) => (
             <View key={section.key} style={styles.belajarSection}>
               <SectionHeader meta={section.meta} title={section.title} />
-              <View style={styles.belajarCard}>
+              <Card style={styles.belajarCard}>
                 {section.rows.map((row) => {
                   const pinned = Boolean(pinnedFeatureKeys[row.feature.key]);
                   return (
@@ -928,7 +975,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
                     />
                   );
                 })}
-              </View>
+              </Card>
             </View>
             ))
           ) : (
@@ -983,11 +1030,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   belajarCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.faint,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    overflow: 'hidden',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   pinButton: {
     alignItems: 'center',
@@ -1032,6 +1076,39 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     minHeight: 44,
     paddingHorizontal: spacing.md,
+  },
+  inputLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: spacing.xs,
+    marginTop: spacing.md,
+  },
+  currencyField: {
+    marginTop: spacing.md,
+  },
+  currencyInputShell: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+  },
+  currencyPrefix: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '900',
+    marginRight: spacing.sm,
+  },
+  currencyInput: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    paddingVertical: spacing.sm,
   },
   primaryButton: {
     alignItems: 'center',
@@ -1221,6 +1298,62 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 22,
     marginBottom: spacing.sm,
+  },
+  resultPanel: {
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginTop: spacing.md,
+    padding: spacing.md,
+  },
+  resultRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  resultLabel: {
+    color: colors.muted,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  resultLabelStrong: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  resultValue: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'right',
+  },
+  resultValueStrong: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '900',
+    textAlign: 'right',
+  },
+  resultDivider: {
+    backgroundColor: colors.faint,
+    height: 1,
+    marginBottom: spacing.sm,
+  },
+  statusNote: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  statusNoteActive: {
+    color: colors.primary,
+  },
+  statusNoteWarning: {
+    color: colors.accent,
   },
   trackerList: {
     gap: spacing.sm,

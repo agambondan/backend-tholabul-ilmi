@@ -103,6 +103,18 @@ export const saveNotificationSettings = async (settings) =>
     { auth: true },
   );
 
+export const registerPushToken = async ({ deviceId = '', platform, provider = 'expo', token }) =>
+  putJson(
+    '/api/v1/notifications/push-token',
+    {
+      device_id: deviceId,
+      platform,
+      provider,
+      token,
+    },
+    { auth: true },
+  );
+
 export const getNotificationInbox = async () => {
   const payload = await requestJson('/api/v1/notifications/inbox', { auth: true });
   return {

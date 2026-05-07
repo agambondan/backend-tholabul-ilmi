@@ -1,4 +1,3 @@
-import { cacheKeys, readCache, writeCache } from '../storage/cache';
 import { readSession } from '../storage/session';
 import { NativeModules, Platform } from 'react-native';
 
@@ -52,18 +51,6 @@ export const requestJson = async (path, options = {}) => {
   }
 
   return response.json();
-};
-
-const fetchWithCache = async ({ key, fetcher }) => {
-  try {
-    const data = await fetcher();
-    await writeCache(key, data);
-    return data;
-  } catch (error) {
-    const cached = await readCache(key, null);
-    if (cached !== null && cached !== undefined) return cached;
-    throw error;
-  }
 };
 
 export const postJson = async (path, body, options = {}) =>
@@ -138,34 +125,19 @@ const normalizeAudio = (item, index = 0) => ({
 });
 
 export const getAyahsForSurah = async (surahNumber) => {
-  const cacheKey = `ayahs:${surahNumber}`;
-
-  return fetchWithCache({
-    key: cacheKey,
-    fetcher: async () => {
-      const payload = await requestJson(`/api/v1/ayah/surah/number/${surahNumber}?size=300&page=0`);
-      return pickItems(payload).map(normalizeAyah);
-    },
-  });
+  const payload = await requestJson(`/api/v1/ayah/surah/number/${surahNumber}?size=300&page=0`);
+  return pickItems(payload).map(normalizeAyah);
 };
 
-export const getAyahsForPage = async (page) =>
-  fetchWithCache({
-    key: `ayahs:page:${page}`,
-    fetcher: async () => {
-      const payload = await requestJson(`/api/v1/ayah/page/${page}`);
-      return pickItems(payload).map(normalizeAyah);
-    },
-  });
+export const getAyahsForPage = async (page) => {
+  const payload = await requestJson(`/api/v1/ayah/page/${page}`);
+  return pickItems(payload).map(normalizeAyah);
+};
 
-export const getAyahsForHizb = async (hizb) =>
-  fetchWithCache({
-    key: `ayahs:hizb:${hizb}`,
-    fetcher: async () => {
-      const payload = await requestJson(`/api/v1/ayah/hizb/${hizb}`);
-      return pickItems(payload).map(normalizeAyah);
-    },
-  });
+export const getAyahsForHizb = async (hizb) => {
+  const payload = await requestJson(`/api/v1/ayah/hizb/${hizb}`);
+  return pickItems(payload).map(normalizeAyah);
+};
 
 export const getAyahAudio = async ({ ayahId }) => {
   const payload = await requestJson(`/api/v1/audio/ayah/${ayahId}`);
@@ -182,6 +154,27 @@ export const getDailyAyah = async () => {
   return normalizeAyah(payload?.data ?? payload?.item ?? payload);
 };
 
+export const searchGlobal = async (query, { limit = 12, type = 'all' } = {}) => {
+  const normalizedQuery = `${query ?? ''}`.trim();
+  if (!normalizedQuery) {
+    return { ayahs: [], hadiths: [], total: 0 };
+  }
+
+  const params = new URLSearchParams({
+    limit: `${limit}`,
+    q: normalizedQuery,
+    type,
+  });
+  const payload = await requestJson(`/api/v1/search?${params.toString()}`);
+  const data = payload?.data ?? payload;
+
+  return {
+    ayahs: pickItems(data?.ayahs ?? data?.data?.ayahs ?? []).map(normalizeAyah),
+    hadiths: pickItems(data?.hadiths ?? data?.data?.hadiths ?? []).map(normalizeHadith),
+    total: Number(data?.total ?? data?.data?.total ?? 0),
+  };
+};
+
 export const getFirstAyahForSurah = async (surahNumber) => {
   const items = await getAyahsForSurah(surahNumber);
   return items[0] ?? null;
@@ -189,8 +182,8 @@ export const getFirstAyahForSurah = async (surahNumber) => {
 
 const pickText = (...values) => values.find((value) => typeof value === 'string' && value.trim()) ?? '';
 
-const normalizeReference = (item, index = 0, fallbackTitle = 'Rujukan') => ({
-  id: item?.id ?? `${fallbackTitle}-${index}`,
+const normalizeReference = (item, index = 0, defaultTitle = 'Rujukan') => ({
+  id: item?.id ?? `${defaultTitle}-${index}`,
   title:
     pickText(
       item?.title,
@@ -198,7 +191,7 @@ const normalizeReference = (item, index = 0, fallbackTitle = 'Rujukan') => ({
       item?.book,
       item?.translation?.title_en,
       item?.translation?.title_idn,
-    ) || `${fallbackTitle} ${index + 1}`,
+    ) || `${defaultTitle} ${index + 1}`,
   body: pickText(
     item?.description_idn,
     item?.description_en,
@@ -246,25 +239,49 @@ export const getAsbabForAyah = async (ayahId) => {
 };
 
 export const getSurahs = async () => {
-  return fetchWithCache({
-    key: cacheKeys.surahs,
-    fetcher: async () => {
-      const payload = await requestJson('/api/v1/surah?size=114&sort=number');
-      const items = pickItems(payload);
-      return items.map(normalizeSurah);
-    },
-  });
+  const payload = await requestJson('/api/v1/surah?size=114&sort=number');
+  const items = pickItems(payload);
+  return items.map(normalizeSurah);
 };
 
-export const getHadiths = async () => {
-  return fetchWithCache({
-    key: cacheKeys.hadiths,
-    fetcher: async () => {
-      const payload = await requestJson('/api/v1/hadiths?size=20');
-      const items = pickItems(payload);
-      return items.map(normalizeHadith);
-    },
-  });
+const pagedResult = (payload, page, size) => {
+  const items = pickItems(payload).map(normalizeHadith);
+  const currentPage = Number(payload?.page ?? payload?.data?.page ?? page) || 0;
+  const total = Number(payload?.total ?? payload?.data?.total ?? items.length) || items.length;
+  const totalPages = Number(
+    payload?.total_pages ??
+    payload?.totalPages ??
+    payload?.max_page ??
+    payload?.data?.total_pages ??
+    payload?.data?.totalPages ??
+    payload?.data?.max_page ??
+    0
+  );
+  const isLast = payload?.last === true || (totalPages ? currentPage + 1 >= totalPages : items.length < size);
+
+  return {
+    hasMore: !isLast && items.length > 0,
+    items,
+    page: currentPage,
+    total,
+    totalPages,
+  };
+};
+
+export const getHadithPage = async ({ bookSlug = null, page = 0, size = 20, updatedAfter = null } = {}) => {
+  const encodedBook = bookSlug ? encodeURIComponent(bookSlug) : null;
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (updatedAfter) params.set('updated_after', updatedAfter);
+  const path = encodedBook
+    ? `/api/v1/hadiths/book/${encodedBook}?${params.toString()}`
+    : `/api/v1/hadiths?${params.toString()}`;
+  const payload = await requestJson(path);
+  return pagedResult(payload, page, size);
+};
+
+export const getHadiths = async (options = {}) => {
+  const result = await getHadithPage(options);
+  return result.items;
 };
 
 export const normalizeHadith = (item) => ({
@@ -298,13 +315,8 @@ export const normalizeHadith = (item) => ({
 });
 
 export const getDailyHadith = async () => {
-  return fetchWithCache({
-    key: 'hadith:daily',
-    fetcher: async () => {
-      const payload = await requestJson('/api/v1/hadiths/daily');
-      return normalizeHadith(payload?.data ?? payload?.item ?? payload);
-    },
-  });
+  const payload = await requestJson('/api/v1/hadiths/daily');
+  return normalizeHadith(payload?.data ?? payload?.item ?? payload);
 };
 
 export const getHadithBooks = async () => {
@@ -319,14 +331,14 @@ export const getHadithBooks = async () => {
         item.translation?.en ??
         `Book ${item.id}`,
       slug: item.slug ?? '',
+      count: Number(item.count ?? item.hadith_count ?? item.total_hadith ?? 0) || 0,
     }))
     .filter((book) => book.slug);
 };
 
-export const getHadithsByBook = async (bookSlug) => {
-  const payload = await requestJson(`/api/v1/hadiths/book/${bookSlug}?size=20`);
-  const items = pickItems(payload);
-  return items.map(normalizeHadith);
+export const getHadithsByBook = async (bookSlug, options = {}) => {
+  const result = await getHadithPage({ ...options, bookSlug });
+  return result.items;
 };
 
 export const getHadithDetail = async (id) => {
@@ -416,18 +428,10 @@ export const getPrayerTimes = async ({ lat, lng, method = 'kemenag', madhab = 's
     throw new Error('Location is required to load prayer times.');
   }
 
-  const roundedLat = Number(lat).toFixed(3);
-  const roundedLng = Number(lng).toFixed(3);
-
-  return fetchWithCache({
-    key: `${cacheKeys.prayerTimes}:${method}:${madhab}:${roundedLat}:${roundedLng}`,
-    fetcher: async () => {
-      const payload = await requestJson(
-        `/api/v1/sholat-times?lat=${lat}&lng=${lng}&method=${method}&madhab=${madhab}`,
-      );
-      const prayers = payload?.prayers ?? payload?.data?.prayers;
-      if (!prayers) throw new Error('Prayer schedule is not available yet.');
-      return prayers;
-    },
-  });
+  const payload = await requestJson(
+    `/api/v1/sholat-times?lat=${lat}&lng=${lng}&method=${method}&madhab=${madhab}`,
+  );
+  const prayers = payload?.prayers ?? payload?.data?.prayers;
+  if (!prayers) throw new Error('Prayer schedule is not available yet.');
+  return prayers;
 };

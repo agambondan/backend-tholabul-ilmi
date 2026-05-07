@@ -1,6 +1,7 @@
 import { AlertCircle, Search } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors, radius, shadows, spacing } from '../theme';
+import { hapticSelection, hapticTap } from '../utils/haptics';
 
 export function SectionHeader({ title, meta, action }) {
   return (
@@ -27,7 +28,10 @@ export function SegmentedTabs({ options, value, onChange, style }) {
             accessibilityState={{ selected: active }}
             android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
             key={option.key}
-            onPress={() => onChange?.(option.key)}
+            onPress={() => {
+              if (!active) hapticSelection();
+              onChange?.(option.key);
+            }}
             style={[styles.segmentButton, active && styles.segmentButtonActive]}
           >
             {OptionIcon ? (
@@ -66,7 +70,10 @@ export function IconActionButton({ Icon, label, onPress, disabled = false, activ
       accessibilityState={{ disabled, selected: active }}
       android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={(event) => {
+        hapticTap();
+        onPress?.(event);
+      }}
       style={[styles.iconButton, active && styles.iconButtonActive, disabled && styles.disabled]}
     >
       <Icon color={active ? colors.onPrimary : colors.primary} size={18} strokeWidth={2.2} />
@@ -82,7 +89,10 @@ export function ActionPill({ Icon, label, onPress, disabled = false, active = fa
       accessibilityState={{ disabled, selected: active }}
       android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
       disabled={disabled}
-      onPress={onPress}
+      onPress={(event) => {
+        hapticTap();
+        onPress?.(event);
+      }}
       style={[styles.actionPill, active && styles.actionPillActive, disabled && styles.disabled]}
     >
       {Icon ? <Icon color={active ? colors.onPrimary : colors.primary} size={16} strokeWidth={2.2} /> : null}
@@ -215,6 +225,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     minHeight: 40,
+    outlineStyle: 'none',
     paddingVertical: 0,
   },
   iconButton: {

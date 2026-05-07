@@ -55,6 +55,7 @@ import { Card, CardTitle } from '../components/Card';
 import { NotesPanel } from '../components/NotesPanel';
 import { EmptyState, IconActionButton } from '../components/Paper';
 import { useSession } from '../context/SessionContext';
+import { useTabActivity } from '../context/TabActivityContext';
 import { preferenceKeys, readPreference, writePreference } from '../storage/preferences';
 import { colors, radius, spacing } from '../theme';
 import { playAudioUrl, stopAudio } from '../utils/audioPlayer';
@@ -266,6 +267,7 @@ const TAJWEED_GROUPS = [
 
 export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const { user } = useSession();
+    const { notifyTabActivity } = useTabActivity();
     const handledDeepLinkId = useRef(null);
     const [surahs, setSurahs] = useState([]);
     const [selectedSurah, setSelectedSurah] = useState(null);
@@ -310,6 +312,10 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const [tajweedVisible, setTajweedVisible] = useState(false);
     const [referenceModal, setReferenceModal] = useState({ visible: false, type: null, ayah: null });
     const [ayahActionSheet, setAyahActionSheet] = useState({ visible: false, ayah: null });
+
+    const handleScrollActivity = useCallback(() => {
+        notifyTabActivity();
+    }, [notifyTabActivity]);
 
     const updateFontSize = async (nextSize) => {
         const normalized = Math.max(22, Math.min(42, nextSize));
@@ -687,9 +693,9 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             loadingAyahId: ayah.id,
         }));
         try {
-            const cachedSources = audioState.sourcesByAyah[ayah.id];
+            const storedSources = audioState.sourcesByAyah[ayah.id];
             const sources =
-                cachedSources ??
+                storedSources ??
                 (await getAyahAudio({ ayahId: ayah.id, ayahNumber: ayah.number, surahNumber }));
             const source = pickAudioSource(sources);
             setAudioState((current) => ({
@@ -1833,6 +1839,9 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                         )
                     }
                     ListHeaderComponent={renderReaderHeader}
+                    onMomentumScrollBegin={handleScrollActivity}
+                    onScroll={handleScrollActivity}
+                    onScrollBeginDrag={handleScrollActivity}
                     refreshControl={
                         <RefreshControl
                             refreshing={readerLoading}
@@ -1841,6 +1850,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                         />
                     }
                     renderItem={renderAyahCard}
+                    scrollEventThrottle={250}
                     showsVerticalScrollIndicator={false}
                     style={styles.readerList}
                 />
@@ -1865,6 +1875,9 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             }
             ListFooterComponent={renderQuranListFooter}
             ListHeaderComponent={renderQuranListHeader}
+            onMomentumScrollBegin={handleScrollActivity}
+            onScroll={handleScrollActivity}
+            onScrollBeginDrag={handleScrollActivity}
             refreshControl={
                 <RefreshControl
                     onRefresh={refreshAll}
@@ -1873,6 +1886,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                 />
             }
             renderItem={renderSurahRow}
+            scrollEventThrottle={250}
             showsVerticalScrollIndicator={false}
             style={styles.quranScroll}
         />

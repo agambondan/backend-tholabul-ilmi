@@ -3,6 +3,8 @@ import { BookOpen, GraduationCap, Heart, Home, ScrollText } from 'lucide-react-n
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, spacing } from '../theme';
+import { useTabActivity } from '../context/TabActivityContext';
+import { hapticSelection } from '../utils/haptics';
 
 export const tabs = [
   { Icon: Home, key: 'home', label: 'Beranda' },
@@ -20,11 +22,11 @@ const nav = {
   inactive: '#9b9487',
   border: '#e6e2d6',
   bg: '#fffdf8',
-  handle: '#7b7364',
 };
 
 export function TabBar({ active, onChange }) {
   const insets = useSafeAreaInsets();
+  const { activityTick } = useTabActivity();
   const hideTimer = useRef(null);
   const [visible, setVisible] = useState(true);
 
@@ -50,17 +52,17 @@ export function TabBar({ active, onChange }) {
     return clearHideTimer;
   }, [active, clearHideTimer, reveal]);
 
+  useEffect(() => {
+    if (!activityTick) return;
+    reveal();
+  }, [activityTick, reveal]);
+
   if (!visible) {
     return (
-      <Pressable
-        accessibilityLabel="Tampilkan navigasi"
-        accessibilityRole="button"
-        android_ripple={{ color: 'rgba(60, 58, 53, 0.08)', borderless: false }}
-        onPress={reveal}
+      <View
+        pointerEvents="none"
         style={[styles.hiddenWrap, { paddingBottom: Math.max(insets.bottom, spacing.xs) }]}
-      >
-        <View style={styles.hiddenHandle} />
-      </Pressable>
+      />
     );
   }
 
@@ -77,6 +79,7 @@ export function TabBar({ active, onChange }) {
             android_ripple={{ color: nav.activeBg, borderless: false }}
             key={tab.key}
             onPress={() => {
+              if (!selected) hapticSelection();
               onChange(tab.key);
               reveal();
             }}
@@ -108,19 +111,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   hiddenWrap: {
-    alignItems: 'center',
     backgroundColor: nav.bg,
-    borderTopColor: nav.border,
-    borderTopWidth: 1,
-    minHeight: 22,
-    paddingTop: spacing.xs,
-  },
-  hiddenHandle: {
-    backgroundColor: nav.handle,
-    borderRadius: 999,
-    height: 4,
-    opacity: 0.72,
-    width: 74,
+    minHeight: 6,
   },
   item: {
     alignItems: 'center',
