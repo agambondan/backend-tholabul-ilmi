@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { BellRing } from 'lucide-react-native';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
@@ -6,10 +7,16 @@ import {
   getNotificationSettings,
   markAllNotificationsRead,
   markNotificationRead,
+  registerPushToken,
   saveNotificationSettings,
 } from '../api/personal';
 import { useSession } from '../context/SessionContext';
 import { colors, radius, spacing } from '../theme';
+import {
+  getPushNotificationAvailability,
+  getPushNotificationRegistration,
+  pushNotificationsSupported,
+} from '../utils/pushNotifications';
 import { Card, CardTitle } from './Card';
 
 const defaultSettings = [
@@ -53,6 +60,12 @@ export function NotificationCenter() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const pushAvailability = getPushNotificationAvailability();
+  const [pushState, setPushState] = useState({
+    loading: false,
+    message: pushAvailability.message,
+    status: 'idle',
+  });
   const [unreadCount, setUnreadCount] = useState(0);
   const [pickerState, setPickerState] = useState({ open: false, type: null, value: toTimeDate('06:00') });
 
@@ -125,6 +138,42 @@ export function NotificationCenter() {
     }
   };
 
+  const enablePush = async () => {
+    if (!session?.token) return;
+
+    setPushState({ loading: true, message: 'Meminta izin notifikasi...', status: 'loading' });
+    try {
+      const registration = await getPushNotificationRegistration();
+      if (!registration.granted) {
+        const nextMessage = registration.message ?? 'Izin notifikasi belum diberikan dari sistem.';
+        setPushState({ loading: false, message: nextMessage, status: registration.reason ?? 'denied' });
+        return;
+      }
+
+      if (!registration.token) {
+        setPushState({
+          loading: false,
+          message: 'Token push belum tersedia. Pastikan app berjalan di device native.',
+          status: 'token_unavailable',
+        });
+        return;
+      }
+
+      await registerPushToken(registration);
+      setPushState({
+        loading: false,
+        message: 'Push native aktif untuk perangkat ini.',
+        status: 'enabled',
+      });
+    } catch (error) {
+      setPushState({
+        loading: false,
+        message: error?.message ?? 'Push native belum bisa diaktifkan.',
+        status: 'error',
+      });
+    }
+  };
+
   const markRead = async (id) => {
     if (!id) return;
 
@@ -182,6 +231,27 @@ export function NotificationCenter() {
       {activeTab === 'settings' ? (
       <Card>
         <CardTitle meta="Pengingat">Pengaturan Notifikasi</CardTitle>
+        <View style={styles.pushBox}>
+          <View style={styles.pushIcon}>
+            <BellRing color={colors.primary} size={18} strokeWidth={2.2} />
+          </View>
+          <View style={styles.pushCopy}>
+            <Text style={styles.settingTitle}>Push native</Text>
+            <Text style={styles.settingMeta}>{pushState.message}</Text>
+          </View>
+          <Pressable
+            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+            disabled={pushState.loading || !pushNotificationsSupported()}
+            onPress={enablePush}
+            style={[styles.pushButton, (pushState.loading || !pushNotificationsSupported()) ? styles.disabled : null]}
+          >
+            {pushState.loading ? (
+              <ActivityIndicator color={colors.primary} size="small" />
+            ) : (
+              <Text style={styles.pushButtonText}>{pushState.status === 'enabled' ? 'Aktif' : 'Aktifkan'}</Text>
+            )}
+          </Pressable>
+        </View>
         {settings.map((item) => (
           <View key={item.type} style={styles.settingRow}>
             <View style={styles.settingBody}>
@@ -356,6 +426,45 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 13,
     fontWeight: '900',
+  },
+  pushBox: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+    padding: spacing.sm,
+  },
+  pushButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    justifyContent: 'center',
+    minHeight: 34,
+    paddingHorizontal: spacing.sm,
+  },
+  pushButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  pushCopy: {
+    flex: 1,
+  },
+  pushIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
   },
   secondaryButton: {
     alignItems: 'center',
