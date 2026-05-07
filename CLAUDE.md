@@ -110,6 +110,8 @@ Dokumen acuan: [`docs/MOBILE_IA_FINAL_APPROACH.md`](docs/MOBILE_IA_FINAL_APPROAC
 Design pattern: `Card`, `CardTitle`, `Screen`, `Paper` components.
 Back navigation: `setBack`/`clearBack` wajib di semua sub-navigation.
 
+**Detail UI rule:** JANGAN pakai inline expand/collapse untuk detail item. Pakai bottom-sheet modal atau page detail terpisah. Acuan lengkap: [`docs/MOBILE_DESIGN_PATTERNS.md`](docs/MOBILE_DESIGN_PATTERNS.md).
+
 ## Feature Roadmap
 
 Dokumen lengkap di [docs/api/FEATURE_ROADMAP.md](docs/api/FEATURE_ROADMAP.md).

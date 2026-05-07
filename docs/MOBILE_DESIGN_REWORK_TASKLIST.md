@@ -95,6 +95,9 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
   - File: `apps/mobile/App.js`
 - [x] Gunakan pola Paper floating tab bar, tetapi soft contrast.
   - File: `apps/mobile/src/components/TabBar.js`, `apps/mobile/src/theme.js`
+- [x] Tambahkan auto-hide bottom tab seperti taskbar desktop dan ubah warna aktif menjadi netral paper/ink.
+  - File: `apps/mobile/src/components/TabBar.js`
+  - Screenshot: `output/playwright/mobile-tabbar-autohide-neutral.png`
 - [x] Pertahankan state per tab saat berpindah tab.
   - File: `apps/mobile/App.js`
 - [x] Standardisasi back button icon/action, bukan text panjang.
@@ -129,6 +132,12 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
 - [x] Murojaah tab menjadi workflow nyata: pilih range, skor, durasi, catatan.
 - [x] Empty state jika ayat/audio/tafsir belum tersedia dari backend.
 - [x] Hindari render ratusan ayat sekaligus.
+- [x] Pindahkan aksi per ayat ke menu titik tiga/bottom sheet agar reader fokus baca.
+  - File: `apps/mobile/src/screens/QuranScreen.js`
+- [x] Jadikan Model Tampilan Mushaf lebih nyata:
+  - Terjemah: Arab + latin + arti.
+  - Fokus: Arab dominan tanpa latin/terjemah.
+  - Mushaf: framing halaman, header mushaf, nomor ayat, dan Arab full.
 
 ### Ibadah / Prayer
 
@@ -271,3 +280,4 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
 - 2026-05-07: Native accessibility polish: `TabBar`, `SegmentedTabs`, `IconActionButton`, `ActionPill`, `PaperSearchInput`, dan `CompactRow` diberi label/role/state aksesibilitas supaya icon-only atau inactive controls tidak muncul kosong di Android hierarchy.
 - 2026-05-07: Copy user-facing pada kartu data sementara dirapikan agar tidak memakai istilah `API`/cache teknis di UI; sisa temuan `endpoint`, `SQLite`, `SecureStore`, dan `fallback` di `apps/mobile/src` adalah identifier internal kode.
 - 2026-05-07: `SessionCard` dirapikan untuk auth journey: copy Masuk/Daftar/Lupa Sandi dibuat konsisten bahasa Indonesia, tombol mode dibuat wrap/compact, dan control auth diberi accessibility role/state.
+- 2026-05-07 (IA revamp selesai): Tab akhir 5 item adalah Beranda/Quran/Hadis/Ibadah/Belajar (bukan Profil). Profil diakses via avatar/header. Tasklist revamp lengkap di `docs/MOBILE_IA_REVAMP_TASKLIST.md`. Detail UI rule (anti-expand-inline) terdokumentasi di `docs/MOBILE_DESIGN_PATTERNS.md`.

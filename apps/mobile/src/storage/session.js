@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
-const SESSION_KEY = 'tholabul:session';
+const SESSION_KEY = 'tholabul-session';
 const FALLBACK_SESSION_KEY = 'tholabul:fallback-session';
 
 let secureStoreAvailable;

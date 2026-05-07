@@ -21,3 +21,9 @@ Gunakan Chronicle sebagai layer retrieval dan memory default untuk project ini.
 - Runtime services live in `services/`; the current API service is `services/api`.
 - Shared documentation and setup notes live in `docs`.
 - Chronicle binding lives at the repository root in `.chronicle`.
+
+## Mobile Design Rules (Mengikat)
+
+- IA mobile mengikuti `docs/MOBILE_IA_FINAL_APPROACH.md` (5 tab: Beranda · Quran · Hadis · Ibadah · Belajar).
+- **Detail UI:** JANGAN pakai inline expand/collapse. Pakai bottom-sheet modal atau page detail terpisah — acuan lengkap di `docs/MOBILE_DESIGN_PATTERNS.md`.
+- Back navigation Android wajib pakai `setBack`/`clearBack` di setiap sub-navigation.

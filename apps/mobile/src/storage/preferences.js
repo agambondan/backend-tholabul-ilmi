@@ -12,7 +12,9 @@ export const preferenceKeys = {
   prayerReminderIds: 'prayer-reminder-ids',
   prayerReminderLeadMinutes: 'prayer-reminder-lead-minutes',
   prayerReminderPrayers: 'prayer-reminder-prayers',
+  quranArabicFont: 'quran-arabic-font',
   quranAudioQari: 'quran-audio-qari',
+  quranDisplayMode: 'quran-display-mode',
   quranFontSize: 'quran-font-size',
   quranMemorizationMode: 'quran-memorization-mode',
 };

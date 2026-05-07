@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
@@ -18,10 +18,12 @@ import {
 import { addBookmark, deleteBookmark, getBookmarks, getNotesByType } from '../api/personal';
 import { Card, CardTitle } from '../components/Card';
 import { NotesPanel } from '../components/NotesPanel';
-import { ActionPill, IconActionButton } from '../components/Paper';
+import { ActionPill, IconActionButton, PaperSearchInput } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { useSession } from '../context/SessionContext';
 import { colors, radius, spacing } from '../theme';
+
+const HADITH_LIST_PAGE_SIZE = 10;
 
 const HADITH_DETAIL_TABS = [
   { key: 'text', label: 'Teks' },
@@ -30,6 +32,8 @@ const HADITH_DETAIL_TABS = [
   { key: 'takhrij', label: 'Takhrij' },
   { key: 'notes', label: 'Catatan' },
 ];
+
+const normalizeSearchText = (value) => String(value ?? '').trim().toLowerCase();
 
 export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   const { user } = useSession();
@@ -47,6 +51,8 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   const [bookmarks, setBookmarks] = useState({});
   const [bookmarkItems, setBookmarkItems] = useState([]);
   const [noteCounts, setNoteCounts] = useState({});
+  const [query, setQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(HADITH_LIST_PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailTab, setDetailTab] = useState('text');
@@ -55,6 +61,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
 
   const load = useCallback(async (bookSlug = null) => {
     setLoading(true);
+    setVisibleCount(HADITH_LIST_PAGE_SIZE);
     try {
       const items = bookSlug ? await getHadithsByBook(bookSlug) : await getHadiths();
       setHadiths(items);
@@ -127,6 +134,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
       const next = slug === selectedBook ? null : slug;
       setSelectedBook(next);
       setSelectedHadith(null);
+      setVisibleCount(HADITH_LIST_PAGE_SIZE);
       load(next);
     },
     [load, selectedBook],
@@ -254,6 +262,32 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     .map(normalizeHadith)
     .slice(0, 5);
 
+  const selectedBookName = books.find((book) => book.slug === selectedBook)?.name ?? 'Semua kitab';
+
+  const filteredHadiths = useMemo(() => {
+    const term = normalizeSearchText(query);
+    if (!term) return hadiths;
+
+    return hadiths.filter((hadith) => {
+      const fields = [
+        hadith.title,
+        hadith.translation,
+        hadith.arabic,
+        hadith.book,
+        hadith.bookSlug,
+        hadith.grade,
+        hadith.themeName,
+        hadith.chapterName,
+        hadith.number,
+      ];
+
+      return fields.some((field) => normalizeSearchText(field).includes(term));
+    });
+  }, [hadiths, query]);
+
+  const visibleHadiths = filteredHadiths.slice(0, visibleCount);
+  const hasMoreHadiths = visibleCount < filteredHadiths.length;
+
   const renderCompactHadithCard = (hadith, meta = '') => (
     <Pressable key={`${meta}-${hadith.id}`} onPress={() => openHadith(hadith)} style={styles.compactHadith}>
       <View style={styles.detailHeader}>
@@ -291,6 +325,10 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   useEffect(() => {
     refreshAll();
   }, [refreshAll]);
+
+  useEffect(() => {
+    setVisibleCount(HADITH_LIST_PAGE_SIZE);
+  }, [query, selectedBook]);
 
   useEffect(() => {
     const hadithId = deepLinkTarget?.params?.hadithId;
@@ -524,6 +562,13 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
       subtitle="Baca hadis beserta sanad, perawi, dan rujukan takhrij."
       refreshing={loading}
       onRefresh={refreshAll}
+      searchSlot={
+        <PaperSearchInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Cari nomor, kitab, tema, atau teks hadis"
+        />
+      }
     >
       {message ? <Text style={styles.message}>{message}</Text> : null}
       {!user ? <Text style={styles.notice}>Buka Profil untuk masuk dan menyimpan bookmark hadis.</Text> : null}
@@ -568,32 +613,66 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
         </Card>
       ) : null}
 
+      <View style={styles.listSummary}>
+        <View>
+          <Text style={styles.listSummaryTitle}>{selectedBookName}</Text>
+          <Text style={styles.listSummaryMeta}>
+            {loading ? 'Memuat hadis...' : `${filteredHadiths.length} hadis ditampilkan`}
+          </Text>
+        </View>
+        {query ? <Text style={styles.queryBadge}>Cari</Text> : null}
+      </View>
+
       {loading && hadiths.length === 0 ? (
         <ActivityIndicator color={colors.primary} />
+      ) : filteredHadiths.length === 0 ? (
+        <Card>
+          <CardTitle meta={query ? 'Tidak cocok' : 'Kosong'}>Hadis belum ditemukan</CardTitle>
+          <Text style={styles.emptyText}>
+            {query
+              ? 'Coba kata kunci lain, nomor hadis, nama kitab, atau tema yang lebih umum.'
+              : 'Daftar hadis untuk filter ini belum tersedia.'}
+          </Text>
+        </Card>
       ) : (
-        hadiths.map((hadith) => (
-          <Card key={`${hadith.id}-${hadith.title}`}>
-            <CardTitle meta={hadith.grade || hadith.book}>{hadith.title}</CardTitle>
-            {hadith.arabic ? <Text style={styles.arabic}>{hadith.arabic}</Text> : null}
-            <Text style={styles.translation}>{hadith.translation || hadith.book}</Text>
-            <ActionPill Icon={BookOpen} label="Buka detail" onPress={() => openHadith(hadith)} />
-            {user ? (
-              <ActionPill
-                disabled={savingId === hadith.id}
-                Icon={bookmarks[hadith.id] ? BookmarkCheck : Bookmark}
-                label={
-                  savingId === hadith.id
-                    ? 'Menyimpan'
-                    : bookmarks[hadith.id]
-                      ? 'Hapus bookmark'
-                      : 'Bookmark hadis'
-                }
-                onPress={() => toggleBookmark(hadith)}
-                active={Boolean(bookmarks[hadith.id])}
-              />
-            ) : null}
+        <>
+          <Card>
+            {visibleHadiths.map((hadith) => (
+              <View key={`${hadith.id}-${hadith.title}`} style={styles.hadithListItem}>
+                {renderCompactHadithCard(hadith, 'list')}
+                <View style={styles.listActions}>
+                  <ActionPill Icon={BookOpen} label="Detail" onPress={() => openHadith(hadith)} />
+                  {user ? (
+                    <ActionPill
+                      disabled={savingId === hadith.id}
+                      Icon={bookmarks[hadith.id] ? BookmarkCheck : Bookmark}
+                      label={
+                        savingId === hadith.id
+                          ? 'Menyimpan'
+                          : bookmarks[hadith.id]
+                            ? 'Tersimpan'
+                            : 'Simpan'
+                      }
+                      onPress={() => toggleBookmark(hadith)}
+                      active={Boolean(bookmarks[hadith.id])}
+                    />
+                  ) : null}
+                </View>
+              </View>
+            ))}
           </Card>
-        ))
+          {hasMoreHadiths ? (
+            <Pressable
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+              onPress={() => setVisibleCount((current) => current + HADITH_LIST_PAGE_SIZE)}
+              style={styles.loadMoreButton}
+            >
+              <Text style={styles.loadMoreText}>
+                Muat lagi ({filteredHadiths.length - visibleCount} tersisa)
+              </Text>
+            </Pressable>
+          ) : null}
+        </>
       )}
     </Screen>
   );
@@ -653,6 +732,39 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 12,
     marginBottom: spacing.md,
+  },
+  listSummary: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  listSummaryTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  listSummaryMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  queryBadge: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    color: colors.onPrimary,
+    fontSize: 11,
+    fontWeight: '900',
+    overflow: 'hidden',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
   },
   detailTabs: {
     backgroundColor: colors.surface,
@@ -878,6 +990,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingVertical: spacing.md,
   },
+  hadithListItem: {
+    borderBottomColor: colors.faint,
+    borderBottomWidth: 1,
+    paddingBottom: spacing.sm,
+  },
   compactTitle: {
     color: colors.ink,
     flex: 1,
@@ -895,6 +1012,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     marginTop: spacing.xs,
+  },
+  listActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  loadMoreButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    minHeight: 42,
+  },
+  loadMoreText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '900',
   },
   primaryButton: {
     alignItems: 'center',

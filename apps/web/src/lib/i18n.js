@@ -44,7 +44,7 @@ export const translations = {
         'auth.register_success': 'Akun berhasil dibuat! Silakan masuk.',
         'auth.have_account': 'Sudah punya akun?',
         'auth.login_here': 'Masuk di sini',
-        'auth.min_chars': 'Min. 6 karakter',
+        'auth.min_chars': 'Min. 8 karakter',
         // Sidebar group titles
         'sidebar.main_reading': 'Bacaan Utama',
         'sidebar.worship_tracker': 'Ibadah & Tracker',
@@ -1492,7 +1492,7 @@ export const translations = {
         'auth.register_success': 'Account created! Please sign in.',
         'auth.have_account': 'Already have an account?',
         'auth.login_here': 'Sign in',
-        'auth.min_chars': 'Min. 6 characters',
+        'auth.min_chars': 'Min. 8 characters',
         // Sidebar group titles
         'sidebar.main_reading': 'Main Reading',
         'sidebar.worship_tracker': 'Worship & Tracker',

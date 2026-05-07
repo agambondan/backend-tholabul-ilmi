@@ -1,6 +1,6 @@
 # Tholabul Ilmi — Mobile App Feature Reference
 
-**Versi dokumen:** 2026-05-06
+**Versi dokumen:** 2026-05-07 (diupdate setelah IA revamp)
 **Tujuan:** Referensi lengkap fitur backend (API) dan frontend (web) sebagai acuan desain mobile app.
 **Audiens:** Designer Mobile Apps, Product Manager, Engineer.
 
@@ -15,16 +15,20 @@ Artefak Expo berada di `apps/mobile`.
 
 | Area | Status mobile |
 |---|---|
-| Navigasi inti | Home, Quran, Hadith, Prayer, Qibla, dan Explore tersedia sebagai screen/tab mobile. |
+| **Navigasi inti** | **5 tab final:** Beranda (`home`), Quran (`quran`), Hadis (`hadith`), Ibadah (`ibadah`), Belajar (`belajar`). Profil bukan tab — diakses via avatar Beranda atau header Belajar. |
 | Auth personal | Session JWT via SecureStore native, fallback AsyncStorage untuk web smoke. |
-| Quran | Surah list, reader ayah, navigator page/hizb, hafalan hide/reveal mode, progress, bookmark, notes, tafsir/asbab inline, preferensi font, dan audio ayah fallback. |
-| Hadith | List/detail, sanad, takhrij, perawi, jarh-ta'dil, related hadith, saved hadith, bookmark, dan notes. |
-| Prayer | Lokasi native, method/madhhab, koreksi manual, log shalat, local adzan reminder, dan cache SQLite 30 hari. |
-| Qibla | Arah/distance plus compass heading native dengan fallback web. |
-| Explore | Modul web non-tab tersurface: Doa, Dzikir, Wirid, Tahlil, Asmaul Husna, Tafsir, Asbabun Nuzul, Siroh, Sejarah, Fiqh, Manasik, Kajian, Blog, Kamus, Quiz, Hijri, Tasbih, Zakat, Faraidh, personal features, dan leaderboard. |
-| Offline | SQLite pack untuk Quran, Hadith, Doa/Dzikir/Wirid/Tahlil, bookmark snapshot, dan jadwal shalat 30 hari. |
-| Deep link | Scheme `thullaabulilmi://` mendukung `quran/surah/:number`, `quran/page/:page`, `quran/hizb/:hizb`, `hadith/:id`, `prayer`, `qibla`, dan `explore/:featureKey`. |
-| Notifikasi | Explore Personal menyediakan Notification Center untuk reminder settings, inbox, mark read, dan mark all read. Push server/FCM belum. |
+| Quran | Surah list, reader ayah, navigator page/hizb, hafalan, murojaah, progress, bookmark, notes. Tafsir/asbab/settings via **modal popup** (bukan inline). Font selector Indopak/Utsmani/Naskh. Display mode Normal/Clean. Tajweed legend. |
+| Hadis | List/detail, filter kitab horizontal, tab Teks/Sanad/Perawi/Takhrij/Catatan, jarh-ta'dil, related hadith, bookmark, notes. Deep link `hadith/:id` tetap. |
+| Ibadah hub | Hub dengan section Harian, Arah & Waktu, Dzikir & Bacaan, Alat, Rencana. Jadwal Sholat dan Qibla berjalan sebagai sub-view internal Ibadah. Fitur lain deep-link ke Belajar. |
+| Prayer | Lokasi native, method/madhhab, koreksi manual, log shalat, local adzan reminder, cache SQLite 30 hari. Sub-view Settings internal. |
+| Qibla | Arah/distance, compass heading native dengan fallback web. Rotating dial ring, marker Ka'bah, lokasi manual jika GPS ditolak. |
+| Belajar hub | Katalog grouped: Kajian & Artikel, Siroh & Sejarah, Fiqh & Panduan, Referensi, Evaluasi, Personal Ringkas. Feature detail via **modal popup** (bukan inline). Search catalog. Pin/unpin fitur. |
+| Beranda | Dashboard: prayer card, shortcut grid, contextual shortcuts (dzikir waktu/qibla/tafsir), pinned, terakhir dibuka, muhasabah, bacaan harian. |
+| Profil | Summary, stats (poin/streak/tilawah/hafalan/sholat), badges, settings stack (Akun/Notif/Penyimpanan/Tampilan/Keamanan). |
+| Offline | SQLite pack untuk Quran, Hadith, Doa/Dzikir/Wirid/Tahlil, bookmark snapshot, jadwal shalat 30 hari. |
+| Deep link | Scheme `thullaabulilmi://` + hash `#/`. Alias: `prayer`→`ibadah`, `explore`→`belajar`, `qibla`→`ibadah/qibla`. Tambahan: `hadith/:id`, `quran/surah/:number`. |
+| Notifikasi | Notification Center di Profile > Notifikasi. Settings pengingat sholat, inbox, mark read. Push server/FCM belum. |
+| Discovery | Pinned shortcuts (max 4), recently opened (max 3) di Beranda. Catalog search di Belajar. Contextual shortcuts berbasis waktu & aktivitas. |
 
 ---
 

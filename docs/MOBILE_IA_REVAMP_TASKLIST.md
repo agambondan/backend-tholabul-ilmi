@@ -140,16 +140,21 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
 
 - [x] Pastikan tab Hadis tetap ada di bottom tab.
   - Ditambahkan di Phase 1: key `hadith`, icon `ScrollText`, label `Hadis`
-- [ ] Pastikan Hadis punya search/filter kitab horizontal.
-- [ ] Pastikan Hadis detail tabs tetap utuh:
-  - Teks
-  - Sanad
-  - Perawi
-  - Takhrij
-  - Catatan
-- [ ] Pastikan saved hadith, notes, dan bookmarks tetap bekerja.
-- [ ] Pastikan shortcut Perawi/Jarh/Takhrij dari Belajar mengarah ke source screen Hadis/detail yang sama.
-- [ ] Pastikan deep link `hadith/:id` tidak berubah.
+- [x] Pastikan Hadis punya search/filter kitab horizontal.
+  - File: `apps/mobile/src/screens/HadithScreen.js` — horizontal ScrollView dengan chip per kitab
+  - Updated 2026-05-07: tambah `PaperSearchInput` untuk cari nomor/kitab/tema/teks hadis.
+- [x] Pastikan Hadis detail tabs tetap utuh:
+  - Teks ✓, Sanad ✓, Perawi ✓, Takhrij ✓, Catatan ✓
+  - File: `HADITH_DETAIL_TABS` di HadithScreen.js
+- [x] Pastikan saved hadith, notes, dan bookmarks tetap bekerja.
+  - `bookmarkItems` state + `loadBookmarks()` + `NotesPanel` di tab Catatan
+- [x] Pastikan shortcut Perawi/Jarh/Takhrij dari Belajar mengarah ke source screen Hadis/detail yang sama.
+  - Reftype `hadith` di ExploreScreen routing ke `onOpenTab('hadith', { hadithId })` (line 353)
+  - Perawi Referensi di Belajar menggunakan modal detail ExploreScreen yang sama
+- [x] Pastikan deep link `hadith/:id` tidak berubah.
+  - File: `apps/mobile/src/utils/deepLinks.js` — parameter `hadithId` tetap sama
+- [x] Compact-kan list Hadis agar tab first-class tidak terasa seperti dump konten panjang.
+  - File: `apps/mobile/src/screens/HadithScreen.js` — daftar utama sekarang row compact + local pagination `Muat lagi` per 10 item.
 
 ## Phase 5 - Profile Surface
 
@@ -161,55 +166,70 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - Existing: ProfileScreen tetap hidden route di App.js.
 - [x] Pastikan auth-required empty states masih punya CTA jelas ke Profil.
   - Updated copy: tidak lagi menyebut "tab Profil" setelah Profil keluar dari bottom tab.
-- [ ] Pastikan Profile settings detail tetap tersedia:
-  - Account
-  - Notifications
-  - Offline
-  - Cache/data sementara
-  - Security
-  - Appearance/language jika tersedia
-- [ ] Pastikan personal summary tetap bisa ditemukan di Belajar/Profil:
-  - Streak
-  - Points
-  - Tilawah
-  - Hafalan
-  - Sholat log
-  - Goals
-  - Achievements
+- [x] Pastikan Profile settings detail tetap tersedia:
+  - Account ✓, Notifications ✓, Offline ✓, Cache/data sementara ✓, Appearance ✓
+  - Security ✓ — ditambahkan 2026-05-07: screen `settings-security` dengan placeholder Sesi Aktif/Ganti Sandi/Hapus Akun
+  - File: `apps/mobile/src/screens/ProfileScreen.js` — `SettingsList` + `SubScreen security`
+- [x] Pastikan personal summary tetap bisa ditemukan di Belajar/Profil:
+  - Streak ✓, Points ✓ — stats row
+  - Tilawah ✓, Hafalan ✓, Sholat ✓ — "Ringkasan Progress" grid, load via `getTilawahSummary`, `getHafalanSummary`, `getPrayerStats`
+  - Goals ✓ — MenuRow link ke Belajar > goals
+  - Achievements ✓ — BADGES grid (static untuk saat ini)
+  - File: `apps/mobile/src/screens/ProfileScreen.js`, `apps/mobile/src/api/personal.js` (added `getTilawahSummary`)
 
 ## Phase 6 - Discovery Layer
 
-- [ ] Tambahkan atau rapikan global search untuk fitur dan konten.
-- [ ] Tambahkan recently opened di Beranda.
-- [ ] Tambahkan pinned shortcuts/favorites di Beranda.
-- [ ] Tambahkan contextual shortcuts berdasarkan waktu/aktivitas:
-  - Dzikir pagi/petang
-  - Sholat berikutnya
-  - Qibla saat lokasi aktif
-  - Tafsir/asbab setelah membaca Quran
-- [ ] Tambahkan badge kecil di feature rows/cards:
+- [x] Tambahkan atau rapikan global search untuk fitur dan konten.
+  - Feature search: ExploreScreen (Belajar) punya `PaperSearchInput` + `catalogSections` filter untuk cari fitur
+  - Content search: Search icon di HomeScreen → Kamus (`/api/v1/kamus`) dengan `focusSearch: true`
+  - Keduanya sudah tersedia; tidak perlu tambah layer search lagi
+- [x] Tambahkan recently opened di Beranda.
+  - File: `apps/mobile/src/storage/recentFeatures.js`, `apps/mobile/src/screens/HomeScreen.js`
+  - Result: membuka fitur di Belajar akan masuk ke "Terakhir Dibuka" di Beranda.
+- [x] Tambahkan pinned shortcuts/favorites di Beranda.
+  - File: `apps/mobile/src/storage/recentFeatures.js`, `apps/mobile/src/screens/ExploreScreen.js`, `apps/mobile/src/screens/HomeScreen.js`
+  - Result: fitur di katalog Belajar bisa disematkan/lepas lewat tombol bintang; Beranda menampilkan maksimal 4 shortcut "Disematkan".
+- [x] Tambahkan contextual shortcuts berdasarkan waktu/aktivitas:
+  - Dzikir pagi (04:00–11:59) → Belajar > dzikir
+  - Dzikir petang (15:00–19:59) → Belajar > dzikir
+  - Qibla saat lokasi aktif (bukan NONAKTIF/BELUM TERSEDIA) → Ibadah > qibla
+  - Tafsir setelah baca Quran (recentFeatures contains 'quran') → Belajar > tafsir
+  - File: `apps/mobile/src/screens/HomeScreen.js` — `contextualShortcuts` useMemo, render "SARAN SEKARANG" card
+- [x] Tambahkan badge kecil di feature rows/cards:
   - Butuh akun
   - Offline
-  - Baru
-  - Terakhir dibuka
-- [ ] Pastikan Home tetap ringkas dan tidak menjadi katalog semua fitur.
+  - Lokal
+  - Group fallback
+  - Note: badge "Baru" dan "Terakhir dibuka" spesifik katalog belum dibuat; "Terakhir Dibuka" sekarang ada sebagai section Beranda.
+- [x] Pastikan Home tetap ringkas dan tidak menjadi katalog semua fitur.
+  - Pinned shortcuts dibatasi 4 item, recently opened dibatasi 3 item; katalog lengkap tetap di Belajar.
 
 ## Phase 7 - Documentation Updates
 
-- [ ] Update `docs/MOBILE_DESIGN_REWORK_TASKLIST.md` agar phase baru mengacu ke tasklist ini.
-- [ ] Update `docs/MOBILE_FEATURE_REFERENCE.md` status navigasi mobile setelah IA revamp.
-- [ ] Tambahkan catatan migration/deep link compatibility.
-- [ ] Catat screenshot/native evidence path setelah QA.
+- [x] Update `docs/MOBILE_DESIGN_REWORK_TASKLIST.md` agar phase baru mengacu ke tasklist ini.
+  - Ditambahkan catatan 2026-05-07: link ke IA revamp tasklist + design patterns
+- [x] Update `docs/MOBILE_FEATURE_REFERENCE.md` status navigasi mobile setelah IA revamp.
+  - Tabel status mobile diupdate: 5 tab final, Ibadah hub, Belajar hub, Profil sebagai settings surface, deep link alias
+- [x] Tambahkan catatan migration/deep link compatibility.
+  - `docs/MOBILE_FEATURE_REFERENCE.md` baris Deep link: alias `prayer`→`ibadah`, `explore`→`belajar`, `qibla`→`ibadah/qibla`
+  - Source truth: `apps/mobile/src/utils/deepLinks.js`
+- [x] Catat screenshot/native evidence path setelah QA.
+  - Web Hadis compact smoke: `output/playwright/mobile-hadith-compact-list.png`
+  - Native full smoke masih pending di Phase 8 karena ADB input Xiaomi diblok `INJECT_EVENTS`.
 - [ ] Jalankan `chronicle.sync` setelah perubahan signifikan.
+  - Attempted 2026-05-07 after Hadis compact/search slice.
+  - Attempted 2026-05-07 after Quran reader action menu + display modes.
+  - Attempted 2026-05-07 after TabBar auto-hide neutral color.
+  - Current blocker: Chronicle ingest failed with `vector cannot have more than 16000 dimensions`.
 
 ## Phase 8 - QA & Verification
 
 - [x] `npx expo export --platform web` pass.
-  - Last checked: 2026-05-07 after Phase 3 Belajar hub slice.
+  - Last checked: 2026-05-07 after Quran reader action menu + display modes.
 - [x] `npx expo-doctor` pass.
   - Last checked: 2026-05-07, 17/17 checks passed.
 - [x] `git diff --check -- apps/mobile docs` clean untuk file terkait.
-  - Last checked: 2026-05-07 for `ExploreScreen.js`, `mobileFeatures.js`, and `MOBILE_IA_REVAMP_TASKLIST.md`.
+  - Last checked: 2026-05-07 after Quran reader action menu + display modes.
 - [ ] Screenshot smoke web desktop/mobile untuk:
   - Beranda
   - Quran

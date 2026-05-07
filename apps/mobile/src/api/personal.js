@@ -121,6 +121,8 @@ export const getMyPoints = () => requestJson('/api/v1/achievements/points', { au
 
 export const getMyStreak = () => requestJson('/api/v1/streak', { auth: true });
 
+export const getTilawahSummary = () => requestJson('/api/v1/tilawah/summary', { auth: true });
+
 export const getHafalanList = async () => {
   const payload = await requestJson('/api/v1/hafalan', { auth: true });
   return pickItems(payload);

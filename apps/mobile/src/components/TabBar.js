@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BookOpen, GraduationCap, Heart, Home, ScrollText } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,16 +12,57 @@ export const tabs = [
   { Icon: GraduationCap, key: 'belajar', label: 'Belajar' },
 ];
 
-const teal = {
-  active: '#0d9488',
-  activeBg: '#f0fdfa',
-  inactive: '#9ca3af',
-  border: '#e5e7eb',
-  bg: '#ffffff',
+const AUTO_HIDE_DELAY = 2800;
+
+const nav = {
+  active: '#3c3a35',
+  activeBg: '#ebe4d4',
+  inactive: '#9b9487',
+  border: '#e6e2d6',
+  bg: '#fffdf8',
+  handle: '#7b7364',
 };
 
 export function TabBar({ active, onChange }) {
   const insets = useSafeAreaInsets();
+  const hideTimer = useRef(null);
+  const [visible, setVisible] = useState(true);
+
+  const clearHideTimer = useCallback(() => {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  }, []);
+
+  const scheduleHide = useCallback(() => {
+    clearHideTimer();
+    hideTimer.current = setTimeout(() => setVisible(false), AUTO_HIDE_DELAY);
+  }, [clearHideTimer]);
+
+  const reveal = useCallback(() => {
+    setVisible(true);
+    scheduleHide();
+  }, [scheduleHide]);
+
+  useEffect(() => {
+    reveal();
+    return clearHideTimer;
+  }, [active, clearHideTimer, reveal]);
+
+  if (!visible) {
+    return (
+      <Pressable
+        accessibilityLabel="Tampilkan navigasi"
+        accessibilityRole="button"
+        android_ripple={{ color: 'rgba(60, 58, 53, 0.08)', borderless: false }}
+        onPress={reveal}
+        style={[styles.hiddenWrap, { paddingBottom: Math.max(insets.bottom, spacing.xs) }]}
+      >
+        <View style={styles.hiddenHandle} />
+      </Pressable>
+    );
+  }
 
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
@@ -32,14 +74,17 @@ export function TabBar({ active, onChange }) {
             accessibilityLabel={tab.label}
             accessibilityRole="tab"
             accessibilityState={{ selected }}
-            android_ripple={{ color: teal.activeBg, borderless: false }}
+            android_ripple={{ color: nav.activeBg, borderless: false }}
             key={tab.key}
-            onPress={() => onChange(tab.key)}
+            onPress={() => {
+              onChange(tab.key);
+              reveal();
+            }}
             style={styles.item}
           >
             <View style={[styles.iconWrap, selected && styles.iconWrapActive]}>
               <Icon
-                color={selected ? teal.active : teal.inactive}
+                color={selected ? nav.active : nav.inactive}
                 size={20}
                 strokeWidth={selected ? 2.5 : 1.9}
               />
@@ -55,12 +100,27 @@ export function TabBar({ active, onChange }) {
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
-    backgroundColor: teal.bg,
-    borderTopColor: teal.border,
+    backgroundColor: nav.bg,
+    borderTopColor: nav.border,
     borderTopWidth: 1,
     flexDirection: 'row',
     paddingHorizontal: spacing.sm,
     paddingTop: spacing.sm,
+  },
+  hiddenWrap: {
+    alignItems: 'center',
+    backgroundColor: nav.bg,
+    borderTopColor: nav.border,
+    borderTopWidth: 1,
+    minHeight: 22,
+    paddingTop: spacing.xs,
+  },
+  hiddenHandle: {
+    backgroundColor: nav.handle,
+    borderRadius: 999,
+    height: 4,
+    opacity: 0.72,
+    width: 74,
   },
   item: {
     alignItems: 'center',
@@ -78,12 +138,12 @@ const styles = StyleSheet.create({
     width: 46,
   },
   iconWrapActive: {
-    backgroundColor: teal.activeBg,
+    backgroundColor: nav.activeBg,
   },
   label: {
-    color: teal.active,
+    color: nav.active,
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.2,
+    letterSpacing: 0,
   },
 });

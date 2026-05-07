@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, HelpCircle, Star, StickyNote, UserCircle, Users, Video } from 'lucide-react-native';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, HelpCircle, Star, StickyNote, UserCircle, Users, Video, X } from 'lucide-react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import {
   getAllNotes,
@@ -17,6 +17,7 @@ import { ActionPill, CompactRow, IconActionButton, PaperSearchInput, SectionHead
 import { Screen } from '../components/Screen';
 import { useSession } from '../context/SessionContext';
 import { allFeatures, belajarFeatureGroups } from '../data/mobileFeatures';
+import { readPinnedFeatures, rememberFeatureOpen, togglePinnedFeature } from '../storage/recentFeatures';
 import { colors, radius, spacing } from '../theme';
 import { addBookmark, deleteBookmark, getBookmarks, getTodayPrayerLog, savePrayerLog } from '../api/personal';
 import { getAyahById, getSurahs } from '../api/client';
@@ -93,6 +94,12 @@ const getItemRef = (feature, item) => ({
 const getExploreItemKey = (item) => String(item?.id ?? item?.raw?.id ?? item?.raw?.slug ?? item?.title ?? item?.body);
 const isPaginatedFeature = (feature) => Boolean(feature?.endpoint) && ['list', 'protected-list'].includes(feature.type);
 const findFeature = (featureKey) => allFeatures.find((feature) => feature.key === featureKey);
+const getFeatureBadge = (feature) => {
+  if (['protected-list', 'bookmarks', 'notes'].includes(feature?.type)) return 'Akun';
+  if (feature?.offlineType) return 'Offline';
+  if (localTools.includes(feature?.type)) return 'Lokal';
+  return feature?.group ?? '';
+};
 const matchesCatalogQuery = (section, feature, query) => {
   const text = [section.title, section.meta, feature?.title, feature?.subtitle, feature?.group, feature?.key]
     .filter(Boolean)
@@ -133,6 +140,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [savingBookmark, setSavingBookmark] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [activeNoteRef, setActiveNoteRef] = useState('');
+  const [pinnedFeatureKeys, setPinnedFeatureKeys] = useState({});
   const [surahs, setSurahs] = useState([]);
   const [selectedSurahNumber, setSelectedSurahNumber] = useState(null);
   const [sholatLog, setSholatLog] = useState({});
@@ -150,8 +158,35 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       .filter((section) => section.rows.length > 0);
   }, [featureSearch]);
 
+  const refreshPinnedFeatures = useCallback(async () => {
+    const pinned = await readPinnedFeatures();
+    setPinnedFeatureKeys(
+      pinned.reduce((acc, feature) => {
+        acc[feature.key] = true;
+        return acc;
+      }, {}),
+    );
+  }, []);
+
+  const handleTogglePinnedFeature = useCallback(async (event, feature) => {
+    event?.stopPropagation?.();
+    hapticLight();
+    try {
+      const result = await togglePinnedFeature(feature);
+      setPinnedFeatureKeys(
+        result.items.reduce((acc, item) => {
+          acc[item.key] = true;
+          return acc;
+        }, {}),
+      );
+    } catch {
+      setError('Shortcut belum bisa diperbarui.');
+    }
+  }, []);
+
   const loadFeature = useCallback(
     async (feature, options = {}) => {
+      rememberFeatureOpen(feature).catch(() => {});
       setActiveFeature(feature);
       setItems([]);
       setAnswers({});
@@ -398,6 +433,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   }, [loadBookmarks]);
 
   useEffect(() => {
+    if (!isActive) return;
+    refreshPinnedFeatures();
+  }, [isActive, refreshPinnedFeatures]);
+
+  useEffect(() => {
     const featureKey = deepLinkTarget?.params?.featureKey;
     if (!featureKey || handledDeepLinkId.current === deepLinkTarget?.id) return;
 
@@ -510,12 +550,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         {activeFeature?.type !== 'bookmarks' ? (
           <ActionPill
             Icon={BookOpen}
-            label={selectedItem?.id === item.id ? 'Tutup detail' : 'Buka detail'}
+            label="Detail"
             onPress={() => {
-              setSelectedItem(selectedItem?.id === item.id ? null : item);
+              setSelectedItem(item);
               setActiveNoteRef('');
             }}
-            active={selectedItem?.id === item.id}
           />
         ) : null}
         <ActionPill
@@ -534,38 +573,80 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           active={Boolean(bookmarks[refKey(getItemRef(activeFeature, item).refType, getItemRef(activeFeature, item).refId)])}
         />
       </View>
-      {selectedItem?.id === item.id ? renderItemDetail(item) : null}
     </Card>
   );
 
-  const renderItemDetail = (item) => {
-    const ref = getItemRef(activeFeature, item);
+  const closeDetailModal = () => {
+    setSelectedItem(null);
+    setActiveNoteRef('');
+  };
+
+  const renderDetailModal = () => {
+    if (!selectedItem) return null;
+    const ref = getItemRef(activeFeature, selectedItem);
     const noteKey = refKey(ref.refType, ref.refId);
-    const rawEntries = Object.entries(item.raw ?? {})
+    const rawEntries = Object.entries(selectedItem.raw ?? {})
       .filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value))
-      .slice(0, 6);
+      .slice(0, 12);
 
     return (
-      <View style={styles.detailPanel}>
-        <Text style={styles.detailTitle}>Detail</Text>
-        {rawEntries.map(([key, value]) => (
-          <Text key={key} style={styles.detailLine}>
-            {formatDetailLabel(key)}: {String(value)}
-          </Text>
-        ))}
-        <ActionPill
-          Icon={StickyNote}
-          label="Catatan"
-          onPress={() => setActiveNoteRef(activeNoteRef === noteKey ? '' : noteKey)}
-          active={activeNoteRef === noteKey}
-        />
-        <ActionPill
-          Icon={ExternalLink}
-          label="Buka sumber"
-          onPress={() => openSource(item)}
-        />
-        {activeNoteRef === noteKey ? <NotesPanel refType={ref.refType} refId={ref.refId} /> : null}
-      </View>
+      <Modal
+        animationType="slide"
+        onRequestClose={closeDetailModal}
+        transparent
+        visible={Boolean(selectedItem)}
+      >
+        <Pressable onPress={closeDetailModal} style={styles.modalOverlay} />
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+          <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderCopy}>
+              <Text style={styles.modalTitle}>{selectedItem.title}</Text>
+              {selectedItem.meta || activeFeature?.title ? (
+                <Text style={styles.modalMeta}>{selectedItem.meta || activeFeature?.title}</Text>
+              ) : null}
+            </View>
+            <Pressable hitSlop={8} onPress={closeDetailModal} style={styles.modalClose}>
+              <X color={colors.muted} size={18} strokeWidth={2.2} />
+            </Pressable>
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {selectedItem.arabic ? (
+              <Text style={styles.arabic}>{selectedItem.arabic}</Text>
+            ) : null}
+            {selectedItem.body ? (
+              <Text style={styles.body}>{selectedItem.body}</Text>
+            ) : null}
+            {rawEntries.length ? (
+              <View style={styles.detailPanel}>
+                <Text style={styles.detailTitle}>Detail</Text>
+                {rawEntries.map(([key, value]) => (
+                  <Text key={key} style={styles.detailLine}>
+                    {formatDetailLabel(key)}: {String(value)}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
+            <View style={styles.modalActions}>
+              <ActionPill
+                Icon={StickyNote}
+                label="Catatan"
+                onPress={() => setActiveNoteRef(activeNoteRef === noteKey ? '' : noteKey)}
+                active={activeNoteRef === noteKey}
+              />
+              <ActionPill
+                Icon={ExternalLink}
+                label="Buka sumber"
+                onPress={() => openSource(selectedItem)}
+              />
+            </View>
+            {activeNoteRef === noteKey ? (
+              <NotesPanel refType={ref.refType} refId={ref.refId} />
+            ) : null}
+            <View style={styles.modalBottomPad} />
+          </ScrollView>
+        </View>
+      </Modal>
     );
   };
 
@@ -818,12 +899,30 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
               <SectionHeader meta={section.meta} title={section.title} />
               <View style={styles.belajarCard}>
                 {section.rows.map((row) => {
+                  const pinned = Boolean(pinnedFeatureKeys[row.feature.key]);
                   return (
                     <CompactRow
                       Icon={row.Icon}
                       key={row.feature.key}
-                      meta={row.feature.group}
+                      meta={getFeatureBadge(row.feature)}
                       onPress={() => loadFeature(row.feature)}
+                      right={(
+                        <Pressable
+                          accessibilityLabel={pinned ? `Lepas ${row.feature.title} dari Beranda` : `Sematkan ${row.feature.title} ke Beranda`}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: pinned }}
+                          android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
+                          onPress={(event) => handleTogglePinnedFeature(event, row.feature)}
+                          style={[styles.pinButton, pinned && styles.pinButtonActive]}
+                        >
+                          <Star
+                            color={pinned ? colors.onPrimary : colors.primary}
+                            fill={pinned ? colors.onPrimary : 'transparent'}
+                            size={15}
+                            strokeWidth={2.2}
+                          />
+                        </Pressable>
+                      )}
                       subtitle={row.feature.subtitle}
                       title={row.feature.title}
                     />
@@ -874,6 +973,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           </Text>
         </Pressable>
       ) : null}
+      {renderDetailModal()}
     </Screen>
   );
 }
@@ -888,6 +988,20 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  pinButton: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+  pinButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   backToExplore: {
     alignItems: 'center',
@@ -958,6 +1072,64 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: spacing.xs,
+  },
+  modalOverlay: {
+    backgroundColor: 'rgba(0,0,0,0.38)',
+    flex: 1,
+  },
+  modalSheet: {
+    backgroundColor: colors.bg,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  modalHandle: {
+    alignSelf: 'center',
+    backgroundColor: colors.faint,
+    borderRadius: 3,
+    height: 4,
+    marginBottom: spacing.md,
+    width: 40,
+  },
+  modalHeader: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  modalHeaderCopy: {
+    flex: 1,
+  },
+  modalTitle: {
+    color: colors.ink,
+    fontFamily: 'serif',
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  modalMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  modalClose: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  modalBottomPad: {
+    height: spacing.xl * 2,
   },
   arabic: {
     color: colors.ink,

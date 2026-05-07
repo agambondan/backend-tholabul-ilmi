@@ -183,7 +183,7 @@ export default function App() {
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
           <View style={styles.container}>
             <View style={[styles.screenPane, activeTab === 'home' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
-              <HomeScreen navigation={navigation} onOpenTab={openTab} />
+              <HomeScreen isActive={activeTab === 'home'} navigation={navigation} onOpenTab={openTab} />
             </View>
             <View style={[styles.screenPane, activeTab === 'quran' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
               <QuranScreen deepLinkTarget={activeTab === 'quran' ? currentTarget : null} isActive={activeTab === 'quran'} navigation={navigation} />

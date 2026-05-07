@@ -1,10 +1,12 @@
 import {
     ArrowLeft,
     Bell,
+    BookOpen,
     HardDrive,
     LogOut,
     Palette,
     Settings,
+    ShieldCheck,
     Target,
     Trophy,
     User,
@@ -19,7 +21,7 @@ import {
     Text,
     View,
 } from 'react-native';
-import { getMyPoints, getMyStreak } from '../api/personal';
+import { getHafalanSummary, getMyPoints, getMyStreak, getPrayerStats, getTilawahSummary } from '../api/personal';
 import { CacheStatusCard } from '../components/CacheStatusCard';
 import { Card } from '../components/Card';
 import { NotificationCenter } from '../components/NotificationCenter';
@@ -113,6 +115,12 @@ function SettingsList({ onNavigate }) {
             meta: 'Tema dan bahasa',
             screen: 'settings-appearance',
         },
+        {
+            Icon: ShieldCheck,
+            label: 'Keamanan',
+            meta: 'Sesi aktif dan keamanan akun',
+            screen: 'settings-security',
+        },
     ];
     return (
         <Card>
@@ -169,7 +177,13 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
             setStats(null);
             return;
         }
-        Promise.allSettled([getMyPoints(), getMyStreak()]).then(([pointsRes, streakRes]) => {
+        Promise.allSettled([
+            getMyPoints(),
+            getMyStreak(),
+            getHafalanSummary(),
+            getPrayerStats(),
+            getTilawahSummary(),
+        ]).then(([pointsRes, streakRes, hafalanRes, prayerRes, tilawahRes]) => {
             setStats({
                 points:
                     pointsRes.status === 'fulfilled'
@@ -179,6 +193,18 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
                     streakRes.status === 'fulfilled'
                         ? (streakRes.value?.current_streak ?? streakRes.value?.streak ?? 0)
                         : 0,
+                hafalanCount:
+                    hafalanRes.status === 'fulfilled'
+                        ? (hafalanRes.value?.memorized_count ?? hafalanRes.value?.total ?? 0)
+                        : null,
+                sholatWeekly:
+                    prayerRes.status === 'fulfilled'
+                        ? (prayerRes.value?.weekly_completion_pct ?? prayerRes.value?.completion_pct ?? null)
+                        : null,
+                tilawahPages:
+                    tilawahRes.status === 'fulfilled'
+                        ? (tilawahRes.value?.total_pages ?? tilawahRes.value?.pages ?? null)
+                        : null,
             });
         });
     }, [session?.token]);
@@ -249,6 +275,31 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
         );
     }
 
+    if (currentScreen === 'settings-security') {
+        return (
+            <SubScreen title="Keamanan" onBack={pop}>
+                <Card>
+                    <Text style={styles.appearanceLabel}>Sesi Aktif</Text>
+                    <Text style={styles.appearanceMeta}>
+                        Manajemen sesi aktif dan riwayat login akan tersedia segera.
+                    </Text>
+                    <Text style={[styles.appearanceLabel, styles.appearanceLabelGap]}>
+                        Ganti Sandi
+                    </Text>
+                    <Text style={styles.appearanceMeta}>
+                        Fitur ganti sandi sedang disiapkan. Gunakan lupa sandi untuk saat ini.
+                    </Text>
+                    <Text style={[styles.appearanceLabel, styles.appearanceLabelGap]}>
+                        Hapus Akun
+                    </Text>
+                    <Text style={styles.appearanceMeta}>
+                        Untuk menghapus akun, hubungi tim Tholabul Ilmi.
+                    </Text>
+                </Card>
+            </SubScreen>
+        );
+    }
+
     return (
         <Screen subtitle="Kelola akun, progress belajar, dan preferensi pribadimu." title="Profil">
             <Card style={styles.profileCard}>
@@ -284,6 +335,44 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
                         <Text style={styles.statValue}>{stats.streak}</Text>
                         <Text style={styles.statLabel}>Hari Streak</Text>
                     </Card>
+                </View>
+            ) : null}
+
+            {stats && (stats.hafalanCount !== null || stats.sholatWeekly !== null || stats.tilawahPages !== null) ? (
+                <View style={styles.progressSection}>
+                    <Text style={styles.sectionLabel}>RINGKASAN PROGRESS</Text>
+                    <View style={styles.progressGrid}>
+                        {stats.hafalanCount !== null ? (
+                            <Pressable
+                                onPress={() => onOpenTab('quran', { tab: 'hafalan' })}
+                                style={styles.progressCard}
+                            >
+                                <BookOpen color={colors.primary} size={20} strokeWidth={2} />
+                                <Text style={styles.progressValue}>{stats.hafalanCount}</Text>
+                                <Text style={styles.progressLabel}>Surah Hafalan</Text>
+                            </Pressable>
+                        ) : null}
+                        {stats.sholatWeekly !== null ? (
+                            <Pressable
+                                onPress={() => onOpenTab('ibadah')}
+                                style={styles.progressCard}
+                            >
+                                <Target color={colors.primary} size={20} strokeWidth={2} />
+                                <Text style={styles.progressValue}>{stats.sholatWeekly}%</Text>
+                                <Text style={styles.progressLabel}>Sholat Minggu Ini</Text>
+                            </Pressable>
+                        ) : null}
+                        {stats.tilawahPages !== null ? (
+                            <Pressable
+                                onPress={() => onOpenTab('quran')}
+                                style={styles.progressCard}
+                            >
+                                <Trophy color={colors.primary} size={20} strokeWidth={2} />
+                                <Text style={styles.progressValue}>{stats.tilawahPages}</Text>
+                                <Text style={styles.progressLabel}>Halaman Tilawah</Text>
+                            </Pressable>
+                        ) : null}
+                    </View>
                 </View>
             ) : null}
 
@@ -442,6 +531,36 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '700',
         marginTop: spacing.xs,
+        textTransform: 'uppercase',
+    },
+    progressSection: {
+        marginBottom: spacing.md,
+    },
+    progressGrid: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+    },
+    progressCard: {
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderColor: colors.faint,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        flex: 1,
+        gap: spacing.xs,
+        paddingVertical: spacing.md,
+    },
+    progressValue: {
+        color: colors.primaryDark,
+        fontFamily: 'serif',
+        fontSize: 20,
+        fontWeight: '900',
+    },
+    progressLabel: {
+        color: colors.muted,
+        fontSize: 10,
+        fontWeight: '700',
+        textAlign: 'center',
         textTransform: 'uppercase',
     },
     badgeSection: {

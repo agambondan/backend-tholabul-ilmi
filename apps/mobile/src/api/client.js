@@ -1,23 +1,43 @@
 import { cacheKeys, readCache, writeCache } from '../storage/cache';
 import { readSession } from '../storage/session';
+import { NativeModules, Platform } from 'react-native';
 
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:29900';
+const resolveApiUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+  if (Platform.OS === 'web') return 'http://localhost:29900';
+
+  const scriptUrl = NativeModules.SourceCode?.scriptURL ?? '';
+  const host = /^[a-z][a-z0-9+.-]*:\/\/([^/:]+)/i.exec(scriptUrl)?.[1];
+  if (host && host !== 'localhost' && host !== '127.0.0.1') {
+    return `http://${host}:29900`;
+  }
+
+  return 'http://localhost:29900';
+};
+
+export const API_URL = resolveApiUrl();
 
 export const requestJson = async (path, options = {}) => {
   const { auth, body: rawBody, headers, ...fetchOptions } = options;
   const session = auth ? await readSession() : null;
   const body = rawBody && typeof rawBody !== 'string' ? JSON.stringify(rawBody) : rawBody;
+  const url = `${API_URL}${path}`;
 
-  const response = await fetch(`${API_URL}${path}`, {
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
-      ...headers,
-    },
-    ...fetchOptions,
-    body,
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+        ...headers,
+      },
+      ...fetchOptions,
+      body,
+    });
+  } catch (error) {
+    throw new Error(`Network request failed ke ${url}. Pastikan HP bisa membuka ${API_URL}/api/v1/surah?size=1`);
+  }
 
   if (!response.ok) {
     let message = `Request failed: ${response.status}`;

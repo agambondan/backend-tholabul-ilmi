@@ -1,15 +1,20 @@
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSession } from '../context/SessionContext';
 import { forgotPassword, register } from '../api/auth';
 import { colors, radius, spacing } from '../theme';
 import { Card, CardTitle } from './Card';
 
+const DEV_DEFAULT_EMAIL = __DEV__ ? 'admin@tholabul-ilmi.com' : '';
+const DEV_DEFAULT_PASSWORD = __DEV__ ? 'Admin@123' : '';
+
 export function SessionCard() {
   const { error, loading, signIn, signOut, user } = useSession();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(DEV_DEFAULT_EMAIL);
+  const [password, setPassword] = useState(DEV_DEFAULT_PASSWORD);
+  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [mode, setMode] = useState('signin');
   const [busy, setBusy] = useState(false);
@@ -17,7 +22,7 @@ export function SessionCard() {
   const submit = async () => {
     setMessage('');
     try {
-      await signIn({ email: email.trim(), password });
+      await signIn({ email: email.trim(), password: password.trim() });
       setPassword('');
       setMessage('Akun berhasil masuk di perangkat ini.');
     } catch {
@@ -50,6 +55,10 @@ export function SessionCard() {
 
   const submitRegister = async () => {
     if (!name.trim() || !email.trim() || !password) return;
+    if (password.length < 8) {
+      setMessage('Kata sandi minimal 8 karakter.');
+      return;
+    }
     setBusy(true);
     setMessage('');
     try {
@@ -89,7 +98,7 @@ export function SessionCard() {
     loading ||
     busy ||
     (isSignIn && (!email || !password)) ||
-    (isRegister && (!name.trim() || !email || !password)) ||
+    (isRegister && (!name.trim() || !email || password.length < 8)) ||
     (isForgot && !email);
 
   return (
@@ -121,15 +130,31 @@ export function SessionCard() {
           value={email}
         />
         {!isForgot ? (
-          <TextInput
-            accessibilityLabel="Kata sandi"
-            onChangeText={setPassword}
-            placeholder="Kata sandi"
-            placeholderTextColor={colors.muted}
-            secureTextEntry
-            style={styles.input}
-            value={password}
-          />
+          <View style={styles.passwordField}>
+            <TextInput
+              accessibilityLabel="Kata sandi"
+              onChangeText={setPassword}
+              placeholder={isRegister ? 'Kata sandi (min. 8 karakter)' : 'Kata sandi'}
+              placeholderTextColor={colors.muted}
+              secureTextEntry={!showPassword}
+              style={styles.passwordInput}
+              value={password}
+            />
+            <Pressable
+              accessibilityLabel={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+              accessibilityRole="button"
+              accessibilityState={{ selected: showPassword }}
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
+              onPress={() => setShowPassword((current) => !current)}
+              style={styles.passwordToggle}
+            >
+              {showPassword ? (
+                <EyeOff color={colors.primary} size={20} strokeWidth={2.3} />
+              ) : (
+                <Eye color={colors.primary} size={20} strokeWidth={2.3} />
+              )}
+            </Pressable>
+          </View>
         ) : null}
 
         <Pressable
@@ -202,6 +227,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     minHeight: 46,
     paddingHorizontal: spacing.md,
+  },
+  passwordField: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    minHeight: 46,
+  },
+  passwordInput: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 14,
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 0,
+  },
+  passwordToggle: {
+    alignItems: 'center',
+    borderRadius: radius.sm,
+    height: 42,
+    justifyContent: 'center',
+    marginRight: 2,
+    width: 42,
   },
   button: {
     alignItems: 'center',

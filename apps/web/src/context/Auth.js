@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
 
     const fetchMe = async (tok) => {
         try {
-            const res = await fetch(`${API_URL}/api/v1/users/me`, {
+            const res = await fetch(`${API_URL}/api/v1/auth/me`, {
                 credentials: 'include',
                 headers: { Authorization: `Bearer ${tok}` },
             });
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
             if (res.status === 401) {
                 const newToken = await doRefresh();
                 if (newToken) {
-                    const retry = await fetch(`${API_URL}/api/v1/users/me`, {
+                    const retry = await fetch(`${API_URL}/api/v1/auth/me`, {
                         credentials: 'include',
                         headers: { Authorization: `Bearer ${newToken}` },
                     });

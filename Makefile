@@ -45,6 +45,11 @@ mobile-ios:
 mobile-web:
 	cd apps/mobile && npm run web
 
+LAN_IP ?= $(shell ip route get 8.8.8.8 2>/dev/null | awk '{for (i=1; i<=NF; i++) if ($$i == "src") {print $$(i+1); exit}}')
+
+expo-lan:
+	cd apps/mobile && EXPO_PUBLIC_API_URL=http://$(LAN_IP):29900 npx expo start --host lan --clear
+
 docker-up:
 	docker compose up -d --build
 
@@ -62,4 +67,6 @@ buildcp:
 	scp -o IdentitiesOnly=yes services/api/weddinggo agam@103.193.176.34:~/project/wedding-api
 
 expo-android:
-	cd apps/mobile && ANDROID_HOME=$(HOME)/.local/share/android-sdk PATH="$$PATH:$(HOME)/.local/share/android-sdk/platform-tools" npx expo start --android
+	cd apps/mobile && ANDROID_HOME=$(HOME)/.local/share/android-sdk PATH="$(HOME)/.local/share/android-sdk/platform-tools:$$PATH" adb reverse tcp:8081 tcp:8081
+	cd apps/mobile && ANDROID_HOME=$(HOME)/.local/share/android-sdk PATH="$(HOME)/.local/share/android-sdk/platform-tools:$$PATH" adb reverse tcp:29900 tcp:29900
+	cd apps/mobile && ANDROID_HOME=$(HOME)/.local/share/android-sdk PATH="$(HOME)/.local/share/android-sdk/platform-tools:$$PATH" npx expo start --android --clear

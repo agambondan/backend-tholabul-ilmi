@@ -5,6 +5,7 @@ import { useLocale } from '@/context/Locale';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { BsEye, BsEyeSlash } from 'react-icons/bs';
 
 const RegisterPage = () => {
     const { register, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -13,6 +14,7 @@ const RegisterPage = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -93,15 +95,25 @@ const RegisterPage = () => {
                             <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
                                 {t('auth.password')}
                             </label>
-                            <input
-                                type='password'
-                                required
-                                minLength={6}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className='w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500'
-                                placeholder={t('auth.min_chars')}
-                            />
+                            <div className='relative'>
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    required
+                                    minLength={8}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className='w-full px-3 py-2 pr-10 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500'
+                                    placeholder={t('auth.min_chars')}
+                                />
+                                <button
+                                    type='button'
+                                    aria-label={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                                    onClick={() => setShowPassword((current) => !current)}
+                                    className='absolute inset-y-0 right-0 flex w-10 items-center justify-center text-gray-500 hover:text-emerald-700 dark:text-gray-300 dark:hover:text-emerald-300'
+                                >
+                                    {showPassword ? <BsEyeSlash /> : <BsEye />}
+                                </button>
+                            </div>
                         </div>
                         <button
                             type='submit'

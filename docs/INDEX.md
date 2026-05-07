@@ -9,6 +9,7 @@ Panduan navigasi dokumen project. Baca ini sebelum mulai task supaya tidak salah
 | Dokumen | Topik | Status |
 |---|---|---|
 | [MOBILE_IA_FINAL_APPROACH.md](./MOBILE_IA_FINAL_APPROACH.md) | **Arsitektur navigasi mobile** — 5 tab final, feature placement, urutan implementasi | ✅ Aktif |
+| [MOBILE_DESIGN_PATTERNS.md](./MOBILE_DESIGN_PATTERNS.md) | **Pola desain mobile mengikat** — detail UI harus modal/page (bukan inline expand), modal style, back navigation | ✅ Aktif |
 | [api/FEATURE_ROADMAP.md](./api/FEATURE_ROADMAP.md) | Roadmap fitur backend, tier, dan status pengerjaan | ✅ Aktif |
 | [api/roadmap-status.md](./api/roadmap-status.md) | Status terkini tiap fitur backend | ✅ Aktif |
 | [web/web-status.md](./web/web-status.md) | Status halaman dan komponen web (Next.js) | ✅ Aktif |
@@ -20,6 +21,7 @@ Panduan navigasi dokumen project. Baca ini sebelum mulai task supaya tidak salah
 | Dokumen | Isi |
 |---|---|
 | **[MOBILE_IA_FINAL_APPROACH.md](./MOBILE_IA_FINAL_APPROACH.md)** | **← Acuan utama IA mobile. Baca ini dulu.** |
+| **[MOBILE_DESIGN_PATTERNS.md](./MOBILE_DESIGN_PATTERNS.md)** | **← Pola desain mengikat: modal vs page detail, anti-expand-inline, modal style.** |
 | [MOBILE_FEATURE_REFERENCE.md](./MOBILE_FEATURE_REFERENCE.md) | Daftar lengkap fitur mobile dan mapping ke backend |
 | [MOBILE_UX_REVIEW.md](./MOBILE_UX_REVIEW.md) | Review UX dan daftar issue yang ditemukan |
 | [MOBILE_DESIGN_REWORK_TASKLIST.md](./MOBILE_DESIGN_REWORK_TASKLIST.md) | Checklist design contract mobile (sudah selesai) |

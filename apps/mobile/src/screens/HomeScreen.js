@@ -2,20 +2,25 @@ import {
   Bell,
   Book,
   BookOpenCheck,
+  Clock3,
   Compass,
   FileText,
   Grid,
   HelpCircle,
   Search,
   Smile,
+  Star,
+  Sun,
+  Sunset,
   Video,
 } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getDailyAyah, getDailyHadith, getPrayerTimes } from '../api/client';
 import { useSession } from '../context/SessionContext';
 import { getTodayPrayerLog } from '../api/personal';
+import { readPinnedFeatures, readRecentFeatures } from '../storage/recentFeatures';
 import { colors, radius, shadows, spacing } from '../theme';
 
 const prayerKeyLabels = {
@@ -59,7 +64,7 @@ const formatCountdown = (minutesDelta) => {
   return `${hours}:${minutes}`;
 };
 
-export function HomeScreen({ onOpenTab }) {
+export function HomeScreen({ isActive, onOpenTab }) {
   const { user } = useSession();
   const [dailyHadith, setDailyHadith] = useState(null);
   const [dailyAyah, setDailyAyah] = useState(null);
@@ -69,6 +74,33 @@ export function HomeScreen({ onOpenTab }) {
   const [loadingDaily, setLoadingDaily] = useState(true);
   const [dailyMessage, setDailyMessage] = useState('');
   const [prayerMessage, setPrayerMessage] = useState('');
+  const [pinnedFeatures, setPinnedFeatures] = useState([]);
+  const [recentFeatures, setRecentFeatures] = useState([]);
+  const contextualShortcuts = useMemo(() => {
+    const hour = new Date().getHours();
+    const items = [];
+
+    if (hour >= 4 && hour < 12) {
+      items.push({ Icon: Sun, featureKey: 'dzikir', label: 'Dzikir Pagi', sub: 'Pagi hari', tab: 'belajar' });
+    } else if (hour >= 15 && hour < 20) {
+      items.push({ Icon: Sunset, featureKey: 'dzikir', label: 'Dzikir Petang', sub: "Ba'da Ashar", tab: 'belajar' });
+    }
+
+    const locationActive =
+      locationLabel !== 'LOKASI NONAKTIF' &&
+      locationLabel !== 'Memuat lokasi' &&
+      locationLabel !== 'LOKASI BELUM TERSEDIA';
+    if (locationActive) {
+      items.push({ Icon: Compass, label: 'Kiblat', params: { view: 'qibla' }, sub: locationLabel, tab: 'ibadah' });
+    }
+
+    if (recentFeatures.some((f) => f.key === 'quran')) {
+      items.push({ Icon: FileText, featureKey: 'tafsir', label: 'Tafsir', sub: 'Setelah tilawah', tab: 'belajar' });
+    }
+
+    return items.slice(0, 3);
+  }, [locationLabel, recentFeatures]);
+
   const displayName = user?.name || 'Tamu';
   const initials = displayName
     .split(/\s+/)
@@ -195,6 +227,21 @@ export function HomeScreen({ onOpenTab }) {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (!isActive) return;
+    let mounted = true;
+
+    Promise.all([readPinnedFeatures(), readRecentFeatures()]).then(([pinnedItems, recentItems]) => {
+      if (!mounted) return;
+      setPinnedFeatures(pinnedItems.slice(0, 4));
+      setRecentFeatures(recentItems.slice(0, 3));
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [isActive]);
+
   return (
     <ScrollView contentContainerStyle={styles.screen} showsVerticalScrollIndicator={false} style={styles.scroll}>
       <View style={styles.header}>
@@ -259,6 +306,86 @@ export function HomeScreen({ onOpenTab }) {
           </Pressable>
         ))}
       </View>
+
+      {contextualShortcuts.length ? (
+        <View style={styles.contextCard}>
+          <Text style={styles.contextLabel}>SARAN SEKARANG</Text>
+          <View style={styles.contextRow}>
+            {contextualShortcuts.map(({ Icon, featureKey, label, params, sub, tab }) => (
+              <Pressable
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                key={label}
+                onPress={() => onOpenTab(tab, params ?? (featureKey ? { featureKey } : null))}
+                style={styles.contextItem}
+              >
+                <View style={styles.contextIcon}>
+                  <Icon color={colors.primary} size={16} strokeWidth={2.2} />
+                </View>
+                <Text style={styles.contextItemLabel}>{label}</Text>
+                <Text style={styles.contextItemSub}>{sub}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {pinnedFeatures.length ? (
+        <View style={styles.recentCard}>
+          <View style={styles.recentHeader}>
+            <View>
+              <Text style={styles.recentTitle}>Disematkan</Text>
+              <Text style={styles.recentMeta}>Shortcut fitur pilihanmu</Text>
+            </View>
+            <Star color={colors.primary} size={18} strokeWidth={2.2} />
+          </View>
+          {pinnedFeatures.map((feature) => (
+            <Pressable
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+              key={feature.key}
+              onPress={() => onOpenTab('belajar', { featureKey: feature.key })}
+              style={styles.recentRow}
+            >
+              <View style={styles.recentIcon}>
+                <Star color={colors.primary} size={16} strokeWidth={2.2} />
+              </View>
+              <View style={styles.recentText}>
+                <Text style={styles.recentRowTitle}>{feature.title}</Text>
+                <Text style={styles.recentRowSubtitle}>{feature.subtitle || feature.group || 'Belajar'}</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
+      {recentFeatures.length ? (
+        <View style={styles.recentCard}>
+          <View style={styles.recentHeader}>
+            <View>
+              <Text style={styles.recentTitle}>Terakhir Dibuka</Text>
+              <Text style={styles.recentMeta}>Lanjutkan fitur yang baru kamu pakai</Text>
+            </View>
+            <Clock3 color={colors.primary} size={18} strokeWidth={2.2} />
+          </View>
+          {recentFeatures.map((feature) => (
+            <Pressable
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+              key={feature.key}
+              onPress={() => onOpenTab('belajar', { featureKey: feature.key })}
+              style={styles.recentRow}
+            >
+              <View style={styles.recentIcon}>
+                <Clock3 color={colors.primary} size={16} strokeWidth={2.2} />
+              </View>
+              <View style={styles.recentText}>
+                <Text style={styles.recentRowTitle}>{feature.title}</Text>
+                <Text style={styles.recentRowSubtitle}>{feature.subtitle || feature.group || 'Belajar'}</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       <Pressable
         android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
@@ -496,6 +623,119 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0,
     textTransform: 'uppercase',
+  },
+  contextCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    ...shadows.paper,
+  },
+  contextLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+  },
+  contextRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  contextItem: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flex: 1,
+    gap: 4,
+    paddingVertical: spacing.md,
+  },
+  contextIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  contextItemLabel: {
+    color: colors.ink,
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  contextItemSub: {
+    color: colors.muted,
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  recentCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    ...shadows.paper,
+  },
+  recentHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  recentTitle: {
+    color: colors.ink,
+    fontFamily: 'serif',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  recentMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  recentRow: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    minHeight: 52,
+    paddingHorizontal: spacing.sm,
+  },
+  recentIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  recentText: {
+    flex: 1,
+  },
+  recentRowTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  recentRowSubtitle: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
   },
   journalCard: {
     alignItems: 'center',
