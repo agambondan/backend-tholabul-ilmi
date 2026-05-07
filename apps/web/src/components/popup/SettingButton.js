@@ -11,6 +11,7 @@ import { TbLayoutDistributeHorizontal, TbLayoutSidebarRight } from 'react-icons/
 const SettingButton = () => {
     const { t } = useLocale();
     const [showPopup, setShowPopup] = useState(false);
+    const [navBarVisible, setNavBarVisible] = useState(false);
     const { isWide, setLayout } = useLayoutMode();
     const { fontId, setFont } = useQuranFont();
     const popupRef = useRef(null);
@@ -26,8 +27,25 @@ const SettingButton = () => {
         return () => document.removeEventListener('mousedown', handler);
     }, [showPopup]);
 
+    useEffect(() => {
+        let tid;
+        const handler = () => {
+            setNavBarVisible(true);
+            clearTimeout(tid);
+            tid = setTimeout(() => setNavBarVisible(false), 2000);
+        };
+        window.addEventListener('scroll', handler);
+        return () => {
+            window.removeEventListener('scroll', handler);
+            clearTimeout(tid);
+        };
+    }, []);
+
     return (
-        <div ref={popupRef} className='fixed right-2 bottom-2 z-10'>
+        <div
+            ref={popupRef}
+            className={`fixed right-2 z-10 transition-[bottom] duration-200 ${navBarVisible ? 'bottom-[52px]' : 'bottom-2'}`}
+        >
             <button
                 className='dark:bg-slate-200 bg-slate-800 dark:text-black text-white rounded-full p-3 shadow hover:opacity-80 transition-opacity'
                 onClick={() => setShowPopup((p) => !p)}

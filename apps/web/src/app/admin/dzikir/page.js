@@ -14,7 +14,7 @@ const EMPTY_FORM = {
     transliteration: '',
     translation: '',
     count: '',
-    category: 'umum',
+    category: 'dzikir_umum',
     source: '',
 };
 
@@ -55,10 +55,10 @@ const AdminDhikrPage = () => {
     const openEdit = (item) => {
         setEditId(item.id ?? item._id);
         setForm({
-            title: item.title ?? '',
-            arabic: item.arabic ?? '',
-            transliteration: item.transliteration ?? '',
-            translation: item.translation ?? '',
+            title: item.translation?.idn ?? item.title ?? '',
+            arabic: item.translation?.ar ?? item.arabic ?? '',
+            transliteration: item.translation?.latin_idn ?? item.transliteration ?? '',
+            translation: item.translation?.description_idn ?? '',
             count: item.count ?? '',
             category: item.category ?? 'umum',
             source: item.source ?? '',
@@ -237,7 +237,7 @@ const AdminDhikrPage = () => {
                                     }
                                     rows={3}
                                     dir='rtl'
-                                    className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white font-arabic text-lg leading-loose'
+                                    className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white font-arabic leading-loose'
                                 />
                             </div>
                             <div>

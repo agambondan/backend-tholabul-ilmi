@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { BsArrowLeft, BsChevronDown, BsChevronRight } from 'react-icons/bs';
+import { BsArrowLeft, BsChevronDown, BsChevronRight, BsSearch } from 'react-icons/bs';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
 
@@ -14,21 +14,26 @@ const DashboardTafsirReaderPage = ({ params }) => {
     const [tafsirList, setTafsirList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
-    const [expanded, setExpanded] = useState(null);
+    const [expanded, setExpanded] = useState(new Set());
+    const [search, setSearch] = useState('');
+    const [showLatin, setShowLatin] = useState(true);
+    const [showTranslation, setShowTranslation] = useState(true);
 
     useEffect(() => {
         setLoading(true);
         setError(false);
         setSurah(null);
         setTafsirList([]);
+        setExpanded(new Set());
 
-        // Find surah number from slug via surah list
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/surah?size=114&sort=number`)
             .then((r) => r.json())
             .then((data) => {
                 const list = data?.items ?? data ?? [];
                 const found = list.find(
-                    (s) => s.latin?.toLowerCase() === slug.toLowerCase(),
+                    (s) =>
+                        s.latin?.toLowerCase() === slug.toLowerCase() ||
+                        s.translation?.latin_en?.toLowerCase() === slug.toLowerCase(),
                 );
                 if (!found) throw new Error('not found');
                 setSurah(found);
@@ -43,6 +48,18 @@ const DashboardTafsirReaderPage = ({ params }) => {
             .catch(() => setError(true))
             .finally(() => setLoading(false));
     }, [slug]);
+
+    const toggle = (id) => {
+        setExpanded((prev) => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const expandAll = () =>
+        setExpanded(new Set(tafsirList.map((item, idx) => item.id ?? item.ayah_number ?? idx)));
+    const collapseAll = () => setExpanded(new Set());
 
     if (loading) {
         return (
@@ -78,6 +95,21 @@ const DashboardTafsirReaderPage = ({ params }) => {
     }
 
     const translation = getLocalizedTranslation(surah?.translation, lang);
+    const query = search.trim().toLowerCase();
+    const visible = tafsirList.filter((item) => {
+        if (!query) return true;
+        return [
+            item.ayah_number,
+            item.number,
+            item.arabic,
+            item.text,
+            getLocalizedTranslation(item.translation, lang),
+            getLocalizedField(item, 'content', lang),
+            item.source,
+        ]
+            .filter(Boolean)
+            .some((v) => String(v).toLowerCase().includes(query));
+    });
 
     return (
         <div className='pb-16'>
@@ -91,15 +123,75 @@ const DashboardTafsirReaderPage = ({ params }) => {
                 </Link>
                 <div className='flex-1 min-w-0'>
                     <p className='text-sm font-bold text-gray-900 dark:text-white leading-none'>
-                        {t('tafsir.title')} {surah?.latin ?? slug}
+                        {t('tafsir.title')} {surah?.latin ?? surah?.translation?.latin_en ?? slug}
                     </p>
                     <p className='text-xs text-gray-400 dark:text-gray-500 mt-0.5'>
                         {translation} · {tafsirList.length} {t('quran.ayah_count')}
                     </p>
                 </div>
                 <span className='text-lg arabic-text text-gray-500 dark:text-gray-400 shrink-0'>
-                    {surah?.name}
+                    {surah?.name ?? surah?.translation?.ar}
                 </span>
+            </div>
+
+            {/* Controls */}
+            <div className='px-4 pt-4 space-y-3'>
+                {/* Search */}
+                <div className='relative'>
+                    <BsSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
+                    <input
+                        type='text'
+                        placeholder={t('tafsir.search_placeholder') ?? 'Cari ayah atau tafsir...'}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className='w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400'
+                    />
+                </div>
+
+                {/* Toolbar: expand/collapse + toggles */}
+                <div className='flex flex-wrap items-center gap-2'>
+                    <button
+                        type='button'
+                        onClick={expandAll}
+                        className='text-xs px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors'
+                    >
+                        {t('common.expand_all') ?? 'Buka Semua'}
+                    </button>
+                    <button
+                        type='button'
+                        onClick={collapseAll}
+                        className='text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors'
+                    >
+                        {t('common.collapse_all') ?? 'Tutup Semua'}
+                    </button>
+                    <button
+                        type='button'
+                        onClick={() => setShowLatin((v) => !v)}
+                        className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                            showLatin
+                                ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400'
+                                : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
+                        }`}
+                    >
+                        {t('ayah.latin') ?? 'Latin'}
+                    </button>
+                    <button
+                        type='button'
+                        onClick={() => setShowTranslation((v) => !v)}
+                        className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                            showTranslation
+                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
+                        }`}
+                    >
+                        {t('common.translation') ?? 'Terjemahan'}
+                    </button>
+                    {query && (
+                        <span className='text-xs text-gray-400 dark:text-gray-500 ml-auto'>
+                            {visible.length} hasil
+                        </span>
+                    )}
+                </div>
             </div>
 
             {tafsirList.length === 0 && !loading && (
@@ -111,17 +203,20 @@ const DashboardTafsirReaderPage = ({ params }) => {
             )}
 
             {/* Tafsir accordion */}
-            <div className='px-4 pt-4 space-y-2'>
-                {tafsirList.map((item, idx) => {
+            <div className='px-4 pt-3 space-y-2'>
+                {visible.map((item, idx) => {
                     const id = item.id ?? item.ayah_number ?? idx;
-                    const isOpen = expanded === id;
+                    const isOpen = expanded.has(id);
+                    const translationText = getLocalizedTranslation(item.translation, lang) || item.text;
+                    const contentText = getLocalizedField(item, 'content', lang);
                     return (
                         <div
                             key={id}
                             className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'
                         >
                             <button
-                                onClick={() => setExpanded(isOpen ? null : id)}
+                                type='button'
+                                onClick={() => toggle(id)}
                                 className='w-full text-left px-4 py-3 flex items-center justify-between gap-3'
                             >
                                 <div className='flex items-center gap-3 min-w-0'>
@@ -154,14 +249,19 @@ const DashboardTafsirReaderPage = ({ params }) => {
                                             {item.arabic}
                                         </p>
                                     )}
-                                    {(getLocalizedTranslation(item.translation, lang) || item.text) && (
+                                    {item.latin && showLatin && (
                                         <p className='text-sm text-gray-500 dark:text-gray-400 italic leading-relaxed'>
-                                            {getLocalizedTranslation(item.translation, lang) || item.text}
+                                            {item.latin}
                                         </p>
                                     )}
-                                    {getLocalizedField(item, 'content', lang) && (
+                                    {translationText && showTranslation && (
+                                        <p className='text-sm text-gray-500 dark:text-gray-400 italic leading-relaxed'>
+                                            {translationText}
+                                        </p>
+                                    )}
+                                    {contentText && (
                                         <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line'>
-                                            {getLocalizedField(item, 'content', lang)}
+                                            {contentText}
                                         </p>
                                     )}
                                     {item.source && (

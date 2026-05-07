@@ -77,10 +77,15 @@ export const adminUserApi = {
 
 export const bookmarkApi = {
     list: () => authFetch('/api/v1/bookmarks'),
-    add: (refType, refId) =>
+    add: (refType, refId, extra = {}) =>
         authFetch('/api/v1/bookmarks', {
             method: 'POST',
-            body: JSON.stringify({ ref_type: refType, ref_id: refId }),
+            body: JSON.stringify({ ref_type: refType, ref_id: refId, ...extra }),
+        }),
+    update: (id, data) =>
+        authFetch(`/api/v1/bookmarks/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
         }),
     remove: (id) => authFetch(`/api/v1/bookmarks/${id}`, { method: 'DELETE' }),
 };
@@ -299,10 +304,16 @@ export const kamusApi = {
 };
 
 export const quizApi = {
-    questions: (category = '') =>
-        fetch(`${API_URL}/api/v1/quiz/questions${category ? `?category=${encodeURIComponent(category)}` : ''}`),
-    submit: (answers) =>
-        authFetch('/api/v1/quiz/submit', { method: 'POST', body: JSON.stringify({ answers }) }),
+    session: ({ count = 10, type = '' } = {}) => {
+        const params = new URLSearchParams();
+        if (count) params.set('count', count);
+        if (type) params.set('type', type);
+        const qs = params.toString();
+        return fetch(`${API_URL}/api/v1/quiz/session${qs ? `?${qs}` : ''}`);
+    },
+    submit: (results) =>
+        authFetch('/api/v1/quiz/submit', { method: 'POST', body: JSON.stringify({ results }) }),
+    stats: () => authFetch('/api/v1/quiz/stats'),
 };
 
 export const prayerApi = {
@@ -476,3 +487,51 @@ export const bookLabel = (book, lang = 'ID') =>
 export const bookImageSrc = (slug) => `/assets/images/kitab/hadith/${slug}.png`;
 
 export const bookHref = (slug) => `/hadith/${slug}`;
+
+export const hadithApi = {
+    daily: () => fetch(`${API_URL}/api/v1/hadiths/daily`),
+    detail: (id) => fetch(`${API_URL}/api/v1/hadiths/${id}`),
+};
+
+export const achievementApi = {
+    list: () => fetch(`${API_URL}/api/v1/achievements`),
+    mine: () => authFetch('/api/v1/achievements/mine'),
+    points: () => authFetch('/api/v1/achievements/points'),
+};
+
+export const quranApi = {
+    byPage: (page) => fetch(`${API_URL}/api/v1/ayah/page/${page}`),
+    byHizb: (hizb) => fetch(`${API_URL}/api/v1/ayah/hizb/${hizb}`),
+};
+
+export const notificationInboxApi = {
+    list: () => authFetch('/api/v1/notifications/inbox'),
+    markRead: (id) => authFetch(`/api/v1/notifications/inbox/${id}/read`, { method: 'PUT' }),
+    markAllRead: () => authFetch('/api/v1/notifications/inbox/read-all', { method: 'PUT' }),
+};
+
+export const dzikirLogApi = {
+    today: () => authFetch('/api/v1/dzikir/log/today'),
+    log: (dzikirId, category) =>
+        authFetch('/api/v1/dzikir/log', {
+            method: 'POST',
+            body: JSON.stringify({ dzikir_id: dzikirId, category }),
+        }),
+    delete: (id) => authFetch(`/api/v1/dzikir/log/${id}`, { method: 'DELETE' }),
+};
+
+export const userWirdApi = {
+    list: () => authFetch('/api/v1/user-wird'),
+    create: (data) =>
+        authFetch('/api/v1/user-wird', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+    update: (id, data) =>
+        authFetch(`/api/v1/user-wird/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+    delete: (id) =>
+        authFetch(`/api/v1/user-wird/${id}`, { method: 'DELETE' }),
+};

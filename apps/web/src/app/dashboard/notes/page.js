@@ -1,11 +1,14 @@
 'use client';
 
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { notesApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsPencilSquare, BsTrash, BsX } from 'react-icons/bs';
 
 const NotesPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
+    const { isAuthenticated } = useAuth();
     const [notes, setNotes] = useState([]);
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
@@ -13,10 +16,33 @@ const NotesPage = () => {
     const [form, setForm] = useState({ title: '', content: '', tags: '' });
 
     useEffect(() => {
-        try {
-            setNotes(JSON.parse(localStorage.getItem('tholabul_notes') ?? '[]'));
-        } catch {}
-    }, []);
+        const load = async () => {
+            if (isAuthenticated) {
+                try {
+                    const res = await notesApi.list();
+                    const data = await res.json();
+                    const items = (data?.items ?? data ?? []).map((n) => ({
+                        id: String(n.id),
+                        title: n.title ?? '',
+                        content: n.content ?? '',
+                        tags: Array.isArray(n.tags) ? n.tags : [],
+                        date: (n.created_at ?? n.date ?? '').slice(0, 10),
+                    }));
+                    if (items.length > 0) {
+                        setNotes(items);
+                        try {
+                            localStorage.setItem('tholabul_notes', JSON.stringify(items));
+                        } catch {}
+                        return;
+                    }
+                } catch {}
+            }
+            try {
+                setNotes(JSON.parse(localStorage.getItem('tholabul_notes') ?? '[]'));
+            } catch {}
+        };
+        load();
+    }, [isAuthenticated]);
 
     const persist = (updated) => {
         setNotes(updated);
@@ -45,16 +71,14 @@ const NotesPage = () => {
         if (!form.title.trim()) return;
         const tags = form.tags
             .split(',')
-            .map((t) => t.trim())
+            .map((tag) => tag.trim())
             .filter(Boolean);
         if (editNote) {
-            persist(
-                notes.map((n) =>
-                    n.id === editNote.id
-                        ? { ...n, title: form.title, content: form.content, tags }
-                        : n,
-                ),
-            );
+            const payload = { title: form.title, content: form.content, tags };
+            persist(notes.map((n) => (n.id === editNote.id ? { ...n, ...payload } : n)));
+            if (isAuthenticated) {
+                notesApi.update(editNote.id, payload).catch(() => {});
+            }
         } else {
             const entry = {
                 id: Date.now().toString(),
@@ -64,6 +88,11 @@ const NotesPage = () => {
                 date: new Date().toISOString().slice(0, 10),
             };
             persist([entry, ...notes]);
+            if (isAuthenticated) {
+                notesApi
+                    .create({ title: entry.title, content: entry.content, tags: entry.tags })
+                    .catch(() => {});
+            }
         }
         setShowModal(false);
     };
@@ -71,6 +100,9 @@ const NotesPage = () => {
     const remove = (id) => {
         if (!confirm(t('notes.delete_confirm'))) return;
         persist(notes.filter((n) => n.id !== id));
+        if (isAuthenticated) {
+            notesApi.delete(id).catch(() => {});
+        }
     };
 
     const filtered = notes.filter(
@@ -135,11 +167,14 @@ const NotesPage = () => {
                                         {note.date
                                             ? new Date(
                                                   note.date + 'T00:00:00',
-                                              ).toLocaleDateString('id-ID', {
+                                              ).toLocaleDateString(
+                                                lang === 'EN' ? 'en-US' : 'id-ID',
+                                                {
                                                   day: 'numeric',
                                                   month: 'short',
                                                   year: 'numeric',
-                                              })
+                                                },
+                                              )
                                             : ''}
                                     </p>
                                     {note.content && (

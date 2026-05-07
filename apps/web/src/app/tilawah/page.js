@@ -7,6 +7,7 @@ import { SkeletonList, SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { tilawahApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useEffect, useState } from 'react';
 import { BsBook, BsPlus } from 'react-icons/bs';
 
@@ -15,6 +16,7 @@ const inputCls =
 
 const TilawahPage = () => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [logs, setLogs] = useState([]);
     const [summary, setSummary] = useState(null);
@@ -96,7 +98,7 @@ const TilawahPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     <div className='text-center mb-8'>
                         <BsBook className='text-4xl text-emerald-600 dark:text-emerald-400 mx-auto mb-2' />
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>

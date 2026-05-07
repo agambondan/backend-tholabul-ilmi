@@ -4,29 +4,14 @@ import { useLocale } from '@/context/Locale';
 import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { BsSearch } from 'react-icons/bs';
+import { BsBookHalf, BsSearch } from 'react-icons/bs';
 
-const FALLBACK_SURAHS = [
-    { number: 1, name: 'الفاتحة', latin: 'Al-Fatihah', translation: 'Pembukaan', total_ayah: 7, type: 'makkiyyah' },
-    { number: 2, name: 'البقرة', latin: 'Al-Baqarah', translation: 'Sapi Betina', total_ayah: 286, type: 'madaniyyah' },
-    { number: 3, name: 'آل عمران', latin: 'Ali Imran', translation: 'Keluarga Imran', total_ayah: 200, type: 'madaniyyah' },
-    { number: 4, name: 'النساء', latin: 'An-Nisa', translation: 'Wanita', total_ayah: 176, type: 'madaniyyah' },
-    { number: 5, name: 'المائدة', latin: 'Al-Maidah', translation: 'Hidangan', total_ayah: 120, type: 'madaniyyah' },
-    { number: 36, name: 'يس', latin: 'Ya-Sin', translation: 'Ya Sin', total_ayah: 83, type: 'makkiyyah' },
-    { number: 55, name: 'الرحمن', latin: 'Ar-Rahman', translation: 'Yang Maha Pengasih', total_ayah: 78, type: 'madaniyyah' },
-    { number: 67, name: 'الملك', latin: 'Al-Mulk', translation: 'Kerajaan', total_ayah: 30, type: 'makkiyyah' },
-    { number: 112, name: 'الإخلاص', latin: 'Al-Ikhlas', translation: 'Ikhlas', total_ayah: 4, type: 'makkiyyah' },
-    { number: 113, name: 'الفلق', latin: 'Al-Falaq', translation: 'Subuh', total_ayah: 5, type: 'makkiyyah' },
-    { number: 114, name: 'الناس', latin: 'An-Nas', translation: 'Manusia', total_ayah: 6, type: 'makkiyyah' },
-];
-
-// FALLBACK uses flat fields; API uses translation.* and number_of_ayahs
 const getLatinName = (s) => s.translation?.latin_en ?? s.translation?.latin_idn ?? s.latin ?? '';
 const getTotalAyah = (s) => s.number_of_ayahs ?? s.total_ayah ?? '?';
 const getArabicName = (s) => s.translation?.ar ?? s.name ?? '';
 const DashboardQuranPage = () => {
     const { t, lang } = useLocale();
-    const [surahs, setSurahs] = useState(FALLBACK_SURAHS);
+    const [surahs, setSurahs] = useState([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
 
@@ -59,6 +44,23 @@ const DashboardQuranPage = () => {
                 </p>
             </div>
 
+            {/* Mushaf navigator shortcut */}
+            <Link
+                href='/dashboard/quran/page-mushaf'
+                className='flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 mb-5 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors group'
+            >
+                <BsBookHalf className='text-2xl text-emerald-600 dark:text-emerald-400 shrink-0' />
+                <div className='flex-1 min-w-0'>
+                    <p className='text-sm font-semibold text-emerald-800 dark:text-emerald-300 group-hover:underline'>
+                        {t('mushaf.title')}
+                    </p>
+                    <p className='text-xs text-emerald-600 dark:text-emerald-500 truncate'>
+                        {t('mushaf.subtitle')}
+                    </p>
+                </div>
+                <span className='text-emerald-400 dark:text-emerald-600 text-sm'>›</span>
+            </Link>
+
             {/* Search */}
             <div className='relative mb-5 max-w-xs'>
                 <BsSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
@@ -71,7 +73,7 @@ const DashboardQuranPage = () => {
                 />
             </div>
 
-            {loading && surahs.length <= FALLBACK_SURAHS.length && (
+            {loading && (
                 <p className='text-xs text-gray-400 mb-3'>{t('quran.loading')}</p>
             )}
 

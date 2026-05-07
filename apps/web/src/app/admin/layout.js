@@ -9,7 +9,6 @@ import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { RiArrowDropDownLine, RiArrowDropUpLine } from 'react-icons/ri';
 import {
     BsBook,
     BsBookHalf,
@@ -25,11 +24,14 @@ import {
     BsListCheck,
     BsMap,
     BsMoon,
+    BsMoonStarsFill,
     BsPeople,
     BsQuestionCircle,
     BsRepeat,
     BsStar,
+    BsSunFill,
 } from 'react-icons/bs';
+import { MdLogout } from 'react-icons/md';
 
 const NAV = [
     { href: '/admin', labelKey: 'admin.nav.dashboard', icon: <BsGrid /> },
@@ -54,14 +56,15 @@ const LANGS = ['ID', 'EN'];
 const SIDEBAR_STORAGE_KEY = 'tholabul_admin_sidebar_collapsed';
 
 const AdminLayout = ({ children }) => {
-    const { user, isAuthenticated, isLoading } = useAuth();
+    const { user, isAuthenticated, isLoading, logout } = useAuth();
     const { t, lang, setLang } = useLocale();
     const { isWide } = useLayoutMode();
     const router = useRouter();
     const pathname = usePathname();
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [langOpen, setLangOpen] = useState(false);
-    const langRef = useRef(null);
+    const [accountOpen, setAccountOpen] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(false);
+    const accountRef = useRef(null);
 
     useEffect(() => {
         if (isLoading) return;
@@ -72,8 +75,8 @@ const AdminLayout = ({ children }) => {
 
     useEffect(() => {
         const handler = (e) => {
-            if (langRef.current && !langRef.current.contains(e.target)) {
-                setLangOpen(false);
+            if (accountRef.current && !accountRef.current.contains(e.target)) {
+                setAccountOpen(false);
             }
         };
         document.addEventListener('mousedown', handler);
@@ -88,17 +91,46 @@ const AdminLayout = ({ children }) => {
         }
     }, []);
 
+    useEffect(() => {
+        const sync = () => {
+            const dark = localStorage.getItem('theme') === 'dark';
+            document.documentElement.classList.toggle('dark', dark);
+            setIsDarkMode(dark);
+        };
+        sync();
+        window.addEventListener('storage', sync);
+        return () => window.removeEventListener('storage', sync);
+    }, []);
+
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', isDarkMode);
+    }, [isDarkMode]);
+
+    const toggleDark = () => {
+        setIsDarkMode((prev) => {
+            localStorage.setItem('theme', !prev ? 'dark' : 'light');
+            return !prev;
+        });
+    };
+
     const toggleSidebar = () => {
         setIsCollapsed((current) => {
             const next = !current;
             try {
                 localStorage.setItem(SIDEBAR_STORAGE_KEY, next ? '1' : '0');
-            } catch {
-                // Ignore storage failures; the visual toggle should still work.
-            }
+            } catch {}
             return next;
         });
     };
+
+    const initials = user?.name
+        ? user.name
+              .split(' ')
+              .slice(0, 2)
+              .map((w) => w[0])
+              .join('')
+              .toUpperCase()
+        : '?';
 
     if (isLoading || !isAuthenticated || user?.role !== 'admin') {
         return <Spinner3 />;
@@ -195,47 +227,112 @@ const AdminLayout = ({ children }) => {
                     >
                         {isCollapsed ? <BsChevronRight /> : <BsChevronLeft />}
                     </button>
-                    <div className='relative' ref={langRef}>
+
+                    {/* Account dropdown */}
+                    <div className='relative' ref={accountRef}>
                         <button
                             type='button'
-                            onClick={() => setLangOpen((value) => !value)}
-                            className='flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors'
+                            onClick={() => setAccountOpen((v) => !v)}
+                            className='flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors'
                         >
-                            <span className='inline-flex rounded-sm overflow-hidden ring-1 ring-gray-200 dark:ring-slate-600 leading-none'>
-                                {ConvertFLagLanguage(lang)}
+                            <div className='w-7 h-7 rounded-full bg-emerald-700 flex items-center justify-center shrink-0'>
+                                <span className='text-white text-[11px] font-semibold'>{initials}</span>
+                            </div>
+                            <span className='text-sm font-medium text-gray-700 dark:text-gray-200 max-w-[120px] truncate hidden sm:block'>
+                                {user?.name?.split(' ')[0] ?? 'Admin'}
                             </span>
-                            <span>{lang === 'ID' ? 'Indonesia' : 'English'}</span>
-                            {langOpen ? (
-                                <RiArrowDropUpLine size={20} />
-                            ) : (
-                                <RiArrowDropDownLine size={20} />
-                            )}
+                            <svg
+                                className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-150 ${accountOpen ? 'rotate-180' : ''}`}
+                                fill='none'
+                                viewBox='0 0 24 24'
+                                stroke='currentColor'
+                                strokeWidth={2.5}
+                            >
+                                <path strokeLinecap='round' strokeLinejoin='round' d='M19 9l-7 7-7-7' />
+                            </svg>
                         </button>
-                        {langOpen && (
-                            <ul className='absolute right-0 z-50 mt-1 min-w-[10rem] list-none overflow-hidden rounded-xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-xl'>
-                                {LANGS.map((item) => (
-                                    <li key={item}>
+
+                        {accountOpen && (
+                            <div className='absolute right-0 z-50 mt-2 w-64 rounded-2xl bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-xl overflow-hidden'>
+                                {/* User identity */}
+                                <div className='px-4 py-3.5 border-b border-gray-100 dark:border-slate-700'>
+                                    <div className='flex items-center gap-3'>
+                                        <div className='w-9 h-9 rounded-full bg-emerald-700 flex items-center justify-center shrink-0'>
+                                            <span className='text-white text-sm font-semibold'>{initials}</span>
+                                        </div>
+                                        <div className='min-w-0'>
+                                            <p className='text-sm font-semibold text-gray-900 dark:text-white truncate'>
+                                                {user?.name ?? 'Admin'}
+                                            </p>
+                                            <p className='text-xs text-gray-400 dark:text-gray-500 truncate'>
+                                                {user?.email ?? ''}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Theme toggle */}
+                                <div className='px-4 py-2.5 flex items-center justify-between border-b border-gray-100 dark:border-slate-700'>
+                                    <span className='text-sm text-gray-700 dark:text-gray-300'>
+                                        {isDarkMode ? t('nav.dark') : t('nav.light')}
+                                    </span>
+                                    <button
+                                        type='button'
+                                        onClick={toggleDark}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                                            isDarkMode ? 'bg-emerald-600' : 'bg-gray-200 dark:bg-slate-600'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`inline-flex h-4 w-4 items-center justify-center rounded-full bg-white shadow transition-transform ${
+                                                isDarkMode ? 'translate-x-6' : 'translate-x-1'
+                                            }`}
+                                        >
+                                            {isDarkMode ? (
+                                                <BsMoonStarsFill className='text-emerald-700 text-[9px]' />
+                                            ) : (
+                                                <BsSunFill className='text-amber-500 text-[9px]' />
+                                            )}
+                                        </span>
+                                    </button>
+                                </div>
+
+                                {/* Language selector */}
+                                <div className='px-4 py-2.5 flex items-center gap-2 border-b border-gray-100 dark:border-slate-700'>
+                                    {LANGS.map((l) => (
                                         <button
+                                            key={l}
                                             type='button'
-                                            className='flex items-center gap-3 w-full px-4 py-2.5 text-sm hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors text-gray-800 dark:text-white'
-                                            onClick={() => {
-                                                setLang(item);
-                                                setLangOpen(false);
-                                            }}
+                                            onClick={() => setLang(l)}
+                                            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                                lang === l
+                                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                                    : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-slate-500'
+                                            }`}
                                         >
                                             <span className='inline-flex rounded-sm overflow-hidden ring-1 ring-gray-200 dark:ring-slate-600 leading-none'>
-                                                {ConvertFLagLanguage(item)}
+                                                {ConvertFLagLanguage(l)}
                                             </span>
-                                            <span>{item === 'ID' ? 'Indonesia' : 'English'}</span>
-                                            {lang === item && (
-                                                <span className='ml-auto text-emerald-600 dark:text-emerald-400'>
-                                                    ✓
-                                                </span>
-                                            )}
+                                            {l === 'ID' ? 'Indonesia' : 'English'}
                                         </button>
-                                    </li>
-                                ))}
-                            </ul>
+                                    ))}
+                                </div>
+
+                                {/* Logout */}
+                                <div className='py-1'>
+                                    <button
+                                        type='button'
+                                        onClick={() => {
+                                            setAccountOpen(false);
+                                            logout();
+                                        }}
+                                        className='flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors'
+                                    >
+                                        <MdLogout className='text-base' />
+                                        {t('nav.logout')}
+                                    </button>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </header>

@@ -7,18 +7,9 @@ import { ImBook } from 'react-icons/im';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedTranslation } from '@/lib/translation';
 
-const FALLBACK = [
-    { slug: 'bukhari', name: 'Shahih Bukhari', total: 7563 },
-    { slug: 'muslim', name: 'Shahih Muslim', total: 5362 },
-    { slug: 'abudaud', name: 'Sunan Abu Daud', total: 5274 },
-    { slug: 'tirmidzi', name: 'Jami At-Tirmidzi', total: 3956 },
-    { slug: 'nasai', name: "Sunan An-Nasa'i", total: 5761 },
-    { slug: 'ibnumajah', name: 'Sunan Ibnu Majah', total: 4341 },
-];
-
 export default function DashboardHadithPage() {
     const { t, lang } = useLocale();
-    const [books, setBooks] = useState(FALLBACK);
+    const [books, setBooks] = useState([]);
     const [search, setSearch] = useState('');
     const formRef = useRef(null);
 

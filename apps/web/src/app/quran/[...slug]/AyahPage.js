@@ -1,6 +1,7 @@
 'use client';
 
 import BookmarkButton from '@/components/BookmarkButton';
+import NoteButton from '@/components/NoteButton';
 import { PopUpIsCopied, ShareAyah } from '@/components/popup/ListImage';
 import { audioApi, mufrodatApi, tafsirApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
@@ -23,7 +24,7 @@ import {
 } from 'react-icons/bs';
 import { IoIosLink, IoMdCopy, IoMdImages } from 'react-icons/io';
 
-const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
+const AyahPage = ({ surah, ayah, newLimit, isLast, hafalanMode = 'off', selectedQari, onQariChange }) => {
     const { t, lang } = useLocale();
     const { fontCls } = useQuranFont();
     const cardRef = useRef();
@@ -44,7 +45,13 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
     const [audioUrls, setAudioUrls] = useState([]);
     const [isPlaying, setIsPlaying] = useState(false);
     const [audioLoading, setAudioLoading] = useState(false);
+    const [showQariMenu, setShowQariMenu] = useState(false);
+    const [revealed, setRevealed] = useState(false);
     const ayahTranslation = getLocalizedTranslation(ayah.translation, lang);
+
+    const hideArabic = hafalanMode === 'hide_arabic' && !revealed;
+    const hideTranslation = hafalanMode === 'hide_translation' && !revealed;
+    const hideAll = hafalanMode === 'hide_all' && !revealed;
 
     const copyText = (value) => {
         CopyToClipboard(value);
@@ -97,6 +104,15 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
         setMufrodatOpen((v) => !v);
     };
 
+    const pickQariUrl = (urls) => {
+        if (!Array.isArray(urls) || urls.length === 0) return null;
+        if (selectedQari) {
+            const match = urls.find((u) => u.qari_slug === selectedQari);
+            if (match) return match;
+        }
+        return urls[0];
+    };
+
     const handleAudio = async () => {
         if (isPlaying) {
             audioRef.current?.pause();
@@ -111,15 +127,24 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                 const data = await res.json();
                 const urls = data?.items ?? data ?? [];
                 setAudioUrls(urls);
-                if (urls.length > 0) {
-                    playAudio(urls[0].audio_url);
-                }
+                const chosen = pickQariUrl(urls);
+                if (chosen) playAudio(chosen.audio_url);
             } catch {
             } finally {
                 setAudioLoading(false);
             }
         } else {
-            playAudio(audioUrls[0].audio_url);
+            const chosen = pickQariUrl(audioUrls);
+            if (chosen) playAudio(chosen.audio_url);
+        }
+    };
+
+    const switchQari = (slug) => {
+        if (onQariChange) onQariChange(slug);
+        setShowQariMenu(false);
+        if (audioRef.current && isPlaying) {
+            audioRef.current.pause();
+            setIsPlaying(false);
         }
     };
 
@@ -220,6 +245,9 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                         <BookmarkButton refType='ayah' refId={ayah.id} />
                     </li>
                     <li className='flex justify-center'>
+                        <NoteButton refType='ayah' refId={ayah.id} />
+                    </li>
+                    <li className='flex justify-center'>
                         <button
                             title={t('common.share')}
                             onClick={() => SetShareImagePopUp(true)}
@@ -296,6 +324,7 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                 <ul className={`flex flex-col w-full justify-center ${fontCls}`} style={{ direction: 'rtl' }}>
                     <li
                         style={{ fontSize: '200%', lineHeight: '2.10' }}
+                        className={hideArabic || hideAll ? 'blur-sm select-none' : ''}
                         dangerouslySetInnerHTML={{
                             __html: (
                                 ayah.translation.ar_html ?? ayah.translation.ar
@@ -304,17 +333,55 @@ const AyahPage = ({ surah, ayah, newLimit, isLast }) => {
                     />
                     {ayah.translation.latin_idn && (
                         <li
-                            className='text-left p-2 text-sm text-gray-500 dark:text-gray-400 italic'
+                            className={`text-left p-2 text-sm text-gray-500 dark:text-gray-400 italic ${hideTranslation || hideAll ? 'blur-sm select-none' : ''}`}
                             style={{ direction: 'ltr' }}
                         >
                             {ayah.translation.latin_idn}
                         </li>
                     )}
-                    <li className='text-left p-2' style={{ direction: 'ltr' }}>
+                    <li
+                        className={`text-left p-2 ${hideTranslation || hideAll ? 'blur-sm select-none' : ''}`}
+                        style={{ direction: 'ltr' }}
+                    >
                         {ayahTranslation}
                     </li>
+                    {hafalanMode !== 'off' && (
+                        <li className='px-2 pb-2' style={{ direction: 'ltr' }}>
+                            <button
+                                type='button'
+                                onClick={() => setRevealed((v) => !v)}
+                                className='text-xs px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors'
+                            >
+                                {revealed
+                                    ? t('hafalan.hide_again') ?? 'Sembunyikan lagi'
+                                    : t('hafalan.reveal') ?? 'Tampilkan'}
+                            </button>
+                        </li>
+                    )}
                 </ul>
             </ul>
+
+            {audioUrls.length > 1 && (
+                <div className='border-b border-gray-100 dark:border-slate-800 px-4 py-2 flex items-center gap-2 flex-wrap text-xs'>
+                    <span className='text-gray-500 dark:text-gray-400'>
+                        {t('ayah.qari') ?? 'Qari'}:
+                    </span>
+                    {audioUrls.map((u) => (
+                        <button
+                            key={u.qari_slug}
+                            type='button'
+                            onClick={() => switchQari(u.qari_slug)}
+                            className={`px-2.5 py-1 rounded-full font-medium transition-colors ${
+                                (selectedQari ?? audioUrls[0].qari_slug) === u.qari_slug
+                                    ? 'bg-emerald-500 text-white'
+                                    : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+                            }`}
+                        >
+                            {u.qari_name}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {tafsirOpen && (
                 <div className='bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-900/30 px-4 py-4'>

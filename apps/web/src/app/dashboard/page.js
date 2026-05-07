@@ -1,7 +1,11 @@
 'use client';
 
+import DailyAyahWidget from '@/components/DailyAyahWidget';
+import DailyHadithWidget from '@/components/DailyHadithWidget';
+import PrayerCountdownWidget from '@/components/PrayerCountdownWidget';
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { bookmarkApi, progressApi, streakApi } from '@/lib/api';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -10,11 +14,13 @@ import {
     BsBookmark,
     BsCheckCircleFill,
     BsCircle,
+    BsFire,
     BsJournalCheck,
     BsPencilSquare,
     BsPerson,
     BsStickyFill,
 } from 'react-icons/bs';
+import { ImBook } from 'react-icons/im';
 import { FaQuran } from 'react-icons/fa';
 import {
     MdFlag,
@@ -29,6 +35,31 @@ const PRAYERS = ['Shubuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'];
 
 const dateStr = (d = new Date()) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const dateStrOffset = (offset) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return dateStr(d);
+};
+
+const calcStreak = () => {
+    let streak = 0;
+    for (let i = 0; i >= -365; i--) {
+        const ds = dateStrOffset(i);
+        try {
+            const entry = JSON.parse(localStorage.getItem(`sholat_log_${ds}`) ?? '{}');
+            const count = PRAYERS.filter((p) => entry[p.toLowerCase()]).length;
+            if (count > 0) {
+                streak++;
+            } else {
+                break;
+            }
+        } catch {
+            break;
+        }
+    }
+    return streak;
+};
 
 const DashboardPage = () => {
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
@@ -98,6 +129,9 @@ const DashboardPage = () => {
     const [goals, setGoals] = useState([]);
     const [muhasabahList, setMuhasabahList] = useState([]);
     const [bookmarks, setBookmarks] = useState([]);
+    const [streak, setStreak] = useState(0);
+    const [quranProgress, setQuranProgress] = useState(null);
+    const [hadithProgress, setHadithProgress] = useState(null);
 
     useEffect(() => {
         if (authLoading || !isAuthenticated) return;
@@ -109,10 +143,34 @@ const DashboardPage = () => {
             setMuhasabahList(
                 JSON.parse(localStorage.getItem('tholabul_muhasabah') ?? '[]'),
             );
-            setBookmarks(
-                JSON.parse(localStorage.getItem('tholabul_bookmarks') ?? '[]'),
-            );
         } catch {}
+
+        streakApi
+            .get()
+            .then((r) => r.json())
+            .then((d) => setStreak(d?.current ?? d?.streak ?? 0))
+            .catch(() => setStreak(calcStreak()));
+
+        bookmarkApi
+            .list()
+            .then((r) => r.json())
+            .then((d) => {
+                const items = d?.items ?? d ?? [];
+                setBookmarks(Array.isArray(items) ? items : []);
+            })
+            .catch(() => {});
+
+        progressApi
+            .getQuran()
+            .then((r) => r.json())
+            .then((d) => setQuranProgress(d ?? null))
+            .catch(() => {});
+
+        progressApi
+            .getHadith()
+            .then((r) => r.json())
+            .then((d) => setHadithProgress(d ?? null))
+            .catch(() => {});
     }, [isAuthenticated, authLoading]);
 
     const prayerCount = PRAYERS.filter((p) => prayerLog[p.toLowerCase()]).length;
@@ -149,20 +207,24 @@ const DashboardPage = () => {
                                     {t('dash.prayers_today')}
                                 </p>
                             </div>
+                            <Link
+                                href='/dashboard/stats'
+                                className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center hover:border-orange-200 dark:hover:border-orange-700 transition-colors group'
+                            >
+                                <p className='text-2xl font-bold text-orange-500 dark:text-orange-400 flex items-center justify-center gap-1'>
+                                    <BsFire className='text-xl' />
+                                    {streak}
+                                </p>
+                                <p className='text-[11px] text-gray-500 dark:text-gray-400 mt-0.5'>
+                                    {t('stats.prayer_streak')}
+                                </p>
+                            </Link>
                             <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center'>
                                 <p className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
                                     {activeGoals.length}
                                 </p>
                                 <p className='text-[11px] text-gray-500 dark:text-gray-400 mt-0.5'>
                                     {t('dash.active_goals_count')}
-                                </p>
-                            </div>
-                            <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center'>
-                                <p className='text-2xl font-bold text-purple-600 dark:text-purple-400'>
-                                    {muhasabahList.length}
-                                </p>
-                                <p className='text-[11px] text-gray-500 dark:text-gray-400 mt-0.5'>
-                                    {t('muhasabah.title')}
                                 </p>
                             </div>
                             <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center'>
@@ -174,6 +236,79 @@ const DashboardPage = () => {
                                 </p>
                             </div>
                         </div>
+
+                        {/* Prayer countdown */}
+                        <div className='mb-4'>
+                            <PrayerCountdownWidget basePath='/dashboard/jadwal-sholat' />
+                        </div>
+
+                        {/* Daily Ayah */}
+                        <div className='mb-4'>
+                            <DailyAyahWidget basePath='/dashboard/quran' />
+                        </div>
+
+                        {/* Daily Hadith */}
+                        <div className='mb-5'>
+                            <DailyHadithWidget basePath='/dashboard/hadith' />
+                        </div>
+
+                        {/* Continue Reading */}
+                        {(quranProgress?.surah_latin || hadithProgress?.book_slug) && (
+                            <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 mb-5'>
+                                <p className='text-sm font-semibold text-gray-800 dark:text-white mb-3'>
+                                    {t('khatam.continue_reading')}
+                                </p>
+                                <div className='space-y-2.5'>
+                                    {quranProgress?.surah_latin && (
+                                        <Link
+                                            href={`/dashboard/quran/${quranProgress.surah_latin}`}
+                                            className='flex items-center justify-between group'
+                                        >
+                                            <div className='flex items-center gap-3'>
+                                                <div className='w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center'>
+                                                    <FaQuran className='text-emerald-700 dark:text-emerald-400 text-sm' />
+                                                </div>
+                                                <div>
+                                                    <p className='text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors'>
+                                                        Al-Quran
+                                                    </p>
+                                                    <p className='text-[11px] text-gray-400 dark:text-gray-500 capitalize'>
+                                                        {quranProgress.surah_latin.replace(/-/g, ' ')}
+                                                        {quranProgress.ayah_number
+                                                            ? ` · ${t('profile.ayah')} ${quranProgress.ayah_number}`
+                                                            : ''}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className='text-emerald-500 text-sm'>→</span>
+                                        </Link>
+                                    )}
+                                    {hadithProgress?.book_slug && (
+                                        <Link
+                                            href={`/dashboard/hadith/${hadithProgress.book_slug}`}
+                                            className='flex items-center justify-between group'
+                                        >
+                                            <div className='flex items-center gap-3'>
+                                                <div className='w-8 h-8 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center'>
+                                                    <ImBook className='text-amber-700 dark:text-amber-400 text-sm' />
+                                                </div>
+                                                <div>
+                                                    <p className='text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors capitalize'>
+                                                        {hadithProgress.book_slug.replace(/-/g, ' ')}
+                                                    </p>
+                                                    {hadithProgress.hadith_id && (
+                                                        <p className='text-[11px] text-gray-400 dark:text-gray-500'>
+                                                            Hadith #{hadithProgress.hadith_id}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <span className='text-emerald-500 text-sm'>→</span>
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Sholat ringkas */}
                         <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 mb-5'>

@@ -7,6 +7,7 @@ import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { leaderboardApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsFire, BsSearch, BsTrophyFill } from 'react-icons/bs';
@@ -21,6 +22,7 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 
 const LeaderboardPage = () => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated } = useAuth();
     const [tab, setTab] = useState('streak');
     const [streakData, setStreakData] = useState([]);
@@ -80,7 +82,7 @@ const LeaderboardPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     <div className='text-center mb-8'>
                         <BsTrophyFill className='text-4xl text-yellow-500 mx-auto mb-2' />
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>

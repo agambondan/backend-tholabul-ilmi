@@ -5,24 +5,14 @@ import { leaderboardApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsTrophyFill } from 'react-icons/bs';
 import { useLocale } from '@/context/Locale';
-
-const FALLBACK_STREAK = [
-    { name: 'Ahmad', score: 15 },
-    { name: 'Fatimah', score: 12 },
-    { name: 'Umar', score: 9 },
-];
-
-const FALLBACK_HAFALAN = [
-    { name: 'Ahmad', score: 25 },
-    { name: 'Fatimah', score: 18 },
-    { name: 'Umar', score: 15 },
-];
+import { useLayoutMode } from '@/lib/useLayoutMode';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 const LeaderboardPage = () => {
     const { user } = useAuth();
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const [tab, setTab] = useState('streak');
     const [streakList, setStreakList] = useState([]);
     const [hafalanList, setHafalanList] = useState([]);
@@ -35,19 +25,17 @@ const LeaderboardPage = () => {
                 const sr = await leaderboardApi.streak();
                 const sData = await sr.json();
                 const s = sData?.items ?? sData ?? [];
-                setStreakList(Array.isArray(s) && s.length > 0 ? s : FALLBACK_STREAK);
+                setStreakList(Array.isArray(s) ? s : []);
             } catch {
-                setStreakList(FALLBACK_STREAK);
+                setStreakList([]);
             }
             try {
                 const hr = await leaderboardApi.hafalan();
                 const hData = await hr.json();
                 const h = hData?.items ?? hData ?? [];
-                setHafalanList(
-                    Array.isArray(h) && h.length > 0 ? h : FALLBACK_HAFALAN,
-                );
+                setHafalanList(Array.isArray(h) ? h : []);
             } catch {
-                setHafalanList(FALLBACK_HAFALAN);
+                setHafalanList([]);
             }
             setLoading(false);
         };
@@ -58,7 +46,7 @@ const LeaderboardPage = () => {
     const scoreLabel = tab === 'streak' ? t('leaderboard.days_unit') : t('stats.surah_unit');
 
     return (
-        <div className='px-4 py-6 max-w-md mx-auto'>
+        <div className={isWide ? 'px-4 py-6' : 'px-4 py-6 max-w-md mx-auto'}>
             <div className='flex items-center gap-2 mb-6'>
                 <BsTrophyFill className='text-amber-500 text-xl' />
                 <h1 className='text-xl font-bold text-gray-900 dark:text-white'>
@@ -86,6 +74,13 @@ const LeaderboardPage = () => {
             {loading ? (
                 <div className='text-center py-16 text-gray-400 dark:text-gray-500 text-sm'>
                     {t('leaderboard.loading')}
+                </div>
+            ) : activeList.length === 0 ? (
+                <div className='text-center py-16'>
+                    <BsTrophyFill className='mx-auto text-4xl text-gray-200 dark:text-slate-700 mb-3' />
+                    <p className='text-gray-400 dark:text-gray-500 text-sm'>
+                        {t('leaderboard.empty') ?? 'Belum ada data leaderboard.'}
+                    </p>
                 </div>
             ) : (
                 <ul className='space-y-2'>

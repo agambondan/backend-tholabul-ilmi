@@ -2,20 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 const PRAYER_MAP = [
-    { key: 'Fajr', label: 'Subuh', icon: '🌙' },
-    { key: 'Sunrise', label: 'Syuruq', icon: '🌅' },
-    { key: 'Dhuhr', label: 'Dzuhur', icon: '☀️' },
-    { key: 'Asr', label: 'Ashar', icon: '🌤️' },
-    { key: 'Maghrib', label: 'Maghrib', icon: '🌇' },
-    { key: 'Isha', label: 'Isya', icon: '🌃' },
+    { key: 'imsak', label: 'Imsak', icon: '🌙', info: true },
+    { key: 'fajr', label: 'Subuh', icon: '🌙' },
+    { key: 'sunrise', label: 'Syuruq', icon: '🌅', info: true },
+    { key: 'dhuhr', label: 'Dzuhur', icon: '☀️' },
+    { key: 'asr', label: 'Ashar', icon: '🌤️' },
+    { key: 'maghrib', label: 'Maghrib', icon: '🌇' },
+    { key: 'isha', label: 'Isya', icon: '🌃' },
 ];
-
-const toAladhanDate = () => {
-    const d = new Date();
-    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
-};
 
 const parseHour = (timeStr) => {
     if (!timeStr || timeStr === '-') return null;
@@ -25,19 +24,20 @@ const parseHour = (timeStr) => {
 
 const JadwalSholatPage = () => {
     const { t } = useLocale();
-    const [timings, setTimings] = useState(null);
+    const { isWide } = useLayoutMode();
+    const [prayers, setPrayers] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
     useEffect(() => {
         const fetchSchedule = async () => {
             try {
-                const dateStr = toAladhanDate();
+                const today = new Date().toISOString().slice(0, 10);
                 const res = await fetch(
-                    `https://api.aladhan.com/v1/timings/${dateStr}?latitude=-6.2088&longitude=106.8456&method=11`,
+                    `${API_URL}/api/v1/sholat-times?lat=-6.2088&lng=106.8456&method=kemenag&madhab=shafi&date=${today}`,
                 );
                 const data = await res.json();
-                setTimings(data?.data?.timings ?? null);
+                setPrayers(data?.data?.prayers ?? null);
             } catch {
                 setError(true);
             }
@@ -49,16 +49,18 @@ const JadwalSholatPage = () => {
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-    const prayerRows = PRAYER_MAP.map(({ key, label, icon }) => {
-        const raw = timings?.[key] ?? '-';
-        const clean = raw !== '-' ? raw.replace(/ \(.*\)$/, '') : '-';
-        return { key, label, icon, time: clean };
-    });
+    const prayerRows = PRAYER_MAP.map(({ key, label, icon, info }) => ({
+        key,
+        label,
+        icon,
+        info,
+        time: prayers?.[key] ?? '-',
+    }));
 
-    // Find current prayer: last prayer whose time <= now
+    // Find current prayer: last non-info prayer whose time <= now
     let currentPrayerKey = null;
-    if (!loading && !error && timings) {
-        for (const row of prayerRows) {
+    if (!loading && !error && prayers) {
+        for (const row of prayerRows.filter((r) => !r.info)) {
             const mins = parseHour(row.time);
             if (mins !== null && mins <= nowMinutes) {
                 currentPrayerKey = row.key;
@@ -67,7 +69,7 @@ const JadwalSholatPage = () => {
     }
 
     return (
-        <div className='px-4 py-6 max-w-md mx-auto'>
+        <div className={isWide ? 'px-4 py-6' : 'px-4 py-6 max-w-md mx-auto'}>
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-1'>
                 {t('jadwal.title')}
             </h1>
@@ -98,10 +100,8 @@ const JadwalSholatPage = () => {
                                     idx !== prayerRows.length - 1
                                         ? 'border-b border-gray-50 dark:border-slate-700/50'
                                         : ''
-                                } ${
-                                    isCurrent
-                                        ? 'bg-emerald-50 dark:bg-emerald-900/20'
-                                        : ''
+                                } ${isCurrent ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''} ${
+                                    row.info ? 'opacity-60' : ''
                                 }`}
                             >
                                 <div className='flex items-center gap-3'>
@@ -137,9 +137,7 @@ const JadwalSholatPage = () => {
             )}
 
             {error && (
-                <p className='text-center text-sm text-red-500 mt-4'>
-                    {t('jadwal.error')}
-                </p>
+                <p className='text-center text-sm text-red-500 mt-4'>{t('jadwal.error')}</p>
             )}
         </div>
     );

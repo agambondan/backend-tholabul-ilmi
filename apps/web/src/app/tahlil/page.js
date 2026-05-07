@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { getLocalizedField } from '@/lib/translation';
 import { useState } from 'react';
 import { BsBookHalf, BsChevronDown, BsChevronUp } from 'react-icons/bs';
@@ -188,8 +189,9 @@ const SECTIONS = [
     },
 ];
 
-const TahlilPage = () => {
+export const TahlilContent = () => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const [open, setOpen] = useState(new Set(['fatihah']));
     const [showLatin, setShowLatin] = useState(true);
     const [showMeaning, setShowMeaning] = useState(true);
@@ -206,10 +208,7 @@ const TahlilPage = () => {
     const collapseAll = () => setOpen(new Set());
 
     return (
-        <main className='min-h-screen flex flex-col'>
-            <NavbarTailwindCss />
-            <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     {/* Header */}
                     <div className='flex items-center gap-3 mb-2'>
                         <div className='w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center'>
@@ -323,10 +322,17 @@ const TahlilPage = () => {
                         </p>
                     </div>
                 </div>
-            </Section>
-            <Footer />
-        </main>
     );
 };
+
+const TahlilPage = () => (
+    <main className='min-h-screen flex flex-col'>
+        <NavbarTailwindCss />
+        <Section>
+            <TahlilContent />
+        </Section>
+        <Footer />
+    </main>
+);
 
 export default TahlilPage;

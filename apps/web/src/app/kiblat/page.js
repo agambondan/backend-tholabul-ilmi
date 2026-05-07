@@ -34,7 +34,7 @@ const calcDistance = (lat1, lng1, lat2, lng2) => {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-export default function KiblatPage() {
+export function KiblatContent() {
     const { lang, t } = useLocale();
     const [coords, setCoords] = useState(null);
     const [qiblaAngle, setQiblaAngle] = useState(null);
@@ -128,9 +128,7 @@ export default function KiblatPage() {
         Math.abs(((qiblaAngle - compassHeading + 540) % 360) - 180) < 10;
 
     return (
-        <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
-            <NavbarTailwindCss />
-            <div className='max-w-lg flex-1 w-full mx-auto px-4 pt-24 pb-8'>
+        <div className='max-w-lg flex-1 w-full mx-auto px-4 pt-6 pb-8'>
                 {/* Header */}
                 <div className='mb-8 text-center'>
                     <div className='inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-2xl mb-4'>
@@ -296,6 +294,16 @@ export default function KiblatPage() {
                 <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-6'>
                     {t('qibla.gps_note')}
                 </p>
+            </div>
+    );
+}
+
+export default function KiblatPage() {
+    return (
+        <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
+            <NavbarTailwindCss />
+            <div className='pt-24'>
+                <KiblatContent />
             </div>
             <Footer />
         </main>

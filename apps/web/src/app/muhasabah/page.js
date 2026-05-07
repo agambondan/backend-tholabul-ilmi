@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { muhasabahApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useEffect, useState } from 'react';
 import { BsPencilSquare, BsSearch, BsTrash, BsX } from 'react-icons/bs';
 import { MdSelfImprovement } from 'react-icons/md';
@@ -57,6 +58,7 @@ const randomPrompt = () => PROMPTS[Math.floor(Math.random() * PROMPTS.length)];
 
 const MuhasabahPage = () => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [entries, setEntries] = useState([]);
     const [showForm, setShowForm] = useState(false);
@@ -148,7 +150,7 @@ const MuhasabahPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-xl'}>
                     {/* Header */}
                     <div className='flex items-center justify-between mb-6'>
                         <div className='flex items-center gap-3'>

@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { goalsApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BsCheckCircleFill, BsPlusCircle, BsSearch, BsTrash, BsX } from 'react-icons/bs';
 import { MdFlag, MdOutlineTrackChanges } from 'react-icons/md';
@@ -39,6 +40,7 @@ const typeInfo = (key) => GOAL_TYPES.find((t) => t.key === key) ?? GOAL_TYPES[0]
 
 const GoalsPage = () => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [goals, setGoals] = useState([]);
     const [showForm, setShowForm] = useState(false);
@@ -177,7 +179,7 @@ const GoalsPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-xl'}>
                     {/* Header */}
                     <div className='flex items-center justify-between mb-6'>
                         <div className='flex items-center gap-3'>

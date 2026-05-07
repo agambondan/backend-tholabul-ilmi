@@ -35,7 +35,7 @@ export default function TajweedTable() {
                             </p>
                             {/* Transliterated name */}
                             <p className='text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1'>
-                                {tajweed.Description}
+                                {lang === 'EN' ? tajweed.Description : (tajweed.TitleId ?? tajweed.Description)}
                             </p>
                             {/* Localized description */}
                             <p className='text-xs text-gray-500 dark:text-gray-400 leading-snug'>

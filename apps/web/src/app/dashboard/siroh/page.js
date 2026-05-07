@@ -5,36 +5,7 @@ import Link from 'next/link';
 import { sirohApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedField } from '@/lib/translation';
-
-const FALLBACK = [
-    {
-        id: 'f1',
-        slug: 'kelahiran-nabi',
-        title: 'Kelahiran Nabi Muhammad \u{FE0F}',
-        title_en: 'The Birth of Prophet Muhammad ﷺ',
-        category: 'Masa Mekah',
-        excerpt: 'Nabi Muhammad lahir pada 12 Rabiul Awwal tahun Gajah...',
-        excerpt_en: 'Prophet Muhammad was born on 12 Rabiul Awwal in the Year of the Elephant...',
-    },
-    {
-        id: 'f2',
-        slug: 'hijrah-madinah',
-        title: 'Hijrah ke Madinah',
-        title_en: 'The Hijrah to Madinah',
-        category: 'Hijrah',
-        excerpt: 'Peristiwa hijrah menandai babak baru Islam...',
-        excerpt_en: 'The hijrah marked a new chapter in Islam...',
-    },
-    {
-        id: 'f3',
-        slug: 'fathu-makkah',
-        title: 'Fathu Makkah',
-        title_en: 'The Conquest of Makkah',
-        category: 'Kemenangan',
-        excerpt: 'Penaklukan Mekah tanpa pertumpahan darah...',
-        excerpt_en: 'The conquest of Makkah without bloodshed...',
-    },
-];
+import { BsSearch } from 'react-icons/bs';
 
 const toStr = (v) => {
     if (!v) return '';
@@ -46,6 +17,7 @@ export default function SirohDashboardPage() {
     const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         sirohApi
@@ -53,16 +25,28 @@ export default function SirohDashboardPage() {
             .then((res) => res.json())
             .then((data) => {
                 const list = data?.items ?? data ?? [];
-                setItems(Array.isArray(list) && list.length > 0 ? list : FALLBACK);
+                setItems(Array.isArray(list) ? list : []);
             })
-            .catch(() => setItems(FALLBACK))
+            .catch(() => {})
             .finally(() => setLoading(false));
     }, []);
 
     return (
         <div className='p-6'>
-            <h1 className='text-2xl font-bold text-gray-800 mb-1'>{t('siroh.title')}</h1>
-            <p className='text-gray-500 mb-6'>{t('siroh.subtitle')}</p>
+            <h1 className='text-2xl font-bold text-gray-800 dark:text-white mb-1'>{t('siroh.title')}</h1>
+            <p className='text-gray-500 dark:text-gray-400 mb-4'>{t('siroh.subtitle')}</p>
+
+            {/* Search */}
+            <div className='relative mb-5'>
+                <BsSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
+                <input
+                    type='text'
+                    placeholder={t('siroh.search_placeholder') ?? 'Cari kisah...'}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className='w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400'
+                />
+            </div>
 
             {loading && (
                 <p className='text-center text-gray-400 py-10'>{t('siroh.loading')}</p>
@@ -73,27 +57,35 @@ export default function SirohDashboardPage() {
             )}
 
             <div className='space-y-3'>
-                {items.map((item) => {
+                {items.filter((item) => {
+                    if (!search) return true;
+                    const q = search.toLowerCase();
+                    return [
+                        getLocalizedField(item, 'title', lang),
+                        getLocalizedField(item, 'excerpt', lang),
+                        toStr(item.category),
+                    ].filter(Boolean).some((v) => v.toLowerCase().includes(q));
+                }).map((item) => {
                     const id = item.id ?? item._id;
                     return (
                         <Link
                             key={id}
                             href={`/dashboard/siroh/${item.slug ?? id}`}
-                            className='block border border-gray-200 rounded-xl bg-white shadow-sm p-4 hover:shadow-md hover:border-blue-200 transition-all'>
+                            className='block border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 shadow-sm p-4 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all'>
                             <div className='flex items-start gap-3'>
                                 <div className='flex-1 min-w-0'>
                                     <div className='flex items-center gap-2 mb-1 flex-wrap'>
                                         {item.category && (
-                                            <span className='px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-medium'>
+                                            <span className='px-2 py-0.5 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium'>
                                                 {toStr(item.category)}
                                             </span>
                                         )}
                                     </div>
-                                    <h3 className='font-bold text-gray-800 text-sm mb-1'>
+                                    <h3 className='font-bold text-gray-800 dark:text-white text-sm mb-1'>
                                         {getLocalizedField(item, 'title', lang)}
                                     </h3>
                                     {getLocalizedField(item, 'excerpt', lang) && (
-                                        <p className='text-xs text-gray-500 line-clamp-2'>
+                                        <p className='text-xs text-gray-500 dark:text-gray-400 line-clamp-2'>
                                             {getLocalizedField(item, 'excerpt', lang)}
                                         </p>
                                     )}

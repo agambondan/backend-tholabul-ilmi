@@ -5,6 +5,7 @@ import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonHafalan } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { hafalanApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
@@ -28,6 +29,7 @@ const StatusBadge = ({ status, t }) => {
 
 const HafalanPage = () => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [hafalan, setHafalan] = useState([]);
     const [summary, setSummary] = useState(null);
@@ -79,7 +81,7 @@ const HafalanPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-3xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-3xl'}>
                     <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-2'>
                         {t('hafalan.page_title')}
                     </h1>

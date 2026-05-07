@@ -6,12 +6,14 @@ import Section from '@/components/Section';
 import { SkeletonList } from '@/components/skeleton/Skeleton';
 import { sirohApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const SirohDetailPage = ({ params }) => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const [content, setContent] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -31,7 +33,7 @@ const SirohDetailPage = ({ params }) => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-3xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-3xl'}>
                     <Link
                         href='/siroh'
                         className='inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline mb-6'

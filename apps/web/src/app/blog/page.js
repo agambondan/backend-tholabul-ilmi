@@ -7,14 +7,16 @@ import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { blogApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 
 const PAGE_SIZE = 10;
 
-const BlogPage = () => {
+export const BlogContent = ({ basePath = '/blog' }) => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const [posts, setPosts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -99,10 +101,7 @@ const BlogPage = () => {
     });
 
     return (
-        <main className='min-h-screen flex flex-col'>
-            <NavbarTailwindCss />
-            <Section>
-                <div className='container mx-auto px-4 max-w-3xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-3xl'}>
                     <div className='mb-8'>
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>
                             {t('blog.title')}
@@ -206,7 +205,7 @@ const BlogPage = () => {
                         {filteredPosts.map((post) => (
                             <Link
                                 key={post.id ?? post.slug}
-                                href={`/blog/${post.slug}`}
+                                href={`${basePath}/${post.slug}`}
                                 className='block bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm transition-all overflow-hidden'
                             >
                                 {post.cover_image && (
@@ -270,10 +269,17 @@ const BlogPage = () => {
                         </p>
                     )}
                 </div>
-            </Section>
-            <Footer />
-        </main>
     );
 };
+
+const BlogPage = () => (
+    <main className='min-h-screen flex flex-col'>
+        <NavbarTailwindCss />
+        <Section>
+            <BlogContent basePath='/blog' />
+        </Section>
+        <Footer />
+    </main>
+);
 
 export default BlogPage;

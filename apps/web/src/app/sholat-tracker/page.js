@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { sholatTrackerApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
@@ -52,6 +53,7 @@ const formatDate = (str, locale = 'id-ID') => {
 
 const SholatTrackerPage = () => {
     const { lang, t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const today = dateStr();
     const [log, setLog] = useState(EMPTY_LOG());
@@ -119,7 +121,7 @@ const SholatTrackerPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-xl'}>
                     <div className='mb-6 flex items-center justify-between gap-4'>
                         <div className='flex items-center gap-3'>
                             <div className='w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center'>

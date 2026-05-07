@@ -7,45 +7,6 @@ import { BsChevronDown, BsChevronUp, BsSearch } from 'react-icons/bs';
 
 const CATEGORIES = ['thaharah', 'sholat', 'zakat', 'puasa', 'haji', 'muamalah', 'umum'];
 
-const FALLBACK = [
-    {
-        id: 'f1',
-        category: 'sholat',
-        title: 'Syarat Sah Sholat',
-        title_en: 'Valid Prayer Conditions',
-        content:
-            'Syarat sah sholat adalah: suci dari hadats besar dan kecil, menutup aurat, menghadap kiblat, masuk waktu sholat, dan niat.',
-        content_en:
-            'The valid conditions of prayer are purification from major and minor ritual impurity, covering the awrah, facing the qiblah, entering the prayer time, and intention.',
-        dalil: 'أَقِيمُوا الصَّلَاةَ',
-        source: 'QS. Al-Baqarah: 43',
-    },
-    {
-        id: 'f2',
-        category: 'thaharah',
-        title: 'Tata Cara Wudhu',
-        title_en: 'How to Perform Wudu',
-        content:
-            'Wudhu dimulai dengan niat, membasuh muka, kedua tangan hingga siku, mengusap sebagian kepala, membasuh kedua kaki hingga mata kaki, dengan tertib.',
-        content_en:
-            'Wudu begins with intention, washing the face, washing both arms to the elbows, wiping part of the head, washing both feet to the ankles, and doing it in order.',
-        dalil: '',
-        source: 'HR. Bukhari',
-    },
-    {
-        id: 'f3',
-        category: 'puasa',
-        title: 'Hal yang Membatalkan Puasa',
-        title_en: 'Things That Break the Fast',
-        content:
-            "Yang membatalkan puasa: makan dan minum dengan sengaja, jima', muntah dengan sengaja, haid/nifas, hilang akal/murtad.",
-        content_en:
-            'Things that break the fast include intentional eating or drinking, intercourse, intentional vomiting, menstruation or postpartum bleeding, loss of sanity, and apostasy.',
-        dalil: '',
-        source: 'Fiqhus Sunnah',
-    },
-];
-
 const toStr = (v) => {
     if (!v) return '';
     if (typeof v === 'string') return v;
@@ -54,19 +15,22 @@ const toStr = (v) => {
 
 export default function DashboardFiqhPage() {
     const { t, lang } = useLocale();
-    const [items, setItems] = useState(FALLBACK);
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [cat, setCat] = useState('');
     const [search, setSearch] = useState('');
     const [expanded, setExpanded] = useState(null);
 
     useEffect(() => {
+        setLoading(true);
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/fiqh?page=0&size=100`)
             .then((r) => r.json())
             .then((d) => {
                 const arr = d?.items ?? d ?? [];
                 if (Array.isArray(arr) && arr.length > 0) setItems(arr);
             })
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => setLoading(false));
     }, []);
 
     const filtered = items.filter(
@@ -118,6 +82,12 @@ export default function DashboardFiqhPage() {
                     </button>
                 ))}
             </div>
+
+            {loading && (
+                <div className='flex justify-center py-10'>
+                    <div className='w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin' />
+                </div>
+            )}
 
             {/* List */}
             <div className='space-y-2'>

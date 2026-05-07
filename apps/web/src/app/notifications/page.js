@@ -5,6 +5,7 @@ import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonList, SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { notificationApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
@@ -56,6 +57,7 @@ const defaultSetting = (type) => ({
 
 const NotificationsPage = () => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [settings, setSettings] = useState(
         NOTIFICATION_TYPES.map((t) => defaultSetting(t.type)),
@@ -151,7 +153,7 @@ const NotificationsPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     <div className='text-center mb-8'>
                         <BsBell className='text-4xl text-emerald-600 dark:text-emerald-400 mx-auto mb-2' />
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>

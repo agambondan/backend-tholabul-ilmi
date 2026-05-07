@@ -1,10 +1,12 @@
 'use client';
 
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { amalanApi, streakApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsCheckCircleFill, BsCircle } from 'react-icons/bs';
 
-const AMALAN_KEYS = [
+const FALLBACK_KEYS = [
     'amalan.item.subuh_jamaah',
     'amalan.item.dhuha',
     'amalan.item.tahajud',
@@ -19,29 +21,85 @@ const todayStr = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-const storageKey = () => `tholabul_amalan_${todayStr()}`;
+const localKey = () => `tholabul_amalan_${todayStr()}`;
 
 const AmalanPage = () => {
     const { t } = useLocale();
-    const [checked, setChecked] = useState({});
+    const { isAuthenticated } = useAuth();
+    // items: [{ id: string, label: string, done: boolean, serverId: number|null, isKey: boolean }]
+    const [items, setItems] = useState([]);
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
-        try {
-            const stored = JSON.parse(localStorage.getItem(storageKey()) ?? '{}');
-            setChecked(stored);
-        } catch {}
-    }, []);
+        const stored = (() => {
+            try {
+                return JSON.parse(localStorage.getItem(localKey()) ?? '{}');
+            } catch {
+                return {};
+            }
+        })();
 
-    const toggle = (key) => {
-        const updated = { ...checked, [key]: !checked[key] };
-        setChecked(updated);
+        const loadFallback = () => {
+            setItems(
+                FALLBACK_KEYS.map((k) => ({
+                    id: k,
+                    label: k,
+                    done: !!stored[k],
+                    serverId: null,
+                    isKey: true,
+                })),
+            );
+            setLoaded(true);
+        };
+
+        if (isAuthenticated) {
+            amalanApi
+                .today()
+                .then((r) => r.json())
+                .then((data) => {
+                    const list = data?.items ?? (Array.isArray(data) ? data : []);
+                    if (list.length > 0) {
+                        setItems(
+                            list.map((item) => ({
+                                id: String(item.id),
+                                label: item.name_id ?? item.name ?? item.title ?? String(item.id),
+                                done: !!item.is_checked,
+                                serverId: item.id,
+                                isKey: false,
+                            })),
+                        );
+                        setLoaded(true);
+                    } else {
+                        loadFallback();
+                    }
+                })
+                .catch(loadFallback);
+        } else {
+            loadFallback();
+        }
+    }, [isAuthenticated]);
+
+    const toggle = (idx) => {
+        const item = items[idx];
+        const newDone = !item.done;
+        const updated = items.map((it, i) => (i === idx ? { ...it, done: newDone } : it));
+        setItems(updated);
+
         try {
-            localStorage.setItem(storageKey(), JSON.stringify(updated));
+            const stored = JSON.parse(localStorage.getItem(localKey()) ?? '{}');
+            stored[item.id] = newDone;
+            localStorage.setItem(localKey(), JSON.stringify(stored));
         } catch {}
+
+        if (isAuthenticated) {
+            if (item.serverId !== null) amalanApi.check(item.serverId).catch(() => {});
+            if (newDone) streakApi.logActivity('amalan').catch(() => {});
+        }
     };
 
-    const doneCount = AMALAN_KEYS.filter((k) => checked[k]).length;
-    const pct = Math.round((doneCount / AMALAN_KEYS.length) * 100);
+    const doneCount = items.filter((it) => it.done).length;
+    const total = items.length;
+    const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
     return (
         <div className='px-4 py-6'>
@@ -62,7 +120,7 @@ const AmalanPage = () => {
                         {t('amalan.progress')}
                     </span>
                     <span className='text-2xl font-bold text-emerald-700 dark:text-emerald-400'>
-                        {doneCount}/{AMALAN_KEYS.length}
+                        {doneCount}/{total}
                     </span>
                 </div>
                 <div className='h-3 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden'>
@@ -75,38 +133,41 @@ const AmalanPage = () => {
             </div>
 
             {/* Checklist */}
-            <ul className='space-y-2'>
-                {AMALAN_KEYS.map((key) => {
-                    const done = !!checked[key];
-                    return (
-                        <li key={key}>
-                            <button
-                                onClick={() => toggle(key)}
-                                className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border transition-all text-left ${
-                                    done
-                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
-                                        : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-emerald-200 dark:hover:border-emerald-700'
-                                }`}
-                            >
-                                {done ? (
-                                    <BsCheckCircleFill className='text-emerald-500 text-xl shrink-0' />
-                                ) : (
-                                    <BsCircle className='text-gray-300 dark:text-slate-600 text-xl shrink-0' />
-                                )}
-                                <span
-                                    className={`text-sm font-medium ${
+            {loaded && (
+                <ul className='space-y-2'>
+                    {items.map((item, idx) => {
+                        const done = item.done;
+                        const label = item.isKey ? t(item.label) : item.label;
+                        return (
+                            <li key={item.id}>
+                                <button
+                                    onClick={() => toggle(idx)}
+                                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl border transition-all text-left ${
                                         done
-                                            ? 'text-emerald-700 dark:text-emerald-400 line-through'
-                                            : 'text-gray-700 dark:text-gray-300'
+                                            ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700'
+                                            : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-emerald-200 dark:hover:border-emerald-700'
                                     }`}
                                 >
-                                    {t(key)}
-                                </span>
-                            </button>
-                        </li>
-                    );
-                })}
-            </ul>
+                                    {done ? (
+                                        <BsCheckCircleFill className='text-emerald-500 text-xl shrink-0' />
+                                    ) : (
+                                        <BsCircle className='text-gray-300 dark:text-slate-600 text-xl shrink-0' />
+                                    )}
+                                    <span
+                                        className={`text-sm font-medium ${
+                                            done
+                                                ? 'text-emerald-700 dark:text-emerald-400 line-through'
+                                                : 'text-gray-700 dark:text-gray-300'
+                                        }`}
+                                    >
+                                        {label}
+                                    </span>
+                                </button>
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
         </div>
     );
 };

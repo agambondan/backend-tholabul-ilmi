@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { bookmarkApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BsBookmarkFill, BsTrash } from 'react-icons/bs';
@@ -13,6 +14,7 @@ import { SkeletonList } from '@/components/skeleton/Skeleton';
 
 const BookmarksPage = () => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [bookmarks, setBookmarks] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +52,7 @@ const BookmarksPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-3xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-3xl'}>
                     <div className='flex items-center gap-3 mb-6'>
                         <BsBookmarkFill className='text-emerald-600 dark:text-emerald-400 text-xl' />
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white'>

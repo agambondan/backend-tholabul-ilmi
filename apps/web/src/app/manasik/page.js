@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useState } from 'react';
 import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
 import { MdOutlineDirectionsWalk } from 'react-icons/md';
@@ -263,6 +264,7 @@ const STEP_TEXT_EN = {
 
 const ManasikPage = () => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const [activeTab, setActiveTab] = useState('umrah');
     const [openIdx, setOpenIdx] = useState(null);
 
@@ -278,7 +280,7 @@ const ManasikPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     {/* Header */}
                     <div className='flex items-center gap-3 mb-6'>
                         <div className='w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center'>

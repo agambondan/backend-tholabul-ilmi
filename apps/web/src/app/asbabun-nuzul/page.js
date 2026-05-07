@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { asbabunNuzulApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -14,8 +15,9 @@ import { BsSearch } from 'react-icons/bs';
 const SURAH_COUNT = 114;
 const QUICK_SURAH = [1, 2, 4, 18, 36, 67, 112];
 
-const AsbabunNuzulPage = () => {
+export const AsbabunNuzulContent = () => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const [surahNumber, setSurahNumber] = useState('');
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -46,10 +48,7 @@ const AsbabunNuzulPage = () => {
     };
 
     return (
-        <main className='min-h-screen flex flex-col'>
-            <NavbarTailwindCss />
-            <Section>
-                <div className='container mx-auto px-4 max-w-3xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-3xl'}>
                     <div className='text-center mb-8'>
                         <p
                             className='text-3xl text-emerald-700 dark:text-emerald-400 mb-2'
@@ -162,10 +161,17 @@ const AsbabunNuzulPage = () => {
                         ))}
                     </div>
                 </div>
-            </Section>
-            <Footer />
-        </main>
     );
 };
+
+const AsbabunNuzulPage = () => (
+    <main className='min-h-screen flex flex-col'>
+        <NavbarTailwindCss />
+        <Section>
+            <AsbabunNuzulContent />
+        </Section>
+        <Footer />
+    </main>
+);
 
 export default AsbabunNuzulPage;

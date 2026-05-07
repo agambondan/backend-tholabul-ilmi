@@ -1,7 +1,8 @@
 'use client';
 
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
-import { hafalanApi } from '@/lib/api';
+import { hafalanApi, streakApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
 const STATUSES = ['hafal', 'sedang', 'belum'];
@@ -21,6 +22,7 @@ const cycleStatus = (s) => {
 
 const HafalanPage = () => {
     const { t } = useLocale();
+    const { isAuthenticated } = useAuth();
     const [list, setList] = useState([]);
     const [filter, setFilter] = useState('semua');
     const [loading, setLoading] = useState(true);
@@ -55,13 +57,17 @@ const HafalanPage = () => {
     }, []);
 
     const toggleStatus = (idx) => {
-        const updated = list.map((item, i) =>
-            i === idx ? { ...item, status: cycleStatus(item.status ?? 'belum') } : item,
-        );
+        const item = list[idx];
+        const newStatus = cycleStatus(item.status ?? 'belum');
+        const updated = list.map((s, i) => (i === idx ? { ...s, status: newStatus } : s));
         setList(updated);
         try {
             localStorage.setItem('tholabul_hafalan', JSON.stringify(updated));
         } catch {}
+        if (isAuthenticated && item.surah_number) {
+            hafalanApi.update(item.surah_number, newStatus).catch(() => {});
+            streakApi.logActivity('hafalan').catch(() => {});
+        }
     };
 
     const hafal = list.filter((s) => s.status === 'hafal').length;

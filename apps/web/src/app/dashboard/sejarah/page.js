@@ -1,48 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
+import { BsChevronDown, BsChevronUp, BsSearch } from 'react-icons/bs';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedField } from '@/lib/translation';
-
-const FALLBACK = [
-    {
-        id: 'f1',
-        year: '1 H',
-        title: 'Hijrah Nabi ke Madinah',
-        title_en: "The Prophet's Hijrah to Madinah",
-        description: 'Peristiwa hijrah sebagai titik awal kalender Islam',
-        description_en: 'The migration that became the starting point of the Islamic calendar',
-        category: 'nabi',
-    },
-    {
-        id: 'f2',
-        year: '2 H',
-        title: 'Perang Badar',
-        title_en: 'The Battle of Badr',
-        description: 'Kemenangan pertama kaum muslimin',
-        description_en: 'The first major victory of the Muslims',
-        category: 'perang',
-    },
-    {
-        id: 'f3',
-        year: '8 H',
-        title: 'Fathu Makkah',
-        title_en: 'The Conquest of Makkah',
-        description: 'Penaklukan Mekah',
-        description_en: 'The peaceful conquest of Makkah',
-        category: 'nabi',
-    },
-    {
-        id: 'f4',
-        year: '11 H',
-        title: 'Wafatnya Nabi Muhammad \u{FDFB}',
-        title_en: 'The Passing of Prophet Muhammad ﷺ',
-        description: 'Nabi wafat pada usia 63 tahun',
-        description_en: 'The Prophet passed away at the age of 63',
-        category: 'nabi',
-    },
-];
 
 const CATEGORIES = [
     'khulafaur-rasyidin',
@@ -65,28 +26,50 @@ export default function SejarahDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [expanded, setExpanded] = useState(null);
     const [activeCategory, setActiveCategory] = useState('');
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/sejarah?page=0&size=100`)
             .then((res) => res.json())
             .then((data) => {
                 const list = data?.items ?? data ?? [];
-                setItems(Array.isArray(list) && list.length > 0 ? list : FALLBACK);
+                setItems(Array.isArray(list) ? list : []);
             })
-            .catch(() => setItems(FALLBACK))
+            .catch(() => {})
             .finally(() => setLoading(false));
     }, []);
 
-    const filtered = items.filter((item) =>
-        activeCategory ? toStr(item.category) === activeCategory : true,
-    );
+    const filtered = items.filter((item) => {
+        const matchCat = activeCategory ? toStr(item.category) === activeCategory : true;
+        if (!matchCat) return false;
+        if (!search) return true;
+        const q = search.toLowerCase();
+        return [
+            getLocalizedField(item, 'title', lang),
+            getLocalizedField(item, 'description', lang),
+            item.year,
+            toStr(item.category),
+        ].filter(Boolean).some((v) => v.toLowerCase().includes(q));
+    });
 
     const toggle = (id) => setExpanded((prev) => (prev === id ? null : id));
 
     return (
         <div className='p-6'>
-            <h1 className='text-2xl font-bold text-gray-800 mb-1'>{t('sejarah.title')}</h1>
-            <p className='text-gray-500 mb-6'>{t('sejarah.subtitle')}</p>
+            <h1 className='text-2xl font-bold text-gray-800 dark:text-white mb-1'>{t('sejarah.title')}</h1>
+            <p className='text-gray-500 dark:text-gray-400 mb-4'>{t('sejarah.subtitle')}</p>
+
+            {/* Search */}
+            <div className='relative mb-4'>
+                <BsSearch className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm' />
+                <input
+                    type='text'
+                    placeholder={t('sejarah.search_placeholder') ?? 'Cari peristiwa...'}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className='w-full pl-9 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500'
+                />
+            </div>
 
             {/* Category pills */}
             <div className='flex flex-wrap gap-2 mb-6'>
@@ -95,7 +78,7 @@ export default function SejarahDashboardPage() {
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                         activeCategory === ''
                             ? 'bg-emerald-500 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
                     }`}>
                     {t('common.all')}
                 </button>
@@ -106,7 +89,7 @@ export default function SejarahDashboardPage() {
                         className={`px-3 py-1 rounded-full text-xs font-medium capitalize transition-colors ${
                             activeCategory === cat
                                 ? 'bg-emerald-500 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
                         }`}>
                         {cat.replace('-', ' ')}
                     </button>
@@ -114,11 +97,11 @@ export default function SejarahDashboardPage() {
             </div>
 
             {loading && (
-                <p className='text-center text-gray-400 py-10'>{t('sejarah.loading')}</p>
+                <p className='text-center text-gray-400 dark:text-gray-500 py-10'>{t('sejarah.loading')}</p>
             )}
 
             {!loading && filtered.length === 0 && (
-                <p className='text-center text-gray-400 py-10'>{t('sejarah.not_found')}</p>
+                <p className='text-center text-gray-400 dark:text-gray-500 py-10'>{t('sejarah.not_found')}</p>
             )}
 
             {/* Timeline */}
@@ -140,16 +123,16 @@ export default function SejarahDashboardPage() {
                                 </div>
 
                                 {/* Card */}
-                                <div className='flex-1 border border-gray-200 rounded-xl bg-white shadow-sm overflow-hidden'>
+                                <div className='flex-1 border border-gray-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 shadow-sm overflow-hidden'>
                                     <button
                                         onClick={() => toggle(id)}
-                                        className='w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors'>
+                                        className='w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors'>
                                         <div className='flex items-center gap-2 flex-wrap'>
-                                            <span className='font-semibold text-gray-800 text-sm'>
+                                            <span className='font-semibold text-gray-800 dark:text-white text-sm'>
                                                 {getLocalizedField(item, 'title', lang)}
                                             </span>
                                             {item.category && (
-                                                <span className='px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700 capitalize'>
+                                                <span className='px-2 py-0.5 rounded-full text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 capitalize'>
                                                     {toStr(item.category)}
                                                 </span>
                                             )}
@@ -162,8 +145,8 @@ export default function SejarahDashboardPage() {
                                     </button>
 
                                     {isOpen && (
-                                        <div className='px-4 pb-4 border-t border-gray-100 pt-3'>
-                                            <p className='text-sm text-gray-700'>
+                                        <div className='px-4 pb-4 border-t border-gray-100 dark:border-slate-700 pt-3'>
+                                            <p className='text-sm text-gray-700 dark:text-gray-300'>
                                                 {getLocalizedField(item, 'description', lang)}
                                             </p>
                                         </div>

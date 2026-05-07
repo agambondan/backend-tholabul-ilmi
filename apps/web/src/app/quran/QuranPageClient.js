@@ -3,15 +3,17 @@
 import CardHorizontal from '@/components/card/CardHorizontal';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedTranslation } from '@/lib/translation';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { useState } from 'react';
-import { BsSearch } from 'react-icons/bs';
+import { BsBookHalf, BsSearch } from 'react-icons/bs';
 
 const getLatinName = (surah) =>
     surah.translation?.latin_en ?? surah.translation?.latin_idn ?? '';
 
 export default function QuranPageClient({ items, isError }) {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const [search, setSearch] = useState('');
 
     const filtered = items.filter((surah) => {
@@ -25,7 +27,7 @@ export default function QuranPageClient({ items, isError }) {
     });
 
     return (
-        <div className='container mx-auto px-4 max-w-6xl'>
+        <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-6xl'}>
             {isError && (
                 <div className='flex flex-col items-center justify-center min-h-[50vh] text-center px-4'>
                     <p className='text-4xl mb-3'>⚠️</p>
@@ -65,6 +67,23 @@ export default function QuranPageClient({ items, isError }) {
                 </div>
             </div>
 
+            {/* Mushaf navigator shortcut */}
+            <Link
+                href='/quran/page-mushaf'
+                className='flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 mb-6 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors group'
+            >
+                <BsBookHalf className='text-2xl text-emerald-600 dark:text-emerald-400 shrink-0' />
+                <div className='flex-1 min-w-0'>
+                    <p className='text-sm font-semibold text-emerald-800 dark:text-emerald-300 group-hover:underline'>
+                        {t('mushaf.title')}
+                    </p>
+                    <p className='text-xs text-emerald-600 dark:text-emerald-500 truncate'>
+                        {t('mushaf.subtitle')}
+                    </p>
+                </div>
+                <span className='text-emerald-400 dark:text-emerald-600 text-sm'>›</span>
+            </Link>
+
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'>
                 {filtered.map((surat) => (
                     <Link
@@ -72,7 +91,7 @@ export default function QuranPageClient({ items, isError }) {
                         prefetch={false}
                         href={`/quran/surah/${getLatinName(surat)}`}
                     >
-                        <CardHorizontal surat={surat} lang={lang} ayahUnit={t('common.verse')} />
+                        <CardHorizontal surat={surat} lang={lang} ayahUnit={t('common.verse')} t={t} />
                     </Link>
                 ))}
             </div>

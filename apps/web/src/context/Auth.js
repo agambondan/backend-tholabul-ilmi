@@ -36,7 +36,8 @@ export const AuthProvider = ({ children }) => {
                     headers: { 'Content-Type': 'application/json' },
                 });
                 if (!res.ok) {
-                    clearSession();
+                    // 401/403 means the refresh token is invalid/expired — clear session
+                    if (res.status === 401 || res.status === 403) clearSession();
                     return null;
                 }
                 const data = await res.json();
@@ -49,7 +50,7 @@ export const AuthProvider = ({ children }) => {
                 setToken(newToken);
                 return newToken;
             } catch {
-                clearSession();
+                // Network error during refresh — don't clear session
                 return null;
             } finally {
                 refreshingRef.current = null;
@@ -89,8 +90,12 @@ export const AuthProvider = ({ children }) => {
                 }
                 clearSession();
             }
+            // For other error status codes (5xx, network-level etc.) keep the
+            // stored token so the user is not logged out when the API is
+            // temporarily unreachable (e.g. during a server restart/rebuild).
         } catch {
-            clearSession();
+            // Network error — API is unreachable. Keep the token so the user
+            // stays logged in and can retry when the server comes back.
         }
         return false;
     };

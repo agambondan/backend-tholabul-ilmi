@@ -3,22 +3,26 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const LoginPage = () => {
     const { login, isAuthenticated, isLoading: authLoading } = useAuth();
     const { t } = useLocale();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const nextUrl = searchParams.get('next') || '/dashboard';
+    const registered = searchParams.get('registered') === '1';
+
     useEffect(() => {
         if (authLoading) return;
-        if (isAuthenticated) router.replace('/');
-    }, [isAuthenticated, authLoading, router]);
+        if (isAuthenticated) router.replace(nextUrl);
+    }, [isAuthenticated, authLoading, router, nextUrl]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -26,7 +30,7 @@ const LoginPage = () => {
         setIsLoading(true);
         try {
             await login(email, password);
-            router.push('/');
+            router.push(nextUrl);
         } catch (err) {
             setError(err.message);
             setIsLoading(false);
@@ -54,6 +58,12 @@ const LoginPage = () => {
                     <h2 className='text-xl font-bold text-emerald-900 dark:text-white mb-6'>
                         {t('auth.sign_in_title')}
                     </h2>
+
+                    {registered && (
+                        <div className='mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg text-sm text-emerald-700 dark:text-emerald-400'>
+                            {t('auth.register_success')}
+                        </div>
+                    )}
 
                     {error && (
                         <div className='mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400'>
@@ -112,4 +122,12 @@ const LoginPage = () => {
     );
 };
 
-export default LoginPage;
+import { Suspense } from 'react';
+
+export default function LoginPageWrapper() {
+    return (
+        <Suspense>
+            <LoginPage />
+        </Suspense>
+    );
+}

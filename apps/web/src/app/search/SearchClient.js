@@ -6,6 +6,7 @@ import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { searchApi } from '@/lib/api';
 import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
@@ -41,6 +42,7 @@ const getHadithMeta = (item, lang) => ({
 
 export default function SearchClient({ initialQuery = '' }) {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const TYPES = [
         { value: 'all', label: t('search.type.all') },
         { value: 'ayah', label: t('search.type.ayah') },
@@ -86,10 +88,7 @@ export default function SearchClient({ initialQuery = '' }) {
     const totalResults = ayahResults.length + hadithResults.length;
 
     return (
-        <main className='min-h-screen flex flex-col'>
-            <NavbarTailwindCss />
-            <Section>
-                <div className='container mx-auto px-4 max-w-3xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-3xl'}>
                     <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-6'>
                         {t('search.title')}
                     </h1>
@@ -227,8 +226,5 @@ export default function SearchClient({ initialQuery = '' }) {
                         </div>
                     )}
                 </div>
-            </Section>
-            <Footer />
-        </main>
     );
 }

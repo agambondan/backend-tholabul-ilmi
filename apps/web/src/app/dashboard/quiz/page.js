@@ -1,51 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { quizApi } from '@/lib/api';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { getLocalizedField, getLocalizedOption } from '@/lib/translation';
-
-const FALLBACK = [
-    {
-        id: 'q1',
-        question: {
-            idn: 'Berapa jumlah surah dalam Al-Quran?',
-            en: 'How many surahs are in the Quran?',
-        },
-        options: ['112', '113', '114', '115'],
-        answer: 2,
-        category: 'quran',
-    },
-    {
-        id: 'q2',
-        question: {
-            idn: 'Siapakah nabi pertama?',
-            en: 'Who was the first prophet?',
-        },
-        options: [
-            { idn: 'Idris', en: 'Idris' },
-            { idn: 'Ibrahim', en: 'Ibrahim' },
-            { idn: 'Adam', en: 'Adam' },
-            { idn: 'Nuh', en: 'Nuh' },
-        ],
-        answer: 2,
-        category: 'sejarah',
-    },
-    {
-        id: 'q3',
-        question: {
-            idn: 'Apa arti "Islam"?',
-            en: 'What does "Islam" mean?',
-        },
-        options: [
-            { idn: 'Iman', en: 'Faith' },
-            { idn: 'Damai/Selamat', en: 'Peace/Safety' },
-            { idn: 'Taat', en: 'Obedience' },
-            { idn: 'Ikhlas', en: 'Sincerity' },
-        ],
-        answer: 1,
-        category: 'aqidah',
-    },
-];
 
 const toStr = (v) => {
     if (!v) return '';
@@ -55,28 +15,38 @@ const toStr = (v) => {
 
 const QuizPage = () => {
     const { t, lang } = useLocale();
+    const { isAuthenticated } = useAuth();
+    const { isWide } = useLayoutMode();
     const [questions, setQuestions] = useState([]);
     const [current, setCurrent] = useState(0);
     const [selected, setSelected] = useState(null);
     const [score, setScore] = useState(0);
     const [done, setDone] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [history, setHistory] = useState([]);
+    const [sessionResults, setSessionResults] = useState([]);
+
+    useEffect(() => {
+        try {
+            setHistory(JSON.parse(localStorage.getItem('tholabul_quiz_history') ?? '[]'));
+        } catch {}
+    }, []);
 
     const loadQuestions = async () => {
         setLoading(true);
         try {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/quiz?size=10`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/quiz/session?count=10`,
             );
             const data = await res.json();
-            const items = data?.items ?? data ?? [];
+            const items = data?.data ?? data?.items ?? (Array.isArray(data) ? data : []);
             if (Array.isArray(items) && items.length > 0) {
                 setQuestions(items);
                 setLoading(false);
                 return;
             }
         } catch {}
-        setQuestions(FALLBACK);
+        setQuestions([]);
         setLoading(false);
     };
 
@@ -89,19 +59,38 @@ const QuizPage = () => {
         setSelected(null);
         setScore(0);
         setDone(false);
+        setSessionResults([]);
         loadQuestions();
     };
 
     const handleSelect = (idx) => {
         if (selected !== null) return;
         setSelected(idx);
-        if (idx === Number(questions[current].answer)) {
-            setScore((s) => s + 1);
-        }
+        const correct = idx === Number(questions[current].answer);
+        if (correct) setScore((s) => s + 1);
+        setSessionResults((prev) => [
+            ...prev,
+            { question_id: questions[current].id, correct },
+        ]);
     };
 
     const next = () => {
         if (current + 1 >= questions.length) {
+            const entry = {
+                id: Date.now().toString(),
+                date: new Date().toISOString().slice(0, 10),
+                score,
+                total: questions.length,
+                pct: Math.round((score / questions.length) * 100),
+            };
+            const updated = [entry, ...history].slice(0, 15);
+            setHistory(updated);
+            try {
+                localStorage.setItem('tholabul_quiz_history', JSON.stringify(updated));
+            } catch {}
+            if (isAuthenticated && sessionResults.length > 0) {
+                quizApi.submit(sessionResults).catch(() => {});
+            }
             setDone(true);
         } else {
             setCurrent((c) => c + 1);
@@ -111,8 +100,25 @@ const QuizPage = () => {
 
     if (loading) {
         return (
-            <div className='px-4 py-16 max-w-md mx-auto text-center'>
+            <div className={isWide ? 'px-4 py-16 text-center' : 'px-4 py-16 max-w-md mx-auto text-center'}>
                 <p className='text-gray-400 dark:text-gray-500 text-sm'>{t('quiz.loading')}</p>
+            </div>
+        );
+    }
+
+    if (!questions.length) {
+        return (
+            <div className={isWide ? 'px-4 py-16 text-center' : 'px-4 py-16 max-w-md mx-auto text-center'}>
+                <p className='text-5xl mb-4'>📚</p>
+                <p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>
+                    {t('quiz.empty')}
+                </p>
+                <button
+                    onClick={loadQuestions}
+                    className='px-5 py-2 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800 transition-colors'
+                >
+                    {t('quiz.try_again')}
+                </button>
             </div>
         );
     }
@@ -120,11 +126,11 @@ const QuizPage = () => {
     if (done) {
         const pct = Math.round((score / questions.length) * 100);
         return (
-            <div className='px-4 py-6 max-w-md mx-auto'>
+            <div className={isWide ? 'px-4 py-6' : 'px-4 py-6 max-w-md mx-auto'}>
                 <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-6'>
                     {t('quiz.title')}
                 </h1>
-                <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-8 text-center'>
+                <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-8 text-center mb-5'>
                     <p className='text-5xl mb-4'>
                         {pct >= 80 ? '🌟' : pct >= 50 ? '👍' : '💪'}
                     </p>
@@ -141,6 +147,40 @@ const QuizPage = () => {
                         {t('quiz.try_again')}
                     </button>
                 </div>
+
+                {history.length > 1 && (
+                    <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5'>
+                        <p className='text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3'>
+                            {t('quiz.history')}
+                        </p>
+                        <ul className='space-y-2'>
+                            {history.slice(0, 8).map((h) => (
+                                <li
+                                    key={h.id}
+                                    className='flex items-center justify-between text-sm'
+                                >
+                                    <span className='text-xs text-gray-400 dark:text-gray-500'>
+                                        {new Date(h.date + 'T00:00:00').toLocaleDateString(
+                                            lang === 'EN' ? 'en-US' : 'id-ID',
+                                            { day: 'numeric', month: 'short', year: 'numeric' },
+                                        )}
+                                    </span>
+                                    <span
+                                        className={`font-semibold ${
+                                            h.pct >= 80
+                                                ? 'text-emerald-600 dark:text-emerald-400'
+                                                : h.pct >= 50
+                                                  ? 'text-amber-500 dark:text-amber-400'
+                                                  : 'text-gray-500 dark:text-gray-400'
+                                        }`}
+                                    >
+                                        {h.score}/{h.total} ({h.pct}%)
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
         );
     }
@@ -151,7 +191,7 @@ const QuizPage = () => {
     const options = Array.isArray(q.options) ? q.options : [];
 
     return (
-        <div className='px-4 py-6 max-w-md mx-auto'>
+        <div className={isWide ? 'px-4 py-6' : 'px-4 py-6 max-w-md mx-auto'}>
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-4'>
                 {t('quiz.title')}
             </h1>

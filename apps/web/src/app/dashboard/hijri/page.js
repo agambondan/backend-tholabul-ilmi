@@ -1,7 +1,10 @@
 'use client';
 
+import PuasaSunnahPanel from '@/components/PuasaSunnahPanel';
+import RamadanCountdown from '@/components/RamadanCountdown';
 import { useEffect, useState } from 'react';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 
 const todayIso = () => {
     const d = new Date();
@@ -15,6 +18,7 @@ const toAladhan = (iso) => {
 
 const HijriPage = () => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const [todayHijri, setTodayHijri] = useState(null);
     const [inputDate, setInputDate] = useState(todayIso());
     const [result, setResult] = useState(null);
@@ -78,14 +82,14 @@ const HijriPage = () => {
     };
 
     return (
-        <div className='px-4 py-6 max-w-md mx-auto'>
+        <div className={isWide ? 'px-4 py-6' : 'px-4 py-6 max-w-md mx-auto'}>
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-6'>
                 {t('hijri.title')}
             </h1>
 
             {/* Today's hijri */}
             {todayHijri && (
-                <div className='bg-emerald-700 dark:bg-emerald-800 rounded-2xl p-6 mb-6 text-center text-white'>
+                <div className='bg-emerald-700 dark:bg-emerald-800 rounded-2xl p-6 mb-4 text-center text-white'>
                     <p className='text-xs font-medium text-emerald-200 mb-2'>{t('hijri.today')}</p>
                     <p
                         className='text-3xl font-bold mb-1 arabic-text'
@@ -98,6 +102,14 @@ const HijriPage = () => {
                     </p>
                 </div>
             )}
+
+            <div className='mb-6'>
+                <RamadanCountdown />
+            </div>
+
+            <div className='mb-6'>
+                <PuasaSunnahPanel />
+            </div>
 
             {/* Converter */}
             <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5'>

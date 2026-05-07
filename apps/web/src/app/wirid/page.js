@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
@@ -20,16 +21,14 @@ const WIRID_OCCASIONS = [
 
 const normalizeItem = (item) => ({
     ...item,
-    title: item.title ?? '',
-    arabic: item.arabic ?? '',
-    latin: item.transliteration ?? '',
-    meaning: item.translation ?? '',
+    arabic: item.translation?.ar ?? '',
+    latin: item.translation?.latin_idn ?? '',
     count: item.count ?? '',
-    fadhilah: item.fadhilah ?? item.source ?? '',
 });
 
-const WiridPage = () => {
+export const WiridContent = () => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const [activeOccasion, setActiveOccasion] = useState(WIRID_OCCASIONS[0].occasion);
     const [items, setItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -78,10 +77,7 @@ const WiridPage = () => {
     };
 
     return (
-        <main className='min-h-screen flex flex-col'>
-            <NavbarTailwindCss />
-            <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     {/* Header */}
                     <div className='flex items-center gap-3 mb-6'>
                         <div className='w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center'>
@@ -204,11 +200,10 @@ const WiridPage = () => {
                                                     {item.latin}
                                                 </p>
                                             )}
-                                            {showMeaning && item.meaning && (
+                                            {showMeaning && getLocalizedField(item, 'description', lang, ['meaning']) && (
                                                 <p className='text-sm text-gray-600 dark:text-gray-300'>
-                                                    {getLocalizedField(item, 'meaning', lang, [
-                                                        'translation',
-                                                        'description',
+                                                    {getLocalizedField(item, 'description', lang, [
+                                                        'meaning',
                                                     ])}
                                                 </p>
                                             )}
@@ -226,10 +221,17 @@ const WiridPage = () => {
                         </div>
                     )}
                 </div>
-            </Section>
-            <Footer />
-        </main>
     );
 };
+
+const WiridPage = () => (
+    <main className='min-h-screen flex flex-col'>
+        <NavbarTailwindCss />
+        <Section>
+            <WiridContent />
+        </Section>
+        <Footer />
+    </main>
+);
 
 export default WiridPage;

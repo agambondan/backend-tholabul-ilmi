@@ -207,7 +207,7 @@ export const NavbarTailwindCss = () => {
                                         })}
                                     >
                                         {link.icon}
-                                        {link.label}
+                                        {link.labelKey ? t(link.labelKey) : link.label}
                                     </Link>
                                 </li>
                             );
@@ -246,7 +246,7 @@ export const NavbarTailwindCss = () => {
                                             )}
                                         >
                                             {link.icon}
-                                            {link.label}
+                                            {link.labelKey ? t(link.labelKey) : link.label}
                                         </Link>
                                     ))}
                                 </div>
@@ -500,7 +500,7 @@ export const NavbarTailwindCss = () => {
                                         )}
                                     >
                                         <span className='text-base'>{link.icon}</span>
-                                        <span className='font-medium'>{link.label}</span>
+                                        <span className='font-medium'>{link.labelKey ? t(link.labelKey) : link.label}</span>
                                     </Link>
                                 );
                             })}
@@ -569,6 +569,14 @@ export const NavbarTailwindCss = () => {
                                 </div>
 
                                 <div className='grid grid-cols-1 gap-2'>
+                                    <Link
+                                        href='/dashboard'
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className='flex items-center gap-2 rounded-xl bg-emerald-500/20 border border-emerald-400/30 px-4 py-3 text-sm font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/30'
+                                    >
+                                        <BsBarChart />
+                                        {t('nav.dashboard')}
+                                    </Link>
                                     <Link
                                         href='/profile'
                                         onClick={() => setMobileMenuOpen(false)}

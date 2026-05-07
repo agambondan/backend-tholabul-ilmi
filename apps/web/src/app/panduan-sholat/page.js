@@ -110,7 +110,7 @@ const normalizeStep = (s) => ({
     source: s.source ?? '',
 });
 
-export default function PanduanSholatPage() {
+export function PanduanSholatContent() {
     const { t, lang } = useLocale();
     const [openPrayer, setOpenPrayer] = useState(0);
     const [openStep, setOpenStep] = useState(null);
@@ -131,9 +131,7 @@ export default function PanduanSholatPage() {
     }, []);
 
     return (
-        <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
-            <NavbarTailwindCss />
-            <div className='max-w-2xl flex-1 w-full mx-auto px-4 pt-24 pb-8'>
+            <div className='max-w-2xl flex-1 w-full mx-auto px-4 pt-6 pb-8'>
                 {/* Header */}
                 <div className='mb-8 text-center'>
                     <div className='inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-2xl mb-4'>
@@ -293,6 +291,16 @@ export default function PanduanSholatPage() {
                         </div>
                     );
                 })()}
+            </div>
+    );
+}
+
+export default function PanduanSholatPage() {
+    return (
+        <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
+            <NavbarTailwindCss />
+            <div className='pt-24'>
+                <PanduanSholatContent />
             </div>
             <Footer />
         </main>

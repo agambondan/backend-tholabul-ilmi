@@ -2,9 +2,12 @@
 
 import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
+import PuasaSunnahPanel from '@/components/PuasaSunnahPanel';
+import RamadanCountdown from '@/components/RamadanCountdown';
 import Section from '@/components/Section';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useEffect, useState } from 'react';
 import { BsCalendar3, BsSearch } from 'react-icons/bs';
 
@@ -99,6 +102,7 @@ const parseAladhanHijri = (data) => ({
 
 const HijriPage = () => {
     const { lang, t } = useLocale();
+    const { isWide } = useLayoutMode();
     const months = monthNames(lang);
     const [todayHijri, setTodayHijri] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -178,7 +182,7 @@ const HijriPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     <div className='text-center mb-8'>
                         <BsCalendar3 className='text-4xl text-emerald-600 dark:text-emerald-400 mx-auto mb-2' />
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>
@@ -187,6 +191,14 @@ const HijriPage = () => {
                         <p className='text-sm text-gray-500 dark:text-gray-400'>
                             {t('hijri.subtitle')}
                         </p>
+                    </div>
+
+                    <div className='mb-6'>
+                        <RamadanCountdown />
+                    </div>
+
+                    <div className='mb-6'>
+                        <PuasaSunnahPanel />
                     </div>
 
                     {error && (

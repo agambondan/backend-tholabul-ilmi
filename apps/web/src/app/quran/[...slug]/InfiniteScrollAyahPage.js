@@ -6,6 +6,7 @@ import AutoScrollButton from '@/components/popup/AutoScrollButton';
 import ScrollableComponent from '@/components/popup/ScrollableButton';
 import SettingButton from '@/components/popup/SettingButton';
 import { SkeletonReader } from '@/components/skeleton/Skeleton';
+import SurahAudioPlayer from '@/components/SurahAudioPlayer';
 import { useLocale } from '@/context/Locale';
 import { progressApi, streakApi } from '@/lib/api';
 import { getLocalizedTranslation } from '@/lib/translation';
@@ -14,13 +15,14 @@ import { useQuranFont } from '@/lib/useQuranFont';
 import classNames from 'classnames';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import { BsEye, BsEyeSlash } from 'react-icons/bs';
 import { TbPlayerTrackNext, TbPlayerTrackPrev } from 'react-icons/tb';
 
 const PAGE_SIZE = 10;
 
 const normalizeAyahs = (data) => data?.ayahs ?? data?.items ?? data ?? [];
 
-const InfiniteScrollAyahPage = ({ params, searchParams }) => {
+const InfiniteScrollAyahPage = ({ params, searchParams, basePath = '/quran/surah' }) => {
 	const { t, lang } = useLocale();
 	const { isWide } = useLayoutMode();
 	const { fontCls } = useQuranFont();
@@ -31,8 +33,11 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 	const [isFetchingMore, setIsFetchingMore] = useState(false);
 	const [hasMore, setHasMore] = useState(true);
 	const [error, setError] = useState('');
+	const [hafalanMode, setHafalanMode] = useState('off');
+	const [selectedQari, setSelectedQari] = useState('');
 
-	const slug = decodeURIComponent(params.slug?.[1] ?? '');
+	const rawSlug = params.slug;
+	const slug = decodeURIComponent(Array.isArray(rawSlug) ? (rawSlug[1] ?? '') : (rawSlug ?? ''));
 
 	const loadMoreAyah = useCallback(() => {
 		if (isInitialLoading || isFetchingMore || !hasMore) return;
@@ -138,26 +143,34 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 
 	const surahTitle = surah?.translation?.latin_en ?? 'Al-Quran';
 	const prevHref = surah?.prev_surah?.translation?.latin_en
-		? `/quran/surah/${surah.prev_surah.translation.latin_en}`
+		? `${basePath}/${surah.prev_surah.translation.latin_en}`
 		: '';
 	const nextHref = surah?.next_surah?.translation?.latin_en
-		? `/quran/surah/${surah.next_surah.translation.latin_en}`
+		? `${basePath}/${surah.next_surah.translation.latin_en}`
 		: '';
 
 	return (
-		<div className={isWide ? 'w-full max-w-7xl mx-auto' : 'max-w-3xl mx-auto'}>
+		<div className={isWide ? 'w-full' : 'max-w-3xl mx-auto'}>
 			<div className='overflow-hidden rounded-2xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm'>
-				<div className='sticky top-20 z-10 text-center py-6 px-4 border-b border-gray-100 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur'>
+				<div className='text-center py-6 px-4 border-b border-gray-100 dark:border-slate-800'>
 					<p className='text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1'>
 						Surah {surah?.number ?? '-'}
 					</p>
+					{surah?.number && (
+						<div className='flex justify-center mb-3'>
+							<SurahAudioPlayer
+								surahNumber={surah.number}
+								surahName={surahTitle}
+							/>
+						</div>
+					)}
 					<h1 className='text-2xl font-bold text-gray-900 dark:text-white mb-0.5'>
 						{surahTitle}
 					</h1>
 					<p className='text-sm text-gray-500 dark:text-gray-400 mb-4'>
 						{getLocalizedTranslation(surah?.translation, lang)} &middot;{' '}
 						{surah?.number_of_ayahs ?? ayahs.length} {t('common.verse')} &middot;{' '}
-						{surah?.revelation_type ?? ''}
+						{surah?.revelation_type?.toLowerCase() === 'meccan' ? t('quran.meccan') : surah?.revelation_type?.toLowerCase() === 'medinan' ? t('quran.medinan') : (surah?.revelation_type ?? '')}
 					</p>
 					<p
 						className={`${fontCls} text-5xl leading-[2] text-gray-900 dark:text-white`}
@@ -165,6 +178,39 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 					>
 						{surah?.translation?.ar?.replace('سُورَةُ', '').trim() ?? ''}
 					</p>
+				</div>
+
+				<div className='flex flex-wrap items-center gap-2 px-4 py-2 text-xs border-b border-gray-100 dark:border-slate-800 bg-emerald-50/40 dark:bg-emerald-900/10'>
+					<span className='flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium'>
+						{hafalanMode === 'off' ? <BsEye /> : <BsEyeSlash />}
+						{t('hafalan.mode_label') ?? 'Mode Hafalan'}:
+					</span>
+					{[
+						{ value: 'off', labelKey: 'hafalan.mode_off' },
+						{ value: 'hide_arabic', labelKey: 'hafalan.mode_hide_arabic' },
+						{ value: 'hide_translation', labelKey: 'hafalan.mode_hide_translation' },
+						{ value: 'hide_all', labelKey: 'hafalan.mode_hide_all' },
+					].map((m) => (
+						<button
+							key={m.value}
+							type='button'
+							onClick={() => setHafalanMode(m.value)}
+							className={`px-2.5 py-1 rounded-full font-medium transition-colors ${
+								hafalanMode === m.value
+									? 'bg-emerald-500 text-white'
+									: 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-slate-700 hover:bg-emerald-100 dark:hover:bg-slate-700'
+							}`}
+						>
+							{t(m.labelKey) ??
+								(m.value === 'off'
+									? 'Off'
+									: m.value === 'hide_arabic'
+									? 'Sembunyikan Arab'
+									: m.value === 'hide_translation'
+									? 'Sembunyikan Terjemahan'
+									: 'Sembunyikan Semua')}
+						</button>
+					))}
 				</div>
 
 				<div className='flex justify-between items-center px-4 py-3 text-sm border-b border-gray-100 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/40'>
@@ -211,6 +257,9 @@ const InfiniteScrollAyahPage = ({ params, searchParams }) => {
 							ayah={ayah}
 							newLimit={loadMoreAyah}
 							isLast={index === ayahs.length - 2}
+							hafalanMode={hafalanMode}
+							selectedQari={selectedQari}
+							onQariChange={setSelectedQari}
 						/>
 					))}
 				</ul>

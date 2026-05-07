@@ -93,16 +93,16 @@ export default function DashboardKamusPage() {
                         <thead>
                             <tr className='bg-gray-50 dark:bg-slate-800 text-left'>
                                 <th className='px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400 text-right'>
-                                    Arab
+                                    {t('kamus.col_arabic')}
                                 </th>
                                 <th className='px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400'>
-                                    Latin
+                                    {t('kamus.col_latin')}
                                 </th>
                                 <th className='px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400'>
-                                    Makna
+                                    {t('kamus.col_meaning')}
                                 </th>
                                 <th className='px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400'>
-                                    Akar
+                                    {t('kamus.col_root')}
                                 </th>
                             </tr>
                         </thead>

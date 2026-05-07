@@ -7,6 +7,7 @@ import { SkeletonList, SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { amalanApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { getLocalizedField } from '@/lib/translation';
 import { useCallback, useEffect, useState } from 'react';
 import { BsCheckCircleFill, BsCircle, BsSearch } from 'react-icons/bs';
@@ -20,6 +21,7 @@ const CATEGORY_LABELS = {
 
 const AmalanPage = () => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [todayItems, setTodayItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -141,7 +143,7 @@ const AmalanPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     <div className='text-center mb-8'>
                         <p
                             className='text-3xl text-emerald-700 dark:text-emerald-400 mb-2'

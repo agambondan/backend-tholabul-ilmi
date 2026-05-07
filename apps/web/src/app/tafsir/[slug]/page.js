@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { tafsirApi } from '@/lib/api';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -19,6 +20,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const TafsirSurahPage = ({ params }) => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { slug } = params;
     const decodedSlug = decodeURIComponent(slug);
 
@@ -109,7 +111,7 @@ const TafsirSurahPage = ({ params }) => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     {/* Back + header */}
                     <div className='flex items-center gap-3 mb-6'>
                         <Link

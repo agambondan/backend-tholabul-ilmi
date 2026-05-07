@@ -1,14 +1,11 @@
 'use client';
 
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { goalsApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsCheckCircleFill, BsTrash, BsX } from 'react-icons/bs';
 import { MdFlag } from 'react-icons/md';
-
-const todayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
 
 const UNITS = ['ayat', 'halaman', 'kali', 'hari', 'umum'];
 const CATEGORIES = ['Quran', 'Hadith', 'Ibadah', 'Ilmu', 'Lainnya'];
@@ -24,6 +21,7 @@ const emptyForm = () => ({
 
 const GoalsPage = () => {
     const { t } = useLocale();
+    const { isAuthenticated } = useAuth();
     const [goals, setGoals] = useState([]);
     const [tab, setTab] = useState('aktif');
     const [showModal, setShowModal] = useState(false);
@@ -31,10 +29,36 @@ const GoalsPage = () => {
     const [form, setForm] = useState(emptyForm());
 
     useEffect(() => {
-        try {
-            setGoals(JSON.parse(localStorage.getItem('tholabul_goals') ?? '[]'));
-        } catch {}
-    }, []);
+        const load = async () => {
+            if (isAuthenticated) {
+                try {
+                    const res = await goalsApi.list();
+                    const data = await res.json();
+                    const items = (data?.items ?? data ?? []).map((g) => ({
+                        id: String(g.id),
+                        title: g.title ?? '',
+                        target: Number(g.target ?? 1),
+                        current: Number(g.current ?? 0),
+                        unit: g.unit ?? 'kali',
+                        deadline: g.deadline ?? '',
+                        category: g.category ?? 'Lainnya',
+                        completed: !!g.completed,
+                    }));
+                    if (items.length > 0) {
+                        setGoals(items);
+                        try {
+                            localStorage.setItem('tholabul_goals', JSON.stringify(items));
+                        } catch {}
+                        return;
+                    }
+                } catch {}
+            }
+            try {
+                setGoals(JSON.parse(localStorage.getItem('tholabul_goals') ?? '[]'));
+            } catch {}
+        };
+        load();
+    }, [isAuthenticated]);
 
     const persist = (updated) => {
         setGoals(updated);
@@ -65,20 +89,20 @@ const GoalsPage = () => {
     const save = () => {
         if (!form.title.trim() || !form.target) return;
         if (editGoal) {
-            const updated = goals.map((g) =>
-                g.id === editGoal.id
-                    ? {
-                          ...g,
-                          title: form.title,
-                          target: Number(form.target),
-                          current: Number(form.current),
-                          unit: form.unit,
-                          deadline: form.deadline,
-                          category: form.category,
-                      }
-                    : g,
+            const payload = {
+                title: form.title,
+                target: Number(form.target),
+                current: Number(form.current),
+                unit: form.unit,
+                deadline: form.deadline,
+                category: form.category,
+            };
+            persist(
+                goals.map((g) => (g.id === editGoal.id ? { ...g, ...payload } : g)),
             );
-            persist(updated);
+            if (isAuthenticated) {
+                goalsApi.update(editGoal.id, payload).catch(() => {});
+            }
         } else {
             const entry = {
                 id: Date.now().toString(),
@@ -91,17 +115,34 @@ const GoalsPage = () => {
                 completed: false,
             };
             persist([entry, ...goals]);
+            if (isAuthenticated) {
+                goalsApi
+                    .create({
+                        title: entry.title,
+                        target: entry.target,
+                        unit: entry.unit,
+                        deadline: entry.deadline || undefined,
+                        category: entry.category,
+                    })
+                    .catch(() => {});
+            }
         }
         setShowModal(false);
     };
 
     const markComplete = (id) => {
         persist(goals.map((g) => (g.id === id ? { ...g, completed: true } : g)));
+        if (isAuthenticated) {
+            goalsApi.update(id, { completed: true }).catch(() => {});
+        }
     };
 
     const remove = (id) => {
         if (!confirm(t('goals.delete_confirm'))) return;
         persist(goals.filter((g) => g.id !== id));
+        if (isAuthenticated) {
+            goalsApi.delete(id).catch(() => {});
+        }
     };
 
     const filtered = goals.filter((g) =>

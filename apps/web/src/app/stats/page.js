@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { SkeletonStats } from '@/components/skeleton/Skeleton';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { statsApi } from '@/lib/api';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -88,6 +89,7 @@ const getBestEntry = (items, keyName) =>
 
 const StatsPage = () => {
     const { lang, t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
     const [stats, setStats] = useState(null);
     const [weekly, setWeekly] = useState([]);
@@ -123,7 +125,7 @@ const StatsPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     <div className='flex items-center gap-2 mb-6'>
                         <BsGraphUp className='text-emerald-600 dark:text-emerald-400 text-xl' />
                         <h1 className='text-2xl font-bold text-emerald-900 dark:text-white'>

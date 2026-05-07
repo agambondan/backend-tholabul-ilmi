@@ -5,11 +5,14 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonList } from '@/components/skeleton/Skeleton';
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
-import { blogApi } from '@/lib/api';
+import { useLayoutMode } from '@/lib/useLayoutMode';
+import { blogApi, bookmarkApi } from '@/lib/api';
 import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { BsBookmark, BsBookmarkFill } from 'react-icons/bs';
 
 const normalizeItems = (data) => data?.items ?? data?.data ?? data ?? [];
 
@@ -28,13 +31,17 @@ const formatDate = (value, lang = 'ID') => {
     }
 };
 
-const BlogDetailPage = ({ params }) => {
+export const BlogDetailContent = ({ params, basePath = '/blog' }) => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
+    const { isAuthenticated } = useAuth();
     const [post, setPost] = useState(null);
     const [relatedPosts, setRelatedPosts] = useState([]);
     const [popularPosts, setPopularPosts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [bookmarked, setBookmarked] = useState(false);
+    const [bookmarkId, setBookmarkId] = useState(null);
 
     useEffect(() => {
         let isActive = true;
@@ -121,15 +128,50 @@ const BlogDetailPage = ({ params }) => {
         };
     }, [params.slug]);
 
+    useEffect(() => {
+        if (!isAuthenticated || !params.slug) return;
+        bookmarkApi
+            .list()
+            .then((r) => r.json())
+            .then((d) => {
+                const items = Array.isArray(d?.items) ? d.items : Array.isArray(d) ? d : [];
+                const existing = items.find(
+                    (b) => b.ref_type === 'article' && b.ref_slug === params.slug,
+                );
+                if (existing) {
+                    setBookmarked(true);
+                    setBookmarkId(existing.id);
+                }
+            })
+            .catch(() => {});
+    }, [isAuthenticated, params.slug]);
+
+    const toggleBookmark = async () => {
+        if (!isAuthenticated) return;
+        if (bookmarked && bookmarkId) {
+            setBookmarked(false);
+            setBookmarkId(null);
+            bookmarkApi.remove(bookmarkId).catch(() => {
+                setBookmarked(true);
+            });
+        } else {
+            try {
+                const res = await bookmarkApi.add('article', 0, { ref_slug: params.slug });
+                if (res.ok) {
+                    const data = await res.json();
+                    setBookmarked(true);
+                    setBookmarkId(data?.data?.id ?? data?.id ?? null);
+                }
+            } catch {}
+        }
+    };
+
     if (isLoading) return <SkeletonList title={false} rows={5} />;
 
     return (
-        <main className='min-h-screen flex flex-col'>
-            <NavbarTailwindCss />
-            <Section>
-                <div className='container mx-auto px-4 max-w-4xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-4xl'}>
                     <Link
-                        href='/blog'
+                        href={basePath}
                         className='inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline mb-6'
                     >
                         ← {t('blog.back_to_articles')}
@@ -161,6 +203,19 @@ const BlogDetailPage = ({ params }) => {
                                     )}
                                     {post.view_count != null && (
                                         <span>{post.view_count.toLocaleString()} {t('blog.read_count')}</span>
+                                    )}
+                                    {isAuthenticated && (
+                                        <button
+                                            onClick={toggleBookmark}
+                                            className={`ml-auto flex items-center gap-1 transition-colors ${
+                                                bookmarked
+                                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                                    : 'text-gray-400 hover:text-emerald-500'
+                                            }`}
+                                            title={bookmarked ? t('bookmarks.remove') : t('bookmarks.save')}
+                                        >
+                                            {bookmarked ? <BsBookmarkFill /> : <BsBookmark />}
+                                        </button>
                                     )}
                                 </div>
 
@@ -214,7 +269,7 @@ const BlogDetailPage = ({ params }) => {
                                                 {relatedPosts.map((item) => (
                                                     <Link
                                                         key={item.id ?? item.slug}
-                                                        href={`/blog/${item.slug}`}
+                                                        href={`${basePath}/${item.slug}`}
                                                         className='block rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60 p-4 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm transition-all'
                                                     >
                                                         {item.category && (
@@ -245,7 +300,7 @@ const BlogDetailPage = ({ params }) => {
                                                 {popularPosts.map((item) => (
                                                     <Link
                                                         key={item.id ?? item.slug}
-                                                        href={`/blog/${item.slug}`}
+                                                        href={`${basePath}/${item.slug}`}
                                                         className='flex items-center justify-between gap-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60 px-4 py-3 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                                                     >
                                                         <div className='min-w-0'>
@@ -271,10 +326,17 @@ const BlogDetailPage = ({ params }) => {
                         </article>
                     )}
                 </div>
-            </Section>
-            <Footer />
-        </main>
     );
 };
+
+const BlogDetailPage = ({ params }) => (
+    <main className='min-h-screen flex flex-col'>
+        <NavbarTailwindCss />
+        <Section>
+            <BlogDetailContent params={params} basePath='/blog' />
+        </Section>
+        <Footer />
+    </main>
+);
 
 export default BlogDetailPage;

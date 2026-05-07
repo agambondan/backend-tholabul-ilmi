@@ -5,44 +5,6 @@ import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsChevronDown, BsChevronUp } from 'react-icons/bs';
 
-const FALLBACK_HAJI = [
-    {
-        type: 'haji',
-        step: 1,
-        title: 'Ihram dari Miqat',
-        title_en: 'Ihram from Miqat',
-        description:
-            'Memakai pakaian ihram dan berniat ihram dari miqat yang telah ditentukan',
-        description_en:
-            'Wearing ihram garments and making the intention for ihram from the appointed miqat',
-        arabic: 'لَبَّيْكَ اللَّهُمَّ حَجًّا',
-        latin: 'Labbaik Allahumma hajjan',
-        translation: { idn: 'Aku penuhi panggilan-Mu ya Allah untuk haji', en: 'Here I am, O Allah, for Hajj' },
-    },
-];
-
-const FALLBACK_UMRAH = [
-    {
-        type: 'umrah',
-        step: 1,
-        title: 'Ihram dari Miqat',
-        title_en: 'Ihram from Miqat',
-        description: 'Memakai pakaian ihram dan berniat umrah',
-        description_en: 'Wearing ihram garments and making the intention for Umrah',
-        arabic: 'لَبَّيْكَ اللَّهُمَّ عُمْرَةً',
-        latin: 'Labbaik Allahumma umratan',
-        translation: { idn: 'Aku penuhi panggilan-Mu ya Allah untuk umrah', en: 'Here I am, O Allah, for Umrah' },
-    },
-    {
-        type: 'umrah',
-        step: 2,
-        title: 'Tawaf',
-        title_en: 'Tawaf',
-        description: 'Mengelilingi Kabah 7 kali berlawanan arah jarum jam',
-        description_en: 'Circling the Kaaba seven times counterclockwise',
-    },
-];
-
 const toStr = (v) => {
     if (!v) return '';
     if (typeof v === 'string') return v;
@@ -51,8 +13,8 @@ const toStr = (v) => {
 
 export default function DashboardManasikPage() {
     const { t, lang } = useLocale();
-    const [hajiItems, setHajiItems] = useState(FALLBACK_HAJI);
-    const [umrahItems, setUmrahItems] = useState(FALLBACK_UMRAH);
+    const [hajiItems, setHajiItems] = useState([]);
+    const [umrahItems, setUmrahItems] = useState([]);
     const [tab, setTab] = useState('haji');
     const [expanded, setExpanded] = useState(null);
 
@@ -155,6 +117,20 @@ export default function DashboardManasikPage() {
                                         <p className='text-sm text-gray-700 dark:text-gray-300'>
                                             {getLocalizedTranslation(item.translation, lang)}
                                         </p>
+                                    )}
+                                    {(item.wajib !== undefined || item.is_required !== undefined) && (
+                                        <div>
+                                            <span
+                                                className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                                                    (item.wajib ?? item.is_required)
+                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                        : 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-400'
+                                                }`}>
+                                                {(item.wajib ?? item.is_required)
+                                                    ? (t('manasik.required') ?? 'Wajib')
+                                                    : (t('manasik.sunnah') ?? 'Sunnah')}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
                             )}

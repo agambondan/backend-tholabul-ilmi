@@ -1,13 +1,132 @@
 'use client';
 
+import BookmarkButton from '@/components/BookmarkButton';
 import GradeBadge, { HadithAuthenticity } from '@/components/GradeBadge';
+import { PopUpIsCopied, ShareAyah } from '@/components/popup/ListImage';
 import Select, { SelectOptionWithLabel } from '@/components/select/Select';
 import { useLocale } from '@/context/Locale';
+import { listMasjidImage } from '@/lib/const';
+import { CopyImageToClipboard, CopyToClipboard } from '@/lib/copy';
 import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    BsFileEarmarkPlay,
+    BsPauseFill,
+    BsShare,
+    BsThreeDotsVertical,
+} from 'react-icons/bs';
+import { IoIosLink, IoMdCopy, IoMdImages } from 'react-icons/io';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// ─── Sanad Panel ─────────────────────────────────────────────────────────────
+
+function SanadPanel({ hadithId, t }) {
+    const [sanads, setSanads] = useState(null);
+
+    useEffect(() => {
+        fetch(`${API_URL}/api/v1/hadiths/${hadithId}/sanad`)
+            .then((r) => r.json())
+            .then((d) => setSanads(Array.isArray(d?.items ?? d) ? (d?.items ?? d) : []))
+            .catch(() => setSanads([]));
+    }, [hadithId]);
+
+    if (sanads === null) {
+        return <p className='text-xs text-gray-400 dark:text-gray-500 py-1'>{t('common.loading') ?? 'Memuat...'}</p>;
+    }
+    if (sanads.length === 0) {
+        return <p className='text-xs text-gray-400 dark:text-gray-500 py-1'>{t('hadith.sanad_empty')}</p>;
+    }
+
+    return (
+        <div className='space-y-3'>
+            {sanads.map((sanad, sIdx) => (
+                <div key={sanad.id ?? sIdx}>
+                    {sanads.length > 1 && (
+                        <p className='text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5'>
+                            Jalur {sanad.nomor_jalur ?? sIdx + 1}
+                            {sanad.jenis ? ` — ${sanad.jenis}` : ''}
+                        </p>
+                    )}
+                    {/* Chain visualisation: right-to-left (perawi terdekat Nabi di kanan) */}
+                    <div className='flex flex-wrap items-center gap-1 text-xs'>
+                        {(sanad.mata_sanad ?? [])
+                            .slice()
+                            .sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0))
+                            .map((m, i, arr) => (
+                                <span key={m.id ?? i} className='flex items-center gap-1'>
+                                    <span className='inline-flex flex-col items-center'>
+                                        <span className='px-2 py-1 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 rounded-lg font-medium max-w-[120px] text-center leading-tight'>
+                                            {m.perawi?.nama_latin ?? `Perawi ${m.urutan}`}
+                                        </span>
+                                        {m.metode && (
+                                            <span className='text-gray-400 dark:text-gray-500 text-[10px]'>
+                                                {m.metode}
+                                            </span>
+                                        )}
+                                    </span>
+                                    {i < arr.length - 1 && (
+                                        <span className='text-gray-400 dark:text-gray-500'>←</span>
+                                    )}
+                                </span>
+                            ))}
+                    </div>
+                    {sanad.catatan && (
+                        <p className='text-xs text-gray-400 dark:text-gray-500 mt-1.5 italic'>
+                            {sanad.catatan}
+                        </p>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// ─── Takhrij Panel ───────────────────────────────────────────────────────────
+
+function TakhrijPanel({ hadithId, t }) {
+    const [takhrijList, setTakhrijList] = useState(null);
+
+    useEffect(() => {
+        fetch(`${API_URL}/api/v1/hadiths/${hadithId}/takhrij`)
+            .then((r) => r.json())
+            .then((d) => setTakhrijList(Array.isArray(d?.items ?? d) ? (d?.items ?? d) : []))
+            .catch(() => setTakhrijList([]));
+    }, [hadithId]);
+
+    if (takhrijList === null) {
+        return <p className='text-xs text-gray-400 dark:text-gray-500 py-1'>{t('common.loading') ?? 'Memuat...'}</p>;
+    }
+    if (takhrijList.length === 0) {
+        return <p className='text-xs text-gray-400 dark:text-gray-500 py-1'>{t('hadith.takhrij_empty')}</p>;
+    }
+
+    return (
+        <div className='flex flex-wrap gap-2'>
+            {takhrijList.map((tk, idx) => {
+                const bookName = getLocalizedTranslation(tk.book?.translation, 'ID') ?? tk.book?.slug ?? '';
+                return (
+                    <div
+                        key={tk.id ?? idx}
+                        className='px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800'>
+                        <span className='font-semibold'>{bookName}</span>
+                        {tk.nomor_hadis_kitab && (
+                            <span className='ml-1 text-blue-500 dark:text-blue-500'>
+                                No. {tk.nomor_hadis_kitab}
+                            </span>
+                        )}
+                        {tk.catatan && (
+                            <span className='ml-1 text-blue-400 dark:text-blue-600 hidden sm:inline'>
+                                — {tk.catatan}
+                            </span>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
 
 const BOOK_NAMES = {
     bukhari: 'Shahih Bukhari',
@@ -35,7 +154,246 @@ const themeName = (t, lang) =>
 const chapterName = (c, lang) =>
     getLocalizedTranslation(c?.translation, lang) || toStr(c?.name ?? c?.title) || `Bab ${c?.id}`;
 
+// ─── Hadith Card ─────────────────────────────────────────────────────────────
+
+function HadithCard({ h, idx, lang, t, slug }) {
+    const [showSanad, setShowSanad] = useState(false);
+    const [showTakhrij, setShowTakhrij] = useState(false);
+    const [clipboardPopUp, setClipboardPopUp] = useState(false);
+    const [shareImagePopUp, setShareImagePopUp] = useState(false);
+    const [settingPopUp, setSettingPopUp] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
+    const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+    const [audioLoading, setAudioLoading] = useState(false);
+    const audioRef = useRef(null);
+    const cardRef = useRef(null);
+
+    const audioSources = (h?.media ?? []).map((e) => e?.multimedia?.url).filter(Boolean);
+    const firstAudioSource = audioSources[0] ?? '';
+    const arabicText = h.translation?.ar ?? h.arab ?? '';
+    const hadithText = getLocalizedTranslation(h.translation, lang) || h.indonesia || '';
+    const cardId = `hadith-${h.id ?? idx}`;
+
+    const copyText = (value) => {
+        CopyToClipboard(value);
+        setClipboardPopUp(true);
+        setTimeout(() => setClipboardPopUp(false), 2000);
+    };
+
+    const stopAudio = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+        setIsPlayingAudio(false);
+    };
+
+    const handleAudio = async () => {
+        if (!firstAudioSource) {
+            return;
+        }
+        if (isPlayingAudio) {
+            stopAudio();
+            return;
+        }
+        setAudioLoading(true);
+        try {
+            if (!audioRef.current) {
+                audioRef.current = new Audio(firstAudioSource);
+                audioRef.current.onended = () => setIsPlayingAudio(false);
+            }
+            await audioRef.current.play();
+            setIsPlayingAudio(true);
+        } catch {
+            setIsPlayingAudio(false);
+        } finally {
+            setAudioLoading(false);
+        }
+    };
+
+    useEffect(() => () => stopAudio(), []);
+
+    return (
+        <div
+            ref={cardRef}
+            id={cardId}
+            className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5'
+        >
+            {clipboardPopUp && (
+                <div className='fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg'>
+                    Tersalin ke clipboard!
+                </div>
+            )}
+            {shareImagePopUp && (
+                <ShareAyah
+                    images={listMasjidImage}
+                    isCopiedCallback={() => setShareImagePopUp(false)}
+                    text={`${arabicText}\n`.concat(`${hadithText}\n`).concat(`(HR. ${slug}: ${h.number})\nVia Thullaabul 'Ilmi`)}
+                />
+            )}
+
+            {/* Header: number + grade + actions */}
+            <div className='flex items-center justify-between mb-3'>
+                <div className='flex items-center gap-2'>
+                    <span className='w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center justify-center shrink-0'>
+                        {h.number ?? idx + 1}
+                    </span>
+                    <GradeBadge grade={h.grade} />
+                </div>
+
+                {/* Action toolbar */}
+                <div className='flex items-center gap-1'>
+                    {h.id && (
+                        <button
+                            type='button'
+                            title={isPlayingAudio ? 'Pause Audio' : firstAudioSource ? 'Putar Audio' : 'Audio belum tersedia'}
+                            onClick={handleAudio}
+                            disabled={audioLoading || !firstAudioSource}
+                            className={`p-2 rounded-lg text-base transition-colors disabled:opacity-40 ${
+                                isPlayingAudio
+                                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20'
+                                    : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700'
+                            }`}
+                        >
+                            {audioLoading ? <span className='text-[10px]'>...</span> : isPlayingAudio ? <BsPauseFill /> : <BsFileEarmarkPlay />}
+                        </button>
+                    )}
+                    {h.id && <BookmarkButton refType='hadith' refId={h.id} />}
+                    <button
+                        type='button'
+                        title={t('common.share')}
+                        onClick={() => setShareImagePopUp(true)}
+                        className='p-2 rounded-lg text-base text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors'
+                    >
+                        <BsShare />
+                    </button>
+                    <div className='relative'>
+                        <button
+                            type='button'
+                            title={t('common.more')}
+                            onClick={() => setSettingPopUp((v) => !v)}
+                            className='p-2 rounded-lg text-base text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors'
+                        >
+                            <BsThreeDotsVertical />
+                        </button>
+                        {settingPopUp && (
+                            <div className='absolute right-0 top-9 z-20'>
+                                <div className='flex flex-col bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl w-40 p-1 shadow-lg'>
+                                    <button
+                                        type='button'
+                                        className='flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-left text-gray-700 dark:text-gray-300'
+                                        onClick={() => {
+                                            copyText(`${window.location.href}`);
+                                            setSettingPopUp(false);
+                                        }}
+                                    >
+                                        <IoIosLink /> Copy Link
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className='flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-left text-gray-700 dark:text-gray-300'
+                                        onClick={() => {
+                                            setSettingPopUp(false);
+                                            setTimeout(async () => {
+                                                const { default: html2canvas } = await import('html2canvas');
+                                                html2canvas(document.getElementById(cardId)).then((canvas) => {
+                                                    CopyImageToClipboard(canvas);
+                                                    setIsCopied(true);
+                                                    setTimeout(() => setIsCopied(false), 1000);
+                                                });
+                                            }, 500);
+                                        }}
+                                    >
+                                        <IoMdImages /> Copy Image
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className='flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-left text-gray-700 dark:text-gray-300'
+                                        onClick={() => {
+                                            copyText(`${arabicText}\n\n${hadithText}\n\n(HR. ${slug}: ${h.number})\nVia Thullaabul 'Ilmi`);
+                                            setSettingPopUp(false);
+                                        }}
+                                    >
+                                        <IoMdCopy /> Copy Text
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {arabicText && (
+                <p
+                    dir='rtl'
+                    className='font-arabic text-xl text-gray-800 dark:text-gray-100 leading-loose text-right mb-4'>
+                    {arabicText}
+                </p>
+            )}
+            {hadithText && (
+                <p className='text-sm text-gray-600 dark:text-gray-400 leading-relaxed'>
+                    {hadithText}
+                </p>
+            )}
+            {h.perawi && (
+                <p className='text-xs text-blue-600 dark:text-blue-400 mt-3 font-medium'>
+                    {toStr(h.perawi)}
+                </p>
+            )}
+            {(h.grade || h.shahih_by || h.dhaif_by || h.grade_notes || h.sanad) && (
+                <div className='mt-4'>
+                    <HadithAuthenticity hadith={h} />
+                </div>
+            )}
+
+            {/* Sanad & Takhrij toggles */}
+            {h.id && (
+                <div className='mt-4 pt-3 border-t border-gray-100 dark:border-slate-700'>
+                    <div className='flex gap-2'>
+                        <button
+                            type='button'
+                            onClick={() => { setShowSanad((v) => !v); setShowTakhrij(false); }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                showSanad
+                                    ? 'bg-teal-600 text-white'
+                                    : 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40'
+                            }`}>
+                            {t('hadith.sanad_chain')}
+                        </button>
+                        <button
+                            type='button'
+                            onClick={() => { setShowTakhrij((v) => !v); setShowSanad(false); }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                showTakhrij
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                            }`}>
+                            {t('hadith.takhrij')}
+                        </button>
+                    </div>
+
+                    {showSanad && (
+                        <div className='mt-3 p-3 bg-teal-50 dark:bg-teal-900/10 rounded-xl'>
+                            <SanadPanel hadithId={h.id} t={t} />
+                        </div>
+                    )}
+                    {showTakhrij && (
+                        <div className='mt-3 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl'>
+                            <TakhrijPanel hadithId={h.id} t={t} />
+                        </div>
+                    )}
+                </div>
+            )}
+            {isCopied && <PopUpIsCopied />}
+        </div>
+    );
+}
+
 export default function DashboardHadithDetailPage({ params }) {
+    return <HadithDetailContent params={params} basePath='/dashboard/hadith' />;
+}
+
+export function HadithDetailContent({ params, basePath = '/dashboard/hadith' }) {
     const { slug } = params;
     const { t, lang } = useLocale();
 
@@ -124,7 +482,7 @@ export default function DashboardHadithDetailPage({ params }) {
     return (
         <div className='p-4'>
                 <Link
-                    href='/dashboard/hadith'
+                    href={basePath}
                     className='inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mb-4'
                 >
                     ← {t('common.back')}
@@ -187,40 +545,7 @@ export default function DashboardHadithDetailPage({ params }) {
                         {/* Hadith list */}
                         <div className='space-y-4'>
                             {hadiths.map((h, idx) => (
-                                <div
-                                    key={h.id ?? idx}
-                                    className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5'
-                                >
-                                    <div className='flex items-center gap-2 mb-3'>
-                                        <span className='w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold flex items-center justify-center shrink-0'>
-                                            {h.number ?? idx + 1}
-                                        </span>
-                                        <GradeBadge grade={h.grade} />
-                                    </div>
-                                    {(h.translation?.ar ?? h.arab) && (
-                                        <p
-                                            dir='rtl'
-                                            className='font-arabic text-xl text-gray-800 dark:text-gray-100 leading-loose text-right mb-4'
-                                        >
-                                            {h.translation?.ar ?? h.arab}
-                                        </p>
-                                    )}
-                                    {(getLocalizedTranslation(h.translation, lang) || h.indonesia) && (
-                                        <p className='text-sm text-gray-600 dark:text-gray-400 leading-relaxed'>
-                                            {getLocalizedTranslation(h.translation, lang) || h.indonesia}
-                                        </p>
-                                    )}
-                                    {h.perawi && (
-                                        <p className='text-xs text-blue-600 dark:text-blue-400 mt-3 font-medium'>
-                                            {toStr(h.perawi)}
-                                        </p>
-                                    )}
-                                    {(h.grade || h.shahih_by || h.dhaif_by || h.grade_notes || h.sanad) && (
-                                        <div className='mt-4'>
-                                            <HadithAuthenticity hadith={h} />
-                                        </div>
-                                    )}
-                                </div>
+                                <HadithCard key={h.id ?? idx} h={h} idx={idx} lang={lang} t={t} slug={slug} />
                             ))}
                         </div>
 

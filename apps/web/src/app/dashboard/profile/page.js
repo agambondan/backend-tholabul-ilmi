@@ -2,6 +2,8 @@
 
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { streakApi } from '@/lib/api';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -12,41 +14,58 @@ const todayStr = () => {
 
 const PRAYERS = ['Shubuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'];
 
+const dateStrOffset = (offset) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 const calcStreak = () => {
     let streak = 0;
-    const d = new Date();
-    while (streak < 365) {
-        const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    for (let i = 0; i >= -365; i--) {
+        const ds = dateStrOffset(i);
         try {
             const entry = JSON.parse(localStorage.getItem(`sholat_log_${ds}`) ?? '{}');
             const count = PRAYERS.filter((p) => entry[p.toLowerCase()]).length;
-            if (count < 5) break;
+            if (count > 0) {
+                streak++;
+            } else {
+                break;
+            }
         } catch {
             break;
         }
-        streak++;
-        d.setDate(d.getDate() - 1);
     }
     return streak;
 };
 
 const ProfileDashboardPage = () => {
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const [streak, setStreak] = useState(0);
     const [muhasabahCount, setMuhasabahCount] = useState(0);
     const [hafalCount, setHafalCount] = useState(0);
 
     useEffect(() => {
         try {
-            setStreak(calcStreak());
             setMuhasabahCount(
                 JSON.parse(localStorage.getItem('tholabul_muhasabah') ?? '[]').length,
             );
             const hafalan = JSON.parse(localStorage.getItem('tholabul_hafalan') ?? '[]');
             setHafalCount(hafalan.filter((s) => s.status === 'hafal').length);
         } catch {}
-    }, []);
+
+        if (isAuthenticated) {
+            streakApi
+                .get()
+                .then((r) => r.json())
+                .then((d) => setStreak(d?.current ?? d?.streak ?? 0))
+                .catch(() => setStreak(calcStreak()));
+        } else {
+            setStreak(calcStreak());
+        }
+    }, [isAuthenticated]);
 
     const initials = user?.name
         ? user.name
@@ -63,7 +82,7 @@ const ProfileDashboardPage = () => {
             : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400';
 
     return (
-        <div className='px-4 py-6 max-w-md mx-auto'>
+        <div className={isWide ? 'px-4 py-6' : 'px-4 py-6 max-w-md mx-auto'}>
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-6'>
                 {t('profile.title')}
             </h1>
@@ -87,7 +106,7 @@ const ProfileDashboardPage = () => {
                     </span>
                 )}
                 <Link
-                    href='/dashboard/profile'
+                    href='/profile'
                     className='mt-4 text-sm text-emerald-600 dark:text-emerald-400 hover:underline font-medium'
                 >
                     {t('profile.edit')}

@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { kajianApi } from '@/lib/api';
 import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
@@ -20,199 +21,6 @@ const CATEGORIES = [
     { key: 'hadith', labelKey: 'kajian.category_hadith' },
 ];
 
-const FALLBACK_KAJIAN_EN = {
-    1: {
-        title: 'Aqidah of Ahlus Sunnah wal Jamaah',
-        description: 'A complete explanation of correct Islamic creed based on the Quran and Sunnah.',
-    },
-    2: {
-        title: 'Practical Fiqh of Worship',
-        description: 'A practical guide to daily worship: purification, prayer, fasting, and zakat.',
-    },
-    3: {
-        title: 'Tazkiyatun Nafs: Purification of the Soul',
-        description: 'Studies on purifying the heart and soul from inner diseases.',
-    },
-    4: {
-        title: 'Complete Prophetic Biography',
-        description: 'The life journey of Prophet Muhammad ﷺ from birth until his passing.',
-    },
-    5: {
-        title: "Tafsir of Juz Amma",
-        description: 'Explanation of the short surahs in Juz 30 that are often recited.',
-    },
-    6: {
-        title: "Explanation of Nawawi's Forty Hadith",
-        description: "Explanation of Imam Nawawi's 42 selected hadith that form foundations of Islamic knowledge.",
-    },
-    7: {
-        title: 'Kitab At-Tawhid: Shaykh Muhammad At-Tamimi',
-        description: 'Explanation of Kitab At-Tawhid, an essential work for understanding tawhid correctly.',
-    },
-    8: {
-        title: 'Fiqh of Ramadan Fasting',
-        description: 'Rulings of Ramadan fasting: intention, invalidators, fidyah, and related issues.',
-    },
-    9: {
-        title: 'Tafsir of Al-Fatihah',
-        description: 'A deeper explanation of the meanings and virtues of Surah Al-Fatihah.',
-    },
-    10: {
-        title: 'Self-Reflection and Purification of the Heart',
-        description: 'Reflections and studies on self-accounting, reliance on Allah, and love for Allah.',
-    },
-    11: {
-        title: 'Selected Hadith from Sahih Bukhari',
-        description: 'Selected hadith from Sahih Bukhari with brief and practical explanations.',
-    },
-    12: {
-        title: 'Sirah: Stories of the Companions',
-        description: 'Inspiring stories of the companions of the Prophet ﷺ and their examples.',
-    },
-};
-
-const fallbackKajianField = (item, field, lang) => {
-    if (String(lang).toUpperCase() === 'EN') {
-        const translated = FALLBACK_KAJIAN_EN[item.id]?.[field];
-        if (translated) return translated;
-    }
-    return getLocalizedField(item, field, lang);
-};
-
-const FALLBACK_KAJIAN = [
-    {
-        id: 1,
-        title: 'Aqidah Ahlus Sunnah wal Jamaah',
-        ustadz: 'Ust. Khalid Basalamah',
-        category: 'aqidah',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@UstadzKhalidBasalamah',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Penjelasan lengkap tentang aqidah Islam yang benar berdasarkan Al-Quran dan Sunnah.',
-    },
-    {
-        id: 2,
-        title: 'Fiqh Ibadah Praktis',
-        ustadz: 'Ust. Adi Hidayat',
-        category: 'fiqh',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@UstadzAdiHidayat',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Panduan fiqh ibadah sehari-hari yang praktis — thaharah, sholat, puasa, zakat.',
-    },
-    {
-        id: 3,
-        title: 'Tazkiyatun Nafs — Pembersihan Jiwa',
-        ustadz: 'Ust. Hanan Attaki',
-        category: 'tazkiyah',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@HananAttaki',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Kajian tentang pembersihan hati dan jiwa dari penyakit-penyakit bathin.',
-    },
-    {
-        id: 4,
-        title: 'Sirah Nabawiyah Lengkap',
-        ustadz: 'Ust. Budi Ashari',
-        category: 'sirah',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@Yufid',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Perjalanan hidup Nabi Muhammad ﷺ dari lahir hingga wafat secara lengkap.',
-    },
-    {
-        id: 5,
-        title: 'Tafsir Juz Amma',
-        ustadz: 'Ust. Firanda Andirja',
-        category: 'tafsir',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@firandaandirja',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Penjelasan tafsir surah-surah pendek dalam Juz 30 yang sering dibaca.',
-    },
-    {
-        id: 6,
-        title: 'Syarah Hadith Arbain Nawawi',
-        ustadz: 'Ust. Zainal Abidin',
-        category: 'hadith',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@Yufid',
-        duration: '42 episode',
-        thumbnail: null,
-        description: 'Penjelasan 42 hadith pilihan Imam Nawawi yang menjadi fondasi ilmu Islam.',
-    },
-    {
-        id: 7,
-        title: 'Kitab Tauhid — Syaikh Muhammad At-Tamimi',
-        ustadz: 'Ust. Yazid Jawwas',
-        category: 'aqidah',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@Yufid',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Penjelasan kitab Tauhid yang sangat penting untuk memahami tauhid dengan benar.',
-    },
-    {
-        id: 8,
-        title: 'Fiqh Puasa Ramadan',
-        ustadz: 'Ust. Abdul Somad',
-        category: 'fiqh',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@ustadzabdulsomad',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Hukum-hukum puasa Ramadan secara lengkap: niat, hal yang membatalkan, fidyah, dll.',
-    },
-    {
-        id: 9,
-        title: 'Tafsir Al-Fatihah',
-        ustadz: 'Ust. Nouman Ali Khan (Sub ID)',
-        category: 'tafsir',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@BarakatoTV',
-        duration: 'Series',
-        thumbnail: null,
-        description: 'Penjelasan mendalam tentang makna dan keajaiban Surah Al-Fatihah.',
-    },
-    {
-        id: 10,
-        title: 'Muhasabah & Tazkiyah Hati',
-        ustadz: 'Ust. Salim A. Fillah',
-        category: 'tazkiyah',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@salimafillah',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Renungan dan kajian tentang muhasabah diri, tawakkal, dan kecintaan kepada Allah.',
-    },
-    {
-        id: 11,
-        title: 'Hadith Shahih Bukhari Pilihan',
-        ustadz: 'Ust. Ammi Nur Baits',
-        category: 'hadith',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@konsultasisyariah',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Hadith-hadith pilihan dari Shahih Bukhari dengan penjelasan singkat dan praktis.',
-    },
-    {
-        id: 12,
-        title: 'Sirah: Kisah Para Sahabat',
-        ustadz: 'Ust. Syafiq Riza Basalamah',
-        category: 'sirah',
-        platform: 'youtube',
-        url: 'https://www.youtube.com/@syafikriza',
-        duration: 'Playlist',
-        thumbnail: null,
-        description: 'Kisah-kisah inspiratif para sahabat Nabi ﷺ yang penuh teladan.',
-    },
-];
 
 const catColor = {
     aqidah: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -225,7 +33,8 @@ const catColor = {
 
 const KajianPage = () => {
     const { t, lang } = useLocale();
-    const [kajian, setKajian] = useState(FALLBACK_KAJIAN);
+    const { isWide } = useLayoutMode();
+    const [kajian, setKajian] = useState([]);
     const [activeCategory, setActiveCategory] = useState('semua');
     const [search, setSearch] = useState('');
 
@@ -234,7 +43,7 @@ const KajianPage = () => {
             .list()
             .then((r) => r.json())
             .then((data) => {
-                if (Array.isArray(data) && data.length > 0) setKajian(data);
+                setKajian(Array.isArray(data) ? data : []);
             })
             .catch(() => {});
     }, []);
@@ -244,9 +53,9 @@ const KajianPage = () => {
         const matchSearch =
             !search ||
             [
-                fallbackKajianField(k, 'title', lang),
+                getLocalizedField(k, 'title', lang),
                 k.ustadz,
-                fallbackKajianField(k, 'description', lang),
+                getLocalizedField(k, 'description', lang),
                 k.category,
                 k.duration,
             ]
@@ -265,7 +74,7 @@ const KajianPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-3xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-3xl'}>
                     {/* Header */}
                     <div className='flex items-center gap-3 mb-6'>
                         <div className='w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center'>
@@ -393,7 +202,7 @@ const KajianPage = () => {
                                     {/* Title */}
                                     <div className='flex-1'>
                                         <h3 className='text-sm font-semibold text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors leading-snug'>
-                                            {fallbackKajianField(k, 'title', lang)}
+                                            {getLocalizedField(k, 'title', lang)}
                                         </h3>
                                         <p className='text-xs text-emerald-600 dark:text-emerald-400 mt-0.5'>
                                             {k.ustadz}
@@ -402,7 +211,7 @@ const KajianPage = () => {
 
                                     {/* Description */}
                                     <p className='text-xs text-gray-500 dark:text-gray-400 line-clamp-2'>
-                                        {fallbackKajianField(k, 'description', lang)}
+                                        {getLocalizedField(k, 'description', lang)}
                                     </p>
 
                                     {/* Footer */}

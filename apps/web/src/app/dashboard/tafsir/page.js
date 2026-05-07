@@ -6,18 +6,9 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
 
-const FALLBACK = [
-    { number: 1, name: 'الفاتحة', latin: 'Al-Fatihah', translation: 'Pembukaan', total_ayah: 7 },
-    { number: 2, name: 'البقرة', latin: 'Al-Baqarah', translation: 'Sapi Betina', total_ayah: 286 },
-    { number: 3, name: 'آل عمران', latin: 'Ali Imran', translation: 'Keluarga Imran', total_ayah: 200 },
-    { number: 36, name: 'يس', latin: 'Ya-Sin', translation: 'Ya Sin', total_ayah: 83 },
-    { number: 67, name: 'الملك', latin: 'Al-Mulk', translation: 'Kerajaan', total_ayah: 30 },
-    { number: 112, name: 'الإخلاص', latin: 'Al-Ikhlas', translation: 'Ikhlas', total_ayah: 4 },
-];
-
 export default function DashboardTafsirPage() {
     const { t, lang } = useLocale();
-    const [surahs, setSurahs] = useState(FALLBACK);
+    const [surahs, setSurahs] = useState([]);
     const [search, setSearch] = useState('');
 
     useEffect(() => {

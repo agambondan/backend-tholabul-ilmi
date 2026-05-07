@@ -4,18 +4,29 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { asmaulHusnaApi } from '@/lib/api';
 import { getLocalizedField, getLocalizedText } from '@/lib/translation';
-import { useEffect, useState } from 'react';
-import { BsSearch } from 'react-icons/bs';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { BsPauseFill, BsPlayFill, BsSearch, BsVolumeUpFill } from 'react-icons/bs';
+import { MdOutlineFlipCameraAndroid } from 'react-icons/md';
 
 
-const AsmaulHusnaPage = () => {
+export const AsmaulHusnaContent = () => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
+    const pathname = usePathname();
+    const flashcardHref = pathname?.startsWith('/dashboard')
+        ? '/dashboard/asmaul-husna/flashcard'
+        : '/asmaul-husna/flashcard';
     const [names, setNames] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selected, setSelected] = useState(null);
     const [search, setSearch] = useState('');
+    const [playing, setPlaying] = useState(false);
+    const audioRef = useRef(null);
 
     useEffect(() => {
         asmaulHusnaApi
@@ -44,11 +55,35 @@ const AsmaulHusnaPage = () => {
         );
     });
 
+    const playAudio = (url) => {
+        if (!url) return;
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = '';
+        }
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => setPlaying(false);
+        audio.onerror = () => setPlaying(false);
+        audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+    };
+
+    const stopAudio = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = '';
+        }
+        setPlaying(false);
+    };
+
+    const closeModal = () => {
+        stopAudio();
+        setSelected(null);
+    };
+
     return (
-        <main className='min-h-screen flex flex-col'>
-            <NavbarTailwindCss />
-            <Section>
-                <div className='container mx-auto px-4 max-w-5xl'>
+        <>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-5xl'}>
                     <div className='text-center mb-8'>
                         <p
                             className='text-3xl text-emerald-700 dark:text-emerald-400 mb-2'
@@ -63,6 +98,23 @@ const AsmaulHusnaPage = () => {
                             {t('asmaul.subtitle')}
                         </p>
                     </div>
+
+                    {/* Flashcard shortcut */}
+                    <Link
+                        href={flashcardHref}
+                        className='flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 mb-4 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors group'
+                    >
+                        <MdOutlineFlipCameraAndroid className='text-2xl text-emerald-600 dark:text-emerald-400 shrink-0' />
+                        <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-semibold text-emerald-800 dark:text-emerald-300 group-hover:underline'>
+                                {t('asmaul.flashcard_title') ?? 'Flashcard Asmaul Husna'}
+                            </p>
+                            <p className='text-xs text-emerald-600 dark:text-emerald-500 truncate'>
+                                {t('asmaul.flashcard_subtitle') ?? 'Hafal satu per satu dengan kartu bolak-balik'}
+                            </p>
+                        </div>
+                        <span className='text-emerald-400 dark:text-emerald-600 text-sm'>›</span>
+                    </Link>
 
                     <div className='flex items-center gap-2 mb-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 px-3 py-2'>
                         <BsSearch className='text-gray-400 shrink-0' />
@@ -97,6 +149,9 @@ const AsmaulHusnaPage = () => {
                                         <span className='text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-full w-6 h-6 flex items-center justify-center'>
                                             {name.number}
                                         </span>
+                                        {name.audio_url && (
+                                            <BsVolumeUpFill className='text-emerald-400 dark:text-emerald-600 text-sm' />
+                                        )}
                                     </div>
                                     <p
                                         className='text-2xl font-bold text-emerald-900 dark:text-white mb-1 text-right'
@@ -121,12 +176,11 @@ const AsmaulHusnaPage = () => {
                         </p>
                     )}
                 </div>
-            </Section>
 
             {selected && (
                 <div
                     className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4'
-                    onClick={() => setSelected(null)}
+                    onClick={closeModal}
                 >
                     <div
                         className='bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-xl border border-gray-100 dark:border-slate-700'
@@ -160,19 +214,48 @@ const AsmaulHusnaPage = () => {
                                 {getLocalizedField(selected, 'description', lang)}
                             </p>
                         )}
+                        {selected.audio_url && (
+                            <button
+                                type='button'
+                                onClick={() =>
+                                    playing ? stopAudio() : playAudio(selected.audio_url)
+                                }
+                                className='mt-4 w-full flex items-center justify-center gap-2 py-2 border border-emerald-500 dark:border-emerald-600 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors'
+                            >
+                                {playing ? (
+                                    <>
+                                        <BsPauseFill />
+                                        {t('common.pause') ?? 'Pause'}
+                                    </>
+                                ) : (
+                                    <>
+                                        <BsPlayFill />
+                                        {t('asmaul.play_audio') ?? 'Dengarkan'}
+                                    </>
+                                )}
+                            </button>
+                        )}
                         <button
-                            onClick={() => setSelected(null)}
-                            className='mt-5 w-full py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors'
+                            onClick={closeModal}
+                            className='mt-3 w-full py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-sm font-medium transition-colors'
                         >
                             {t('common.close')}
                         </button>
                     </div>
                 </div>
             )}
-
-            <Footer />
-        </main>
+        </>
     );
 };
+
+const AsmaulHusnaPage = () => (
+    <main className='min-h-screen flex flex-col'>
+        <NavbarTailwindCss />
+        <Section>
+            <AsmaulHusnaContent />
+        </Section>
+        <Footer />
+    </main>
+);
 
 export default AsmaulHusnaPage;

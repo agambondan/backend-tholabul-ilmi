@@ -1,6 +1,8 @@
 'use client';
 
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { streakApi, tilawahApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsJournalCheck, BsX } from 'react-icons/bs';
 
@@ -33,7 +35,8 @@ const emptyForm = () => ({
 });
 
 const TilawahPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
+    const { isAuthenticated } = useAuth();
     const [entries, setEntries] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState(emptyForm());
@@ -53,16 +56,21 @@ const TilawahPage = () => {
 
     const save = () => {
         if (!form.surah.trim()) return;
+        const pages = Number(form.pages) || 0;
         const entry = {
             id: Date.now().toString(),
             date: todayStr(),
             surah: form.surah,
             ayahFrom: form.ayahFrom,
             ayahTo: form.ayahTo,
-            pages: Number(form.pages) || 0,
+            pages,
             notes: form.notes,
         };
         persist([entry, ...entries]);
+        if (isAuthenticated) {
+            if (pages > 0) tilawahApi.add(pages, 0, form.notes).catch(() => {});
+            streakApi.logActivity('tilawah').catch(() => {});
+        }
         setShowModal(false);
     };
 
@@ -177,7 +185,7 @@ const TilawahPage = () => {
                                 >
                                     <td className='px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs'>
                                         {new Date(e.date + 'T00:00:00').toLocaleDateString(
-                                            'id-ID',
+                                            lang === 'EN' ? 'en-US' : 'id-ID',
                                             { day: 'numeric', month: 'short' },
                                         )}
                                     </td>

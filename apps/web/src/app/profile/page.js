@@ -5,6 +5,7 @@ import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { SkeletonProfile } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import { hafalanApi, progressApi, streakApi, userApi } from '@/lib/api';
 import Link from 'next/link';
@@ -33,6 +34,7 @@ const inputCls =
 
 const ProfilePage = () => {
     const { t } = useLocale();
+    const { isWide } = useLayoutMode();
     const { user, isAuthenticated, isLoading: authLoading, logout, refetchUser } = useRequireAuth();
     const [streak, setStreak] = useState(null);
     const [quranProgress, setQuranProgress] = useState(null);
@@ -148,7 +150,7 @@ const ProfilePage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     {/* Header */}
                     <div className='flex items-center justify-between mb-6'>
                         <div className='flex items-center gap-3'>

@@ -54,10 +54,10 @@ const AdminPrayersPage = () => {
     const openEdit = (item) => {
         setEditId(item.id ?? item._id);
         setForm({
-            title: item.title ?? '',
-            arabic: item.arabic ?? '',
-            transliteration: item.transliteration ?? '',
-            translation: item.translation ?? '',
+            title: item.translation?.idn ?? item.title ?? '',
+            arabic: item.translation?.ar ?? item.arabic ?? '',
+            transliteration: item.translation?.latin_idn ?? item.transliteration ?? '',
+            translation: item.translation?.description_idn ?? '',
             category: item.category ?? 'umum',
             source: item.source ?? '',
         });

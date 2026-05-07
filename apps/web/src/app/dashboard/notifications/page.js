@@ -1,6 +1,8 @@
 'use client';
 
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { notificationInboxApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsBell, BsBellFill, BsCheckAll } from 'react-icons/bs';
 
@@ -9,64 +11,167 @@ const todayStr = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+const LOCAL_READ_KEY = 'tholabul_notif_read';
+
+const loadLocalRead = () => {
+    try {
+        const stored = JSON.parse(localStorage.getItem(LOCAL_READ_KEY) ?? '{}');
+        const today = todayStr();
+        return stored.date === today ? (stored.ids ?? []) : [];
+    } catch {
+        return [];
+    }
+};
+
+const saveLocalRead = (id) => {
+    try {
+        const current = loadLocalRead();
+        const updated = { date: todayStr(), ids: [...new Set([...current, id])] };
+        localStorage.setItem(LOCAL_READ_KEY, JSON.stringify(updated));
+    } catch {}
+};
+
 const NotificationsPage = () => {
     const { t, lang } = useLocale();
+    const { isAuthenticated } = useAuth();
     const [notifs, setNotifs] = useState([]);
 
-    useEffect(() => {
-        let stored = [];
-        try {
-            stored = JSON.parse(localStorage.getItem('tholabul_notifications') ?? '[]');
-        } catch {}
+    const buildLocalNotifs = () => {
+        const readIds = loadLocalRead();
+        const local = [];
+        const today = todayStr();
 
-        // Auto-generate muhasabah reminder if not done today
         try {
             const muhasabah = JSON.parse(
                 localStorage.getItem('tholabul_muhasabah') ?? '[]',
             );
-            const todayMuhasabah = muhasabah.find((m) => m.date === todayStr());
-            const reminderExists = stored.some((n) => n.id === 'auto_muhasabah_today');
-            if (!todayMuhasabah && !reminderExists) {
-                stored = [
-                    {
-                        id: 'auto_muhasabah_today',
-                        title: 'notif.muhasabah_title',
-                        body: 'notif.muhasabah_body',
-                        date: todayStr(),
-                        read: false,
-                    },
-                    ...stored,
-                ];
+            if (!muhasabah.find((m) => m.date === today)) {
+                local.push({
+                    id: 'auto_muhasabah_today',
+                    title: t('notif.muhasabah_title'),
+                    body: t('notif.muhasabah_body'),
+                    date: today,
+                    is_read: readIds.includes('auto_muhasabah_today'),
+                    local: true,
+                    icon: '📝',
+                });
             }
         } catch {}
 
-        setNotifs(stored);
-    }, []);
-
-    const persist = (updated) => {
-        setNotifs(updated);
         try {
-            localStorage.setItem('tholabul_notifications', JSON.stringify(updated));
+            const PRAYERS = ['shubuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+            const log = JSON.parse(
+                localStorage.getItem(`sholat_log_${today}`) ?? '{}',
+            );
+            const done = PRAYERS.filter((p) => log[p]).length;
+            if (done < 5) {
+                local.push({
+                    id: 'auto_prayer_today',
+                    title: t('notif.prayer_title'),
+                    body: t('notif.prayer_body'),
+                    date: today,
+                    is_read: readIds.includes('auto_prayer_today'),
+                    local: true,
+                    icon: '🕌',
+                });
+            }
+        } catch {}
+
+        try {
+            const tilawah = JSON.parse(
+                localStorage.getItem('tholabul_tilawah') ?? '[]',
+            );
+            const hasTodayTilawah = tilawah.some((e) => e.date === today);
+            if (!hasTodayTilawah) {
+                local.push({
+                    id: 'auto_tilawah_today',
+                    title: t('notif.tilawah_title'),
+                    body: t('notif.tilawah_body'),
+                    date: today,
+                    is_read: readIds.includes('auto_tilawah_today'),
+                    local: true,
+                    icon: '📖',
+                });
+            }
+        } catch {}
+
+        try {
+            const reviews = JSON.parse(
+                localStorage.getItem('muroja_ah_reviews') ?? '{}',
+            );
+            const hafalan = JSON.parse(
+                localStorage.getItem('tholabul_hafalan') ?? '[]',
+            );
+            const urgentCount = hafalan
+                .filter((s) => s.status === 'hafal')
+                .filter((s) => {
+                    const iso = reviews[s.surah_number];
+                    if (!iso) return true;
+                    return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) >= 14;
+                }).length;
+            if (urgentCount > 0) {
+                local.push({
+                    id: 'auto_muroja_urgent',
+                    title: t('notif.muroja_title'),
+                    body: `${t('notif.muroja_body_prefix')} ${urgentCount} ${t('notif.muroja_body_suffix')}`,
+                    date: today,
+                    is_read: readIds.includes('auto_muroja_urgent'),
+                    local: true,
+                    icon: '🔄',
+                });
+            }
+        } catch {}
+
+        return local;
+    };
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            notificationInboxApi
+                .list()
+                .then((r) => r.json())
+                .then((d) => {
+                    const items = Array.isArray(d?.items) ? d.items : [];
+                    const normalized = items.map((n) => ({
+                        ...n,
+                        date: n.created_at ? n.created_at.slice(0, 10) : todayStr(),
+                    }));
+                    setNotifs([...buildLocalNotifs(), ...normalized]);
+                })
+                .catch(() => setNotifs(buildLocalNotifs()));
+        } else {
+            setNotifs(buildLocalNotifs());
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]);
+
+    const markRead = async (notif) => {
+        if (notif.local) {
+            saveLocalRead(notif.id);
+            setNotifs((prev) =>
+                prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)),
+            );
+            return;
+        }
+        setNotifs((prev) =>
+            prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)),
+        );
+        try {
+            await notificationInboxApi.markRead(notif.id);
         } catch {}
     };
 
-    const markAllRead = () => {
-        persist(notifs.map((n) => ({ ...n, read: true })));
+    const markAllRead = async () => {
+        notifs.filter((n) => n.local && !n.is_read).forEach((n) => saveLocalRead(n.id));
+        setNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
+        if (isAuthenticated) {
+            try {
+                await notificationInboxApi.markAllRead();
+            } catch {}
+        }
     };
 
-    const markRead = (id) => {
-        persist(notifs.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    };
-
-    const unreadCount = notifs.filter((n) => !n.read).length;
-    const displayNotif = (notif) =>
-        notif.id === 'auto_muhasabah_today'
-            ? {
-                  ...notif,
-                  title: t('notif.muhasabah_title'),
-                  body: t('notif.muhasabah_body'),
-              }
-            : notif;
+    const unreadCount = notifs.filter((n) => !n.is_read).length;
 
     return (
         <div className='px-4 py-6'>
@@ -101,63 +206,68 @@ const NotificationsPage = () => {
                 </div>
             ) : (
                 <ul className='space-y-2'>
-                    {notifs.map((rawNotif) => {
-                        const notif = displayNotif(rawNotif);
-                        return (
-                            <li
-                                key={notif.id}
-                                onClick={() => markRead(notif.id)}
-                                className={`bg-white dark:bg-slate-800 rounded-xl border p-4 cursor-pointer transition-all ${
-                                    notif.read
-                                        ? 'border-gray-100 dark:border-slate-700'
-                                        : 'border-emerald-200 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
-                                }`}
-                            >
-                                <div className='flex items-start gap-3'>
-                                    <div
-                                        className={`mt-0.5 text-base shrink-0 ${
-                                            notif.read
-                                                ? 'text-gray-300 dark:text-slate-600'
-                                                : 'text-emerald-500'
-                                        }`}
-                                    >
-                                        {notif.read ? <BsBell /> : <BsBellFill />}
-                                    </div>
-                                    <div className='min-w-0'>
-                                        <p
-                                            className={`text-sm font-semibold ${
-                                                notif.read
-                                                    ? 'text-gray-600 dark:text-gray-400'
-                                                    : 'text-gray-800 dark:text-white'
+                    {notifs.map((notif) => (
+                        <li
+                            key={notif.id}
+                            onClick={() => markRead(notif)}
+                            className={`bg-white dark:bg-slate-800 rounded-xl border p-4 cursor-pointer transition-all ${
+                                notif.is_read
+                                    ? 'border-gray-100 dark:border-slate-700'
+                                    : 'border-emerald-200 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
+                            }`}
+                        >
+                            <div className='flex items-start gap-3'>
+                                <div className='mt-0.5 shrink-0'>
+                                    {notif.icon ? (
+                                        <span className={`text-xl ${notif.is_read ? 'opacity-40' : ''}`}>
+                                            {notif.icon}
+                                        </span>
+                                    ) : (
+                                        <span
+                                            className={`text-base ${
+                                                notif.is_read
+                                                    ? 'text-gray-300 dark:text-slate-600'
+                                                    : 'text-emerald-500'
                                             }`}
                                         >
-                                            {notif.title}
-                                        </p>
-                                        <p className='text-sm text-gray-500 dark:text-gray-400 mt-0.5'>
-                                            {notif.body}
-                                        </p>
-                                        {notif.date && (
-                                            <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
-                                                {new Date(
-                                                    notif.date + 'T00:00:00',
-                                                ).toLocaleDateString(
-                                                    lang === 'EN' ? 'en-US' : 'id-ID',
-                                                    {
-                                                        weekday: 'short',
-                                                        day: 'numeric',
-                                                        month: 'short',
-                                                    },
-                                                )}
-                                            </p>
-                                        )}
-                                    </div>
-                                    {!notif.read && (
-                                        <span className='w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1.5' />
+                                            {notif.is_read ? <BsBell /> : <BsBellFill />}
+                                        </span>
                                     )}
                                 </div>
-                            </li>
-                        );
-                    })}
+                                <div className='min-w-0'>
+                                    <p
+                                        className={`text-sm font-semibold ${
+                                            notif.is_read
+                                                ? 'text-gray-600 dark:text-gray-400'
+                                                : 'text-gray-800 dark:text-white'
+                                        }`}
+                                    >
+                                        {notif.title}
+                                    </p>
+                                    <p className='text-sm text-gray-500 dark:text-gray-400 mt-0.5'>
+                                        {notif.body}
+                                    </p>
+                                    {notif.date && (
+                                        <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
+                                            {new Date(
+                                                notif.date + 'T00:00:00',
+                                            ).toLocaleDateString(
+                                                lang === 'EN' ? 'en-US' : 'id-ID',
+                                                {
+                                                    weekday: 'short',
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                },
+                                            )}
+                                        </p>
+                                    )}
+                                </div>
+                                {!notif.is_read && (
+                                    <span className='w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1.5' />
+                                )}
+                            </div>
+                        </li>
+                    ))}
                 </ul>
             )}
         </div>

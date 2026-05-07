@@ -1,6 +1,8 @@
 'use client';
 
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { muhasabahApi, streakApi } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { BsPencilSquare, BsTrash, BsX } from 'react-icons/bs';
 
@@ -19,21 +21,54 @@ const MOODS = [
 const getMoodEmoji = (v) => MOODS.find((m) => m.value === v)?.emoji ?? '😐';
 
 const MuhasabahPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
+    const { isAuthenticated } = useAuth();
     const [list, setList] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ date: todayStr(), mood: 'baik', content: '' });
     const textRef = useRef(null);
 
     useEffect(() => {
-        try {
-            setList(JSON.parse(localStorage.getItem('tholabul_muhasabah') ?? '[]'));
-        } catch {}
-    }, []);
+        const load = async () => {
+            if (isAuthenticated) {
+                try {
+                    const res = await muhasabahApi.list();
+                    const data = await res.json();
+                    const items = (data?.items ?? data ?? []).map((e) => ({
+                        id: String(e.id),
+                        date: (e.date ?? e.created_at ?? '').slice(0, 10),
+                        mood: e.mood ?? 'biasa',
+                        content: e.content ?? e.notes ?? '',
+                    }));
+                    if (items.length > 0) {
+                        setList(items);
+                        try {
+                            localStorage.setItem(
+                                'tholabul_muhasabah',
+                                JSON.stringify(items),
+                            );
+                        } catch {}
+                        return;
+                    }
+                } catch {}
+            }
+            try {
+                setList(JSON.parse(localStorage.getItem('tholabul_muhasabah') ?? '[]'));
+            } catch {}
+        };
+        load();
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (showModal && textRef.current) textRef.current.focus();
     }, [showModal]);
+
+    const persist = (updated) => {
+        setList(updated);
+        try {
+            localStorage.setItem('tholabul_muhasabah', JSON.stringify(updated));
+        } catch {}
+    };
 
     const openModal = () => {
         setForm({ date: todayStr(), mood: 'baik', content: '' });
@@ -43,21 +78,22 @@ const MuhasabahPage = () => {
     const save = () => {
         if (!form.content.trim()) return;
         const entry = { id: Date.now().toString(), ...form };
-        const updated = [entry, ...list];
-        setList(updated);
-        try {
-            localStorage.setItem('tholabul_muhasabah', JSON.stringify(updated));
-        } catch {}
+        persist([entry, ...list]);
+        if (isAuthenticated) {
+            muhasabahApi
+                .create({ date: form.date, mood: form.mood, content: form.content })
+                .catch(() => {});
+            streakApi.logActivity('muhasabah').catch(() => {});
+        }
         setShowModal(false);
     };
 
     const remove = (id) => {
         if (!confirm(t('muhasabah.delete_confirm'))) return;
-        const updated = list.filter((e) => e.id !== id);
-        setList(updated);
-        try {
-            localStorage.setItem('tholabul_muhasabah', JSON.stringify(updated));
-        } catch {}
+        persist(list.filter((e) => e.id !== id));
+        if (isAuthenticated) {
+            muhasabahApi.delete(id).catch(() => {});
+        }
     };
 
     return (
@@ -102,12 +138,15 @@ const MuhasabahPage = () => {
                                         {entry.date
                                             ? new Date(
                                                   entry.date + 'T00:00:00',
-                                              ).toLocaleDateString('id-ID', {
+                                              ).toLocaleDateString(
+                                                lang === 'EN' ? 'en-US' : 'id-ID',
+                                                {
                                                   weekday: 'long',
                                                   day: 'numeric',
                                                   month: 'long',
                                                   year: 'numeric',
-                                              })
+                                                },
+                                              )
                                             : ''}
                                     </span>
                                 </div>

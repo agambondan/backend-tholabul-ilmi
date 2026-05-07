@@ -1,6 +1,8 @@
 'use client';
 
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { sholatTrackerApi, streakApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { BsCheckCircleFill, BsCircle } from 'react-icons/bs';
 
@@ -17,18 +19,61 @@ const dateStrOffset = (offset) => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+const buildMonthDays = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+        const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        try {
+            const entry = JSON.parse(localStorage.getItem(`sholat_log_${ds}`) ?? '{}');
+            const count = PRAYERS.filter((p) => entry[p.toLowerCase()]).length;
+            days.push({ day: d, date: ds, count });
+        } catch {
+            days.push({ day: d, date: ds, count: 0 });
+        }
+    }
+    return days;
+};
+
 const SholatTrackerPage = () => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
+    const { isAuthenticated } = useAuth();
     const [log, setLog] = useState({});
     const [last7, setLast7] = useState([]);
+    const [monthDays, setMonthDays] = useState([]);
 
     useEffect(() => {
-        try {
-            const stored = JSON.parse(
-                localStorage.getItem(`sholat_log_${todayStr()}`) ?? '{}',
-            );
+        const loadToday = async () => {
+            let stored = {};
+            try {
+                stored = JSON.parse(
+                    localStorage.getItem(`sholat_log_${todayStr()}`) ?? '{}',
+                );
+            } catch {}
+            if (isAuthenticated) {
+                try {
+                    const res = await sholatTrackerApi.today();
+                    const data = await res.json();
+                    const serverLog = data?.data ?? data ?? {};
+                    if (typeof serverLog === 'object' && serverLog !== null) {
+                        const merged = { ...stored, ...serverLog };
+                        stored = merged;
+                        try {
+                            localStorage.setItem(
+                                `sholat_log_${todayStr()}`,
+                                JSON.stringify(merged),
+                            );
+                        } catch {}
+                    }
+                } catch {}
+            }
             setLog(stored);
-        } catch {}
+        };
+        loadToday();
+        setMonthDays(buildMonthDays());
         const rows = [];
         for (let i = -6; i <= 0; i++) {
             const ds = dateStrOffset(i);
@@ -43,7 +88,7 @@ const SholatTrackerPage = () => {
             }
         }
         setLast7(rows);
-    }, []);
+    }, [isAuthenticated]);
 
     const toggle = (prayer) => {
         const key = prayer.toLowerCase();
@@ -55,6 +100,10 @@ const SholatTrackerPage = () => {
                 JSON.stringify(updated),
             );
         } catch {}
+        if (isAuthenticated) {
+            sholatTrackerApi.update(updated).catch(() => {});
+            streakApi.logActivity('prayer').catch(() => {});
+        }
         setLast7((prev) =>
             prev.map((row) => {
                 if (row.date !== todayStr()) return row;
@@ -64,6 +113,7 @@ const SholatTrackerPage = () => {
                 return { ...row, count };
             }),
         );
+        setMonthDays(buildMonthDays());
     };
 
     const doneCount = PRAYERS.filter((p) => log[p.toLowerCase()]).length;
@@ -130,7 +180,7 @@ const SholatTrackerPage = () => {
             </div>
 
             {/* Last 7 days table */}
-            <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden'>
+            <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden mb-6'>
                 <div className='px-5 py-3 border-b border-gray-100 dark:border-slate-700'>
                     <p className='text-sm font-semibold text-gray-700 dark:text-gray-300'>
                         {t('sholat.last_7_days')}
@@ -159,7 +209,7 @@ const SholatTrackerPage = () => {
                             >
                                 <td className='px-5 py-2.5 text-gray-700 dark:text-gray-300'>
                                     {new Date(row.date + 'T00:00:00').toLocaleDateString(
-                                        'id-ID',
+                                        lang === 'EN' ? 'en-US' : 'id-ID',
                                         { weekday: 'short', day: 'numeric', month: 'short' },
                                     )}
                                 </td>
@@ -181,6 +231,77 @@ const SholatTrackerPage = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Monthly calendar heatmap */}
+            {monthDays.length > 0 && (
+                <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5'>
+                    <div className='flex items-center justify-between mb-3'>
+                        <p className='text-sm font-semibold text-gray-700 dark:text-gray-300'>
+                            {t('sholat.monthly_title')}
+                        </p>
+                        <span className='text-xs text-gray-400 dark:text-gray-500'>
+                            {monthDays.filter((d) => d.count === 5).length} {t('sholat.perfect_days')} ✨
+                        </span>
+                    </div>
+                    <div className='grid grid-cols-7 gap-1'>
+                        {Array.from({ length: 7 }, (_, i) =>
+                            new Date(2024, 0, 7 + i).toLocaleDateString(
+                                lang === 'EN' ? 'en-US' : 'id-ID',
+                                { weekday: 'short' },
+                            ),
+                        ).map((d) => (
+                            <div key={d} className='text-[10px] text-gray-400 dark:text-gray-500 text-center font-medium pb-1'>
+                                {d}
+                            </div>
+                        ))}
+                        {Array.from({
+                            length: new Date(
+                                new Date().getFullYear(),
+                                new Date().getMonth(),
+                                1,
+                            ).getDay(),
+                        }).map((_, i) => (
+                            <div key={`empty-${i}`} />
+                        ))}
+                        {monthDays.map((d) => {
+                            const isToday = d.date === todayStr();
+                            const isFuture = d.date > todayStr();
+                            const bgColor = isFuture
+                                ? 'bg-gray-50 dark:bg-slate-700/30'
+                                : d.count === 5
+                                  ? 'bg-emerald-500 dark:bg-emerald-600'
+                                  : d.count >= 3
+                                    ? 'bg-amber-400 dark:bg-amber-500'
+                                    : d.count >= 1
+                                      ? 'bg-orange-300 dark:bg-orange-600'
+                                      : 'bg-gray-200 dark:bg-slate-700';
+                            return (
+                                <div
+                                    key={d.day}
+                                    title={`${d.date}: ${d.count}/5`}
+                                    className={`aspect-square rounded-md flex items-center justify-center text-[11px] font-medium transition-all ${bgColor} ${
+                                        isToday ? 'ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-slate-800' : ''
+                                    } ${
+                                        isFuture
+                                            ? 'text-gray-300 dark:text-slate-600'
+                                            : d.count > 0
+                                              ? 'text-white'
+                                              : 'text-gray-400 dark:text-gray-500'
+                                    }`}
+                                >
+                                    {d.day}
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className='flex items-center gap-3 mt-3 text-[10px] text-gray-400 dark:text-gray-500'>
+                        <span className='flex items-center gap-1'><span className='w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block' />5/5</span>
+                        <span className='flex items-center gap-1'><span className='w-2.5 h-2.5 rounded-sm bg-amber-400 inline-block' />3-4</span>
+                        <span className='flex items-center gap-1'><span className='w-2.5 h-2.5 rounded-sm bg-orange-300 inline-block' />1-2</span>
+                        <span className='flex items-center gap-1'><span className='w-2.5 h-2.5 rounded-sm bg-gray-200 dark:bg-slate-700 inline-block' />0</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

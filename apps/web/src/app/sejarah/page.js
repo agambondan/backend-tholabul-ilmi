@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useState } from 'react';
 import { BsChevronDown, BsChevronUp, BsSearch } from 'react-icons/bs';
 import { MdTimeline } from 'react-icons/md';
@@ -328,6 +329,7 @@ const localizeEvent = (event, field, lang) =>
 
 const SejarahPage = () => {
     const { t, lang } = useLocale();
+    const { isWide } = useLayoutMode();
     const [activeCategory, setActiveCategory] = useState('semua');
     const [search, setSearch] = useState('');
     const [openId, setOpenId] = useState(null);
@@ -357,7 +359,7 @@ const SejarahPage = () => {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <div className='container mx-auto px-4 max-w-2xl'>
+                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     {/* Header */}
                     <div className='flex items-center gap-3 mb-6'>
                         <div className='w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center'>
