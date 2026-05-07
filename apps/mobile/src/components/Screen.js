@@ -71,6 +71,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     padding: spacing.lg,
     paddingBottom: spacing.xl,
+    ...Platform.select({
+      web: {
+        boxSizing: 'border-box',
+        maxWidth: '100%',
+        width: '100%',
+      },
+    }),
   },
   header: {
     borderBottomColor: colors.faint,

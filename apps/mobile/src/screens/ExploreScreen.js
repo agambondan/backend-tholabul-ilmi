@@ -540,7 +540,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
 
   const renderItem = (item, index) => (
     <Card key={`${item.id}-${index}`} style={styles.itemCard}>
-      <CardTitle meta={item.meta || activeFeature?.title}>{item.title}</CardTitle>
+      <View style={styles.itemTitleBlock}>
+        <Text style={styles.itemTitle}>{item.title}</Text>
+        {item.meta || activeFeature?.title ? (
+          <Text style={styles.itemMeta}>{item.meta || activeFeature?.title}</Text>
+        ) : null}
+      </View>
       {item.arabic ? <Text style={styles.arabic}>{item.arabic}</Text> : null}
       {item.body ? <Text style={styles.body}>{item.body}</Text> : null}
       {activeFeature?.type === 'quiz' ? (
@@ -1216,6 +1221,25 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     marginBottom: spacing.md,
+  },
+  itemTitleBlock: {
+    marginBottom: spacing.sm,
+    minWidth: 0,
+    paddingRight: 44,
+  },
+  itemTitle: {
+    color: colors.ink,
+    fontFamily: 'serif',
+    fontSize: 16,
+    fontWeight: '900',
+    lineHeight: 20,
+  },
+  itemMeta: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    lineHeight: 16,
+    marginTop: 3,
   },
   itemActions: {
     flexDirection: 'row',

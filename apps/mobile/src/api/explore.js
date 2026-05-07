@@ -12,6 +12,13 @@ const pickItems = (payload) => {
 };
 
 const pickText = (...values) => values.find((value) => typeof value === 'string' && value.trim()) ?? '';
+const joinMeta = (...values) => values.filter((value) => typeof value === 'string' && value.trim()).join(' · ');
+
+const formatJarhTadilJenis = (value) => {
+  if (value === 'jarh') return 'Jarh';
+  if (value === 'tadil') return "Ta'dil";
+  return value ?? '';
+};
 
 const withPagination = (endpoint, { page = 0, size = 20 } = {}) => {
   if (!endpoint) return endpoint;
@@ -26,6 +33,29 @@ const withPagination = (endpoint, { page = 0, size = 20 } = {}) => {
 export const normalizeExploreItem = (item, index = 0) => {
   if (item?.raw && (item?.title || item?.body || item?.arabic)) {
     return item;
+  }
+
+  if (item?.jenis_nilai || item?.teks_nilai || item?.perawi_id || item?.penilai_id) {
+    const perawiName = pickText(item?.perawi?.nama_latin, item?.perawi?.nama_arab, item?.perawi?.nama_lengkap);
+    const penilaiName = pickText(item?.penilai?.nama_latin, item?.penilai?.nama_arab, item?.penilai?.nama_lengkap);
+    const jenis = formatJarhTadilJenis(item?.jenis_nilai);
+    const title = pickText(item?.teks_nilai, perawiName, `Penilaian ${index + 1}`);
+    const body = [
+      perawiName ? `Perawi: ${perawiName}` : '',
+      penilaiName ? `Penilai: ${penilaiName}` : '',
+      pickText(item?.catatan),
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    return {
+      id: item?.id ?? `${title}-${index}`,
+      title,
+      arabic: '',
+      body,
+      meta: joinMeta(jenis, item?.tingkat ? `Tingkat ${item.tingkat}` : '', item?.sumber),
+      raw: item,
+    };
   }
 
   const translation = item?.translation ?? {};

@@ -121,6 +121,13 @@ export const featureGroups = [
         type: 'list',
         endpoint: '/api/v1/perawi',
       },
+      {
+        key: 'jarh-tadil',
+        title: "Jarh wa Ta'dil",
+        subtitle: 'Penilaian ulama atas perawi',
+        type: 'list',
+        endpoint: '/api/v1/jarh-tadil',
+      },
     ],
   },
   {
@@ -287,7 +294,7 @@ export const belajarFeatureGroups = [
     key: 'referensi',
     label: 'Referensi',
     meta: 'Kamus dan katalog',
-    features: pickFeatures(['kamus', 'tafsir', 'asbabun-nuzul', 'perawi', 'asmaul-husna']),
+    features: pickFeatures(['kamus', 'tafsir', 'asbabun-nuzul', 'perawi', 'jarh-tadil', 'asmaul-husna']),
   },
   {
     key: 'evaluasi',

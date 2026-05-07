@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, shadows, spacing } from '../theme';
 
 export function Card({ children, style }) {
@@ -22,6 +22,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: spacing.md,
     padding: spacing.lg,
+    ...Platform.select({
+      web: {
+        boxSizing: 'border-box',
+        maxWidth: '100%',
+        width: '100%',
+      },
+    }),
     ...shadows.paper,
   },
   titleRow: {
@@ -36,11 +43,15 @@ const styles = StyleSheet.create({
     fontFamily: 'serif',
     fontSize: 16,
     fontWeight: '900',
+    minWidth: 0,
   },
   meta: {
     color: colors.primary,
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: '900',
     marginLeft: spacing.md,
+    maxWidth: '48%',
+    textAlign: 'right',
   },
 });

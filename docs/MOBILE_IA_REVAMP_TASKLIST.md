@@ -129,7 +129,7 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - Personal Ringkas
 - [x] Pindahkan/ekspos feature berikut ke Belajar:
   - Kajian, Blog/Artikel, Siroh, Sejarah, Fiqh, Manasik, Kamus, Quiz, Tafsir, Asbabun Nuzul, Perawi, Asmaul Husna
-  - Jarh wa Ta'dil: belum ada feature entry di `mobileFeatures.js`
+  - Jarh wa Ta'dil: added 2026-05-08 as Referensi entry via `/api/v1/jarh-tadil`
 - [x] Tambahkan Personal Ringkas lengkap:
   - Goals, Stats, Leaderboard, Bookmarks, Notes
 - [x] Pastikan Hadis tetap primary tab; Belajar hanya boleh menampilkan shortcut ilmu hadis/perawi.
