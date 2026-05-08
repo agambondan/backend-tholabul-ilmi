@@ -16,8 +16,8 @@ import {
   Video,
 } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getDailyAyah, getDailyHadith, getPrayerTimes } from '../api/client';
 import { useSession } from '../context/SessionContext';
 import { useTabActivity } from '../context/TabActivityContext';
@@ -55,16 +55,17 @@ const menuItems = [
 
 const scheduleOrder = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-const toMinutes = (timeValue) => {
-  const match = /^(\d{1,2}):(\d{2})/.exec(`${timeValue ?? ''}`);
+const toSeconds = (timeValue) => {
+  const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(`${timeValue ?? ''}`);
   if (!match) return null;
-  return Number(match[1]) * 60 + Number(match[2]);
+  return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3] ?? 0);
 };
 
-const formatCountdown = (minutesDelta) => {
-  const hours = `${Math.floor(minutesDelta / 60)}`.padStart(2, '0');
-  const minutes = `${minutesDelta % 60}`.padStart(2, '0');
-  return `${hours}:${minutes}`;
+const formatCountdown = (secondsDelta) => {
+  const hours = `${Math.floor(secondsDelta / 3600)}`.padStart(2, '0');
+  const minutes = `${Math.floor((secondsDelta % 3600) / 60)}`.padStart(2, '0');
+  const seconds = `${secondsDelta % 60}`.padStart(2, '0');
+  return `${hours}:${minutes}:${seconds}`;
 };
 
 const formatHadisSource = (value = '') => {
@@ -72,15 +73,50 @@ const formatHadisSource = (value = '') => {
   return value.replace(/\bHadith\b/g, 'Hadis');
 };
 
+const resolvePrayerState = (prayers, now = new Date()) => {
+  const currentSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  const decorated = scheduleOrder
+    .map((key) => ({
+      key,
+      label: prayerKeyLabels[key],
+      seconds: toSeconds(prayers?.[key]),
+      time: prayers?.[key] ?? '--:--',
+    }))
+    .filter((item) => item.seconds !== null);
+
+  if (!decorated.length) {
+    return { countdown: '--:--:--', key: 'asr', time: '--:--' };
+  }
+
+  let target = decorated.find((item) => item.seconds > currentSeconds);
+  let delta = 0;
+
+  if (target) {
+    delta = target.seconds - currentSeconds;
+  } else {
+    target = decorated[0];
+    delta = 86400 - currentSeconds + target.seconds;
+  }
+
+  return {
+    countdown: formatCountdown(delta),
+    key: target.key,
+    time: target.time,
+  };
+};
+
 export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const { user } = useSession();
   const { notifyTabActivity } = useTabActivity();
+  const mountedRef = useRef(true);
   const [dailyHadith, setDailyHadith] = useState(null);
   const [dailyAyah, setDailyAyah] = useState(null);
   const [locationLabel, setLocationLabel] = useState('Memuat lokasi');
-  const [nextPrayer, setNextPrayer] = useState({ countdown: '--:--', key: 'asr', time: '--:--' });
+  const [nextPrayer, setNextPrayer] = useState({ countdown: '--:--:--', key: 'asr', time: '--:--' });
+  const [prayerTimes, setPrayerTimes] = useState(null);
   const [tracker, setTracker] = useState(trackerTemplate.map((item) => ({ ...item, done: false })));
   const [loadingDaily, setLoadingDaily] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [dailyMessage, setDailyMessage] = useState('');
   const [prayerMessage, setPrayerMessage] = useState('');
   const [pinnedFeatures, setPinnedFeatures] = useState([]);
@@ -114,7 +150,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   }, [locationLabel, recentFeatures]);
 
   const displayName = user?.name || 'Tamu';
-  const hasPrayerSchedule = nextPrayer.time !== '--:--' && nextPrayer.countdown !== '--:--';
+  const hasPrayerSchedule = nextPrayer.time !== '--:--' && nextPrayer.countdown !== '--:--:--';
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)
@@ -122,123 +158,112 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     .map((part) => part[0]?.toUpperCase())
     .join('');
 
-  useEffect(() => {
-    let mounted = true;
-
-    const resolvePrayerState = (prayers) => {
-      const now = new Date();
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const decorated = scheduleOrder
-        .map((key) => ({
-          key,
-          label: prayerKeyLabels[key],
-          minutes: toMinutes(prayers?.[key]),
-          time: prayers?.[key] ?? '--:--',
-        }))
-        .filter((item) => item.minutes !== null);
-
-      if (!decorated.length) {
-        return { countdown: '--:--', key: 'asr', time: '--:--' };
-      }
-
-      let target = decorated.find((item) => item.minutes > currentMinutes);
-      let delta = 0;
-
-      if (target) {
-        delta = target.minutes - currentMinutes;
-      } else {
-        target = decorated[0];
-        delta = 1440 - currentMinutes + target.minutes;
-      }
-
-      return {
-        countdown: formatCountdown(delta),
-        key: target.key,
-        time: target.time,
-      };
-    };
-
-    const loadHomeData = async () => {
+  const loadHomeData = useCallback(async ({ refresh = false } = {}) => {
+    if (refresh) {
+      setRefreshing(true);
+    } else {
       setLoadingDaily(true);
-      setDailyMessage('');
-      setPrayerMessage('');
-      let coords = null;
+    }
+    setDailyMessage('');
+    setPrayerMessage('');
+    let coords = null;
 
-      try {
-        const permission = await Location.requestForegroundPermissionsAsync();
-        if (permission.status === 'granted') {
-          const position = await Location.getCurrentPositionAsync({});
-          coords = { lat: position.coords.latitude, lng: position.coords.longitude };
-          const places = await Location.reverseGeocodeAsync(coords);
-          const place = places?.[0];
-          const city = place?.city || place?.subregion || place?.district || place?.region;
-          if (mounted) setLocationLabel((city || 'Lokasi aktif').toUpperCase());
-        } else if (mounted) {
-          setLocationLabel('LOKASI NONAKTIF');
-          setPrayerMessage('Aktifkan lokasi untuk melihat jadwal sholat di tempatmu.');
-        }
-      } catch {
-        if (mounted) {
-          setLocationLabel('LOKASI BELUM TERSEDIA');
-          setPrayerMessage('Lokasi belum terbaca. Coba aktifkan GPS lalu tarik untuk memuat ulang.');
-        }
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status === 'granted') {
+        const position = await Location.getCurrentPositionAsync({});
+        coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+        const places = await Location.reverseGeocodeAsync(coords);
+        const place = places?.[0];
+        const city = place?.city || place?.subregion || place?.district || place?.region;
+        if (mountedRef.current) setLocationLabel((city || 'Lokasi aktif').toUpperCase());
+      } else if (mountedRef.current) {
+        setLocationLabel('LOKASI NONAKTIF');
+        setPrayerMessage('Aktifkan lokasi untuk melihat jadwal sholat di tempatmu.');
       }
-
-      const [hadithResult, ayahResult, prayersResult, prayerLogResult] = await Promise.allSettled([
-        getDailyHadith(),
-        getDailyAyah(),
-        coords ? getPrayerTimes({ ...coords, madhab: 'shafi', method: 'kemenag' }) : Promise.resolve(null),
-        user ? getTodayPrayerLog() : Promise.resolve(null),
-      ]);
-
-      if (!mounted) return;
-
-      if (hadithResult.status === 'fulfilled') {
-        setDailyHadith(hadithResult.value);
-      } else {
-        setDailyHadith(null);
+    } catch {
+      if (mountedRef.current) {
+        setLocationLabel('LOKASI BELUM TERSEDIA');
+        setPrayerMessage('Lokasi belum terbaca. Coba aktifkan GPS lalu tarik untuk memuat ulang.');
       }
+    }
 
-      if (ayahResult.status === 'fulfilled' && ayahResult.value?.id) {
-        const chosen = ayahResult.value;
-        setDailyAyah({
-          arabic: chosen.arabic,
-          ref: [chosen.surahName, chosen.number ? `Ayah ${chosen.number}` : null].filter(Boolean).join(' · '),
-          translation: chosen.translation,
-        });
-      } else {
-        setDailyAyah(null);
-        setDailyMessage('Bacaan harian belum tersedia dari server.');
-      }
+    const [hadithResult, ayahResult, prayersResult, prayerLogResult] = await Promise.allSettled([
+      getDailyHadith(),
+      getDailyAyah(),
+      coords ? getPrayerTimes({ ...coords, madhab: 'shafi', method: 'kemenag' }) : Promise.resolve(null),
+      user ? getTodayPrayerLog() : Promise.resolve(null),
+    ]);
 
-      if (prayersResult.status === 'fulfilled' && prayersResult.value) {
-        setNextPrayer(resolvePrayerState(prayersResult.value));
-      } else if (coords) {
+    if (!mountedRef.current) return;
+
+    if (hadithResult.status === 'fulfilled') {
+      setDailyHadith(hadithResult.value);
+    } else {
+      setDailyHadith(null);
+    }
+
+    if (ayahResult.status === 'fulfilled' && ayahResult.value?.id) {
+      const chosen = ayahResult.value;
+      setDailyAyah({
+        arabic: chosen.arabic,
+        ref: [chosen.surahName, chosen.number ? `Ayah ${chosen.number}` : null].filter(Boolean).join(' · '),
+        translation: chosen.translation,
+      });
+    } else {
+      setDailyAyah(null);
+      setDailyMessage('Bacaan harian belum tersedia dari server.');
+    }
+
+    if (prayersResult.status === 'fulfilled' && prayersResult.value) {
+      setPrayerTimes(prayersResult.value);
+      setNextPrayer(resolvePrayerState(prayersResult.value));
+    } else {
+      setPrayerTimes(null);
+      setNextPrayer({ countdown: '--:--:--', key: 'asr', time: '--:--' });
+      if (coords) {
         setPrayerMessage('Jadwal sholat belum tersedia. Coba muat ulang beberapa saat lagi.');
-        setNextPrayer({ countdown: '--:--', key: 'asr', time: '--:--' });
       }
+    }
 
-      if (prayerLogResult.status === 'fulfilled' && prayerLogResult.value?.prayers) {
-        const prayers = prayerLogResult.value.prayers;
-        setTracker(
-          trackerTemplate.map((item) => ({
-            ...item,
-            done: Boolean(prayers[item.key]),
-          })),
-        );
-      } else {
-        setTracker(trackerTemplate.map((item) => ({ ...item, done: false })));
-      }
+    if (prayerLogResult.status === 'fulfilled' && prayerLogResult.value?.prayers) {
+      const prayers = prayerLogResult.value.prayers;
+      setTracker(
+        trackerTemplate.map((item) => ({
+          ...item,
+          done: Boolean(prayers[item.key]),
+        })),
+      );
+    } else {
+      setTracker(trackerTemplate.map((item) => ({ ...item, done: false })));
+    }
 
+    if (mountedRef.current) {
       setLoadingDaily(false);
-    };
+      setRefreshing(false);
+    }
+  }, [user]);
 
+  useEffect(() => {
+    mountedRef.current = true;
     loadHomeData();
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
     };
-  }, [user]);
+  }, [loadHomeData]);
+
+  useEffect(() => {
+    if (!prayerTimes) return undefined;
+
+    const updateCountdown = () => {
+      setNextPrayer(resolvePrayerState(prayerTimes));
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [prayerTimes]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -282,6 +307,14 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     <ScrollView
       contentContainerStyle={styles.screen}
       onMomentumScrollBegin={handleScrollActivity}
+      refreshControl={
+        <RefreshControl
+          colors={[colors.primary]}
+          onRefresh={() => loadHomeData({ refresh: true })}
+          refreshing={refreshing}
+          tintColor={colors.primary}
+        />
+      }
       onScroll={handleScrollActivity}
       onScrollBeginDrag={handleScrollActivity}
       scrollEventThrottle={250}
