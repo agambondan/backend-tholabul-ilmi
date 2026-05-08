@@ -2,7 +2,9 @@ import {
     ArrowLeft,
     Bell,
     BookOpen,
+    ChevronRight,
     HardDrive,
+    Lock,
     LogOut,
     Palette,
     Settings,
@@ -13,6 +15,7 @@ import {
 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -21,7 +24,15 @@ import {
     Text,
     View,
 } from 'react-native';
-import { getHafalanSummary, getMyPoints, getMyStreak, getPrayerStats, getTilawahSummary } from '../api/personal';
+import {
+    getAchievements,
+    getHafalanSummary,
+    getMyAchievements,
+    getMyPoints,
+    getMyStreak,
+    getPrayerStats,
+    getTilawahSummary,
+} from '../api/personal';
 import { Card } from '../components/Card';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { OfflinePackCard } from '../components/OfflinePackCard';
@@ -30,12 +41,27 @@ import { SessionCard } from '../components/SessionCard';
 import { useSession } from '../context/SessionContext';
 import { colors, radius, spacing } from '../theme';
 
-const BADGES = [
-    { emoji: '📖', label: 'Tilawah Perdana', unlocked: false },
-    { emoji: '✅', label: 'Sholat Penuh', unlocked: false },
-    { emoji: '🌟', label: 'Penuntut Ilmi', unlocked: true },
-    { emoji: '🔥', label: 'Streak 7 Hari', unlocked: false },
+const DEFAULT_BADGES = [
+    { code: 'tilawah_first', description: 'Mulai perjalanan tilawah.', icon: '📖', label: 'Tilawah Perdana', unlocked: false },
+    { code: 'sholat_full', description: 'Sempurnakan catatan sholat harian.', icon: '✅', label: 'Sholat Penuh', unlocked: false },
+    { code: 'starter', description: 'Akun belajar sudah aktif.', icon: '🌟', label: 'Penuntut Ilmi', unlocked: true },
+    { code: 'streak_7', description: 'Jaga aktivitas belajar selama 7 hari.', icon: '🔥', label: 'Streak 7 Hari', unlocked: false },
 ];
+
+const normalizeAchievement = (item = {}) => {
+    const source = item.achievement ?? item;
+    const code = source.code ?? `${source.id ?? item.achievement_id ?? source.name ?? 'achievement'}`;
+    return {
+        code,
+        description: source.description ?? source.desc_en ?? '',
+        earnedAt: item.earned_at ?? source.earned_at ?? null,
+        icon: source.icon || '🏅',
+        id: source.id ?? item.achievement_id ?? code,
+        label: source.name ?? source.name_en ?? 'Pencapaian',
+        threshold: source.threshold ?? null,
+        unlocked: Boolean(item.earned_at || item.achievement || source.unlocked),
+    };
+};
 
 function SubScreen({ title, onBack, children }) {
     return (
@@ -83,7 +109,7 @@ function MenuRow({ Icon, label, meta, danger, onPress }) {
                 <Text style={[styles.menuLabel, danger && styles.menuLabelDanger]}>{label}</Text>
                 {meta ? <Text style={styles.menuMeta}>{meta}</Text> : null}
             </View>
-            <Text style={styles.chevron}>›</Text>
+            <ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />
         </Pressable>
     );
 }
@@ -140,6 +166,9 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
     const { loading: sessionLoading, session, signOut, user } = useSession();
     const [stack, setStack] = useState([]);
     const [stats, setStats] = useState(null);
+    const [achievements, setAchievements] = useState(DEFAULT_BADGES);
+    const [achievementsLoading, setAchievementsLoading] = useState(false);
+    const [achievementsMessage, setAchievementsMessage] = useState('');
 
     const push = (screen) => setStack((s) => [...s, screen]);
     const pop = () => setStack((s) => s.slice(0, -1));
@@ -172,40 +201,106 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
         .join('');
 
     useEffect(() => {
-        if (!session?.token) {
-            setStats(null);
-            return;
-        }
-        Promise.allSettled([
-            getMyPoints(),
-            getMyStreak(),
-            getHafalanSummary(),
-            getPrayerStats(),
-            getTilawahSummary(),
-        ]).then(([pointsRes, streakRes, hafalanRes, prayerRes, tilawahRes]) => {
-            setStats({
-                points:
-                    pointsRes.status === 'fulfilled'
-                        ? (pointsRes.value?.total_points ?? pointsRes.value?.points ?? 0)
-                        : 0,
-                streak:
-                    streakRes.status === 'fulfilled'
-                        ? (streakRes.value?.current_streak ?? streakRes.value?.streak ?? 0)
-                        : 0,
-                hafalanCount:
-                    hafalanRes.status === 'fulfilled'
-                        ? (hafalanRes.value?.memorized_count ?? hafalanRes.value?.total ?? 0)
-                        : null,
-                sholatWeekly:
-                    prayerRes.status === 'fulfilled'
-                        ? (prayerRes.value?.weekly_completion_pct ?? prayerRes.value?.completion_pct ?? null)
-                        : null,
-                tilawahPages:
-                    tilawahRes.status === 'fulfilled'
-                        ? (tilawahRes.value?.total_pages ?? tilawahRes.value?.pages ?? null)
-                        : null,
-            });
-        });
+        let mounted = true;
+
+        const loadProfileData = async () => {
+            setAchievementsLoading(true);
+            setAchievementsMessage('');
+
+            const publicAchievementsPromise = getAchievements();
+            const personalPromises = session?.token
+                ? [
+                    getMyPoints(),
+                    getMyStreak(),
+                    getHafalanSummary(),
+                    getPrayerStats(),
+                    getTilawahSummary(),
+                    getMyAchievements(),
+                ]
+                : [
+                    Promise.resolve(null),
+                    Promise.resolve(null),
+                    Promise.resolve(null),
+                    Promise.resolve(null),
+                    Promise.resolve(null),
+                    Promise.resolve([]),
+                ];
+
+            const [
+                allAchievementsRes,
+                pointsRes,
+                streakRes,
+                hafalanRes,
+                prayerRes,
+                tilawahRes,
+                myAchievementsRes,
+            ] = await Promise.allSettled([
+                publicAchievementsPromise,
+                ...personalPromises,
+            ]);
+
+            if (!mounted) return;
+
+            if (session?.token) {
+                setStats({
+                    points:
+                        pointsRes.status === 'fulfilled'
+                            ? (pointsRes.value?.total_points ?? pointsRes.value?.points ?? pointsRes.value?.data?.total_points ?? 0)
+                            : 0,
+                    streak:
+                        streakRes.status === 'fulfilled'
+                            ? (streakRes.value?.current_streak ?? streakRes.value?.streak ?? streakRes.value?.data?.current_streak ?? 0)
+                            : 0,
+                    hafalanCount:
+                        hafalanRes.status === 'fulfilled'
+                            ? (hafalanRes.value?.memorized_count ?? hafalanRes.value?.total ?? hafalanRes.value?.data?.memorized_count ?? 0)
+                            : null,
+                    sholatWeekly:
+                        prayerRes.status === 'fulfilled'
+                            ? (prayerRes.value?.weekly_completion_pct ?? prayerRes.value?.completion_pct ?? prayerRes.value?.data?.weekly_completion_pct ?? null)
+                            : null,
+                    tilawahPages:
+                        tilawahRes.status === 'fulfilled'
+                            ? (tilawahRes.value?.total_pages ?? tilawahRes.value?.pages ?? tilawahRes.value?.data?.total_pages ?? null)
+                            : null,
+                });
+            } else {
+                setStats(null);
+            }
+
+            const allAchievements =
+                allAchievementsRes.status === 'fulfilled'
+                    ? allAchievementsRes.value.map(normalizeAchievement)
+                    : DEFAULT_BADGES;
+            const earnedAchievements =
+                myAchievementsRes.status === 'fulfilled'
+                    ? myAchievementsRes.value.map(normalizeAchievement)
+                    : [];
+            const earnedByCode = earnedAchievements.reduce((acc, item) => {
+                acc[item.code] = item;
+                return acc;
+            }, {});
+
+            const merged = allAchievements.map((item) => ({
+                ...item,
+                earnedAt: earnedByCode[item.code]?.earnedAt ?? item.earnedAt,
+                unlocked: Boolean(earnedByCode[item.code] || item.unlocked),
+            }));
+
+            setAchievements(merged.length ? merged : DEFAULT_BADGES);
+            if (allAchievementsRes.status !== 'fulfilled') {
+                setAchievementsMessage('Daftar pencapaian belum bisa dimuat.');
+            } else if (!session?.token) {
+                setAchievementsMessage('Masuk untuk melihat badge yang sudah kamu raih.');
+            }
+            setAchievementsLoading(false);
+        };
+
+        loadProfileData();
+
+        return () => {
+            mounted = false;
+        };
     }, [session?.token]);
 
     if (currentScreen === 'settings') {
@@ -374,14 +469,25 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
             ) : null}
 
             <View style={styles.badgeSection}>
-                <Text style={styles.sectionLabel}>PENCAPAIAN</Text>
+                <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionLabel}>PENCAPAIAN</Text>
+                    {achievementsLoading ? <ActivityIndicator color={colors.primary} size="small" /> : null}
+                </View>
+                {achievementsMessage ? <Text style={styles.sectionHint}>{achievementsMessage}</Text> : null}
                 <View style={styles.badgeGrid}>
-                    {BADGES.map((badge) => (
+                    {achievements.slice(0, 6).map((badge) => (
                         <View
-                            key={badge.label}
+                            key={badge.code ?? badge.label}
                             style={[styles.badge, !badge.unlocked && styles.badgeLocked]}
                         >
-                            <Text style={styles.badgeEmoji}>{badge.emoji}</Text>
+                            <View style={[styles.badgeIconShell, badge.unlocked && styles.badgeIconShellUnlocked]}>
+                                <Text style={styles.badgeEmoji}>{badge.unlocked ? badge.icon : '•'}</Text>
+                                {!badge.unlocked ? (
+                                    <View style={styles.badgeLock}>
+                                        <Lock color={colors.muted} size={10} strokeWidth={2.4} />
+                                    </View>
+                                ) : null}
+                            </View>
                             <Text
                                 style={[
                                     styles.badgeLabel,
@@ -390,6 +496,11 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
                             >
                                 {badge.label}
                             </Text>
+                            {badge.description ? (
+                                <Text numberOfLines={2} style={styles.badgeDescription}>
+                                    {badge.description}
+                                </Text>
+                            ) : null}
                         </View>
                     ))}
                 </View>
@@ -563,6 +674,12 @@ const styles = StyleSheet.create({
     badgeSection: {
         marginBottom: spacing.md,
     },
+    sectionHeaderRow: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: spacing.xs,
+    },
     sectionLabel: {
         color: colors.muted,
         fontSize: 11,
@@ -570,6 +687,12 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
         marginBottom: spacing.sm,
         textTransform: 'uppercase',
+    },
+    sectionHint: {
+        color: colors.muted,
+        fontSize: 12,
+        lineHeight: 17,
+        marginBottom: spacing.sm,
     },
     badgeGrid: {
         flexDirection: 'row',
@@ -585,14 +708,43 @@ const styles = StyleSheet.create({
         flexBasis: '47%',
         flexGrow: 1,
         gap: spacing.xs,
+        minHeight: 124,
+        paddingHorizontal: spacing.sm,
         paddingVertical: spacing.md,
     },
     badgeLocked: {
         backgroundColor: colors.bg,
-        opacity: 0.5,
+    },
+    badgeIconShell: {
+        alignItems: 'center',
+        backgroundColor: colors.bg,
+        borderColor: colors.faint,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        height: 42,
+        justifyContent: 'center',
+        width: 42,
+    },
+    badgeIconShellUnlocked: {
+        backgroundColor: colors.surfaceMuted,
+        borderColor: colors.primary,
     },
     badgeEmoji: {
-        fontSize: 22,
+        color: colors.muted,
+        fontSize: 21,
+    },
+    badgeLock: {
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderColor: colors.faint,
+        borderRadius: 9,
+        borderWidth: 1,
+        bottom: -4,
+        height: 18,
+        justifyContent: 'center',
+        position: 'absolute',
+        right: -4,
+        width: 18,
     },
     badgeLabel: {
         color: colors.ink,
@@ -602,6 +754,13 @@ const styles = StyleSheet.create({
     },
     badgeLabelLocked: {
         color: colors.muted,
+    },
+    badgeDescription: {
+        color: colors.muted,
+        fontSize: 10,
+        lineHeight: 14,
+        paddingHorizontal: spacing.xs,
+        textAlign: 'center',
     },
     menuRow: {
         alignItems: 'center',
@@ -642,10 +801,6 @@ const styles = StyleSheet.create({
         color: colors.muted,
         fontSize: 12,
         marginTop: 2,
-    },
-    chevron: {
-        color: colors.muted,
-        fontSize: 22,
     },
     signOutButton: {
         alignItems: 'center',

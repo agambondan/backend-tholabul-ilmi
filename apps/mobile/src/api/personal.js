@@ -144,6 +144,16 @@ export const markNotificationRead = async (id) =>
 export const markAllNotificationsRead = async () =>
   putJson('/api/v1/notifications/inbox/read-all', {}, { auth: true });
 
+export const getAchievements = async () => {
+  const payload = await requestJson('/api/v1/achievements');
+  return pickItems(payload);
+};
+
+export const getMyAchievements = async () => {
+  const payload = await requestJson('/api/v1/achievements/mine', { auth: true });
+  return pickItems(payload);
+};
+
 export const getMyPoints = () => requestJson('/api/v1/achievements/points', { auth: true });
 
 export const getMyStreak = () => requestJson('/api/v1/streak', { auth: true });

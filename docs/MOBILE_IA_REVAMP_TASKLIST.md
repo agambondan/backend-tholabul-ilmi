@@ -177,8 +177,8 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - Streak ✓, Points ✓ — stats row
   - Tilawah ✓, Hafalan ✓, Sholat ✓ — "Ringkasan Progress" grid, load via `getTilawahSummary`, `getHafalanSummary`, `getPrayerStats`
   - Goals ✓ — MenuRow link ke Belajar > goals
-  - Achievements ✓ — BADGES grid (static untuk saat ini)
-  - File: `apps/mobile/src/screens/ProfileScreen.js`, `apps/mobile/src/api/personal.js` (added `getTilawahSummary`)
+  - Achievements ✓ — grid pencapaian dinamis via `/api/v1/achievements` + `/api/v1/achievements/mine`
+  - File: `apps/mobile/src/screens/ProfileScreen.js`, `apps/mobile/src/api/personal.js` (added `getTilawahSummary`, `getAchievements`, `getMyAchievements`)
 
 ## Phase 6 - Discovery Layer
 
