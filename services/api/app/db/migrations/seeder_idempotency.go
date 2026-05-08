@@ -61,6 +61,7 @@ func UpsertSeedData(db *gorm.DB) error {
 	if err := upsertKajianSeeds(db); err != nil {
 		return err
 	}
+	SeedTier4(db)
 	return nil
 }
 

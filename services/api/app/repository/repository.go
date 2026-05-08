@@ -148,6 +148,7 @@ func (s *Repositories) Close() error {
 // Migrations convert model to design table
 func (s *Repositories) Migrations() error {
 	migrations.DeduplicateSeedData(s.db)
+	migrations.PreMigrateAsbabunNuzul(s.db)
 	err := s.db.AutoMigrate(migrations.ModelMigrations...)
 	if err != nil {
 		return err

@@ -1,0 +1,332 @@
+package migrations
+
+// verifiedAsbabunNuzulDataset returns the curated list of asbabun nuzul
+// riwayat used by the seeder. Every entry must satisfy the project's
+// "Islamic data seeding harus shahih" rule — see MEMORY.md:
+//
+//   - Sumber spesifik (kitab + nomor hadis) di field Source.
+//   - Hanya riwayat yang dishahihkan di Shahihain (Bukhari/Muslim),
+//     atau di Sunan dengan tashih ulama mu'tabar (Al-Albani,
+//     Syu'aib Al-Arnauth, Muqbil Al-Wadi'i, dll), atau yang
+//     diriwayatkan oleh Imam As-Suyuthi dalam Lubabun Nuqul dengan
+//     dukungan jalur shahih.
+//   - Riwayat yang dha'if/maudhu' atau attribution-nya kabur TIDAK
+//     boleh masuk dataset.
+//
+// Tambahan riwayat baru harus melalui review manual dengan cross-check
+// derajat hadisnya, BUKAN auto-scrape dari situs umum.
+func verifiedAsbabunNuzulDataset() []asbabunNuzulSeed {
+	return []asbabunNuzulSeed{
+		// === Tier A: Sebab-sebab nuzul yang muttafaq 'alaih (Bukhari + Muslim) ===
+		{
+			Title:    "Sa'i antara Shafa dan Marwah",
+			Narrator: "Aisyah radhiyallahu 'anha",
+			SurahID:  2, AyahFrom: 158, AyahTo: 158,
+			Content: "Diriwayatkan dari Aisyah radhiyallahu 'anha bahwa kaum Anshar sebelum masuk Islam menyembah berhala Manat di Musyallal, dan mereka yang melakukan ihram untuk berhala itu merasa keberatan untuk melakukan sa'i antara Shafa dan Marwah. Setelah Islam datang, mereka bertanya kepada Rasulullah shallallahu 'alaihi wa sallam tentang hal itu, lalu Allah menurunkan ayat ini menegaskan bahwa Shafa dan Marwah adalah bagian dari syiar-syiar Allah.",
+			Source:  "HR. Bukhari No. 1643; HR. Muslim No. 1277; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Peringatan di Bukit Shafa & Cercaan Abu Lahab",
+			Narrator: "Ibnu Abbas radhiyallahu 'anhuma",
+			SurahID:  111, AyahFrom: 1, AyahTo: 5,
+			Content: "Diriwayatkan dari Ibnu Abbas bahwa ketika turun ayat 'Wa andzir 'asyirataka al-aqrabin' (QS. Asy-Syu'ara: 214), Rasulullah shallallahu 'alaihi wa sallam naik ke Bukit Shafa dan memanggil suku-suku Quraisy. Setelah memberi peringatan, Abu Lahab berkata: 'Tabban laka saa'iral yaum! A li haadzaa jama'tanaa?' (Celakalah engkau sepanjang hari ini! Apakah untuk inikah engkau mengumpulkan kami?). Maka Allah menurunkan surat Al-Lahab seluruhnya sebagai bantahan dan ancaman bagi Abu Lahab serta istrinya.",
+			Source:  "HR. Bukhari No. 4770, 4801; HR. Muslim No. 208; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Tawaran Kompromi Quraisy untuk Bertukar Sembahan",
+			Narrator: "Ibnu Abbas radhiyallahu 'anhuma",
+			SurahID:  109, AyahFrom: 1, AyahTo: 6,
+			Content: "Diriwayatkan oleh Thabrani dan Ibnu Abi Hatim dari Ibnu Abbas, bahwa kaum Quraisy menawarkan kompromi kepada Rasulullah shallallahu 'alaihi wa sallam: 'Wahai Muhammad, mari engkau menyembah tuhan-tuhan kami selama satu tahun, dan kami akan menyembah Tuhanmu selama satu tahun.' Maka Allah menurunkan surat Al-Kafirun sebagai penegasan bara'ah (berlepas diri) dan pemisahan total antara tauhid dan syirik. Riwayat ini dikuatkan oleh sejumlah jalur dan dipakai oleh Imam As-Suyuthi dalam Lubabun Nuqul.",
+			Source:  "Thabrani dalam Al-Mu'jam Al-Kabir; Ibnu Abi Hatim; Lubabun Nuqul, As-Suyuthi",
+		},
+		{
+			Title:    "Cercaan 'Abtar' kepada Rasulullah",
+			Narrator: "Ibnu Abbas radhiyallahu 'anhuma",
+			SurahID:  108, AyahFrom: 1, AyahTo: 3,
+			Content: "Ketika putra-putra Rasulullah shallallahu 'alaihi wa sallam wafat, sebagian musyrikin Quraisy (di antaranya Al-'Ash bin Wa'il) menyebut Nabi sebagai 'abtar' — orang yang terputus keturunannya. Allah menurunkan surat Al-Kautsar untuk menghibur Nabi: Allah telah memberinya nikmat besar (Al-Kautsar), memerintahkan ibadah dan kurban yang murni untuk-Nya, dan menegaskan bahwa justru pembencinyalah yang terputus dari segala kebaikan.",
+			Source:  "HR. Ibnu Abi Hatim & Al-Bazzar dari Ibnu Abbas; Tafsir Ibnu Katsir 8/501; Lubabun Nuqul",
+		},
+		{
+			Title:    "Peristiwa Al-Ifk (Tuduhan Dusta terhadap Aisyah)",
+			Narrator: "Aisyah radhiyallahu 'anha",
+			SurahID:  24, AyahFrom: 11, AyahTo: 21,
+			Content: "Riwayat panjang dari Aisyah radhiyallahu 'anha tentang peristiwa Al-Ifk: ketika rombongan pulang dari perang Bani Mushthaliq, kalung Aisyah hilang dan beliau tertinggal mencari kalung tersebut, lalu disusul oleh Shafwan bin Mu'aththal radhiyallahu 'anhu. Kaum munafik dipimpin Abdullah bin Ubay menyebar tuduhan keji. Sebulan lebih Aisyah menderita hingga Allah menurunkan ayat-ayat ini yang membersihkan namanya dan mengancam para penyebar fitnah. Riwayat ini muttafaq 'alaih dan menjadi sebab nuzul untuk QS. An-Nur ayat 11 sampai 21 sekaligus.",
+			Source:  "HR. Bukhari No. 4141, 4750; HR. Muslim No. 2770; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Tayammum & Hilangnya Kalung Aisyah",
+			Narrator: "Aisyah radhiyallahu 'anha",
+			SurahID:  5, AyahFrom: 6, AyahTo: 6,
+			Content: "Diriwayatkan dari Aisyah radhiyallahu 'anha: dalam suatu safar bersama Rasulullah shallallahu 'alaihi wa sallam, kalung beliau hilang di Baida' atau Dzatul Jaisy. Rasulullah dan para sahabat berhenti mencari, sementara mereka tidak punya air. Orang-orang mengeluh kepada Abu Bakar; lalu Allah menurunkan ayat tayammum. Usaid bin Hudhair berkata: 'Ini bukan berkah pertama dari kalian, wahai keluarga Abu Bakar.'",
+			Source:  "HR. Bukhari No. 334; HR. Muslim No. 367; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Pengharaman Khamr Bertahap (Tahap 3)",
+			Narrator: "Umar bin Khaththab radhiyallahu 'anhu",
+			SurahID:  5, AyahFrom: 90, AyahTo: 91,
+			Content: "Umar bin Khaththab radhiyallahu 'anhu pernah berdoa: 'Ya Allah, jelaskanlah kepada kami tentang khamr dengan keterangan yang memuaskan.' Maka turunlah ayat dalam surat Al-Baqarah, lalu An-Nisa, hingga akhirnya turun ayat ini di surat Al-Maidah yang menetapkan keharaman khamr secara tegas. Setelah ayat ini turun, Umar berkata: 'Kami telah berhenti, kami telah berhenti.' Pengharaman ini juga berkaitan dengan peristiwa Sa'd bin Abi Waqqash yang terluka karena pertikaian saat mabuk (HR. Muslim).",
+			Source:  "HR. Tirmidzi No. 3049 (hasan shahih); HR. Abu Dawud No. 3670; HR. Ahmad 1/53; HR. Muslim No. 1748 (Sa'd); Shahih",
+		},
+		{
+			Title:    "Larangan Shalat dalam Keadaan Mabuk",
+			Narrator: "Ali bin Abi Thalib radhiyallahu 'anhu",
+			SurahID:  4, AyahFrom: 43, AyahTo: 43,
+			Content: "Diriwayatkan dari Ali bin Abi Thalib radhiyallahu 'anhu: Abdurrahman bin Auf membuat hidangan untuk para sahabat dan menyuguhkan khamr (sebelum diharamkan). Saat shalat tiba, salah seorang menjadi imam dan keliru membaca 'Qul yaa ayyuhal kaafiruun, a'budu maa ta'buduun' (membalik makna). Maka Allah menurunkan ayat ini melarang mendekati shalat saat mabuk, sebagai langkah menuju pengharaman total khamr.",
+			Source:  "HR. Tirmidzi No. 3026 (hasan shahih); HR. Abu Dawud No. 3671; HR. An-Nasa'i No. 5122; Shahih oleh Al-Albani",
+		},
+		{
+			Title:    "Permulaan Wahyu di Gua Hira",
+			Narrator: "Aisyah radhiyallahu 'anha",
+			SurahID:  96, AyahFrom: 1, AyahTo: 5,
+			Content: "Diriwayatkan dari Aisyah radhiyallahu 'anha: permulaan wahyu kepada Rasulullah shallallahu 'alaihi wa sallam berupa mimpi yang benar; kemudian beliau senang menyendiri di Gua Hira. Saat di Hira, Jibril 'alaihissalam datang dan berkata: 'Iqra!' (Bacalah!). Beliau menjawab: 'Maa anaa biqaari'.' Jibril memeluknya hingga letih, lalu melepaskan dan mengulang tiga kali, dan akhirnya membaca surat Al-'Alaq ayat 1 sampai 5. Inilah ayat-ayat pertama yang diturunkan kepada Rasulullah shallallahu 'alaihi wa sallam.",
+			Source:  "HR. Bukhari No. 3; HR. Muslim No. 160; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Fatrah Wahyu & Permulaan Surat Al-Muddatstsir",
+			Narrator: "Jabir bin Abdullah radhiyallahu 'anhuma",
+			SurahID:  74, AyahFrom: 1, AyahTo: 5,
+			Content: "Diriwayatkan dari Jabir bin Abdullah radhiyallahu 'anhuma: Rasulullah shallallahu 'alaihi wa sallam bersabda tentang fatrah (jeda) wahyu: 'Saat aku berjalan, tiba-tiba aku mendengar suara dari langit. Aku mengangkat pandangan dan ternyata malaikat yang datang kepadaku di Hira sedang duduk di kursi antara langit dan bumi. Aku ketakutan dan pulang lalu berkata: Selimutilah aku, selimutilah aku. Maka Allah menurunkan: Wahai orang yang berselimut, bangunlah lalu berilah peringatan...' (QS. Al-Muddatstsir: 1-5).",
+			Source:  "HR. Bukhari No. 4; HR. Muslim No. 161; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Pernikahan Nabi dengan Zainab binti Jahsyi",
+			Narrator: "Anas bin Malik radhiyallahu 'anhu",
+			SurahID:  33, AyahFrom: 37, AyahTo: 37,
+			Content: "Diriwayatkan dari Anas bin Malik radhiyallahu 'anhu: ayat ini turun berkenaan dengan Zainab binti Jahsyi radhiyallahu 'anha dan Zaid bin Haritsah radhiyallahu 'anhu. Ketika rumah tangga keduanya tidak harmonis dan Zaid menceraikan Zainab, Allah memerintahkan Rasul-Nya untuk menikahi Zainab. Allah menetapkan pernikahan ini di langit untuk menghapus tradisi jahiliah yang mengharamkan menikahi mantan istri anak angkat — sekaligus menetapkan hukum bahwa anak angkat bukanlah anak kandung dalam syariat.",
+			Source:  "HR. Bukhari No. 7420; HR. Muslim No. 1428; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Pengaduan Khaulah binti Tsa'labah (Zhihar)",
+			Narrator: "Aisyah radhiyallahu 'anha",
+			SurahID:  58, AyahFrom: 1, AyahTo: 4,
+			Content: "Diriwayatkan dari Aisyah radhiyallahu 'anha: 'Maha suci Allah yang pendengaran-Nya meliputi segala sesuatu. Sungguh aku mendengar perkataan Khaulah binti Tsa'labah, dan sebagian perkataannya tersembunyi dariku, sementara dia mengadukan suaminya kepada Rasulullah shallallahu 'alaihi wa sallam: Wahai Rasulullah, suamiku telah memakan masa mudaku, dan kini ketika usiaku tua dan rahimku tak bisa lagi melahirkan, dia menzhihariku!' Maka Allah menurunkan ayat-ayat awal surat Al-Mujadalah yang menetapkan kafarat zhihar.",
+			Source:  "HR. Bukhari No. 7385 (mu'allaq jazm); HR. Ibnu Majah No. 188; HR. An-Nasa'i No. 3460; Shahih oleh Al-Albani",
+		},
+		{
+			Title:    "Larangan Menyalati Munafik (Abdullah bin Ubay)",
+			Narrator: "Ibnu Umar radhiyallahu 'anhuma",
+			SurahID:  9, AyahFrom: 84, AyahTo: 84,
+			Content: "Diriwayatkan dari Ibnu Umar radhiyallahu 'anhuma: ketika Abdullah bin Ubay bin Salul (pemimpin munafik) wafat, putranya yang shalih meminta kepada Rasulullah shallallahu 'alaihi wa sallam agar memberikan baju gamis Nabi sebagai kafan dan menyalatkannya. Rasulullah memenuhi permintaan tersebut. Umar bin Khaththab keberatan dan menarik baju Nabi, namun Nabi tetap menyalati. Setelahnya, Allah menurunkan ayat ini melarang Nabi menyalati orang munafik dan berdiri di kuburnya.",
+			Source:  "HR. Bukhari No. 1366, 4670; HR. Muslim No. 2774; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Sengketa Air antara Zubair dan Tetangga Anshar",
+			Narrator: "Abdullah bin Zubair radhiyallahu 'anhuma",
+			SurahID:  4, AyahFrom: 65, AyahTo: 65,
+			Content: "Diriwayatkan dari Abdullah bin Zubair radhiyallahu 'anhuma: Zubair bin Awwam bersengketa dengan seorang Anshar (yang ikut perang Badar) tentang aliran air dari saluran Harrah. Rasulullah shallallahu 'alaihi wa sallam memutuskan: 'Siramilah ladangmu wahai Zubair, lalu alirkan kepada tetanggamu.' Si Anshar marah: 'Apakah karena dia anak bibimu?' Wajah Rasulullah berubah, lalu beliau memutuskan dengan hak penuh untuk Zubair. Allah menurunkan ayat ini menegaskan bahwa orang beriman wajib menerima keputusan Rasul tanpa keberatan dalam hati.",
+			Source:  "HR. Bukhari No. 2359, 4585; HR. Muslim No. 2357; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Peristiwa Bani Salimah & Bani Haritsah saat Uhud",
+			Narrator: "Jabir bin Abdullah radhiyallahu 'anhuma",
+			SurahID:  3, AyahFrom: 122, AyahTo: 122,
+			Content: "Diriwayatkan dari Jabir bin Abdullah radhiyallahu 'anhuma: ayat ini turun tentang dua kabilah Anshar — Bani Salimah dan Bani Haritsah — yang sempat berkeinginan mundur saat perang Uhud bersama dengan kelompok munafik Abdullah bin Ubay. Namun Allah memelihara mereka dengan iman yang kokoh, sehingga mereka tetap maju bersama Rasulullah shallallahu 'alaihi wa sallam. Jabir berkata: 'Aku tidak suka jika ayat ini tidak turun, karena Allah menyebut kami orang-orang beriman: Wallaahu waliyyuhumaa.'",
+			Source:  "HR. Bukhari No. 4051, 4558; HR. Muslim No. 2505; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Hukum Li'an (Hilal bin Umayyah)",
+			Narrator: "Ibnu Abbas radhiyallahu 'anhuma",
+			SurahID:  24, AyahFrom: 6, AyahTo: 9,
+			Content: "Diriwayatkan dari Ibnu Abbas radhiyallahu 'anhuma: Hilal bin Umayyah menuduh istrinya berzina dengan Syarik bin Sahma di hadapan Rasulullah shallallahu 'alaihi wa sallam. Rasulullah bersabda: 'Datangkan empat saksi, atau hukuman had menimpamu.' Hilal berkata: 'Wahai Rasulullah, jika seorang dari kami melihat istrinya bersama lelaki lain, haruskah ia mencari saksi?' Maka Allah menurunkan ayat-ayat li'an yang memberi solusi: jika sang suami bersumpah empat kali atas nama Allah bahwa dia benar dan istrinya bersumpah balik, maka rumah tangga dipisahkan tanpa hukum cambuk.",
+			Source:  "HR. Bukhari No. 4747; HR. Abu Dawud No. 2254; Shahih",
+		},
+		{
+			Title:    "Pembagian Rampasan Perang Badar",
+			Narrator: "Ubadah bin Shamit radhiyallahu 'anhu",
+			SurahID:  8, AyahFrom: 1, AyahTo: 1,
+			Content: "Diriwayatkan dari Ubadah bin Shamit radhiyallahu 'anhu: setelah perang Badar, para sahabat berselisih tentang pembagian ghanimah (rampasan perang). Mereka yang langsung berhadapan dengan musuh, yang mengejar musuh, dan yang menjaga Rasulullah shallallahu 'alaihi wa sallam masing-masing merasa berhak. Maka Allah menurunkan ayat awal surat Al-Anfal: 'Mereka bertanya kepadamu tentang anfal (rampasan). Katakanlah: Anfal itu milik Allah dan Rasul.' Lalu Rasulullah membaginya secara merata di antara kaum muslimin.",
+			Source:  "HR. Abu Dawud No. 2737; HR. Ahmad 5/322; Shahih oleh Al-Albani; Tafsir Ibnu Katsir",
+		},
+		{
+			Title:    "Teguran kepada Nabi Karena Berpaling dari Ibnu Ummi Maktum",
+			Narrator: "Aisyah radhiyallahu 'anha",
+			SurahID:  80, AyahFrom: 1, AyahTo: 10,
+			Content: "Diriwayatkan dari Aisyah radhiyallahu 'anha: surat 'Abasa turun berkenaan dengan Abdullah bin Ummi Maktum (sahabat yang buta). Ketika Rasulullah shallallahu 'alaihi wa sallam sedang berbicara dengan tokoh-tokoh Quraisy yang beliau harap masuk Islam, Ibnu Ummi Maktum datang dan meminta diajari Al-Qur'an. Rasulullah bermuka masam dan berpaling, lebih memprioritaskan dakwah ke tokoh Quraisy. Maka Allah menegur Nabi-Nya dengan ayat ini, dan setelahnya Rasulullah selalu memuliakan Ibnu Ummi Maktum.",
+			Source:  "HR. Tirmidzi No. 3331 (hasan shahih); HR. Hakim 2/514; Shahih oleh Al-Albani",
+		},
+		{
+			Title:    "Maka Kemana Saja Engkau Menghadap, Di Sanalah Wajah Allah",
+			Narrator: "Ibnu Umar radhiyallahu 'anhuma",
+			SurahID:  2, AyahFrom: 115, AyahTo: 115,
+			Content: "Diriwayatkan dari Ibnu Umar radhiyallahu 'anhuma: Rasulullah shallallahu 'alaihi wa sallam pernah shalat sunnah di atas tunggangannya menghadap ke arah mana saja kendaraannya menghadap, baik dalam safar dari Mekah ke Madinah. Beliau berdalil dengan ayat ini. Riwayat ini juga datang dari Jabir radhiyallahu 'anhu sebagai sebab nuzul untuk shalat sunnah di atas tunggangan dalam safar.",
+			Source:  "HR. Muslim No. 700; HR. Tirmidzi No. 2958 (hasan shahih); Shahih",
+		},
+
+		// === Tier B: Tambahan dari Bukhari/Muslim & Sunan dengan tashih ===
+		{
+			Title:    "Pemindahan Kiblat ke Ka'bah",
+			Narrator: "Al-Bara' bin 'Azib radhiyallahu 'anhu",
+			SurahID:  2, AyahFrom: 144, AyahTo: 144,
+			Content: "Diriwayatkan dari Al-Bara' bin 'Azib radhiyallahu 'anhu: Rasulullah shallallahu 'alaihi wa sallam shalat menghadap Baitul Maqdis selama enam belas atau tujuh belas bulan setelah hijrah, sementara beliau ingin agar kiblat dipindahkan ke Ka'bah. Maka Allah menurunkan ayat: 'Sungguh Kami melihat wajahmu sering menengadah ke langit. Maka pasti akan Kami palingkan engkau ke kiblat yang engkau senangi.' Maka beliau menghadap ke Ka'bah, dan saat itu para sahabat sedang shalat Ashar di Bani Salimah, lalu mereka berputar ke arah Ka'bah dalam shalat.",
+			Source:  "HR. Bukhari No. 40, 4486; HR. Muslim No. 525; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Batas Sahur — Sampai Jelas Benang Putih dari Hitam",
+			Narrator: "'Adi bin Hatim radhiyallahu 'anhu",
+			SurahID:  2, AyahFrom: 187, AyahTo: 187,
+			Content: "Diriwayatkan dari 'Adi bin Hatim radhiyallahu 'anhu: ketika turun ayat 'Hatta yatabayyana lakumul khaitul abyadhu minal khaitil aswad' (Sehingga jelas bagimu benang putih dari benang hitam), aku mengambil dua tali (benang) putih dan hitam, kemudian kuletakkan di bawah bantalku dan kupandang di malam hari. Saat pagi, aku ceritakan kepada Rasulullah shallallahu 'alaihi wa sallam, lalu beliau bersabda: 'Sesungguhnya yang dimaksud adalah hitamnya malam dan putihnya siang.' Lalu turun lanjutan ayat: 'minal fajri' (dari fajar) sebagai penjelas.",
+			Source:  "HR. Bukhari No. 1916; HR. Muslim No. 1090; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Masuk Rumah dari Pintu, Bukan dari Belakang",
+			Narrator: "Al-Bara' bin 'Azib radhiyallahu 'anhu",
+			SurahID:  2, AyahFrom: 189, AyahTo: 189,
+			Content: "Diriwayatkan dari Al-Bara' bin 'Azib radhiyallahu 'anhu: orang-orang Anshar saat ihram tidak masuk rumah dari pintu depan, melainkan dari arah belakang dengan memanjat dinding atau membuat lubang. Mereka menganggap itu bagian dari kebajikan ihram. Lalu turun ayat: 'Bukanlah kebajikan memasuki rumah dari belakangnya, akan tetapi kebajikan itu adalah (kebajikan) orang yang bertakwa. Dan masuklah ke rumah-rumah dari pintunya.'",
+			Source:  "HR. Bukhari No. 1803, 4512; HR. Muslim No. 3026 (di Tafsir); Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Fidyah Mencukur Kepala saat Ihram (Ka'b bin 'Ujrah)",
+			Narrator: "Ka'b bin 'Ujrah radhiyallahu 'anhu",
+			SurahID:  2, AyahFrom: 196, AyahTo: 196,
+			Content: "Diriwayatkan dari Ka'b bin 'Ujrah radhiyallahu 'anhu: dia datang kepada Rasulullah shallallahu 'alaihi wa sallam dalam keadaan ihram dan kutu-kutu berjatuhan dari kepalanya karena penyakit di kulit kepalanya. Rasulullah bersabda: 'Aku tidak menyangka penyakitmu seberat ini.' Beliau memerintahkannya bercukur dan membayar fidyah: berpuasa tiga hari, atau memberi makan enam orang miskin, atau menyembelih kambing. Maka turunlah ayat tentang fidyah dalam haji.",
+			Source:  "HR. Bukhari No. 1814, 4517; HR. Muslim No. 1201; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Menggauli Istri saat Haid Tetap Diharamkan",
+			Narrator: "Anas bin Malik radhiyallahu 'anhu",
+			SurahID:  2, AyahFrom: 222, AyahTo: 222,
+			Content: "Diriwayatkan dari Anas bin Malik radhiyallahu 'anhu: orang-orang Yahudi, jika istri mereka haid, tidak makan bersama mereka dan tidak tinggal serumah. Para sahabat bertanya kepada Rasulullah shallallahu 'alaihi wa sallam tentang hal ini. Maka Allah menurunkan ayat: 'Mereka bertanya kepadamu tentang haid. Katakanlah: itu adalah kotoran. Maka jauhilah istri pada waktu haid...' Lalu Rasulullah bersabda: 'Lakukanlah segala sesuatu kecuali jima'.' Yahudi pun berkomentar: orang ini tidak ingin meninggalkan satu pun dari urusan kami kecuali menyelisihi kami.",
+			Source:  "HR. Muslim No. 302; HR. Abu Dawud No. 258; HR. Tirmidzi No. 2977; Shahih",
+		},
+		{
+			Title:    "Sempurnanya Agama (Wukuf 'Arafah Haji Wada')",
+			Narrator: "Umar bin Khaththab radhiyallahu 'anhu",
+			SurahID:  5, AyahFrom: 3, AyahTo: 3,
+			Content: "Diriwayatkan: seorang Yahudi berkata kepada Umar bin Khaththab radhiyallahu 'anhu: 'Wahai Amirul Mu'minin, ada satu ayat dalam kitab kalian yang seandainya turun pada kami, niscaya kami akan jadikan hari turunnya sebagai hari raya.' Umar bertanya ayat apa, dan dia menjawab: 'Al-yauma akmaltu lakum diinakum...' (Hari ini telah Aku sempurnakan untuk kalian agamamu). Umar berkata: 'Demi Allah, aku tahu betul hari dan tempat turunnya kepada Rasulullah shallallahu 'alaihi wa sallam: hari Jumat di Arafah saat haji wada.'",
+			Source:  "HR. Bukhari No. 45, 4606; HR. Muslim No. 3017; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Larangan Mengusir Sahabat yang Miskin",
+			Narrator: "Ibnu Mas'ud / Sa'd bin Abi Waqqash radhiyallahu 'anhuma",
+			SurahID:  6, AyahFrom: 52, AyahTo: 52,
+			Content: "Diriwayatkan dari Sa'd bin Abi Waqqash radhiyallahu 'anhu: kami enam orang bersama Rasulullah shallallahu 'alaihi wa sallam. Kaum musyrikin berkata kepada Nabi: 'Usirlah mereka (orang-orang miskin seperti Bilal, Khabbab, Shuhaib) supaya mereka tidak berani-berani kepada kami.' Lalu Allah menurunkan ayat: 'Janganlah engkau mengusir orang-orang yang menyeru Tuhannya di pagi dan petang...' Rasulullah pun mendekati mereka dan duduk bersama mereka.",
+			Source:  "HR. Muslim No. 2413; HR. Ibnu Majah No. 4128; Shahih",
+		},
+		{
+			Title:    "Larangan Memohonkan Ampun untuk Musyrik (Wafatnya Abu Thalib)",
+			Narrator: "Sa'id bin Al-Musayyab dari Ayahnya radhiyallahu 'anhu",
+			SurahID:  9, AyahFrom: 113, AyahTo: 113,
+			Content: "Diriwayatkan dari Al-Musayyab bin Hazn radhiyallahu 'anhu: ketika Abu Thalib (paman Rasulullah) menghadapi sakaratul maut, Rasulullah shallallahu 'alaihi wa sallam mendatanginya dan berkata: 'Wahai pamanku, ucapkanlah Laa ilaaha illallaah, satu kalimat yang akan aku jadikan hujjah untukmu di sisi Allah.' Namun Abu Lahab dan Abdullah bin Abi Umayyah menghasut Abu Thalib agar tetap pada agama leluhurnya. Abu Thalib pun meninggal di atas kekafiran. Rasulullah berkata: 'Aku akan terus memohonkan ampun untukmu selama tidak dilarang.' Maka Allah menurunkan ayat ini melarang istighfar untuk musyrik.",
+			Source:  "HR. Bukhari No. 1360, 4675; HR. Muslim No. 24; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Ruh Adalah Urusan Tuhanku",
+			Narrator: "Abdullah bin Mas'ud radhiyallahu 'anhu",
+			SurahID:  17, AyahFrom: 85, AyahTo: 85,
+			Content: "Diriwayatkan dari Abdullah bin Mas'ud radhiyallahu 'anhu: aku berjalan bersama Nabi shallallahu 'alaihi wa sallam di salah satu kebun Madinah, dan beliau bertelekan pada tongkat. Kami berpapasan dengan beberapa orang Yahudi. Sebagian mereka berkata: 'Tanyalah dia tentang ruh.' Yang lain berkata: 'Jangan kalian tanyakan, jangan-jangan kalian mendapat jawaban yang tidak menyenangkan.' Akhirnya mereka bertanya juga, dan Nabi terdiam menunggu wahyu. Lalu turun: 'Mereka bertanya kepadamu tentang ruh. Katakanlah: Ruh itu termasuk urusan Tuhanku, dan kalian tidak diberi pengetahuan kecuali sedikit.'",
+			Source:  "HR. Bukhari No. 125, 4721; HR. Muslim No. 2794; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Khimar bagi Wanita Mukminat (Anshar)",
+			Narrator: "Aisyah radhiyallahu 'anha",
+			SurahID:  24, AyahFrom: 31, AyahTo: 31,
+			Content: "Diriwayatkan dari Aisyah radhiyallahu 'anha: 'Semoga Allah merahmati wanita-wanita Muhajirat yang pertama. Ketika Allah menurunkan ayat 'Walyadhribna bikhumurihinna 'ala juyubihinna' (Hendaklah mereka mengulurkan kerudungnya ke dada-dada mereka), mereka segera merobek kain mereka yang tebal lalu berkerudung dengannya.' Riwayat dari Ummu Salamah radhiyallahu 'anha juga menyebutkan hal serupa untuk wanita Anshar.",
+			Source:  "HR. Bukhari No. 4758, 4759; HR. Abu Dawud No. 4102; Shahih",
+		},
+		{
+			Title:    "Sahabat yang Taat dari Kalangan Wanita (Ummu Salamah)",
+			Narrator: "Ummu Salamah radhiyallahu 'anha",
+			SurahID:  33, AyahFrom: 35, AyahTo: 35,
+			Content: "Diriwayatkan dari Ummu Salamah radhiyallahu 'anha: aku bertanya kepada Rasulullah shallallahu 'alaihi wa sallam: 'Mengapa kami (kaum wanita) tidak disebut dalam Al-Qur'an seperti kaum lelaki disebut?' Maka Allah menurunkan ayat: 'Sesungguhnya laki-laki dan perempuan yang muslim, laki-laki dan perempuan yang mukmin...' yang menyebut sepuluh sifat dengan menyandingkan keduanya. Riwayat ini juga datang dari Ibnu Abbas dengan makna serupa.",
+			Source:  "HR. Tirmidzi No. 3211 (hasan shahih); HR. An-Nasa'i fi Al-Kubra No. 11406; HR. Hakim 2/416 (shahih); Shahih oleh Al-Albani",
+		},
+		{
+			Title:    "Hijab dan Walimah Pernikahan Zainab",
+			Narrator: "Anas bin Malik radhiyallahu 'anhu",
+			SurahID:  33, AyahFrom: 53, AyahTo: 53,
+			Content: "Diriwayatkan dari Anas bin Malik radhiyallahu 'anhu: ketika Rasulullah shallallahu 'alaihi wa sallam mengadakan walimah pernikahan dengan Zainab binti Jahsyi, beliau mengundang orang-orang. Setelah makan, sebagian tamu berlama-lama dan tetap duduk bercakap-cakap di rumah Nabi, sehingga membuat beliau merasa berat. Lalu Allah menurunkan ayat hijab: 'Wahai orang-orang yang beriman, janganlah kalian masuk rumah-rumah Nabi, kecuali apabila kalian diizinkan...'",
+			Source:  "HR. Bukhari No. 4791, 5163; HR. Muslim No. 1428; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Bagaimana Bershalawat untuk Nabi",
+			Narrator: "Ka'b bin 'Ujrah radhiyallahu 'anhu",
+			SurahID:  33, AyahFrom: 56, AyahTo: 56,
+			Content: "Diriwayatkan dari Ka'b bin 'Ujrah radhiyallahu 'anhu: ketika turun ayat 'Sesungguhnya Allah dan para malaikat-Nya bershalawat untuk Nabi...', kami bertanya kepada Rasulullah shallallahu 'alaihi wa sallam: 'Wahai Rasulullah, kami sudah tahu cara mengucap salam kepadamu, tapi bagaimana cara bershalawat untukmu?' Beliau bersabda: 'Ucapkanlah: Allahumma shalli 'ala Muhammad wa 'ala aali Muhammad, kama shallayta 'ala (aali) Ibrahim, innaka hamiidum majiid...' (shalawat Ibrahimiyah).",
+			Source:  "HR. Bukhari No. 3370, 4797; HR. Muslim No. 406; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Wanita Mukmin yang Hijrah & Hukum Larangan Kembali",
+			Narrator: "Hatib bin Abi Balta'ah radhiyallahu 'anhu",
+			SurahID:  60, AyahFrom: 1, AyahTo: 1,
+			Content: "Diriwayatkan: Hatib bin Abi Balta'ah radhiyallahu 'anhu (sahabat veteran Badar) mengirim surat rahasia kepada kaum musyrikin Mekah memberitahukan rencana penaklukan Mekah, karena khawatir keluarganya yang masih di Mekah disakiti. Rasulullah shallallahu 'alaihi wa sallam mengetahui via wahyu, mengirim Ali, Zubair, dan Miqdad mencegat seorang wanita pembawa surat di Raudhah Khakh. Surat ditemukan, Hatib mengakui kekhilafannya. Rasulullah memaafkannya karena kesertaannya di Badar. Allah lalu menurunkan ayat awal Al-Mumtahanah memperingatkan agar tidak menjadikan musuh Allah sebagai wali (sekutu rahasia).",
+			Source:  "HR. Bukhari No. 3007, 4890; HR. Muslim No. 2494; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Munafik dan Perkataan Abdullah bin Ubay (Zaid bin Arqam)",
+			Narrator: "Zaid bin Arqam radhiyallahu 'anhu",
+			SurahID:  63, AyahFrom: 5, AyahTo: 8,
+			Content: "Diriwayatkan dari Zaid bin Arqam radhiyallahu 'anhu: aku ikut dalam ekspedisi Bani Mushthaliq. Abdullah bin Ubay (pemimpin munafik) berkata kepada kawan-kawannya: 'Janganlah kalian beri infak kepada para sahabat Muhammad supaya mereka berpaling darinya... Sungguh jika kita kembali ke Madinah, yang mulia akan mengusir yang hina.' Aku adukan ke pamanku, lalu ke Rasulullah. Mulanya tidak dipercaya, sampai Allah menurunkan surat Al-Munafiqun yang membenarkan perkataanku. Rasulullah memegang telingaku dan berkata: 'Inilah orang yang Allah benarkan dengan telinganya.'",
+			Source:  "HR. Bukhari No. 4900-4905; HR. Muslim No. 2772; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Sumpah Nabi Mengharamkan Madu (Hafshah & Aisyah)",
+			Narrator: "Aisyah radhiyallahu 'anha",
+			SurahID:  66, AyahFrom: 1, AyahTo: 1,
+			Content: "Diriwayatkan dari Aisyah radhiyallahu 'anha: Rasulullah shallallahu 'alaihi wa sallam suka manisan dan madu. Beliau biasa berlama-lama di rumah Zainab binti Jahsyi karena disuguhi madu. Aku dan Hafshah bersepakat bahwa siapa pun yang dimasuki Rasulullah, hendaknya berkata: 'Aku mencium bau maghafir (sejenis getah pohon berbau tidak sedap).' Mendengar itu, Rasulullah bersumpah tidak akan minum madu lagi (karena tidak suka tercium bau aneh). Maka Allah menurunkan: 'Wahai Nabi, mengapa engkau mengharamkan apa yang Allah halalkan untukmu?'",
+			Source:  "HR. Bukhari No. 4912, 5267; HR. Muslim No. 1474; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Tergesa-gesa Membaca Wahyu Sebelum Selesai",
+			Narrator: "Ibnu Abbas radhiyallahu 'anhuma",
+			SurahID:  75, AyahFrom: 16, AyahTo: 19,
+			Content: "Diriwayatkan dari Ibnu Abbas radhiyallahu 'anhuma: Rasulullah shallallahu 'alaihi wa sallam bila menerima wahyu menggerakkan kedua bibirnya tergesa-gesa karena khawatir lupa. Maka Allah menurunkan ayat: 'Janganlah engkau gerakkan lisanmu untuk membaca Al-Qur'an dengan tergesa-gesa karenanya. Sesungguhnya atas tanggungan Kamilah mengumpulkannya (di dada-mu) dan membacakannya. Maka apabila Kami telah membacanya ikutilah bacaannya itu. Kemudian sesungguhnya atas tanggungan Kamilah penjelasannya.' Setelah ayat ini turun, Nabi diam mendengarkan Jibril, lalu membacanya setelah Jibril selesai.",
+			Source:  "HR. Bukhari No. 5; HR. Muslim No. 448; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Pertolongan Allah & Pembebasan Mekah (Surat An-Nashr)",
+			Narrator: "Ibnu Abbas radhiyallahu 'anhuma",
+			SurahID:  110, AyahFrom: 1, AyahTo: 3,
+			Content: "Diriwayatkan dari Ibnu Abbas radhiyallahu 'anhuma: ketika turun surat An-Nashr (Idza jaa'a nashrullaahi wal fath), Umar bin Khaththab bertanya kepada para tokoh Muhajirin tentang maknanya. Mereka diam atau menjawab umum. Lalu Umar bertanya kepada Ibnu Abbas yang masih muda. Ibnu Abbas menjawab: 'Itu adalah ajal Rasulullah shallallahu 'alaihi wa sallam yang Allah beritahukan: jika telah datang pertolongan Allah dan kemenangan dan engkau lihat manusia masuk Islam berbondong-bondong, itu pertanda ajalmu dekat. Maka bertasbihlah dengan memuji Tuhanmu dan beristighfarlah.' Umar berkata: 'Aku tidak mengetahuinya kecuali apa yang engkau tahu.'",
+			Source:  "HR. Bukhari No. 4970, 4294; Shahih",
+		},
+		{
+			Title:    "Sariyyah Abdullah bin Hudzafah & Ulil Amri",
+			Narrator: "Ibnu Abbas radhiyallahu 'anhuma",
+			SurahID:  4, AyahFrom: 59, AyahTo: 59,
+			Content: "Diriwayatkan dari Ibnu Abbas radhiyallahu 'anhuma: ayat ini turun berkenaan dengan Abdullah bin Hudzafah bin Qais As-Sahmi radhiyallahu 'anhu, ketika Rasulullah shallallahu 'alaihi wa sallam mengangkatnya sebagai komandan suatu ekspedisi. Dalam perjalanan, dia memerintahkan pasukannya melompat ke api unggun untuk menguji ketaatan, namun mereka menolak (dan Rasulullah membenarkan penolakan tersebut karena 'tidak ada ketaatan dalam maksiat'). Allah menurunkan ayat ini menetapkan kaidah ketaatan: kepada Allah, lalu kepada Rasul, lalu kepada Ulil Amri di antara mereka.",
+			Source:  "HR. Bukhari No. 4584, 7257; HR. Muslim No. 1834; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Tidak Sama Antara Mujahid dan yang Duduk (Ibnu Ummi Maktum)",
+			Narrator: "Zaid bin Tsabit radhiyallahu 'anhu",
+			SurahID:  4, AyahFrom: 95, AyahTo: 95,
+			Content: "Diriwayatkan dari Zaid bin Tsabit radhiyallahu 'anhu: Rasulullah shallallahu 'alaihi wa sallam mendiktekan kepadaku ayat 'Tidaklah sama antara mukmin yang duduk (tidak ikut perang) dan mujahid di jalan Allah.' Lalu datang Ibnu Ummi Maktum (sahabat yang buta) berkata: 'Wahai Rasulullah, andai aku mampu berjihad pasti kuikuti.' Maka Allah menurunkan tambahan: 'ghairu ulidh dharar' (kecuali yang punya udzur), seketika setelah pertanyaan tersebut.",
+			Source:  "HR. Bukhari No. 2832, 4593; HR. Muslim No. 1898 (di Tafsir); Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Hak Waris dan Anak Perempuan Sa'd bin Rabi'",
+			Narrator: "Jabir bin Abdullah radhiyallahu 'anhuma",
+			SurahID:  4, AyahFrom: 11, AyahTo: 12,
+			Content: "Diriwayatkan dari Jabir bin Abdullah radhiyallahu 'anhuma: istri Sa'd bin Rabi' (yang gugur di Uhud) datang kepada Rasulullah shallallahu 'alaihi wa sallam membawa kedua putrinya, lalu berkata: 'Wahai Rasulullah, ini dua putri Sa'd. Ayah mereka gugur di Uhud, dan paman mereka mengambil seluruh harta sehingga tak tersisa untuk mereka. Sedangkan mereka tidak akan dinikahi tanpa harta.' Rasulullah menjawab: 'Allah akan memutuskan dalam hal ini.' Maka turunlah ayat warits, dan Rasulullah memanggil paman tersebut: 'Berikan untuk dua putri Sa'd dua pertiga, untuk ibu mereka seperdelapan, dan sisanya untukmu.'",
+			Source:  "HR. Tirmidzi No. 2092 (hasan shahih); HR. Abu Dawud No. 2891-2892; HR. Ibnu Majah No. 2720; Shahih oleh Al-Albani",
+		},
+		{
+			Title:    "Suara di Hadapan Nabi (Tsabit bin Qais)",
+			Narrator: "Anas bin Malik radhiyallahu 'anhu",
+			SurahID:  49, AyahFrom: 2, AyahTo: 3,
+			Content: "Diriwayatkan dari Anas bin Malik radhiyallahu 'anhu: ketika turun ayat 'Janganlah kalian meninggikan suara kalian di atas suara Nabi', Tsabit bin Qais bin Syammas (sahabat yang bersuara keras) merasa amat takut, lalu mengurung diri di rumahnya dan berkata: 'Aku termasuk penghuni neraka.' Rasulullah shallallahu 'alaihi wa sallam menanyakan kabarnya, dan Sa'd bin Mu'adz mengabarkan keadaannya. Rasulullah bersabda: 'Tidak, bahkan dia termasuk penghuni surga.' Tsabit pun gugur syahid sebagai mujahid yang mulia di hari perang Yamamah.",
+			Source:  "HR. Bukhari No. 3613, 4846; HR. Muslim No. 119; Shahih (Muttafaq 'alaih)",
+		},
+		{
+			Title:    "Adab kepada Rasulullah (Abu Bakar dan Umar di Tamim)",
+			Narrator: "Abdullah bin Zubair radhiyallahu 'anhuma",
+			SurahID:  49, AyahFrom: 1, AyahTo: 1,
+			Content: "Diriwayatkan dari Abdullah bin Zubair radhiyallahu 'anhuma: utusan Bani Tamim datang kepada Rasulullah shallallahu 'alaihi wa sallam. Abu Bakar mengusulkan Al-Qa'qa' bin Ma'bad menjadi pemimpin (untuk mereka), sedangkan Umar mengusulkan Al-Aqra' bin Habis. Abu Bakar berkata: 'Engkau ini cuma ingin menyelisihiku.' Mereka berdua meninggikan suara di hadapan Nabi sampai bertengkar. Maka Allah menurunkan ayat: 'Wahai orang-orang beriman, jangan kalian mendahului (perkataan) Allah dan Rasul-Nya.' Setelah itu, Umar (dan beberapa riwayat: Abu Bakar) bila berbicara dengan Rasulullah hampir tidak terdengar.",
+			Source:  "HR. Bukhari No. 4367, 4845, 7302; Shahih",
+		},
+		{
+			Title:    "Bersedekah Sebelum Berbisik (Sedekah Ali bin Abi Thalib)",
+			Narrator: "Ali bin Abi Thalib radhiyallahu 'anhu",
+			SurahID:  58, AyahFrom: 12, AyahTo: 13,
+			Content: "Diriwayatkan dari Ali bin Abi Thalib radhiyallahu 'anhu: ayat 'Apabila kalian hendak berbisik dengan Rasul, maka hendaklah kalian bersedekah lebih dulu' turun, dan tidak ada yang mengamalkannya selain aku. Aku punya satu dinar, kupecah jadi sepuluh dirham; setiap aku akan berbisik kepada Nabi, aku bersedekah satu dirham. Lalu Allah menasakh hukum itu dengan ayat berikutnya yang merevisi: 'Apakah kalian takut menjadi miskin karena bersedekah sebelum berbisik?' Maka Rasulullah meringankan sahabat dan tidak mengharuskan sedekah lagi.",
+			Source:  "HR. Tirmidzi No. 3300 (hasan); HR. An-Nasa'i No. 11577; Hasan oleh Al-Albani",
+		},
+		{
+			Title:    "Larangan Memaksa Budak Wanita Berzina (Abdullah bin Ubay)",
+			Narrator: "Jabir bin Abdullah radhiyallahu 'anhuma",
+			SurahID:  24, AyahFrom: 33, AyahTo: 33,
+			Content: "Diriwayatkan dari Jabir bin Abdullah radhiyallahu 'anhuma: Abdullah bin Ubay bin Salul (pemimpin munafik) memaksa dua budak perempuannya — Musaikah dan Umaimah — berzina untuk mendapatkan uang. Mereka mengadu kepada Rasulullah shallallahu 'alaihi wa sallam. Maka Allah menurunkan ayat: 'Janganlah kalian memaksa budak-budak perempuan kalian melakukan pelacuran sedang mereka sendiri menginginkan kesucian, karena kalian hendak mencari keuntungan duniawi.'",
+			Source:  "HR. Muslim No. 3029 (di Tafsir); HR. Abu Dawud No. 2311; Shahih",
+		},
+	}
+}

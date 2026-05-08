@@ -20,24 +20,38 @@ func NewAsbabunNuzulRepository(db *gorm.DB) AsbabunNuzulRepository {
 	return &asbabunNuzulRepository{db}
 }
 
+// FindByAyahID returns all asbabun nuzul whose `Ayahs` set includes the given
+// ayah. With the m2m schema a single ayat can have multiple riwayat (e.g.
+// jalur Bukhari + jalur Muslim) so the result is always a slice.
 func (r *asbabunNuzulRepository) FindByAyahID(ayahID int) ([]model.AsbabunNuzul, error) {
 	var items []model.AsbabunNuzul
-	return items, r.db.Where("ayah_id = ?", ayahID).Find(&items).Error
+	err := r.db.
+		Preload("Ayahs").
+		Joins("JOIN asbabun_nuzul_ayahs j ON j.asbabun_nuzul_id = asbabun_nuzul.id").
+		Where("j.ayah_id = ?", ayahID).
+		Find(&items).Error
+	return items, err
 }
 
+// FindBySurahNumber returns all asbabun nuzul tied to any ayah of the given
+// surah, sorted by the smallest ayah number each riwayat references.
 func (r *asbabunNuzulRepository) FindBySurahNumber(surahNumber int) ([]model.AsbabunNuzul, error) {
 	var items []model.AsbabunNuzul
-	return items, r.db.
-		Joins("JOIN ayah ON ayah.id = asbabun_nuzul.ayah_id").
+	err := r.db.
+		Preload("Ayahs").
+		Joins("JOIN asbabun_nuzul_ayahs j ON j.asbabun_nuzul_id = asbabun_nuzul.id").
+		Joins("JOIN ayah ON ayah.id = j.ayah_id").
 		Joins("JOIN surah ON surah.id = ayah.surah_id").
 		Where("surah.number = ?", surahNumber).
-		Order("ayah.number ASC").
+		Group("asbabun_nuzul.id").
+		Order("MIN(ayah.number) ASC").
 		Find(&items).Error
+	return items, err
 }
 
 func (r *asbabunNuzulRepository) FindByID(id int) (*model.AsbabunNuzul, error) {
 	var item model.AsbabunNuzul
-	return &item, r.db.First(&item, id).Error
+	return &item, r.db.Preload("Ayahs").First(&item, id).Error
 }
 
 func (r *asbabunNuzulRepository) Create(a *model.AsbabunNuzul) (*model.AsbabunNuzul, error) {
