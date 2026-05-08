@@ -1,6 +1,6 @@
 # Asbabun Nuzul Dataset — Tracker
 
-> Last updated: 2026-05-08
+> Last updated: 2026-05-09
 > Schema: `services/api/app/model/asbabun_nuzul.go` (m2m → Ayah)
 > Dataset file: `services/api/app/db/migrations/seeder_asbabun_nuzul_data.go`
 > Acuan aturan: `MEMORY.md "Islamic data seeding harus shahih"`
@@ -9,11 +9,11 @@
 
 | Metric | Angka |
 |---|---|
-| Entri ter-seed | **188** |
-| Ayat ter-cover (range expanded) | ~310 |
-| Surat ter-cover (sebagian) | 65 |
-| Coverage vs total Quran (6,236 ayat) | ~5.0% |
-| Coverage vs estimasi total asbab shahih (~270) | ~70% |
+| Entri ter-seed | **216** |
+| Ayat ter-cover (range expanded) | ~380 |
+| Surat ter-cover (sebagian) | 75 |
+| Coverage vs total Quran (6,236 ayat) | ~6.1% |
+| Coverage vs estimasi total asbab shahih (~270) | ~80% |
 
 ## Target final (MVP shahih)
 
@@ -38,15 +38,13 @@ Surat-surat berikut paling sering dibuka di mobile app + paling banyak riwayat s
 
 ### Tier 1 — Surat panjang utama
 
-#### Al-Baqarah (2) — covered: 13/286
-Sudah ada: 97-98, 104, 115, 142-143, 144, 158, 177, 178-179, 187, 189, 196, 219, 222, 223, 233, 235, 238, 255, 267, 284-286.
+#### Al-Baqarah (2) — covered: 14/286
+Sudah ada: 97-98, 104, 115, 142-143, 144, 158, 177, 178-179, 187, 189, 196, 219, 222, 223, 233, 235, 238, 255, 267, 272, 284-286.
 Gap target (sisa):
 - [ ] **2:1-7** — Pembagian manusia (mukmin/kafir/munafik) — Tafsir Ibnu Katsir
 
-#### An-Nisa' (4) — covered: 10/176
-Sudah ada: 11-12, 19, 24, 29, 32, 34, 43, 48, 59, 65, 88, 94, 95, 97-99, 127, 128, 176.
-Gap target (sisa):
-- [ ] **4:7** — Hak waris perempuan (berbeda dari 4:11-12) — Tirmidzi
+#### An-Nisa' (4) — covered: 11/176
+Sudah ada: 7, 11-12, 19, 24, 29, 32, 34, 43, 48, 59, 65, 88, 94, 95, 97-99, 127, 128, 176.
 
 #### Ali 'Imran (3) — covered: 9/200
 Sudah ada: 7, 72-73, 118-120, 122, 128-129, 140-142, 154, 172-174, 181, 186, 188, 190-191, 200.
@@ -102,10 +100,23 @@ Banyak surat pendek punya asbab nuzul yang ada di Bukhari/Muslim:
 - [x] **Al-An'am (6)** — sudah ada 52, 82, 151-153 ✓
 - [x] **Al-A'raf (7)** — sudah ada 31-32, 172-173, 180, 199, 204 ✓
 - [ ] **Yusuf (12)** — Tafsir umum (sebab nuzul jarang)
-- [x] **Al-Isra' (17)** — sudah ada 1, 73-75, 85, 88, 110 ✓
-- [x] **Al-Kahf (18)** — sudah ada 9-26, 23-24, 28 ✓
+- [x] **Al-Isra' (17)** — sudah ada 1, 23-24, 73-75, 85, 88, 110 ✓
+- [x] **Al-Kahf (18)** — sudah ada 9-26, 23-24, 28, 60-82 ✓
 - [x] **Maryam (19)** — sudah ada 64, 77-80, 88-95 ✓
 - [x] **Thaha (20)** — sudah ada 1-2, 114 ✓
+- [x] **Al-Anbiya' (21)** — sudah ada 36-37 ✓ (batch 7)
+- [x] **Al-Hajj (22)** — sudah ada 19-22 ✓ (batch 7)
+- [x] **Al-Furqan (25)** — sudah ada 25:32 ✓ (batch 7)
+- [x] **Asy-Syu'ara' (26)** — sudah ada 214-216 ✓ (batch 7)
+- [x] **Al-'Ankabut (29)** — sudah ada 1-3 ✓ (batch 7)
+- [x] **Luqman (31)** — sudah ada 6-7 ✓ (batch 7)
+- [x] **Al-Ahqaf (46)** — sudah ada 29-31 ✓ (batch 7)
+- [x] **An-Najm (53)** — sudah ada 19-23 ✓ (batch 7)
+- [x] **Al-Mumtahanah (60)** — sudah ada 8-9 ✓ (batch 7)
+- [x] **Al-Qalam (68)** — sudah ada 10-13 ✓ (batch 7)
+- [x] **Al-Muzzammil (73)** — sudah ada 1-9 ✓ (batch 7)
+- [x] **Al-Balad (90)** — sudah ada 1-4 ✓ (batch 7)
+- [x] **Al-Lail (92)** — sudah ada 1-11 ✓ (batch 7)
 
 ## Workflow tambah batch
 
