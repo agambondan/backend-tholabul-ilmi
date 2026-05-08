@@ -54,3 +54,4 @@ services/api/update_sources
 # test artifacts
 output/
 test-results/
+playwright-report/
