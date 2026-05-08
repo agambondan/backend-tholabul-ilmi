@@ -9,11 +9,11 @@
 
 | Metric | Angka |
 |---|---|
-| Entri ter-seed | **102** |
-| Ayat ter-cover (range expanded) | ~165 |
-| Surat ter-cover (sebagian) | 38 |
-| Coverage vs total Quran (6,236 ayat) | ~2.6% |
-| Coverage vs estimasi total asbab shahih (~270) | ~38% |
+| Entri ter-seed | **130** |
+| Ayat ter-cover (range expanded) | ~210 |
+| Surat ter-cover (sebagian) | 47 |
+| Coverage vs total Quran (6,236 ayat) | ~3.4% |
+| Coverage vs estimasi total asbab shahih (~270) | ~48% |
 
 ## Target final (MVP shahih)
 
