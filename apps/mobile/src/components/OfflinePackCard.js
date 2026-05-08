@@ -8,6 +8,7 @@ import {
   getOfflineHadithCountsBySlug,
   getOfflineOverview,
 } from '../storage/offlineContent';
+import { useFeedback } from '../context/FeedbackContext';
 import { colors, radius, spacing } from '../theme';
 import { Card, CardTitle } from './Card';
 
@@ -75,6 +76,7 @@ const QURAN_TOTAL_AYAHS = 6236;
 const QURAN_TOTAL_SURAHS = 114;
 
 export function OfflinePackCard() {
+  const { showError, showSuccess } = useFeedback();
   const [overview, setOverview] = useState(null);
   const [books, setBooks] = useState([]);
   const [booksLoading, setBooksLoading] = useState(false);
@@ -205,19 +207,23 @@ export function OfflinePackCard() {
       const refreshedCounts = await getOfflineHadithCountsBySlug();
       setLocalBookCounts(refreshedCounts);
       if (checkUpdates) {
-        setMessage(
+        const nextMessage =
           data.deltaCount > 0
             ? `${formatNumber(data.deltaCount)} hadis diperbarui dari backend.`
-            : 'Sudah versi terbaru. Tidak ada update dari backend.',
-        );
+            : 'Sudah versi terbaru. Tidak ada update dari backend.';
+        setMessage(nextMessage);
+        showSuccess(nextMessage);
       } else {
-        setMessage(
-          `Paket offline siap: ${formatNumber(data.quranAyahs)} ayat, ${formatNumber(data.hadiths)} hadis, ${data.hadithBooks.length} kitab.`,
-        );
+        const nextMessage =
+          `Paket offline siap: ${formatNumber(data.quranAyahs)} ayat, ${formatNumber(data.hadiths)} hadis, ${data.hadithBooks.length} kitab.`;
+        setMessage(nextMessage);
+        showSuccess(nextMessage);
       }
       setProgress(100);
     } catch (error) {
-      setMessage(error?.message ?? 'Paket offline belum bisa diunduh.');
+      const nextMessage = error?.message ?? 'Paket offline belum bisa diunduh.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setBusy(false);
     }
@@ -230,8 +236,11 @@ export function OfflinePackCard() {
       setOverview(data);
       setMessage('Paket offline dihapus.');
       setProgress(0);
+      showSuccess('Paket offline dihapus.');
     } catch (error) {
-      setMessage(error?.message ?? 'Paket offline belum bisa dihapus.');
+      const nextMessage = error?.message ?? 'Paket offline belum bisa dihapus.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setBusy(false);
     }

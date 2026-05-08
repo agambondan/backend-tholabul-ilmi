@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { createNote, deleteNote, getNotes, updateNote } from '../api/personal';
+import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { colors, radius, spacing } from '../theme';
 import { hapticError, hapticSuccess } from '../utils/haptics';
@@ -8,6 +9,7 @@ import { CardTitle } from './Card';
 
 export function NotesPanel({ refType, refId }) {
   const { user } = useSession();
+  const { showError, showSuccess } = useFeedback();
   const [content, setContent] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [items, setItems] = useState([]);
@@ -49,16 +51,20 @@ export function NotesPanel({ refType, refId }) {
         const updated = await updateNote({ id: editingId, content: nextContent });
         setItems((current) => current.map((item) => (item.id === editingId ? updated : item)));
         setMessage('Catatan diperbarui.');
+        showSuccess('Catatan diperbarui.');
       } else {
         const created = await createNote({ refType, refId, content: nextContent });
         setItems((current) => [created, ...current]);
         setMessage('Catatan disimpan.');
+        showSuccess('Catatan disimpan.');
       }
       hapticSuccess();
       resetForm();
     } catch (err) {
       hapticError();
-      setMessage(err?.message ?? 'Catatan belum bisa disimpan.');
+      const nextMessage = err?.message ?? 'Catatan belum bisa disimpan.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setLoading(false);
     }
@@ -80,9 +86,12 @@ export function NotesPanel({ refType, refId }) {
       if (editingId === id) resetForm();
       hapticSuccess();
       setMessage('Catatan dihapus.');
+      showSuccess('Catatan dihapus.');
     } catch (err) {
       hapticError();
-      setMessage(err?.message ?? 'Catatan belum bisa dihapus.');
+      const nextMessage = err?.message ?? 'Catatan belum bisa dihapus.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setLoading(false);
     }

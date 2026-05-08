@@ -1,13 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArrowLeft, Book, BookOpen, Languages, Layers, Search, UserRound } from 'lucide-react-native';
 import { searchGlobal } from '../api/client';
 import { IconActionButton, PaperSearchInput } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { allFeatures } from '../data/mobileFeatures';
+import { readRecentSearches, rememberRecentSearch } from '../storage/recentSearches';
 import { colors, radius, shadows, spacing } from '../theme';
 
 const MIN_QUERY_LENGTH = 2;
+const quickSuggestions = ['shalat', 'sabar', 'zakat', 'tafsir'];
+
+const searchFilters = [
+  { key: 'all', label: 'Semua', remoteType: 'all' },
+  { key: 'quran', label: 'Quran', remoteType: 'ayah' },
+  { key: 'hadith', label: 'Hadis', remoteType: 'hadith' },
+  { key: 'dictionary', label: 'Kamus', remoteType: 'dictionary' },
+  { key: 'perawi', label: 'Perawi', remoteType: 'perawi' },
+  { key: 'feature', label: 'Fitur', remoteType: 'all' },
+];
 
 const normalizeQuery = (value = '') => value.trim().toLowerCase();
 
@@ -58,23 +69,43 @@ const ResultRow = ({ Icon, meta, onPress, subtitle, title }) => (
 
 export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
   const [query, setQuery] = useState(initialQuery);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [recentSearches, setRecentSearches] = useState([]);
   const [remoteResults, setRemoteResults] = useState({ ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   const featureResults = useMemo(() => findFeatureResults(query), [query]);
+  const selectedFilter = searchFilters.find((item) => item.key === activeFilter) ?? searchFilters[0];
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length >= MIN_QUERY_LENGTH;
+  const showAyahs = activeFilter === 'all' || activeFilter === 'quran';
+  const showHadiths = activeFilter === 'all' || activeFilter === 'hadith';
+  const showDictionaries = activeFilter === 'all' || activeFilter === 'dictionary';
+  const showPerawis = activeFilter === 'all' || activeFilter === 'perawi';
+  const showFeatures = activeFilter === 'all' || activeFilter === 'feature';
   const totalResults =
-    remoteResults.ayahs.length +
-    remoteResults.hadiths.length +
-    remoteResults.dictionaries.length +
-    remoteResults.perawis.length +
-    featureResults.length;
+    (showAyahs ? remoteResults.ayahs.length : 0) +
+    (showHadiths ? remoteResults.hadiths.length : 0) +
+    (showDictionaries ? remoteResults.dictionaries.length : 0) +
+    (showPerawis ? remoteResults.perawis.length : 0) +
+    (showFeatures ? featureResults.length : 0);
 
   useEffect(() => {
     if (initialQuery) setQuery(initialQuery);
   }, [initialQuery]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    readRecentSearches().then((items) => {
+      if (mounted) setRecentSearches(items);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!hasQuery) {
@@ -89,7 +120,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
     setMessage('');
 
     const timer = setTimeout(async () => {
-      const globalResult = await Promise.resolve(searchGlobal(trimmedQuery, { limit: 16 })).then(
+      const globalResult = await Promise.resolve(searchGlobal(trimmedQuery, { limit: 16, type: selectedFilter.remoteType })).then(
         (value) => ({ status: 'fulfilled', value }),
         (reason) => ({ status: 'rejected', reason }),
       );
@@ -98,6 +129,9 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
 
       if (globalResult.status === 'fulfilled') {
         setRemoteResults(globalResult.value);
+        rememberRecentSearch(trimmedQuery).then((items) => {
+          if (!cancelled) setRecentSearches(items);
+        });
       } else {
         setRemoteResults({ ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 });
         setMessage(globalResult.reason?.message ?? 'Pencarian server belum bisa dimuat.');
@@ -110,7 +144,10 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [hasQuery, trimmedQuery]);
+  }, [hasQuery, selectedFilter.remoteType, trimmedQuery]);
+
+  const searchChips = recentSearches.length ? recentSearches : quickSuggestions;
+  const chipLabel = recentSearches.length ? 'Terakhir dicari' : 'Cari cepat';
 
   return (
     <Screen
@@ -122,6 +159,47 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
           placeholder="Cari Quran, hadis, fitur, kamus..."
           value={query}
         />
+      }
+      headerExtra={
+        <>
+          <ScrollView
+            contentContainerStyle={styles.filterContent}
+            horizontal
+            keyboardShouldPersistTaps="handled"
+            showsHorizontalScrollIndicator={false}
+          >
+            {searchFilters.map((filter) => {
+              const active = filter.key === activeFilter;
+              return (
+                <Pressable
+                  android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                  key={filter.key}
+                  onPress={() => setActiveFilter(filter.key)}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                >
+                  <Text style={[styles.filterText, active && styles.filterTextActive]}>{filter.label}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          {!hasQuery ? (
+            <View style={styles.quickWrap}>
+              <Text style={styles.quickLabel}>{chipLabel}</Text>
+              <View style={styles.quickChips}>
+                {searchChips.slice(0, 6).map((item) => (
+                  <Pressable
+                    android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                    key={item}
+                    onPress={() => setQuery(item)}
+                    style={styles.quickChip}
+                  >
+                    <Text style={styles.quickText}>{item}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
+        </>
       }
       subtitle="Satu tempat untuk menemukan bacaan, hadis, referensi, dan fitur aplikasi."
       title="Cari"
@@ -152,75 +230,115 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
         </View>
       ) : null}
 
-      <ResultSection count={remoteResults.ayahs.length} title="Al-Quran">
-        {remoteResults.ayahs.map((item) => (
-          <ResultRow
-            Icon={BookOpen}
-            key={`ayah-${item.id}`}
-            meta={item.surahNumber ? `Surah ${item.surahNumber}` : 'Quran'}
-            onPress={() => onOpenTab('quran', { surahNumber: item.surahNumber })}
-            subtitle={item.translation}
-            title={[item.surahName, item.number ? `Ayah ${item.number}` : null].filter(Boolean).join(' · ') || 'Ayat Quran'}
-          />
-        ))}
-      </ResultSection>
+      {showAyahs ? (
+        <ResultSection count={remoteResults.ayahs.length} title="Al-Quran">
+          {remoteResults.ayahs.map((item) => (
+            <ResultRow
+              Icon={BookOpen}
+              key={`ayah-${item.id}`}
+              meta={item.surahNumber ? `Surah ${item.surahNumber}` : 'Quran'}
+              onPress={() =>
+                onOpenTab('quran', {
+                  ayahId: item.id,
+                  ayahNumber: item.number,
+                  surahNumber: item.surahNumber,
+                })
+              }
+              subtitle={item.translation}
+              title={[item.surahName, item.number ? `Ayah ${item.number}` : null].filter(Boolean).join(' · ') || 'Ayat Quran'}
+            />
+          ))}
+        </ResultSection>
+      ) : null}
 
-      <ResultSection count={remoteResults.hadiths.length} title="Hadis">
-        {remoteResults.hadiths.map((item) => (
-          <ResultRow
-            Icon={Book}
-            key={`hadith-${item.id}`}
-            meta={item.book || 'Hadis'}
-            onPress={() => onOpenTab('hadith', { hadithId: item.id })}
-            subtitle={item.translation}
-            title={item.title || `Hadis ${item.id}`}
-          />
-        ))}
-      </ResultSection>
+      {showHadiths ? (
+        <ResultSection count={remoteResults.hadiths.length} title="Hadis">
+          {remoteResults.hadiths.map((item) => (
+            <ResultRow
+              Icon={Book}
+              key={`hadith-${item.id}`}
+              meta={item.book || 'Hadis'}
+              onPress={() => onOpenTab('hadith', { hadithId: item.id })}
+              subtitle={item.translation}
+              title={item.title || `Hadis ${item.id}`}
+            />
+          ))}
+        </ResultSection>
+      ) : null}
 
-      <ResultSection count={featureResults.length} title="Fitur">
-        {featureResults.map((feature) => (
-          <ResultRow
-            Icon={Layers}
-            key={`feature-${feature.key}`}
-            meta={feature.group}
-            onPress={() => onOpenTab('belajar', { featureKey: feature.key, focusSearch: feature.type === 'kamus' })}
-            subtitle={feature.subtitle}
-            title={feature.title}
-          />
-        ))}
-      </ResultSection>
+      {showFeatures ? (
+        <ResultSection count={featureResults.length} title="Fitur">
+          {featureResults.map((feature) => (
+            <ResultRow
+              Icon={Layers}
+              key={`feature-${feature.key}`}
+              meta={feature.group}
+              onPress={() => onOpenTab('belajar', { featureKey: feature.key, focusSearch: feature.type === 'kamus' })}
+              subtitle={feature.subtitle}
+              title={feature.title}
+            />
+          ))}
+        </ResultSection>
+      ) : null}
 
-      <ResultSection count={remoteResults.dictionaries.length} title="Kamus">
-        {remoteResults.dictionaries.map((item) => (
-          <ResultRow
-            Icon={Languages}
-            key={`dictionary-${item.id}`}
-            meta={item.category || 'Kamus'}
-            onPress={() => onOpenTab('belajar', { featureKey: 'kamus', focusSearch: true })}
-            subtitle={item.body}
-            title={item.title}
-          />
-        ))}
-      </ResultSection>
+      {showDictionaries ? (
+        <ResultSection count={remoteResults.dictionaries.length} title="Kamus">
+          {remoteResults.dictionaries.map((item) => (
+            <ResultRow
+              Icon={Languages}
+              key={`dictionary-${item.id}`}
+              meta={item.category || 'Kamus'}
+              onPress={() => onOpenTab('belajar', { featureKey: 'kamus', focusSearch: true })}
+              subtitle={item.body}
+              title={item.title}
+            />
+          ))}
+        </ResultSection>
+      ) : null}
 
-      <ResultSection count={remoteResults.perawis.length} title="Perawi">
-        {remoteResults.perawis.map((item) => (
-          <ResultRow
-            Icon={UserRound}
-            key={`perawi-${item.id}`}
-            meta={item.status || 'Perawi'}
-            onPress={() => onOpenTab('belajar', { featureKey: 'perawi' })}
-            subtitle={item.body}
-            title={item.title}
-          />
-        ))}
-      </ResultSection>
+      {showPerawis ? (
+        <ResultSection count={remoteResults.perawis.length} title="Perawi">
+          {remoteResults.perawis.map((item) => (
+            <ResultRow
+              Icon={UserRound}
+              key={`perawi-${item.id}`}
+              meta={item.status || 'Perawi'}
+              onPress={() => onOpenTab('belajar', { featureKey: 'perawi' })}
+              subtitle={item.body}
+              title={item.title}
+            />
+          ))}
+        </ResultSection>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  filterChip: {
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginRight: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterContent: {
+    paddingRight: spacing.lg,
+  },
+  filterText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  filterTextActive: {
+    color: colors.onPrimary,
+  },
   hintCard: {
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -271,6 +389,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     marginBottom: spacing.md,
+  },
+  quickChip: {
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+  },
+  quickChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  quickLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '900',
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+  },
+  quickText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  quickWrap: {
+    marginTop: spacing.md,
   },
   resultCopy: {
     flex: 1,

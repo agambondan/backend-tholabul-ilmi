@@ -12,6 +12,7 @@ import {
   saveNotificationSettings,
   sendPushTest,
 } from '../api/personal';
+import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { colors, radius, spacing } from '../theme';
 import {
@@ -56,6 +57,7 @@ const NOTIF_TABS = [
 
 export function NotificationCenter() {
   const { session } = useSession();
+  const { showError, showSuccess } = useFeedback();
   const [activeTab, setActiveTab] = useState('settings');
   const [settings, setSettings] = useState(defaultSettings);
   const [inbox, setInbox] = useState([]);
@@ -150,8 +152,11 @@ export function NotificationCenter() {
       const saved = await saveNotificationSettings(settings);
       setSettings(normalizeSettings(saved?.data ?? saved ?? []));
       setMessage('Pengaturan notifikasi disimpan.');
+      showSuccess('Pengaturan notifikasi disimpan.');
     } catch (error) {
-      setMessage(error?.message ?? 'Pengaturan belum bisa disimpan.');
+      const nextMessage = error?.message ?? 'Pengaturan belum bisa disimpan.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setSaving(false);
     }
@@ -193,7 +198,9 @@ export function NotificationCenter() {
         message: 'Push native aktif untuk perangkat ini.',
         status: 'enabled',
       }));
+      showSuccess('Push native aktif untuk perangkat ini.');
     } catch (error) {
+      showError(error?.message ?? 'Push native belum bisa diaktifkan.');
       setPushState((current) => ({
         ...current,
         loading: false,
@@ -219,8 +226,10 @@ export function NotificationCenter() {
         status: 'enabled',
         testLoading: false,
       }));
+      showSuccess(result?.sent ? `Test push terkirim ke ${result.sent} perangkat.` : 'Test push terkirim.');
       load();
     } catch (error) {
+      showError(error?.message ?? 'Test push belum bisa dikirim.');
       setPushState((current) => ({
         ...current,
         message: error?.message ?? 'Test push belum bisa dikirim.',
@@ -237,7 +246,9 @@ export function NotificationCenter() {
       setInbox((current) => current.map((item) => (item.id === id ? { ...item, is_read: true } : item)));
       setUnreadCount((current) => Math.max(0, current - 1));
     } catch (error) {
-      setMessage(error?.message ?? 'Notifikasi belum bisa ditandai terbaca.');
+      const nextMessage = error?.message ?? 'Notifikasi belum bisa ditandai terbaca.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     }
   };
 
@@ -247,8 +258,11 @@ export function NotificationCenter() {
       setInbox((current) => current.map((item) => ({ ...item, is_read: true })));
       setUnreadCount(0);
       setMessage('Semua notifikasi ditandai terbaca.');
+      showSuccess('Semua notifikasi ditandai terbaca.');
     } catch (error) {
-      setMessage(error?.message ?? 'Notifikasi belum bisa ditandai terbaca.');
+      const nextMessage = error?.message ?? 'Notifikasi belum bisa ditandai terbaca.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     }
   };
 

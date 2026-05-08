@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { TabBar } from './src/components/TabBar';
+import { FeedbackProvider } from './src/context/FeedbackContext';
 import { SessionProvider } from './src/context/SessionContext';
 import { TabActivityProvider } from './src/context/TabActivityContext';
 import { ExploreScreen } from './src/screens/ExploreScreen';
@@ -181,32 +182,34 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SessionProvider>
-        <TabActivityProvider>
-          <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-            <View style={styles.container}>
-              <View style={[styles.screenPane, activeTab === 'home' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
-                <HomeScreen isActive={activeTab === 'home'} navigation={navigation} onOpenTab={openTab} />
+        <FeedbackProvider>
+          <TabActivityProvider>
+            <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+              <View style={styles.container}>
+                <View style={[styles.screenPane, activeTab === 'home' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
+                  <HomeScreen isActive={activeTab === 'home'} navigation={navigation} onOpenTab={openTab} />
+                </View>
+                <View style={[styles.screenPane, activeTab === 'quran' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
+                  <QuranScreen deepLinkTarget={activeTab === 'quran' ? currentTarget : null} isActive={activeTab === 'quran'} navigation={navigation} />
+                </View>
+                <View style={[styles.screenPane, activeTab === 'hadith' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
+                  <HadithScreen deepLinkTarget={activeTab === 'hadith' ? currentTarget : null} isActive={activeTab === 'hadith'} navigation={navigation} />
+                </View>
+                <View style={[styles.screenPane, activeTab === 'ibadah' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
+                  <IbadahScreen isActive={activeTab === 'ibadah'} navigation={navigation} onOpenTab={openTab} />
+                </View>
+                <View style={[styles.screenPane, activeTab === 'belajar' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
+                  <ExploreScreen deepLinkTarget={activeTab === 'belajar' ? currentTarget : null} isActive={activeTab === 'belajar'} navigation={navigation} onOpenTab={openTab} />
+                </View>
+                <View style={[styles.screenPane, activeTab === 'profile' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
+                  <ProfileScreen isActive={activeTab === 'profile'} navigation={navigation} onOpenTab={openTab} />
+                </View>
               </View>
-              <View style={[styles.screenPane, activeTab === 'quran' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
-                <QuranScreen deepLinkTarget={activeTab === 'quran' ? currentTarget : null} isActive={activeTab === 'quran'} navigation={navigation} />
-              </View>
-              <View style={[styles.screenPane, activeTab === 'hadith' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
-                <HadithScreen deepLinkTarget={activeTab === 'hadith' ? currentTarget : null} isActive={activeTab === 'hadith'} navigation={navigation} />
-              </View>
-              <View style={[styles.screenPane, activeTab === 'ibadah' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
-                <IbadahScreen isActive={activeTab === 'ibadah'} navigation={navigation} onOpenTab={openTab} />
-              </View>
-              <View style={[styles.screenPane, activeTab === 'belajar' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
-                <ExploreScreen deepLinkTarget={activeTab === 'belajar' ? currentTarget : null} isActive={activeTab === 'belajar'} navigation={navigation} onOpenTab={openTab} />
-              </View>
-              <View style={[styles.screenPane, activeTab === 'profile' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
-                <ProfileScreen isActive={activeTab === 'profile'} navigation={navigation} onOpenTab={openTab} />
-              </View>
-            </View>
-            <TabBar active={activeTab} onChange={openTab} />
-            <StatusBar style="dark" backgroundColor={colors.bg} />
-          </SafeAreaView>
-        </TabActivityProvider>
+              <TabBar active={activeTab} onChange={openTab} />
+              <StatusBar style="dark" backgroundColor={colors.bg} />
+            </SafeAreaView>
+          </TabActivityProvider>
+        </FeedbackProvider>
       </SessionProvider>
     </SafeAreaProvider>
   );

@@ -19,6 +19,7 @@ import { Card, CardTitle } from '../components/Card';
 import { NotesPanel } from '../components/NotesPanel';
 import { ActionPill, IconActionButton, PaperSearchInput } from '../components/Paper';
 import { Screen } from '../components/Screen';
+import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { getOfflineItems, getOfflineOverview } from '../storage/offlineContent';
 import { colors, radius, spacing } from '../theme';
@@ -38,6 +39,7 @@ const normalizeSearchText = (value) => String(value ?? '').trim().toLowerCase();
 
 export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   const { user } = useSession();
+  const { showError, showInfo, showSuccess } = useFeedback();
   const handledDeepLinkId = useRef(null);
   const loadingMoreRef = useRef(false);
   const [books, setBooks] = useState([]);
@@ -227,7 +229,10 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   };
 
   const toggleBookmark = async (hadith) => {
-    if (!user || !hadith.id) return;
+    if (!user || !hadith.id) {
+      showInfo('Masuk dari Profil untuk menyimpan bookmark.');
+      return;
+    }
 
     setSavingId(hadith.id);
     setMessage('');
@@ -240,17 +245,21 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
         delete next[hadith.id];
         setBookmarks(next);
         setMessage('Bookmark dihapus.');
+        showSuccess('Bookmark dihapus.');
         await loadBookmarks();
       } else {
         const bookmark = await addBookmark({ refType: 'hadith', refId: hadith.id });
         setBookmarks({ ...bookmarks, [hadith.id]: bookmark });
         setMessage('Hadis disimpan ke bookmark.');
+        showSuccess('Hadis disimpan ke bookmark.');
         await loadBookmarks();
       }
       hapticSuccess();
     } catch (err) {
       hapticError();
-      setMessage(err?.message ?? 'Bookmark belum bisa diperbarui.');
+      const nextMessage = err?.message ?? 'Bookmark belum bisa diperbarui.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setSavingId(null);
     }

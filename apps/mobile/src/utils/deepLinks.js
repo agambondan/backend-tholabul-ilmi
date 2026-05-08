@@ -12,6 +12,8 @@ const tabAliases = {
   explore: 'belajar',
   ilmu: 'belajar',
   belajar: 'belajar',
+  search: 'home',
+  'global-search': 'home',
 };
 
 const knownTabs = ['home', 'quran', 'hadith', 'ibadah', 'belajar', 'profile'];
@@ -51,12 +53,19 @@ const numberOrNull = (value) => {
 
 export const parseDeepLink = (url) => {
   const segments = normalizeSegments(url).map((item) => decodeURIComponent(item).toLowerCase());
-  const [rawTab, second, third] = segments;
+  const [rawTab, second, third, fourth] = segments;
   const tab = tabAliases[rawTab] ?? rawTab;
 
   if (!knownTabs.includes(tab)) return null;
 
   if (tab === 'home') {
+    if (rawTab === 'search' || rawTab === 'global-search') {
+      return {
+        params: { query: second ?? '', view: 'global-search' },
+        tab,
+      };
+    }
+
     return {
       params:
         second === 'search' || second === 'global-search'
@@ -82,8 +91,15 @@ export const parseDeepLink = (url) => {
     }
 
     const rawSurah = second === 'surah' ? third : second;
+    const rawAyah = second === 'surah' ? fourth : third;
     return {
-      params: rawSurah ? { surahNumber: numberOrNull(rawSurah), surahSlug: rawSurah } : {},
+      params: rawSurah
+        ? {
+            ayahNumber: rawAyah ? numberOrNull(rawAyah) : null,
+            surahNumber: numberOrNull(rawSurah),
+            surahSlug: rawSurah,
+          }
+        : {},
       tab,
     };
   }

@@ -16,6 +16,7 @@ import { NotesPanel } from '../components/NotesPanel';
 import { NotificationCenter } from '../components/NotificationCenter';
 import { ActionPill, CompactRow, IconActionButton, PaperSearchInput, SectionHeader } from '../components/Paper';
 import { Screen } from '../components/Screen';
+import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { allFeatures, belajarFeatureGroups } from '../data/mobileFeatures';
 import { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinnedFeature } from '../storage/recentFeatures';
@@ -160,6 +161,7 @@ const normalizeUserWirdItem = (item, index = 0) => ({
 
 export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab }) {
   const { session } = useSession();
+  const { showError, showInfo, showSuccess } = useFeedback();
   const handledDeepLinkId = useRef(null);
   const dictionaryInputRef = useRef(null);
   const [featureSearch, setFeatureSearch] = useState('');
@@ -232,10 +234,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           return acc;
         }, {}),
       );
+      showSuccess(result.pinned ? `${feature.title} disematkan.` : `${feature.title} dilepas dari shortcut.`);
     } catch {
       setError('Shortcut belum bisa diperbarui.');
+      showError('Shortcut belum bisa diperbarui.');
     }
-  }, []);
+  }, [showError, showSuccess]);
 
   const loadFeature = useCallback(
     async (feature, options = {}) => {
@@ -395,6 +399,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const toggleBookmark = async (item) => {
     if (!activeFeature || !session?.token) {
       setError('Buka Profil untuk masuk dan menyimpan bookmark.');
+      showInfo('Buka Profil untuk masuk dan menyimpan bookmark.');
       return;
     }
 
@@ -412,12 +417,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           delete next[key];
           return next;
         });
+        showSuccess('Bookmark dihapus.');
       } else {
         const created = await addBookmark(ref);
         setBookmarks((current) => ({ ...current, [key]: created?.data ?? created }));
+        showSuccess('Item disimpan ke bookmark.');
       }
     } catch (err) {
-      setError(err?.message ?? 'Bookmark belum bisa diperbarui.');
+      const nextMessage = err?.message ?? 'Bookmark belum bisa diperbarui.';
+      setError(nextMessage);
+      showError(nextMessage);
     } finally {
       setSavingBookmark('');
     }
@@ -426,6 +435,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const handleLikeFeedItem = async (item) => {
     if (!session?.token) {
       setError('Buka Profil untuk masuk dan menyukai post komunitas.');
+      showInfo('Buka Profil untuk masuk dan menyukai post komunitas.');
       return;
     }
 
@@ -438,8 +448,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       if (selectedItem?.id === item.id) {
         setSelectedItem(updated);
       }
+      showSuccess('Post komunitas diperbarui.');
     } catch (err) {
-      setError(err?.message ?? 'Post belum bisa disukai.');
+      const nextMessage = err?.message ?? 'Post belum bisa disukai.';
+      setError(nextMessage);
+      showError(nextMessage);
     } finally {
       setLikingFeedId('');
     }
@@ -464,6 +477,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     if (!selectedItem || !content) return;
     if (!session?.token) {
       setError('Buka Profil untuk masuk dan menulis komentar.');
+      showInfo('Buka Profil untuk masuk dan menulis komentar.');
       return;
     }
 
@@ -475,8 +489,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       const created = await createComment({ content, refId: ref.refId, refType: ref.refType });
       setFeedComments((current) => [...current, created]);
       setCommentDraft('');
+      showSuccess('Komentar terkirim.');
     } catch (err) {
-      setError(err?.message ?? 'Komentar belum bisa dikirim.');
+      const nextMessage = err?.message ?? 'Komentar belum bisa dikirim.';
+      setError(nextMessage);
+      showError(nextMessage);
     } finally {
       setCommentSaving(false);
     }
@@ -506,10 +523,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     const title = userWirdForm.title.trim();
     if (!title) {
       setError('Judul wirid wajib diisi.');
+      showInfo('Judul wirid wajib diisi.');
       return;
     }
     if (!session?.token) {
       setError('Buka Profil untuk masuk dan menyimpan wirid.');
+      showInfo('Buka Profil untuk masuk dan menyimpan wirid.');
       return;
     }
 
@@ -532,13 +551,17 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         const updated = await updateUserWird(editingUserWirdId, payload);
         const normalized = normalizeUserWirdItem(updated?.data ?? updated);
         setItems((current) => current.map((item) => (item.id === normalized.id ? normalized : item)));
+        showSuccess('Wirid diperbarui.');
       } else {
         const created = await createUserWird(payload);
         setItems((current) => [normalizeUserWirdItem(created?.data ?? created), ...current]);
+        showSuccess('Wirid disimpan.');
       }
       resetUserWirdForm();
     } catch (err) {
-      setError(err?.message ?? 'Wirid belum bisa disimpan.');
+      const nextMessage = err?.message ?? 'Wirid belum bisa disimpan.';
+      setError(nextMessage);
+      showError(nextMessage);
     } finally {
       setSavingUserWird(false);
     }
@@ -549,6 +572,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     if (!id) return;
     if (!session?.token) {
       setError('Buka Profil untuk masuk dan menghapus wirid.');
+      showInfo('Buka Profil untuk masuk dan menghapus wirid.');
       return;
     }
 
@@ -557,8 +581,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       await deleteUserWird(id);
       setItems((current) => current.filter((entry) => entry.id !== item.id));
       if (editingUserWirdId === id) resetUserWirdForm();
+      showSuccess('Wirid dihapus.');
     } catch (err) {
-      setError(err?.message ?? 'Wirid belum bisa dihapus.');
+      const nextMessage = err?.message ?? 'Wirid belum bisa dihapus.';
+      setError(nextMessage);
+      showError(nextMessage);
     }
   };
 
@@ -635,16 +662,18 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       if (nowDone) hapticMedium();
       setSholatLog((current) => ({ ...current, [prayerKey]: nowDone }));
       try {
-        await savePrayerLog({
-          date: new Date().toISOString().split('T')[0],
-          prayer: prayerKey,
-          status: nowDone ? 'done' : 'missed',
-        });
-      } catch {
-        setSholatLog((current) => ({ ...current, [prayerKey]: !nowDone }));
-      }
-    },
-    [sholatLog],
+      await savePrayerLog({
+        date: new Date().toISOString().split('T')[0],
+        prayer: prayerKey,
+        status: nowDone ? 'done' : 'missed',
+      });
+      showSuccess(`${prayerKey} ${nowDone ? 'ditandai selesai' : 'ditandai belum selesai'}.`);
+    } catch {
+      setSholatLog((current) => ({ ...current, [prayerKey]: !nowDone }));
+      showError('Log sholat belum bisa disimpan.');
+    }
+  },
+    [sholatLog, showError, showSuccess],
   );
 
   useEffect(() => {

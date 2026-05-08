@@ -7,6 +7,7 @@ import { getPrayerStats, getTodayPrayerLog, savePrayerLog } from '../api/persona
 import { Card, CardTitle } from '../components/Card';
 import { IconActionButton } from '../components/Paper';
 import { Screen } from '../components/Screen';
+import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import {
   buildPrayerOfflinePack,
@@ -91,6 +92,7 @@ const formatMinutes = (value) => {
 
 export function PrayerScreen({ isActive, navigation }) {
   const { user } = useSession();
+  const { showError, showInfo, showSuccess } = useFeedback();
   const [coords, setCoords] = useState(null);
   const [prayers, setPrayers] = useState(null);
   const [dailyLog, setDailyLog] = useState(null);
@@ -238,7 +240,10 @@ export function PrayerScreen({ isActive, navigation }) {
   }, [load, loadLog]);
 
   const setPrayerStatus = async (prayer, status) => {
-    if (!user) return;
+    if (!user) {
+      showInfo('Masuk dari Profil untuk mencatat log sholat.');
+      return;
+    }
 
     setSavingPrayer(`${prayer}:${status}`);
     setMessage('');
@@ -252,14 +257,18 @@ export function PrayerScreen({ isActive, navigation }) {
           [prayer]: log,
         },
       }));
-      setMessage(`${prayerLabels[prayer] ?? prayer} disimpan sebagai ${status}.`);
+      const nextMessage = `${prayerLabels[prayer] ?? prayer} disimpan sebagai ${status}.`;
+      setMessage(nextMessage);
+      showSuccess(nextMessage);
       try {
         setStats(await getPrayerStats());
       } catch {
         // The log itself is already saved; stats can refresh on next pull.
       }
     } catch (err) {
-      setMessage(err?.message ?? 'Log sholat belum bisa disimpan.');
+      const nextMessage = err?.message ?? 'Log sholat belum bisa disimpan.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setSavingPrayer(null);
     }
@@ -391,6 +400,7 @@ export function PrayerScreen({ isActive, navigation }) {
   const downloadPrayerPack = async () => {
     if (!coords) {
       setOfflineMessage('Muat lokasi sebelum menyimpan jadwal sholat.');
+      showInfo('Muat lokasi sebelum menyimpan jadwal sholat.');
       return;
     }
 
@@ -410,8 +420,11 @@ export function PrayerScreen({ isActive, navigation }) {
       setPrayerOffline(overview);
       setOfflineMessage(`${overview.days} hari jadwal sholat tersimpan.`);
       setOfflineProgress(100);
+      showSuccess(`${overview.days} hari jadwal sholat tersimpan.`);
     } catch (error) {
-      setOfflineMessage(error?.message ?? 'Jadwal sholat belum bisa disimpan.');
+      const nextMessage = error?.message ?? 'Jadwal sholat belum bisa disimpan.';
+      setOfflineMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setOfflineBusy(false);
     }
@@ -426,8 +439,11 @@ export function PrayerScreen({ isActive, navigation }) {
       setPrayerOffline(overview);
       setOfflineMessage('Jadwal sholat offline dihapus.');
       setOfflineProgress(0);
+      showSuccess('Jadwal sholat offline dihapus.');
     } catch (error) {
-      setOfflineMessage(error?.message ?? 'Jadwal sholat offline belum bisa dihapus.');
+      const nextMessage = error?.message ?? 'Jadwal sholat offline belum bisa dihapus.';
+      setOfflineMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setOfflineBusy(false);
     }

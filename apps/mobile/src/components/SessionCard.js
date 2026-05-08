@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { forgotPassword, register } from '../api/auth';
 import { colors, radius, spacing } from '../theme';
@@ -11,6 +12,7 @@ const DEV_DEFAULT_PASSWORD = __DEV__ ? 'Admin@123' : '';
 
 export function SessionCard() {
   const { error, loading, signIn, signOut, user } = useSession();
+  const { showError, showInfo, showSuccess } = useFeedback();
   const [name, setName] = useState('');
   const [email, setEmail] = useState(DEV_DEFAULT_EMAIL);
   const [password, setPassword] = useState(DEV_DEFAULT_PASSWORD);
@@ -25,8 +27,10 @@ export function SessionCard() {
       await signIn({ email: email.trim(), password: password.trim() });
       setPassword('');
       setMessage('Akun berhasil masuk di perangkat ini.');
-    } catch {
+      showSuccess('Akun berhasil masuk di perangkat ini.');
+    } catch (err) {
       setMessage('');
+      showError(err?.message ?? error ?? 'Belum bisa masuk akun.');
     }
   };
 
@@ -57,6 +61,7 @@ export function SessionCard() {
     if (!name.trim() || !email.trim() || !password) return;
     if (password.length < 8) {
       setMessage('Kata sandi minimal 8 karakter.');
+      showInfo('Kata sandi minimal 8 karakter.');
       return;
     }
     setBusy(true);
@@ -65,8 +70,11 @@ export function SessionCard() {
       await register({ email: email.trim(), name: name.trim(), password });
       setMode('signin');
       setMessage('Akun berhasil dibuat. Silakan masuk.');
+      showSuccess('Akun berhasil dibuat. Silakan masuk.');
     } catch (err) {
-      setMessage(err?.message ?? 'Tidak bisa membuat akun saat ini.');
+      const nextMessage = err?.message ?? 'Tidak bisa membuat akun saat ini.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setBusy(false);
     }
@@ -84,8 +92,15 @@ export function SessionCard() {
           ? responseMessage
           : 'Jika email terdaftar, tautan reset sandi sudah dikirim.',
       );
+      showSuccess(
+        typeof responseMessage === 'string'
+          ? responseMessage
+          : 'Jika email terdaftar, tautan reset sandi sudah dikirim.',
+      );
     } catch (err) {
-      setMessage(err?.message ?? 'Tidak bisa memproses lupa sandi saat ini.');
+      const nextMessage = err?.message ?? 'Tidak bisa memproses lupa sandi saat ini.';
+      setMessage(nextMessage);
+      showError(nextMessage);
     } finally {
       setBusy(false);
     }

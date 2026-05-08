@@ -298,7 +298,10 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       <GlobalSearchScreen
         initialQuery={navigation?.current?.params?.query ?? ''}
         onBack={() => navigation?.close?.('home')}
-        onOpenTab={onOpenTab}
+        onOpenTab={(tab, params) => {
+          navigation?.close?.('home');
+          onOpenTab(tab, params);
+        }}
       />
     );
   }

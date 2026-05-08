@@ -25,6 +25,7 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
 - [ ] Fitur yang muncul di dua intent tetap punya satu source screen/detail.
 - [ ] Deep link lama tetap kompatibel melalui alias.
 - [ ] Loading, empty, error, offline, auth, disabled, dan permission state tetap eksplisit.
+  - Updated 2026-05-08: mobile punya global feedback toast untuk aksi sukses/gagal pada simpan/update/hapus penting.
 - [ ] Semua list panjang memakai virtualization atau pagination.
 - [ ] Web export, Expo Doctor, screenshot smoke, dan native smoke dijalankan sebelum revamp dianggap selesai.
 
@@ -184,8 +185,9 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
 
 - [x] Tambahkan atau rapikan global search untuk fitur dan konten.
   - Feature search: ExploreScreen (Belajar) punya `PaperSearchInput` + `catalogSections` filter untuk cari fitur
-  - Content search: Search icon di HomeScreen → Kamus (`/api/v1/kamus`) dengan `focusSearch: true`
-  - Keduanya sudah tersedia; tidak perlu tambah layer search lagi
+  - Content search: Search icon di HomeScreen → Global Search overlay; fallback lama tetap ke Kamus (`/api/v1/kamus`) dengan `focusSearch: true`
+  - Updated 2026-05-08: Global Search menjadi overlay Beranda dengan filter Semua/Quran/Hadis/Kamus/Perawi/Fitur, recent search chips, quick suggestions, dan deep link `#/search/:query`.
+  - Updated 2026-05-08: Hasil Quran dari Global Search membuka surah dengan preview/highlight ayat target dan tombol menuju posisi dalam surah; deep link Quran mendukung `#/quran/surah/:surah/:ayah`.
 - [x] Tambahkan recently opened di Beranda.
   - File: `apps/mobile/src/storage/recentFeatures.js`, `apps/mobile/src/screens/HomeScreen.js`
   - Result: membuka fitur di Belajar akan masuk ke "Terakhir Dibuka" di Beranda.
