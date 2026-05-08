@@ -83,9 +83,25 @@ services:
       - tholabul-ilmi-network
     restart: unless-stopped
 
+  tholabul-ilmi-minio:
+    image: minio/minio:latest
+    ports:
+      - "9020:9000"
+      - "9021:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - tholabul-ilmi-minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - tholabul-ilmi-network
+    restart: unless-stopped
+
 volumes:
   tholabul-ilmi-postgres-data:
   tholabul-ilmi-redis-data:
+  tholabul-ilmi-minio-data:
 
 networks:
   tholabul-ilmi-network:
