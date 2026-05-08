@@ -4,7 +4,6 @@ import { createNote, deleteNote, getNotes, updateNote } from '../api/personal';
 import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { colors, radius, spacing } from '../theme';
-import { hapticError, hapticSuccess } from '../utils/haptics';
 import { CardTitle } from './Card';
 
 export function NotesPanel({ refType, refId }) {
@@ -58,10 +57,8 @@ export function NotesPanel({ refType, refId }) {
         setMessage('Catatan disimpan.');
         showSuccess('Catatan disimpan.');
       }
-      hapticSuccess();
       resetForm();
     } catch (err) {
-      hapticError();
       const nextMessage = err?.message ?? 'Catatan belum bisa disimpan.';
       setMessage(nextMessage);
       showError(nextMessage);
@@ -84,11 +81,9 @@ export function NotesPanel({ refType, refId }) {
       await deleteNote(id);
       setItems((current) => current.filter((item) => item.id !== id));
       if (editingId === id) resetForm();
-      hapticSuccess();
       setMessage('Catatan dihapus.');
       showSuccess('Catatan dihapus.');
     } catch (err) {
-      hapticError();
       const nextMessage = err?.message ?? 'Catatan belum bisa dihapus.';
       setMessage(nextMessage);
       showError(nextMessage);

@@ -2,6 +2,7 @@ import { CheckCircle2, Info, X, XCircle } from 'lucide-react-native';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, shadows, spacing } from '../theme';
+import { hapticError, hapticSuccess, hapticWarning } from '../utils/haptics';
 
 const FeedbackContext = createContext({
   showError: () => {},
@@ -35,6 +36,11 @@ export function FeedbackProvider({ children }) {
 
   const show = useCallback((type, message, options = {}) => {
     if (!message) return;
+    if (options.haptic !== false) {
+      if (type === 'success') hapticSuccess();
+      else if (type === 'error') hapticError();
+      else hapticWarning();
+    }
     setToast({
       id: `${Date.now()}:${type}`,
       message,

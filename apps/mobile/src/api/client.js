@@ -85,6 +85,9 @@ export const normalizeAyah = (item) => ({
   id: item.id ?? item.number,
   number: item.number ?? item.ayah_number ?? item.id,
   surahNumber: item.surah?.number ?? item.surah_number ?? item.surah_id,
+  pageNumber: item.page ?? item.page_number ?? item.pageNumber,
+  juzNumber: item.juz_number ?? item.juzNumber,
+  hizbQuarter: item.hizb_quarter ?? item.hizbQuarter,
   surahName:
     item.surah?.translation?.latin_en ??
     item.surah?.translation?.latin_idn ??

@@ -18,16 +18,18 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
 
 ## Design Contract
 
-- [ ] Semua perubahan mengikuti `docs/MOBILE_IA_FINAL_APPROACH.md`.
-- [ ] Bottom tab tidak lebih dari 5 item.
-- [ ] Tidak ada hub yang tampil sebagai flat grid panjang tanpa grouping.
-- [ ] Setiap fitur backend punya minimal satu entry point yang jelas.
-- [ ] Fitur yang muncul di dua intent tetap punya satu source screen/detail.
-- [ ] Deep link lama tetap kompatibel melalui alias.
-- [ ] Loading, empty, error, offline, auth, disabled, dan permission state tetap eksplisit.
+- [x] Semua perubahan mengikuti `docs/MOBILE_IA_FINAL_APPROACH.md`.
+- [x] Bottom tab tidak lebih dari 5 item.
+- [x] Tidak ada hub yang tampil sebagai flat grid panjang tanpa grouping.
+- [x] Setiap fitur backend punya minimal satu entry point yang jelas.
+- [x] Fitur yang muncul di dua intent tetap punya satu source screen/detail.
+- [x] Deep link lama tetap kompatibel melalui alias.
+- [x] Loading, empty, error, offline, auth, disabled, dan permission state tetap eksplisit.
   - Updated 2026-05-08: mobile punya global feedback toast untuk aksi sukses/gagal pada simpan/update/hapus penting.
-- [ ] Semua list panjang memakai virtualization atau pagination.
+- [x] Semua list panjang memakai virtualization atau pagination.
 - [ ] Web export, Expo Doctor, screenshot smoke, dan native smoke dijalankan sebelum revamp dianggap selesai.
+  - Web export, Expo Doctor, screenshot smoke, dan deep-link smoke selesai 2026-05-08.
+  - Native smoke masih blocked karena tidak ada device terhubung pada sesi final QA.
 
 ---
 
@@ -223,21 +225,21 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - Web Komunitas catalog/feed smoke: `output/playwright/mobile-belajar-community-catalog.png`, `output/playwright/mobile-belajar-community-feed.png`
   - Web Wirid Saya catalog/auth smoke: `output/playwright/mobile-belajar-user-wird-catalog.png`, `output/playwright/mobile-belajar-user-wird-auth.png`
   - Native full smoke masih pending di Phase 8 karena ADB input Xiaomi diblok `INJECT_EVENTS`.
-- [ ] Jalankan `chronicle.sync` setelah perubahan signifikan.
+- [x] Jalankan `chronicle.sync` setelah perubahan signifikan.
   - Attempted 2026-05-07 after Hadis compact/search slice.
   - Attempted 2026-05-07 after Quran reader action menu + display modes.
   - Attempted 2026-05-07 after TabBar auto-hide neutral color.
-  - Current blocker: Chronicle ingest failed with `vector cannot have more than 16000 dimensions`.
+  - Passed 2026-05-08 after final web/deep-link QA: `chronicle-agent sync` sent 4 chunks and ingest returned `202 Accepted`.
 
 ## Phase 8 - QA & Verification
 
 - [x] `npx expo export --platform web` pass.
-  - Last checked: 2026-05-07 after Quran reader action menu + display modes.
+  - Last checked: 2026-05-08 after web hash deep-link listener fix.
 - [x] `npx expo-doctor` pass.
-  - Last checked: 2026-05-07, 17/17 checks passed.
+  - Last checked: 2026-05-08, 17/17 checks passed.
 - [x] `git diff --check -- apps/mobile docs` clean untuk file terkait.
-  - Last checked: 2026-05-07 after Quran reader action menu + display modes.
-- [ ] Screenshot smoke web desktop/mobile untuk:
+  - Last checked: 2026-05-08 after final QA updates.
+- [x] Screenshot smoke web desktop/mobile untuk:
   - Beranda
   - Quran
   - Hadis
@@ -247,13 +249,24 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - Belajar hub
   - Belajar feature detail
   - Profile/account surface
+  - Evidence 2026-05-08:
+    - `output/playwright/mobile-qa-beranda-mobile.png`, `output/playwright/mobile-qa-beranda-desktop.png`
+    - `output/playwright/mobile-qa-quran-mobile.png`, `output/playwright/mobile-qa-quran-desktop.png`
+    - `output/playwright/mobile-qa-hadis-mobile.png`, `output/playwright/mobile-qa-hadis-desktop.png`
+    - `output/playwright/mobile-qa-ibadah-mobile.png`, `output/playwright/mobile-qa-ibadah-desktop.png`
+    - `output/playwright/mobile-qa-ibadah-qibla-mobile.png`, `output/playwright/mobile-qa-ibadah-qibla-desktop.png`
+    - `output/playwright/mobile-qa-belajar-mobile.png`, `output/playwright/mobile-qa-belajar-desktop.png`
+    - `output/playwright/mobile-qa-belajar-quiz-mobile.png`, `output/playwright/mobile-qa-belajar-quiz-desktop.png`
+    - `output/playwright/mobile-qa-profile-mobile.png`, `output/playwright/mobile-qa-profile-desktop.png`
   - Additional evidence 2026-05-07: `output/playwright/mobile-zakat-calculator-polish.png`, `output/playwright/mobile-faraidh-calculator-polish.png`
-- [ ] Deep link smoke untuk:
+- [x] Deep link smoke untuk:
   - `#/profile`
   - `#/prayer`
   - `#/qibla`
   - `#/explore/:featureKey`
   - route baru Ibadah/Belajar
+  - Passed 2026-05-08: `#/profile`, `#/prayer`, `#/qibla`, `#/explore/quiz`, `#/ilmu/kamus`, `#/ibadah/qibla`, `#/belajar/quiz`, `#/quran/surah/1/1`.
+  - Fix 2026-05-08: web hash changes now call deep-link parsing through a `hashchange` listener in `apps/mobile/App.js`.
 - [ ] Native Expo Go smoke Android untuk:
   - Bottom tab final
   - Avatar -> Profile surface
@@ -261,11 +274,13 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - Belajar hub
   - Hadis tab
   - Qibla
+  - Blocked 2026-05-08: `adb devices` returned no connected devices in this session.
 - [ ] Manual native check jika ADB input masih diblok:
   - Keyboard behavior
   - Native time picker
   - Permission prompts
   - Offline pack confirmation
+  - Blocked 2026-05-08: no Android device connected for physical tap checks.
 
 ## Suggested Implementation Order
 

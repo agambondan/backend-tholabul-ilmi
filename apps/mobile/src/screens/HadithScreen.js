@@ -23,7 +23,6 @@ import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { getOfflineItems, getOfflineOverview } from '../storage/offlineContent';
 import { colors, radius, spacing } from '../theme';
-import { hapticError, hapticSuccess } from '../utils/haptics';
 
 const HADITH_LIST_PAGE_SIZE = 20;
 
@@ -254,9 +253,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
         showSuccess('Hadis disimpan ke bookmark.');
         await loadBookmarks();
       }
-      hapticSuccess();
     } catch (err) {
-      hapticError();
       const nextMessage = err?.message ?? 'Bookmark belum bisa diperbarui.';
       setMessage(nextMessage);
       showError(nextMessage);

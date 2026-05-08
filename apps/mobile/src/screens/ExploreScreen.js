@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, Heart, HelpCircle, ListChecks, MessageCircle, MoreVertical, Pencil, Scale, Star, StickyNote, Trash2, UserCircle, Users, Video, X } from 'lucide-react-native';
-import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
   getAllNotes,
   getBookmarkItems,
@@ -23,6 +22,7 @@ import { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinn
 import { colors, radius, spacing } from '../theme';
 import { addBookmark, createUserWird, deleteBookmark, deleteUserWird, getBookmarks, getTodayPrayerLog, getUserWirds, savePrayerLog, updateUserWird } from '../api/personal';
 import { getAyahById, getSurahs } from '../api/client';
+import { hapticMedium, hapticTap } from '../utils/haptics';
 
 const quizOptions = ['A', 'B', 'C', 'D'];
 
@@ -80,13 +80,6 @@ const emptyUserWirdForm = {
   title: '',
   translation: '',
   transliteration: '',
-};
-
-const hapticLight = () => {
-    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-};
-const hapticMedium = () => {
-    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 };
 
 const refKey = (refType, refId) => `${refType}:${refId}`;
@@ -225,7 +218,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
 
   const handleTogglePinnedFeature = useCallback(async (event, feature) => {
     event?.stopPropagation?.();
-    hapticLight();
+    hapticTap();
     try {
       const result = await togglePinnedFeature(feature);
       setPinnedFeatureKeys(
@@ -1252,7 +1245,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           <CardTitle meta={`${progress}%`}>{activeFeature.title}</CardTitle>
           <Pressable
             onPress={() => {
-                hapticLight();
+                hapticTap();
                 setTasbih((current) => ({ ...current, count: current.count + 1 }));
             }}
             style={styles.counter}

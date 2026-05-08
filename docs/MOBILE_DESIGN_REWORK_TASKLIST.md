@@ -257,6 +257,7 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
   - Location permission
   - Compass unavailable state
   - Offline pack guardrail
+  - Blocked 2026-05-08: `adb devices` tidak menemukan device terhubung, jadi physical tap/native permission check belum bisa ditutup dari sesi ini.
 
 ---
 
@@ -288,3 +289,4 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
 - 2026-05-07: `SessionCard` dirapikan untuk auth journey: copy Masuk/Daftar/Lupa Sandi dibuat konsisten bahasa Indonesia, tombol mode dibuat wrap/compact, dan control auth diberi accessibility role/state.
 - 2026-05-07 (IA revamp selesai): Tab akhir 5 item adalah Beranda/Quran/Hadis/Ibadah/Belajar (bukan Profil). Profil diakses via avatar/header. Tasklist revamp lengkap di `docs/MOBILE_IA_REVAMP_TASKLIST.md`. Detail UI rule (anti-expand-inline) terdokumentasi di `docs/MOBILE_DESIGN_PATTERNS.md`.
 - 2026-05-07: Mobile fallback data policy diketatkan. Konten mobile tidak lagi memakai silent cache/offline fallback; sumber data hanya backend request atau paket offline yang diunduh eksplisit dari menu Penyimpanan.
+- 2026-05-08: Web/mobile QA akhir untuk route IA dan deep-link alias selesai. Evidence utama ada di `output/playwright/mobile-qa-*.png`; semua 21 smoke route/viewport checks pass setelah fix hash deep-link listener di `apps/mobile/App.js`.

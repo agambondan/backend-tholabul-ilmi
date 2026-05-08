@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { TabBar } from './src/components/TabBar';
 import { FeedbackProvider } from './src/context/FeedbackContext';
@@ -159,6 +159,18 @@ export default function App() {
     };
   }, [handleDeepLink]);
 
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return undefined;
+
+    const handleHashChange = () => {
+      handleDeepLink(window.location.href);
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [handleDeepLink]);
+
   const currentTarget = useMemo(
     () => (deepLinkTarget?.tab === activeTab ? deepLinkTarget : null),
     [activeTab, deepLinkTarget],
@@ -185,7 +197,11 @@ export default function App() {
         <FeedbackProvider>
           <TabActivityProvider>
             <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-              <View style={styles.container}>
+              <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={0}
+                style={styles.container}
+              >
                 <View style={[styles.screenPane, activeTab === 'home' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
                   <HomeScreen isActive={activeTab === 'home'} navigation={navigation} onOpenTab={openTab} />
                 </View>
@@ -204,7 +220,7 @@ export default function App() {
                 <View style={[styles.screenPane, activeTab === 'profile' ? styles.screenPaneVisible : styles.screenPaneHidden]}>
                   <ProfileScreen isActive={activeTab === 'profile'} navigation={navigation} onOpenTab={openTab} />
                 </View>
-              </View>
+              </KeyboardAvoidingView>
               <TabBar active={activeTab} onChange={openTab} />
               <StatusBar style="dark" backgroundColor={colors.bg} />
             </SafeAreaView>

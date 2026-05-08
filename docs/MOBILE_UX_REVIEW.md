@@ -99,6 +99,7 @@ Data palsu yang tersimpan di lokal (hardcoded) harus dihapus total:
 2. **Fix Hardcoded Endpoints**: Dinamiskan endpoint Tafsir/Asbab.
 3. **Quran Virtualization**: Refaktor ke `FlatList`.
 4. **Keyboard Support**: Tambahkan `KeyboardAvoidingView`.
+   - **Status 2026-05-08:** App shell sudah memakai `KeyboardAvoidingView`, melengkapi wrapper yang sudah ada di `Screen`, Profile sub-screen, dan Prayer settings.
 5. **Quiz Fix**: Render teks opsi jawaban.
 
 ### High (Next Sprint)
@@ -109,4 +110,5 @@ Data palsu yang tersimpan di lokal (hardcoded) harus dihapus total:
 
 ### Nice-to-have
 10. **Haptic Feedback** & **Native Time Picker**.
+    - **Status 2026-05-08:** Haptic feedback sudah dikonsolidasikan lewat `src/utils/haptics.js`; tab switch, segmented tabs, icon/action buttons, tasbih, pin shortcut, dan global toast sukses/gagal/info memberi feedback di native.
 11. **Remove Brand Repetition** ("Thullaabul 'Ilmi" di setiap header).
