@@ -9,11 +9,11 @@
 
 | Metric | Angka |
 |---|---|
-| Entri ter-seed | **160** |
-| Ayat ter-cover (range expanded) | ~265 |
-| Surat ter-cover (sebagian) | 58 |
-| Coverage vs total Quran (6,236 ayat) | ~4.3% |
-| Coverage vs estimasi total asbab shahih (~270) | ~59% |
+| Entri ter-seed | **188** |
+| Ayat ter-cover (range expanded) | ~310 |
+| Surat ter-cover (sebagian) | 65 |
+| Coverage vs total Quran (6,236 ayat) | ~5.0% |
+| Coverage vs estimasi total asbab shahih (~270) | ~70% |
 
 ## Target final (MVP shahih)
 
@@ -38,115 +38,74 @@ Surat-surat berikut paling sering dibuka di mobile app + paling banyak riwayat s
 
 ### Tier 1 — Surat panjang utama
 
-#### Al-Baqarah (2) — covered: 5/286
-Sudah ada: 115, 144, 158, 187, 189, 196, 222.
-Gap target (semua punya riwayat shahih):
+#### Al-Baqarah (2) — covered: 13/286
+Sudah ada: 97-98, 104, 115, 142-143, 144, 158, 177, 178-179, 187, 189, 196, 219, 222, 223, 233, 235, 238, 255, 267, 284-286.
+Gap target (sisa):
 - [ ] **2:1-7** — Pembagian manusia (mukmin/kafir/munafik) — Tafsir Ibnu Katsir
-- [ ] **2:97-98** — Jibril musuh Yahudi — Bukhari (Anas)
-- [ ] **2:104** — "Ra'ina" — Tafsir; cek shahih
-- [ ] **2:142-143** — Pemindahan kiblat (lengkap) — Bukhari
-- [ ] **2:178** — Qishash — Bukhari (Ibnu Abbas)
-- [ ] **2:219** — Khamr & maisir tahap 1 — Tirmidzi (Umar)
-- [ ] **2:223** — Wanita ladang — Bukhari/Muslim (Jabir)
-- [ ] **2:238** — Shalat wustha — Muslim (Zaid bin Tsabit)
-- [ ] **2:255** — Ayat Kursi (asbab tafsir Ubay) — Muslim
-- [ ] **2:284-286** — Akhir Al-Baqarah, doa para sahabat — Muslim (Abu Hurairah)
 
-#### An-Nisa' (4) — covered: 4/176
-Sudah ada: 11, 43, 59, 65, 95.
-Gap target:
-- [ ] **4:7** — Hak waris perempuan — Tirmidzi
-- [ ] **4:19** — Larangan mewarisi istri — Bukhari (Ibnu Abbas)
-- [ ] **4:24** — Mut'ah dilarang setelah Khaibar — Muslim (Sabrah Al-Juhani)
-- [ ] **4:32** — Wanita ingin perang — Tirmidzi (Ummu Salamah)
-- [ ] **4:34** — Kepemimpinan suami — Tafsir Ath-Thabari
-- [ ] **4:48** — Tidak diampuni syirik — Bukhari
-- [ ] **4:88** — Munafik — Bukhari/Muslim (Zaid bin Tsabit)
-- [ ] **4:97** — Yang aniaya diri sendiri — Bukhari (Ibnu Abbas)
-- [ ] **4:127** — Wanita yatim — Bukhari (Aisyah)
-- [ ] **4:176** — Kalalah — Bukhari/Muslim (Jabir)
+#### An-Nisa' (4) — covered: 10/176
+Sudah ada: 11-12, 19, 24, 29, 32, 34, 43, 48, 59, 65, 88, 94, 95, 97-99, 127, 128, 176.
+Gap target (sisa):
+- [ ] **4:7** — Hak waris perempuan (berbeda dari 4:11-12) — Tirmidzi
 
-#### Ali 'Imran (3) — covered: 1/200
-Sudah ada: 122.
-Gap target:
-- [ ] **3:7** — Muhkam & mutasyabih — Bukhari/Muslim (Aisyah)
-- [ ] **3:33-34** — Keluarga 'Imran — Tafsir
-- [ ] **3:73** — Yahudi & cara dakwah — Bukhari (Anas)
-- [ ] **3:128** — "Tidak ada urusan" setelah Uhud — Bukhari/Muslim
-- [ ] **3:140-144** — Muhammad sebagai Rasul (post-Uhud) — Bukhari (Anas)
-- [ ] **3:154** — Mengantuk saat Uhud — Bukhari (Anas)
-- [ ] **3:172-173** — Hamra'ul Asad — Bukhari (Aisyah)
-- [ ] **3:186-188** — Ujian harta & kemunafikan Yahudi — Bukhari/Muslim
-- [ ] **3:190-191** — Penciptaan langit & doa malam — Bukhari (Ibnu Abbas)
-- [ ] **3:200** — Ribath — Tirmidzi
+#### Ali 'Imran (3) — covered: 9/200
+Sudah ada: 7, 72-73, 118-120, 122, 128-129, 140-142, 154, 172-174, 181, 186, 188, 190-191, 200.
 
-#### Al-Maidah (5) — covered: 3/120
-Sudah ada: 3, 6, 90-91.
-Gap target:
-- [ ] **5:5** — Wanita Ahli Kitab halal dinikahi — Tafsir
-- [ ] **5:31** — Dua putra Adam — Tafsir Ibnu Katsir
-- [ ] **5:38** — Hukuman pencuri — Tirmidzi
-- [ ] **5:41** — Yahudi & rajam — Bukhari/Muslim
-- [ ] **5:67** — Perintah menyampaikan — Tirmidzi (hasan)
-- [ ] **5:93** — Sebelum khamr diharamkan, sahabat sudah wafat — Tirmidzi
-- [ ] **5:101** — Jangan banyak tanya (haji) — Bukhari/Muslim
-- [ ] **5:103** — Bahirah, sa'ibah — Bukhari
+#### Al-Maidah (5) — covered: 10/120
+Sudah ada: 3, 6, 27-31, 38, 41-42, 67, 90-91, 93, 101-102, 103.
 
 ### Tier 2 — Surat sedang
 
-#### At-Taubah (9) — covered: 2/129
-Sudah ada: 84, 113.
-Target tambah: 9:25 (Hunain), 9:38-41 (Tabuk), 9:79 (sedekah), 9:117-118 (tobat tiga sahabat — Ka'b bin Malik, Bukhari).
+#### At-Taubah (9) — covered: 8/129
+Sudah ada: 1-5, 25-26, 38-41, 42, 79, 84, 107-108, 113, 117-118, 128-129.
 
-#### An-Nur (24) — covered: 4/64
-Sudah ada: 6-9, 11-21, 31, 33.
-Tambah: 24:23 (qadzaf), 24:27-28 (izin masuk).
+#### An-Nur (24) — covered: 6/64
+Sudah ada: 6-9, 11-21, 22, 23, 27-28, 31, 33.
 
-#### Al-Anfal (8) — covered: 1/75
-Sudah ada: 1.
-Tambah: 8:5-9 (Badar), 8:67-68 (tawanan Badar — Muslim).
+#### Al-Anfal (8) — covered: 4/75
+Sudah ada: 1, 9-12, 65-66, 67-68.
 
-#### Al-Ahzab (33) — covered: 4/73
-Sudah ada: 35, 37, 53, 56.
-Tambah: 33:6 (auliya), 33:23 (sahabat yang menepati janji), 33:33 (ahlul bait — Muslim Aisyah), 33:50.
+#### Al-Ahzab (33) — covered: 9/73
+Sudah ada: 6, 23, 33, 35, 37, 50-51, 53, 56, 69.
 
-#### Al-Hujurat (49) — covered: 2/18
-Sudah ada: 1, 2-3.
-Tambah: 49:6 (Walid bin Uqbah — Tafsir), 49:11 (Bani Tamim — Tirmidzi), 49:13 (Bilal — Tafsir).
+#### Al-Hujurat (49) — covered: 5/18
+Sudah ada: 1, 2-3, 6, 11, 13.
 
 ### Tier 3 — Surat pendek (Juz Amma)
 
 Banyak surat pendek punya asbab nuzul yang ada di Bukhari/Muslim:
 
-- [ ] **Al-Falaq + An-Nas (113-114)** — sihir Labid bin A'sham — Bukhari (Aisyah)
-- [ ] **Al-Ikhlas (112)** — Quraisy bertanya nasab Tuhan — Tirmidzi (Ubay)
-- [ ] **Al-Fil (105)** — Pasukan Abrahah — Tafsir
+- [x] **Al-Falaq + An-Nas (113-114)** — sudah ada ✓
+- [x] **Al-Ikhlas (112)** — sudah ada ✓
+- [x] **Al-Fil (105)** — sudah ada ✓ (batch 6)
+- [ ] **Al-Humazah (104)** — sudah ada ✓ (batch 6)
+- [x] **Al-Ma'un (107)** — sudah ada ✓ (batch 6)
 - [ ] **Al-'Ashr (103)** — Tafsir umum
-- [ ] **At-Takatsur (102)** — Saling berbangga — Tirmidzi
+- [x] **At-Takatsur (102)** — sudah ada ✓
 - [ ] **Al-Qari'ah (101)** — Tafsir
 - [ ] **Az-Zalzalah (99)** — Tafsir
 - [ ] **Al-Qadr (97)** — Tafsir umum
 - [ ] **Al-Bayyinah (98)** — Tafsir umum
-- [ ] **Al-Qiyamah (75)** — sudah ada 16-19, tambah lain
+- [x] **Al-Qiyamah (75)** — sudah ada 16-19 ✓
 - [ ] **Al-Insan (76)** — Ali, Fatimah, Hasan, Husain — Tafsir
-- [ ] **Al-Mursalat (77)** — Bukhari (ular di Mina) — Ibnu Mas'ud
+- [x] **Al-Mursalat (77)** — sudah ada ✓
 - [ ] **An-Naba' (78)** — Tafsir
-- [ ] **'Abasa (80)** — sudah ada 1-10, mungkin tambah lain
+- [x] **'Abasa (80)** — sudah ada 1-10 ✓
 - [ ] **At-Takwir (81)** — Tafsir
 - [ ] **Al-Infithar (82)** — Tafsir
-- [ ] **Al-Muthaffifin (83)** — Madinah, pedagang curang — Nasai (Ibnu Abbas)
+- [x] **Al-Muthaffifin (83)** — sudah ada ✓
 - [ ] **Al-Insyiqaq (84)** — Tafsir
-- [ ] **Al-Buruj (85)** — Ashabul Ukhdud — Muslim (Shuhaib)
+- [x] **Al-Buruj (85)** — sudah ada ✓
 
 ### Tier 4 — Mekah klasik
 
-- [ ] **Al-An'am (6)** — sudah ada 52, tambah 6:151-153, 6:162-163
-- [ ] **Al-A'raf (7)** — 7:31 (telanjang thawaf), 7:172-173 (mitsaq)
+- [x] **Al-An'am (6)** — sudah ada 52, 82, 151-153 ✓
+- [x] **Al-A'raf (7)** — sudah ada 31-32, 172-173, 180, 199, 204 ✓
 - [ ] **Yusuf (12)** — Tafsir umum (sebab nuzul jarang)
-- [ ] **Al-Isra' (17)** — sudah ada 85, tambah 17:1 (Isra Mi'raj), 17:23-24
-- [ ] **Al-Kahf (18)** — 18:23-24 (Insya Allah)
-- [ ] **Maryam (19)** — 19:64 (Jibril datang lambat — Bukhari)
-- [ ] **Thaha (20)** — 20:1-2 (Nabi shalat malam — Tafsir)
+- [x] **Al-Isra' (17)** — sudah ada 1, 73-75, 85, 88, 110 ✓
+- [x] **Al-Kahf (18)** — sudah ada 9-26, 23-24, 28 ✓
+- [x] **Maryam (19)** — sudah ada 64, 77-80, 88-95 ✓
+- [x] **Thaha (20)** — sudah ada 1-2, 114 ✓
 
 ## Workflow tambah batch
 
