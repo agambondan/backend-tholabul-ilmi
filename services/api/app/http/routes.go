@@ -127,6 +127,9 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 
 	// Mufrodat / Kosakata Quran (public)
 	master.Get("/mufrodat/ayah/:id", newMufrodatController.FindByAyahID)
+	master.Get("/mufrodat/surah/:number", newMufrodatController.FindBySurahNumber)
+	master.Get("/mufrodat/surah/:surah/ayah/:ayah", newMufrodatController.FindBySurahAndAyahNumber)
+	master.Get("/mufrodat/page/:page", newMufrodatController.FindByPage)
 	master.Get("/mufrodat/root/:word", newMufrodatController.FindByRootWord)
 
 	// Ayah (read: public; write: admin)

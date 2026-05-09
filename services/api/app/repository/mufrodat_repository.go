@@ -7,6 +7,9 @@ import (
 
 type MufrodatRepository interface {
 	FindByAyahID(int) ([]model.Mufrodat, error)
+	FindBySurahNumber(int) ([]model.Mufrodat, error)
+	FindBySurahAndAyahNumber(int, int) ([]model.Mufrodat, error)
+	FindByPage(int) ([]model.Mufrodat, error)
 	FindByRootWord(string) ([]model.Mufrodat, error)
 }
 
@@ -27,6 +30,38 @@ func (r *mufrodatRepo) FindByAyahID(ayahID int) ([]model.Mufrodat, error) {
 	err := r.base().
 		Where("ayah_id = ?", ayahID).
 		Order("word_index asc").
+		Find(&items).Error
+	return items, err
+}
+
+func (r *mufrodatRepo) FindBySurahNumber(surahNumber int) ([]model.Mufrodat, error) {
+	var items []model.Mufrodat
+	err := r.base().
+		Joins("JOIN ayah ON ayah.id = mufrodat.ayah_id").
+		Joins("JOIN surah ON surah.id = ayah.surah_id").
+		Where("surah.number = ?", surahNumber).
+		Order(`ayah.number asc, mufrodat.word_index asc`).
+		Find(&items).Error
+	return items, err
+}
+
+func (r *mufrodatRepo) FindBySurahAndAyahNumber(surahNumber, ayahNumber int) ([]model.Mufrodat, error) {
+	var items []model.Mufrodat
+	err := r.base().
+		Joins("JOIN ayah ON ayah.id = mufrodat.ayah_id").
+		Joins("JOIN surah ON surah.id = ayah.surah_id").
+		Where("surah.number = ? AND ayah.number = ?", surahNumber, ayahNumber).
+		Order(`mufrodat.word_index asc`).
+		Find(&items).Error
+	return items, err
+}
+
+func (r *mufrodatRepo) FindByPage(pageNumber int) ([]model.Mufrodat, error) {
+	var items []model.Mufrodat
+	err := r.base().
+		Joins("JOIN ayah ON ayah.id = mufrodat.ayah_id").
+		Where("ayah.page = ?", pageNumber).
+		Order(`ayah.surah_id asc, ayah.number asc, mufrodat.word_index asc`).
 		Find(&items).Error
 	return items, err
 }

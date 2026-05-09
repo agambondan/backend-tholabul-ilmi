@@ -308,56 +308,9 @@ func seedSirohContentsRelated(db *gorm.DB) {
 	}
 }
 
+// seedMufrodatRelated delegates to seedMufrodatData (see seeder_mufrodat.go).
+// The dataset and seeding logic live there so this file stays focused on
+// other related seeds.
 func seedMufrodatRelated(db *gorm.DB) {
-	type mufrodatSeed struct {
-		ayahNumber int
-		items      []model.Mufrodat
-	}
-
-	data := []mufrodatSeed{
-		{
-			ayahNumber: 1,
-			items: []model.Mufrodat{
-				{WordIndex: 1, Arabic: "بِسْمِ", Transliteration: "bismi", Indonesian: "dengan nama", RootWord: "smm", PartOfSpeech: "isim"},
-				{WordIndex: 2, Arabic: "اللَّهِ", Transliteration: "allah", Indonesian: "Allah", RootWord: "allh", PartOfSpeech: "isim"},
-				{WordIndex: 3, Arabic: "الرَّحْمَٰنِ", Transliteration: "ar-rahman", Indonesian: "Yang Maha Pengasih", RootWord: "rahm", PartOfSpeech: "sifat"},
-				{WordIndex: 4, Arabic: "الرَّحِيمِ", Transliteration: "ar-rahim", Indonesian: "Yang Maha Penyayang", RootWord: "rahm", PartOfSpeech: "sifat"},
-			},
-		},
-		{
-			ayahNumber: 2,
-			items: []model.Mufrodat{
-				{WordIndex: 1, Arabic: "الْحَمْدُ", Transliteration: "al-hamd", Indonesian: "segala puji", RootWord: "hmd", PartOfSpeech: "isim"},
-				{WordIndex: 2, Arabic: "لِلَّهِ", Transliteration: "lillah", Indonesian: "bagi Allah", RootWord: "allh", PartOfSpeech: "jar-majrur"},
-				{WordIndex: 3, Arabic: "رَبِّ", Transliteration: "rabbi", Indonesian: "Rabb", RootWord: "rbb", PartOfSpeech: "isim"},
-				{WordIndex: 4, Arabic: "الْعَالَمِينَ", Transliteration: "al-'alamin", Indonesian: "seluruh alam", RootWord: "alm", PartOfSpeech: "isim"},
-			},
-		},
-		{
-			ayahNumber: 5,
-			items: []model.Mufrodat{
-				{WordIndex: 1, Arabic: "إِيَّاكَ", Transliteration: "iyyaka", Indonesian: "hanya kepada-Mu", RootWord: "wjh", PartOfSpeech: "dhomir"},
-				{WordIndex: 2, Arabic: "نَعْبُدُ", Transliteration: "na'budu", Indonesian: "kami menyembah", RootWord: "abd", PartOfSpeech: "fi'il"},
-				{WordIndex: 3, Arabic: "وَإِيَّاكَ", Transliteration: "wa-iyyaka", Indonesian: "dan hanya kepada-Mu", RootWord: "wjh", PartOfSpeech: "dhomir"},
-				{WordIndex: 4, Arabic: "نَسْتَعِينُ", Transliteration: "nasta'inu", Indonesian: "kami memohon pertolongan", RootWord: "awn", PartOfSpeech: "fi'il"},
-			},
-		},
-	}
-
-	for _, group := range data {
-		var ayah model.Ayah
-		if err := db.Where("number = ?", group.ayahNumber).First(&ayah).Error; err != nil {
-			continue
-		}
-		if ayah.ID == nil {
-			continue
-		}
-		for i := range group.items {
-			group.items[i].AyahID = lib.Intptr(*ayah.ID)
-			db.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "ayah_id"}, {Name: "word_index"}},
-				DoUpdates: clause.AssignmentColumns([]string{"arabic", "transliteration", "indonesian", "root_word", "part_of_speech"}),
-			}).Create(&group.items[i])
-		}
-	}
+	seedMufrodatData(db)
 }

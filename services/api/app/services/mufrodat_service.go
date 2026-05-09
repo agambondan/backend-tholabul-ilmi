@@ -7,6 +7,9 @@ import (
 
 type MufrodatService interface {
 	FindByAyahID(int) ([]model.Mufrodat, error)
+	FindBySurahNumber(int) ([]model.Mufrodat, error)
+	FindBySurahAndAyahNumber(int, int) ([]model.Mufrodat, error)
+	FindByPage(int) ([]model.Mufrodat, error)
 	FindByRootWord(string) ([]model.Mufrodat, error)
 }
 
@@ -20,6 +23,18 @@ func NewMufrodatService(repo repository.MufrodatRepository) MufrodatService {
 
 func (s *mufrodatService) FindByAyahID(ayahID int) ([]model.Mufrodat, error) {
 	return s.repo.FindByAyahID(ayahID)
+}
+
+func (s *mufrodatService) FindBySurahNumber(surahNumber int) ([]model.Mufrodat, error) {
+	return s.repo.FindBySurahNumber(surahNumber)
+}
+
+func (s *mufrodatService) FindBySurahAndAyahNumber(surahNumber, ayahNumber int) ([]model.Mufrodat, error) {
+	return s.repo.FindBySurahAndAyahNumber(surahNumber, ayahNumber)
+}
+
+func (s *mufrodatService) FindByPage(page int) ([]model.Mufrodat, error) {
+	return s.repo.FindByPage(page)
 }
 
 func (s *mufrodatService) FindByRootWord(rootWord string) ([]model.Mufrodat, error) {

@@ -10,6 +10,9 @@ import (
 
 type MufrodatController interface {
 	FindByAyahID(ctx *fiber.Ctx) error
+	FindBySurahNumber(ctx *fiber.Ctx) error
+	FindBySurahAndAyahNumber(ctx *fiber.Ctx) error
+	FindByPage(ctx *fiber.Ctx) error
 	FindByRootWord(ctx *fiber.Ctx) error
 }
 
@@ -27,6 +30,46 @@ func (c *mufrodatController) FindByAyahID(ctx *fiber.Ctx) error {
 		return lib.ErrorBadRequest(ctx, "invalid id")
 	}
 	items, err := c.svc.FindByAyahID(id)
+	if err != nil {
+		return lib.ErrorInternal(ctx)
+	}
+	return lib.OK(ctx, items)
+}
+
+func (c *mufrodatController) FindBySurahNumber(ctx *fiber.Ctx) error {
+	number, err := strconv.Atoi(ctx.Params("number"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, "invalid surah number")
+	}
+	items, err := c.svc.FindBySurahNumber(number)
+	if err != nil {
+		return lib.ErrorInternal(ctx)
+	}
+	return lib.OK(ctx, items)
+}
+
+func (c *mufrodatController) FindBySurahAndAyahNumber(ctx *fiber.Ctx) error {
+	surahNumber, err := strconv.Atoi(ctx.Params("surah"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, "invalid surah number")
+	}
+	ayahNumber, err := strconv.Atoi(ctx.Params("ayah"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, "invalid ayah number")
+	}
+	items, err := c.svc.FindBySurahAndAyahNumber(surahNumber, ayahNumber)
+	if err != nil {
+		return lib.ErrorInternal(ctx)
+	}
+	return lib.OK(ctx, items)
+}
+
+func (c *mufrodatController) FindByPage(ctx *fiber.Ctx) error {
+	page, err := strconv.Atoi(ctx.Params("page"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, "invalid page")
+	}
+	items, err := c.svc.FindByPage(page)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
