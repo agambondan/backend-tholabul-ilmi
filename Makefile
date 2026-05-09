@@ -25,8 +25,23 @@ ANDROID_ENV := JAVA_HOME=$(BUILD_JAVA_HOME) ANDROID_HOME=$(ANDROID_SDK) PATH="$(
 DEBUG_APK := $(ANDROID_DIR)/app/build/outputs/apk/debug/app-debug.apk
 RELEASE_APK := $(ANDROID_DIR)/app/build/outputs/apk/release/app-release.apk
 
+# DB vars untuk docker-compose (override di command line jika perlu)
+DB_DOCKER_HOST ?= localhost
+DB_DOCKER_PORT ?= 54320
+DB_DOCKER_USER ?= postgres
+DB_DOCKER_PASS ?= postgres
+DB_DOCKER_NAME ?= thullabul_ilmi
+DB_DOCKER_ENV  := DB_HOST=$(DB_DOCKER_HOST) DB_PORT=$(DB_DOCKER_PORT) DB_USER=$(DB_DOCKER_USER) DB_PASS=$(DB_DOCKER_PASS) DB_NAME=$(DB_DOCKER_NAME)
+
+MINIO_ENDPOINT ?= localhost:9020
+MINIO_ACCESS   ?= minioadmin
+MINIO_SECRET   ?= minioadmin
+MINIO_BUCKET   ?= thollabul-ilmi-audio
+
 .PHONY: help \
 	run-local run-dev seed-quran seed-quran-dev seed-quran-docker seed-tafsir seed-tafsir-dev seed-tafsir-docker seed-tajweed seed-tajweed-dev seed-tajweed-docker \
+	db-setup db-setup-local db-setup-docker db-dump-static \
+	db-seed-audio db-seed-audio-docker db-seed-audio-minio db-seed-audio-minio-docker \
 	build-api build-web build web-dev docker-up docker-down cp-server cp-cert buildcp \
 	mobile-tools-check mobile-watchers-check mobile-watchers-fix mobile-build-check android-build-check mobile-check mobile-status mobile-clean-ports mobile-reverse mobile-reverse-clear mobile-dev mobile-dev-all mobile-open mobile-android mobile-start mobile-ios mobile-web mobile-export-android \
 	apk-debug apk-release apk-install-debug apk-install-release apk-clean
@@ -34,6 +49,14 @@ RELEASE_APK := $(ANDROID_DIR)/app/build/outputs/apk/release/app-release.apk
 help:
 	@printf '%s\n' \
 		'Thollabul Ilmi make targets' \
+		'' \
+		'Database setup (migrate + seed):' \
+		'  make db-setup             Migrate + seed semua data (baca .env.local)' \
+		'  make db-setup-docker      Migrate + seed via docker-compose DB (port 54320)' \
+		'  make db-dump-static       Dump static DB content ke data/static/*.json (backup seeder)' \
+		'  make db-seed-audio        Inject CDN audio URL ke DB (lokal, baca .env.local)' \
+		'  make db-seed-audio-docker Inject CDN audio URL ke DB (docker, port 54320)' \
+		'  make db-seed-audio-minio  Download audio dari CDN + upload ke MinIO + insert DB' \
 		'' \
 		'Development:' \
 		'  make run-dev              Run API service in development mode' \
@@ -53,6 +76,8 @@ help:
 		'  make apk-clean            Clean Android Gradle outputs' \
 		'' \
 		'Config:' \
+		'  DB_DOCKER_HOST=$(DB_DOCKER_HOST) DB_DOCKER_PORT=$(DB_DOCKER_PORT)' \
+		'  MINIO_ENDPOINT=$(MINIO_ENDPOINT) MINIO_BUCKET=$(MINIO_BUCKET)' \
 		'  EXPO_PORT=$(EXPO_PORT) API_PORT=$(API_PORT) DOCKER_API_PORT=$(DOCKER_API_PORT) LAN_IP=$(LAN_IP)' \
 		'  INOTIFY_MIN_WATCHES=$(INOTIFY_MIN_WATCHES) INOTIFY_MIN_INSTANCES=$(INOTIFY_MIN_INSTANCES)' \
 		'  RN_ARCHS=$(RN_ARCHS) (override with RN_ARCHS=armeabi-v7a,arm64-v8a,x86,x86_64 for universal APK)' \
@@ -65,6 +90,42 @@ run-local:
 
 run-dev:
 	cd services/api && go run main.go
+
+# ── DB setup ─────────────────────────────────────────────────────────────────
+
+## Jalankan AutoMigrate + semua Seeder lalu exit (baca .env.local)
+db-setup:
+	cd services/api && go run scripts/db_setup.go
+
+## Sama tapi pakai environment "development" (.env.development)
+db-setup-local:
+	cd services/api && go run scripts/db_setup.go -environment development
+
+## Jalankan AutoMigrate + semua Seeder via docker-compose DB (port 54320)
+db-setup-docker:
+	cd services/api && $(DB_DOCKER_ENV) go run scripts/db_setup.go -environment docker
+
+## Dump isi DB ke data/static/*.json (perbarui file seed setelah edit data via admin)
+db-dump-static:
+	cd services/api && go run scripts/dump_static_data.go
+
+## Inject CDN audio URL ke surah_audio dan ayah_audio (lokal, baca .env.local)
+db-seed-audio:
+	cd services/api && go run scripts/seed_audio.go -mode=all
+
+## Sama via docker-compose DB
+db-seed-audio-docker:
+	cd services/api && $(DB_DOCKER_ENV) go run scripts/seed_audio.go -mode=all -environment docker
+
+## Download audio dari CDN, upload ke MinIO, lalu insert URL MinIO ke DB
+db-seed-audio-minio:
+	cd services/api && MINIO_ENDPOINT=$(MINIO_ENDPOINT) MINIO_ACCESS=$(MINIO_ACCESS) MINIO_SECRET=$(MINIO_SECRET) MINIO_BUCKET=$(MINIO_BUCKET) \
+		go run scripts/seed_audio.go -mode=all -minio
+
+## Sama via docker-compose DB + MinIO
+db-seed-audio-minio-docker:
+	cd services/api && $(DB_DOCKER_ENV) MINIO_ENDPOINT=$(MINIO_ENDPOINT) MINIO_ACCESS=$(MINIO_ACCESS) MINIO_SECRET=$(MINIO_SECRET) MINIO_BUCKET=$(MINIO_BUCKET) \
+		go run scripts/seed_audio.go -mode=all -minio -environment docker
 
 seed-quran:
 	cd services/api && go run ./scripts/seed_quran/main.go
