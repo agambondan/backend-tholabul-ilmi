@@ -11,9 +11,12 @@ DETECTED_JAVA17_HOME := $(shell for java in $(HOME)/.gradle/jdks/*/bin/java /usr
 BUILD_JAVA_HOME ?= $(DETECTED_JAVA17_HOME)
 
 EXPO_PORT ?= 19007
-API_PORT ?= 29900
+API_PORT ?= 9900
+DOCKER_API_PORT ?= 29900
 MOBILE_PORTS ?= 8081 19000 19001 19002 19006 19007
 RN_ARCHS ?= arm64-v8a
+INOTIFY_MIN_WATCHES ?= 524288
+INOTIFY_MIN_INSTANCES ?= 1024
 LAN_IP ?= $(shell ip route get 8.8.8.8 2>/dev/null | awk '{for (i=1; i<=NF; i++) if ($$i == "src") {print $$(i+1); exit}}')
 API_URL ?= http://localhost:$(API_PORT)
 EXPO_URL ?= exp://$(LAN_IP):$(EXPO_PORT)
@@ -23,9 +26,9 @@ DEBUG_APK := $(ANDROID_DIR)/app/build/outputs/apk/debug/app-debug.apk
 RELEASE_APK := $(ANDROID_DIR)/app/build/outputs/apk/release/app-release.apk
 
 .PHONY: help \
-	run-local run-dev seed-quran seed-quran-dev seed-quran-docker seed-tafsir seed-tafsir-dev seed-tafsir-docker \
+	run-local run-dev seed-quran seed-quran-dev seed-quran-docker seed-tafsir seed-tafsir-dev seed-tafsir-docker seed-tajweed seed-tajweed-dev seed-tajweed-docker \
 	build-api build-web build web-dev docker-up docker-down cp-server cp-cert buildcp \
-	mobile-tools-check mobile-build-check android-build-check mobile-check mobile-status mobile-clean-ports mobile-reverse mobile-reverse-clear mobile-dev mobile-open mobile-android mobile-start mobile-ios mobile-web mobile-export-android \
+	mobile-tools-check mobile-watchers-check mobile-watchers-fix mobile-build-check android-build-check mobile-check mobile-status mobile-clean-ports mobile-reverse mobile-reverse-clear mobile-dev mobile-dev-all mobile-open mobile-android mobile-start mobile-ios mobile-web mobile-export-android \
 	apk-debug apk-release apk-install-debug apk-install-release apk-clean
 
 help:
@@ -34,6 +37,9 @@ help:
 		'' \
 		'Development:' \
 		'  make run-dev              Run API service in development mode' \
+		'  make mobile-dev-all       Run API if needed, run Expo, then open it on the connected device' \
+		'  make mobile-dev-docker    Run mobile dev against docker API port' \
+		'  make mobile-watchers-fix  Raise Linux file watcher limits for Metro/Expo' \
 		'  make web-dev              Run web app' \
 		'  make mobile-dev           Clean old Expo/Metro ports, setup adb reverse, run Expo on one fixed port' \
 		'  make mobile-open          Open the current Expo URL on the connected Android device' \
@@ -47,7 +53,8 @@ help:
 		'  make apk-clean            Clean Android Gradle outputs' \
 		'' \
 		'Config:' \
-		'  EXPO_PORT=$(EXPO_PORT) API_PORT=$(API_PORT) LAN_IP=$(LAN_IP)' \
+		'  EXPO_PORT=$(EXPO_PORT) API_PORT=$(API_PORT) DOCKER_API_PORT=$(DOCKER_API_PORT) LAN_IP=$(LAN_IP)' \
+		'  INOTIFY_MIN_WATCHES=$(INOTIFY_MIN_WATCHES) INOTIFY_MIN_INSTANCES=$(INOTIFY_MIN_INSTANCES)' \
 		'  RN_ARCHS=$(RN_ARCHS) (override with RN_ARCHS=armeabi-v7a,arm64-v8a,x86,x86_64 for universal APK)' \
 		'  BUILD_JAVA_HOME=$(BUILD_JAVA_HOME)' \
 		'  API_URL=$(API_URL)' \
@@ -57,7 +64,7 @@ run-local:
 	cd services/api && go run main.go
 
 run-dev:
-	cd services/api && go run main.go -environment development
+	cd services/api && go run main.go
 
 seed-quran:
 	cd services/api && go run ./scripts/seed_quran/main.go
@@ -76,6 +83,15 @@ seed-tafsir-dev:
 
 seed-tafsir-docker:
 	cd services/api && DB_HOST=localhost DB_PORT=54320 DB_USER=postgres DB_PASS=postgres DB_NAME=thullabul_ilmi go run ./cmd/seed_tafsir/main.go -environment container
+
+seed-tajweed:
+	cd services/api && go run ./cmd/seed_tajweed/main.go --env .env
+
+seed-tajweed-dev:
+	cd services/api && go run ./cmd/seed_tajweed/main.go --env .env.local
+
+seed-tajweed-docker:
+	cd services/api && DB_HOST=localhost DB_PORT=54320 DB_USER=postgres DB_PASS=postgres DB_NAME=thullabul_ilmi go run ./cmd/seed_tajweed/main.go --env .env.local
 
 build-api:
 	cd services/api && go build main.go -o weddinggo
@@ -110,6 +126,27 @@ mobile-tools-check:
 	@command -v npx >/dev/null || { echo 'npx tidak ditemukan.'; exit 1; }
 	@test -n "$(LAN_IP)" || { echo 'LAN_IP kosong. Set manual: make mobile-dev LAN_IP=192.168.x.x'; exit 1; }
 	@echo 'OK: Node, npm, Expo CLI, dan LAN IP siap.'
+
+mobile-watchers-check:
+	@watches=$$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo 0); \
+	instances=$$(cat /proc/sys/fs/inotify/max_user_instances 2>/dev/null || echo 0); \
+	if [ "$$watches" -lt "$(INOTIFY_MIN_WATCHES)" ] || [ "$$instances" -lt "$(INOTIFY_MIN_INSTANCES)" ]; then \
+		echo "Limit file watcher Linux terlalu rendah untuk Metro/Expo."; \
+		echo "Current: max_user_watches=$$watches max_user_instances=$$instances"; \
+		echo "Needed : max_user_watches>=$(INOTIFY_MIN_WATCHES) max_user_instances>=$(INOTIFY_MIN_INSTANCES)"; \
+		echo "Jalankan sekali: make mobile-watchers-fix"; \
+		exit 1; \
+	fi; \
+	echo "OK: inotify watcher limit siap ($$watches watches, $$instances instances)."
+
+mobile-watchers-fix:
+	@echo 'Menaikkan inotify limit untuk Metro/Expo. Sudo mungkin meminta password.'
+	@sudo sysctl -w fs.inotify.max_user_watches=$(INOTIFY_MIN_WATCHES)
+	@sudo sysctl -w fs.inotify.max_user_instances=$(INOTIFY_MIN_INSTANCES)
+	@printf '%s\n' \
+		'fs.inotify.max_user_watches=$(INOTIFY_MIN_WATCHES)' \
+		'fs.inotify.max_user_instances=$(INOTIFY_MIN_INSTANCES)' | sudo tee /etc/sysctl.d/99-thollabul-mobile.conf >/dev/null
+	@echo 'OK: inotify limit disimpan permanen di /etc/sysctl.d/99-thollabul-mobile.conf'
 
 mobile-build-check: android-build-check
 
@@ -164,8 +201,8 @@ mobile-reverse: mobile-check
 	@$(ADB) reverse --remove tcp:19006 >/dev/null 2>&1 || true
 	@$(ADB) reverse --remove tcp:19007 >/dev/null 2>&1 || true
 	@$(ADB) reverse --remove tcp:$(API_PORT) >/dev/null 2>&1 || true
-	@$(ADB) reverse tcp:$(EXPO_PORT) tcp:$(EXPO_PORT)
-	@$(ADB) reverse tcp:$(API_PORT) tcp:$(API_PORT)
+	@$(ADB) reverse tcp:$(EXPO_PORT) tcp:$(EXPO_PORT) >/dev/null
+	@$(ADB) reverse tcp:$(API_PORT) tcp:$(API_PORT) >/dev/null
 	@echo 'ADB reverse aktif: tcp:$(EXPO_PORT) dan tcp:$(API_PORT)'
 
 mobile-reverse-clear:
@@ -173,8 +210,44 @@ mobile-reverse-clear:
 	@$(ADB) reverse --remove tcp:$(API_PORT) >/dev/null 2>&1 || true
 	@echo 'ADB reverse dibersihkan untuk tcp:$(EXPO_PORT) dan tcp:$(API_PORT)'
 
-mobile-dev: mobile-clean-ports mobile-reverse
+mobile-dev: mobile-watchers-check mobile-clean-ports mobile-reverse
 	cd $(MOBILE_DIR) && EXPO_PUBLIC_API_URL=$(API_URL) npx expo start --port $(EXPO_PORT) --host lan --clear
+
+mobile-dev-all: mobile-tools-check mobile-watchers-check
+	@command -v $(ADB) >/dev/null || { echo 'adb tidak ditemukan. Install Android platform-tools dulu.'; exit 1; }
+	@$(ADB) get-state >/dev/null 2>&1 || { echo 'Tidak ada Android device aktif. Cek USB debugging lalu jalankan adb devices.'; $(ADB) devices; exit 1; }
+	@api_pid=""; api_started=0; expo_pid=""; \
+	cleanup() { \
+		if [ -n "$$expo_pid" ] && kill -0 "$$expo_pid" >/dev/null 2>&1; then kill "$$expo_pid" >/dev/null 2>&1 || true; fi; \
+		if [ "$$api_started" = "1" ] && [ -n "$$api_pid" ] && kill -0 "$$api_pid" >/dev/null 2>&1; then kill "$$api_pid" >/dev/null 2>&1 || true; fi; \
+	}; \
+	trap cleanup INT TERM EXIT; \
+	if curl -fsS --max-time 2 "$(API_URL)/api/v1/surah?size=1" >/dev/null; then \
+		echo 'API sudah berjalan: $(API_URL)'; \
+	else \
+		echo 'Menjalankan API local: $(API_URL)'; \
+		(cd services/api && go run main.go) & api_pid=$$!; api_started=1; \
+		for _ in $$(seq 1 45); do \
+			curl -fsS --max-time 2 "$(API_URL)/api/v1/surah?size=1" >/dev/null && break; \
+			sleep 1; \
+		done; \
+		curl -fsS --max-time 2 "$(API_URL)/api/v1/surah?size=1" >/dev/null || { echo 'API gagal siap di $(API_URL).'; exit 1; }; \
+	fi; \
+	$(MAKE) --no-print-directory mobile-clean-ports; \
+	$(MAKE) --no-print-directory mobile-reverse; \
+	(cd $(MOBILE_DIR) && EXPO_PUBLIC_API_URL=$(API_URL) npx expo start --port $(EXPO_PORT) --host lan --clear) & expo_pid=$$!; \
+	for _ in $$(seq 1 30); do \
+		ss -ltn 2>/dev/null | grep -q ":$(EXPO_PORT)\\b" && break; \
+		sleep 1; \
+	done; \
+	$(ADB) shell am force-stop host.exp.exponent >/dev/null 2>&1 || true; \
+	$(ADB) shell am start -a android.intent.action.VIEW -d "$(EXPO_URL)"; \
+	echo 'Mobile dev berjalan. Tekan Ctrl+C untuk stop Expo dan API yang dijalankan target ini.'; \
+	wait "$$expo_pid"
+
+mobile-dev-docker: API_PORT := $(DOCKER_API_PORT)
+mobile-dev-docker: API_URL := http://localhost:$(DOCKER_API_PORT)
+mobile-dev-docker: mobile-dev
 
 mobile-open: mobile-reverse
 	@$(ADB) shell am force-stop host.exp.exponent >/dev/null 2>&1 || true

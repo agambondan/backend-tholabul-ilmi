@@ -155,6 +155,8 @@ const TAJWEED_TEXT_COLORS = {
 const toArabicDigits = (value) =>
     String(value ?? '').replace(/\d/g, (digit) => ARABIC_DIGITS[Number(digit)] ?? digit);
 
+const formatInlineAyahMarker = (value) => `۝${toArabicDigits(value)}`;
+
 const decodeArabicHtml = (value = '') =>
     String(value)
         .replace(/&nbsp;/g, ' ')
@@ -1410,7 +1412,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const renderArabicContent = (ayah, arabicStyle, keyPrefix = 'arabic') => (
         <Text style={arabicStyle}>
             {renderArabicSpans(ayah, keyPrefix)}
-            <Text style={styles.verseMark}> ۝{toArabicDigits(ayah.number)}</Text>
+            <Text style={styles.inlineAyahMarker}>{`\u00A0${formatInlineAyahMarker(ayah.number)}\u00A0`}</Text>
         </Text>
     );
 
@@ -3603,6 +3605,13 @@ const styles = StyleSheet.create({
         textAlign: 'right',
         writingDirection: 'rtl',
     },
+    inlineAyahMarker: {
+        color: '#6f6a58',
+        fontFamily: QURAN_FONT_FAMILIES.kitab,
+        fontSize: 24,
+        fontWeight: '400',
+        lineHeight: 34,
+    },
     mushafPagesStack: {
         gap: spacing.lg,
     },
@@ -3841,11 +3850,6 @@ const styles = StyleSheet.create({
     mushafVerseMark: {
         color: '#7f6f44',
         fontSize: 15,
-        fontWeight: '900',
-    },
-    verseMark: {
-        color: '#7f6f44',
-        fontSize: 17,
         fontWeight: '900',
     },
     mushafRangeMeta: {

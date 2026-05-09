@@ -234,7 +234,7 @@ export default function App() {
                   <ProfileScreen isActive={activeTab === 'profile'} navigation={navigation} onOpenTab={openTab} />
                 </View>
               </KeyboardAvoidingView>
-              <TabBar active={activeTab} onChange={openTab} />
+              {activeTab === 'quran' ? null : <TabBar active={activeTab} onChange={openTab} />}
               <StatusBar style="dark" backgroundColor={colors.bg} />
             </SafeAreaView>
           </TabActivityProvider>
