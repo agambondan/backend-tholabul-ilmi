@@ -26,6 +26,10 @@ func (c *asmaUlHusnaController) FindAll(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, list)
 }
 
@@ -38,5 +42,6 @@ func (c *asmaUlHusnaController) FindByNumber(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
+	asma.Translation.FilterByLang(lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, asma)
 }

@@ -35,6 +35,10 @@ func (c *sirohController) FindAllCategories(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, list)
 }
 
@@ -42,6 +46,11 @@ func (c *sirohController) FindCategoryBySlug(ctx *fiber.Ctx) error {
 	cat, err := c.svc.FindCategoryBySlug(ctx.Params("slug"))
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	cat.Translation.FilterByLang(lang)
+	for i := range cat.Contents {
+		cat.Contents[i].Translation.FilterByLang(lang)
 	}
 	return lib.OK(ctx, cat)
 }
@@ -51,11 +60,24 @@ func (c *sirohController) FindContentBySlug(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	content.Translation.FilterByLang(lang)
+	if content.Category != nil {
+		content.Category.Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, content)
 }
 
 func (c *sirohController) FindAllContents(ctx *fiber.Ctx) error {
-	return lib.OK(ctx, c.svc.FindAllContents(ctx))
+	page := c.svc.FindAllContents(ctx)
+	lang := lib.GetPreferredLang(ctx)
+	lib.ApplyToPageItems(page, func(s *model.SirohContent) {
+		s.Translation.FilterByLang(lang)
+		if s.Category != nil {
+			s.Category.Translation.FilterByLang(lang)
+		}
+	})
+	return lib.OK(ctx, page)
 }
 
 func (c *sirohController) CreateCategory(ctx *fiber.Ctx) error {

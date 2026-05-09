@@ -31,6 +31,10 @@ func (c *historyController) FindAll(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range items {
+		items[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, items)
 }
 
@@ -39,6 +43,7 @@ func (c *historyController) FindBySlug(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx, "history event tidak ditemukan")
 	}
+	item.Translation.FilterByLang(lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, item)
 }
 

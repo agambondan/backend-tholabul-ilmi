@@ -30,6 +30,10 @@ func (c *quizController) GetSession(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range items {
+		items[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, items)
 }
 

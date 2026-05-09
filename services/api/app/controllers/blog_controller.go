@@ -7,6 +7,7 @@ import (
 	"github.com/agambondan/islamic-explorer/app/model"
 	service "github.com/agambondan/islamic-explorer/app/services"
 	"github.com/gofiber/fiber/v2"
+	"github.com/morkid/paginate"
 )
 
 type BlogController interface {
@@ -46,7 +47,9 @@ func (c *blogController) FindAllPosts(ctx *fiber.Ctx) error {
 	if v := ctx.QueryInt("tag_id", 0); v > 0 {
 		tagID = &v
 	}
-	return lib.OK(ctx, c.svc.FindAllPosts(ctx, categoryID, tagID, ctx.Query("search")))
+	page := c.svc.FindAllPosts(ctx, categoryID, tagID, ctx.Query("search"))
+	filterBlogPostsPage(ctx, page)
+	return lib.OK(ctx, page)
 }
 
 func (c *blogController) FindPostBySlug(ctx *fiber.Ctx) error {
@@ -54,6 +57,7 @@ func (c *blogController) FindPostBySlug(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
+	filterBlogPost(post, lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, post)
 }
 
@@ -61,6 +65,10 @@ func (c *blogController) FindRelatedPosts(ctx *fiber.Ctx) error {
 	posts, err := c.svc.FindRelatedPosts(ctx.Params("slug"))
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range posts {
+		filterBlogPost(&posts[i], lang)
 	}
 	return lib.OK(ctx, posts)
 }
@@ -70,7 +78,31 @@ func (c *blogController) FindPopularPosts(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range posts {
+		filterBlogPost(&posts[i], lang)
+	}
 	return lib.OK(ctx, posts)
+}
+
+func filterBlogPost(p *model.BlogPost, lang string) {
+	if p == nil {
+		return
+	}
+	p.Translation.FilterByLang(lang)
+	if p.Category != nil {
+		p.Category.Translation.FilterByLang(lang)
+	}
+	for i := range p.Tags {
+		p.Tags[i].Translation.FilterByLang(lang)
+	}
+}
+
+func filterBlogPostsPage(ctx *fiber.Ctx, page *paginate.Page) {
+	lang := lib.GetPreferredLang(ctx)
+	lib.ApplyToPageItems(page, func(p *model.BlogPost) {
+		filterBlogPost(p, lang)
+	})
 }
 
 func (c *blogController) PreviewPost(ctx *fiber.Ctx) error {
@@ -148,12 +180,14 @@ func (c *blogController) DeletePost(ctx *fiber.Ctx) error {
 func (c *blogController) FindPostsByCategorySlug(ctx *fiber.Ctx) error {
 	slug := ctx.Params("slug")
 	page := c.svc.FindPostsByCategorySlug(ctx, slug)
+	filterBlogPostsPage(ctx, page)
 	return lib.OK(ctx, page)
 }
 
 func (c *blogController) FindPostsByTagSlug(ctx *fiber.Ctx) error {
 	slug := ctx.Params("slug")
 	page := c.svc.FindPostsByTagSlug(ctx, slug)
+	filterBlogPostsPage(ctx, page)
 	return lib.OK(ctx, page)
 }
 
@@ -161,6 +195,10 @@ func (c *blogController) FindAllCategories(ctx *fiber.Ctx) error {
 	list, err := c.svc.FindAllCategories()
 	if err != nil {
 		return lib.ErrorInternal(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
 	}
 	return lib.OK(ctx, list)
 }
@@ -208,6 +246,10 @@ func (c *blogController) FindAllTags(ctx *fiber.Ctx) error {
 	list, err := c.svc.FindAllTags()
 	if err != nil {
 		return lib.ErrorInternal(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
 	}
 	return lib.OK(ctx, list)
 }

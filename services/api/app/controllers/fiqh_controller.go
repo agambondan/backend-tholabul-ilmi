@@ -35,6 +35,10 @@ func (c *fiqhController) FindAllCategories(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, list)
 }
 
@@ -42,6 +46,11 @@ func (c *fiqhController) FindCategoryBySlug(ctx *fiber.Ctx) error {
 	cat, err := c.svc.FindCategoryBySlug(ctx.Params("slug"))
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	cat.Translation.FilterByLang(lang)
+	for i := range cat.Items {
+		cat.Items[i].Translation.FilterByLang(lang)
 	}
 	return lib.OK(ctx, cat)
 }
@@ -51,6 +60,7 @@ func (c *fiqhController) FindItemBySlug(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
+	item.Translation.FilterByLang(lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, item)
 }
 
@@ -63,6 +73,7 @@ func (c *fiqhController) FindItemByCategoryAndID(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
+	item.Translation.FilterByLang(lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, item)
 }
 
