@@ -20,6 +20,7 @@ import (
 	"log"
 
 	"github.com/agambondan/islamic-explorer/app/model"
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -28,14 +29,17 @@ import (
 )
 
 func main() {
-	viper.SetConfigFile(".env")
-	viper.AutomaticEnv()
-	_ = viper.ReadInConfig()
+	for _, envFile := range []string{".env.local", ".env"} {
+		if err := lib.LoadEnvironmentLocalFlag(envFile); err == nil {
+			log.Printf("Config: %s", envFile)
+			break
+		}
+	}
 
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		viper.GetString("DB_HOST"), viper.GetString("DB_PORT"),
-		viper.GetString("DB_USER"), viper.GetString("DB_PASS"), viper.GetString("DB_NAME"),
+		viper.GetString("db_host"), viper.GetString("db_port"),
+		viper.GetString("db_user"), viper.GetString("db_pass"), viper.GetString("db_name"),
 	)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger:         logger.Default.LogMode(logger.Warn),
