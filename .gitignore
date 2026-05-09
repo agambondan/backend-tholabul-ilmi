@@ -58,6 +58,7 @@ services/api/import_mufrodat
 services/api/import_quran_base
 services/api/seed_mufrodat
 services/api/seed_quran_base
+services/api/seed_audio
 
 # local tooling state
 .playwright-mcp/
