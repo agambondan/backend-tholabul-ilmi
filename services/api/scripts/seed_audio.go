@@ -34,7 +34,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -46,6 +45,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/schema"
 
 	"github.com/agambondan/islamic-explorer/app/model"
 )
@@ -53,10 +53,10 @@ import (
 // ── Qari catalog ─────────────────────────────────────────────────────────────
 
 type qariInfo struct {
-	Name          string
-	Slug          string
-	EveryAyahDir  string // directory name on everyayah.com
-	QuranicAudio  string // directory name on quranicaudio CDN
+	Name         string
+	Slug         string
+	EveryAyahDir string // directory name on everyayah.com
+	QuranicAudio string // directory name on quranicaudio CDN
 }
 
 var defaultQari = qariInfo{
@@ -88,7 +88,9 @@ func openDB() *gorm.DB {
 	name := envOr("DB_NAME", "thullabul_ilmi")
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=Asia/Jakarta",
 		host, port, user, pass, name)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{SingularTable: true},
+	})
 	if err != nil {
 		log.Fatalf("DB connect gagal: %v", err)
 	}
