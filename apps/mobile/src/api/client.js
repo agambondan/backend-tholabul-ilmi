@@ -95,6 +95,7 @@ export const normalizeAyah = (item) => ({
     item.surah_name ??
     '',
   arabic: item.translation?.arab ?? item.translation?.ar ?? item.arabic ?? '',
+  arabicHtml: item.translation?.ar_html ?? item.ar_html ?? '',
   latin: item.translation?.latin_en ?? item.translation?.latin_idn ?? item.latin ?? '',
   translation:
     item.translation?.text_en ??
@@ -104,6 +105,18 @@ export const normalizeAyah = (item) => ({
     item.translation ??
     '',
 });
+
+const dedupeAyahs = (items, fallbackSurahNumber = null) => {
+  const seen = new Set();
+  return items.filter((ayah) => {
+    const surahKey = ayah.surahNumber ?? fallbackSurahNumber ?? ayah.surahName ?? 'surah';
+    const ayahKey = ayah.number ?? ayah.id;
+    const key = `${surahKey}:${ayahKey}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 export const normalizeSurah = (item) => ({
   id: item.id ?? item.number,
@@ -129,17 +142,90 @@ const normalizeAudio = (item, index = 0) => ({
 
 export const getAyahsForSurah = async (surahNumber) => {
   const payload = await requestJson(`/api/v1/ayah/surah/number/${surahNumber}?size=300&page=0`);
-  return pickItems(payload).map(normalizeAyah);
+  return dedupeAyahs(pickItems(payload).map(normalizeAyah), surahNumber);
+};
+
+export const getAyahsForSurahPage = async (surahNumber, { page = 0, size = 20 } = {}) => {
+  const payload = await requestJson(`/api/v1/ayah/surah/number/${surahNumber}?size=${size}&page=${page}`);
+  const items = dedupeAyahs(pickItems(payload).map(normalizeAyah), surahNumber);
+  const total = Number(payload?.total ?? payload?.data?.total ?? 0);
+  const totalPages = Number(payload?.total_pages ?? payload?.totalPages ?? payload?.data?.total_pages ?? 0);
+
+  return {
+    hasMore: totalPages ? page + 1 < totalPages : items.length >= size,
+    items,
+    page,
+    size,
+    total,
+    totalPages,
+  };
 };
 
 export const getAyahsForPage = async (page) => {
   const payload = await requestJson(`/api/v1/ayah/page/${page}`);
-  return pickItems(payload).map(normalizeAyah);
+  return dedupeAyahs(pickItems(payload).map(normalizeAyah));
 };
 
 export const getAyahsForHizb = async (hizb) => {
   const payload = await requestJson(`/api/v1/ayah/hizb/${hizb}`);
-  return pickItems(payload).map(normalizeAyah);
+  return dedupeAyahs(pickItems(payload).map(normalizeAyah));
+};
+
+export const normalizeMufrodat = (item) => ({
+  id: item.id,
+  ayahId: item.ayah_id ?? item.ayahId,
+  wordIndex: item.word_index ?? item.wordIndex,
+  arabic: item.arabic ?? '',
+  transliteration: item.transliteration ?? '',
+  indonesian: item.indonesian ?? '',
+  rootWord: item.root_word ?? item.rootWord ?? '',
+  partOfSpeech: item.part_of_speech ?? item.partOfSpeech ?? '',
+  surahNumber:
+    item.ayah?.surah?.number ??
+    item.ayah?.surah_id ??
+    item.surah_number ??
+    null,
+  ayahNumber: item.ayah?.number ?? item.ayah_number ?? null,
+});
+
+const groupMufrodatByAyah = (items) => {
+  const map = new Map();
+  items.forEach((item) => {
+    const key = `${item.surahNumber ?? ''}:${item.ayahNumber ?? ''}:${item.ayahId ?? ''}`;
+    if (!map.has(key)) {
+      map.set(key, {
+        ayahId: item.ayahId,
+        surahNumber: item.surahNumber,
+        ayahNumber: item.ayahNumber,
+        words: [],
+      });
+    }
+    map.get(key).words.push(item);
+  });
+  map.forEach((group) => group.words.sort((a, b) => (a.wordIndex ?? 0) - (b.wordIndex ?? 0)));
+  return Array.from(map.values());
+};
+
+export const getMufrodatBySurah = async (surahNumber) => {
+  const payload = await requestJson(`/api/v1/mufrodat/surah/${surahNumber}`);
+  return pickItems(payload).map(normalizeMufrodat);
+};
+
+export const getMufrodatByPage = async (page) => {
+  const payload = await requestJson(`/api/v1/mufrodat/page/${page}`);
+  return pickItems(payload).map(normalizeMufrodat);
+};
+
+export const getMufrodatByAyahNumber = async (surahNumber, ayahNumber) => {
+  const payload = await requestJson(
+    `/api/v1/mufrodat/surah/${surahNumber}/ayah/${ayahNumber}`,
+  );
+  return pickItems(payload).map(normalizeMufrodat);
+};
+
+export const getMufrodatGroupedByPage = async (page) => {
+  const items = await getMufrodatByPage(page);
+  return groupMufrodatByAyah(items);
 };
 
 export const getAyahAudio = async ({ ayahId }) => {
@@ -180,9 +266,46 @@ export const searchGlobal = async (query, { limit = 12, type = 'all' } = {}) => 
   };
 };
 
+const normalizeSearchText = (value = '') => `${value}`.trim().toLowerCase();
+const includesQuery = (value = '', query = '') => normalizeSearchText(value).includes(normalizeSearchText(query));
+
+const filterQueryItems = (items, query, pickSearchText) => {
+  if (!query) return items;
+  return items.filter((item) => includesQuery(pickSearchText(item), query));
+};
+
+const appendQuery = (path, key, value) => {
+  const [base, query = ''] = path.split('?');
+  const params = new URLSearchParams(query);
+  params.set(key, value);
+  return `${base}?${params.toString()}`;
+};
+
+const searchCollection = async ({
+  endpoint,
+  limit = 12,
+  normalizeItem,
+  query,
+  queryParam = 'q',
+  fallbackSize = 40,
+  pickSearchText,
+}) => {
+  try {
+    const payload = await requestJson(appendQuery(endpoint, queryParam, query));
+    const items = pickItems(payload).map(normalizeItem);
+    const filtered = filterQueryItems(items, query, pickSearchText);
+    return filtered.slice(0, limit);
+  } catch {
+    const payload = await requestJson(endpoint);
+    const items = pickItems(payload).map(normalizeItem);
+    const filtered = filterQueryItems(items, query, pickSearchText);
+    return filtered.slice(0, Math.min(limit, fallbackSize));
+  }
+};
+
 export const getFirstAyahForSurah = async (surahNumber) => {
-  const items = await getAyahsForSurah(surahNumber);
-  return items[0] ?? null;
+  const page = await getAyahsForSurahPage(surahNumber, { page: 0, size: 1 });
+  return page.items[0] ?? null;
 };
 
 const pickText = (...values) => values.find((value) => typeof value === 'string' && value.trim()) ?? '';
@@ -291,9 +414,16 @@ export const getHadiths = async (options = {}) => {
 
 export const normalizeHadith = (item) => ({
   id: item.id ?? item.number,
-  book: item.book?.name ?? item.book?.translation?.latin_en ?? item.book?.translation?.idn ?? 'Hadith',
-  bookSlug: item.book?.slug ?? item.book_slug ?? '',
+  book:
+    item.book?.name ??
+    item.bookName ??
+    item.book_name ??
+    item.book?.translation?.latin_en ??
+    item.book?.translation?.idn ??
+    'Hadith',
+  bookSlug: item.book?.slug ?? item.bookSlug ?? item.book_slug ?? '',
   title:
+    item.title ??
     item.chapter?.name ??
     item.chapter?.translation?.en ??
     item.chapter?.translation?.idn ??
@@ -341,6 +471,52 @@ export const normalizePerawi = (item) => ({
   status: item.status ?? '',
   tabaqah: item.tabaqah ?? '',
 });
+
+export const normalizeDoa = (item) => ({
+  id: item.id ?? item.slug ?? item.title,
+  title: pickText(item.title, item.nama, item.label, 'Doa'),
+  arabic: pickText(item.arabic, item.arab, item.translation?.arab, item.translation?.ar),
+  body: pickText(
+    item.translation?.idn,
+    item.translation?.text_idn,
+    item.translation?.text,
+    item.translation,
+    item.content,
+    item.description,
+  ),
+  meta: [item.category, item.occasion, item.source].filter(Boolean).join(' · '),
+});
+
+export const normalizeKajian = (item) => ({
+  id: item.id ?? item.slug ?? item.title,
+  title: pickText(item.title, item.topic, item.translation?.title_idn, item.translation?.title_en, 'Kajian'),
+  body: pickText(
+    item.summary,
+    item.description,
+    item.content,
+    item.translation?.text_idn,
+    item.translation?.text_en,
+  ),
+  meta: [item.speaker, item.ustadz, item.category, item.date].filter(Boolean).join(' · '),
+});
+
+export const searchDoa = async (query, { limit = 8 } = {}) =>
+  searchCollection({
+    endpoint: '/api/v1/doa?page=0&size=40',
+    limit,
+    normalizeItem: normalizeDoa,
+    pickSearchText: (item) => [item.title, item.body, item.meta, item.arabic].filter(Boolean).join(' '),
+    query,
+  });
+
+export const searchKajian = async (query, { limit = 8 } = {}) =>
+  searchCollection({
+    endpoint: '/api/v1/kajian?page=0&size=40',
+    limit,
+    normalizeItem: normalizeKajian,
+    pickSearchText: (item) => [item.title, item.body, item.meta].filter(Boolean).join(' '),
+    query,
+  });
 
 export const getDailyHadith = async () => {
   const payload = await requestJson('/api/v1/hadiths/daily');

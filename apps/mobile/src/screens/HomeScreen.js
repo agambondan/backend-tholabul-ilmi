@@ -1,18 +1,26 @@
 import {
+  ArrowLeft,
   Bell,
   Book,
+  Bookmark,
+  BookOpen,
   BookOpenCheck,
   ChevronRight,
   Clock3,
   Compass,
   FileText,
+  Globe,
   Grid,
   HelpCircle,
+  ListChecks,
+  MessageCircle,
+  Scale,
   Search,
   Smile,
   Star,
   Sun,
   Sunset,
+  Users,
   Video,
 } from 'lucide-react-native';
 import * as Location from 'expo-location';
@@ -23,6 +31,7 @@ import { useSession } from '../context/SessionContext';
 import { useTabActivity } from '../context/TabActivityContext';
 import { getTodayPrayerLog } from '../api/personal';
 import { GlobalSearchScreen } from './GlobalSearchScreen';
+import { featureGroups } from '../data/mobileFeatures';
 import { readPinnedFeatures, readRecentFeatures } from '../storage/recentFeatures';
 import { colors, radius, shadows, spacing } from '../theme';
 
@@ -50,10 +59,47 @@ const menuItems = [
   { Icon: Video, featureKey: 'kajian', key: 'belajar', label: 'Kajian' },
   { Icon: FileText, featureKey: 'tafsir', key: 'belajar', label: 'Tafsir' },
   { Icon: Book, key: 'hadith', label: 'Hadis' },
-  { Icon: Grid, key: 'belajar', label: 'Lainnya' },
+  { Icon: Grid, internalView: 'feature-directory', key: 'belajar', label: 'Lainnya' },
 ];
 
 const scheduleOrder = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+
+const featureDirectoryIcons = {
+  amalan: ListChecks,
+  'asbabun-nuzul': BookOpen,
+  'asmaul-husna': Star,
+  blog: BookOpen,
+  bookmarks: Bookmark,
+  'community-feed': MessageCircle,
+  fiqh: BookOpen,
+  goals: Star,
+  hafalan: BookOpenCheck,
+  hijri: Star,
+  imsakiyah: Clock3,
+  'jarh-tadil': Scale,
+  kajian: Video,
+  kamus: Search,
+  leaderboard: Users,
+  manasik: BookOpen,
+  muhasabah: Smile,
+  murojaah: BookOpenCheck,
+  notes: FileText,
+  notifications: Bell,
+  'panduan-sholat': BookOpen,
+  perawi: Users,
+  quiz: HelpCircle,
+  sejarah: Globe,
+  siroh: Users,
+  stats: Globe,
+  tafsir: FileText,
+  tahlil: Book,
+  tilawah: BookOpen,
+  'sholat-tracker': Compass,
+  tasbih: ListChecks,
+  'user-wird': ListChecks,
+  wirid: ListChecks,
+  zakat: Scale,
+};
 
 const toSeconds = (timeValue) => {
   const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(`${timeValue ?? ''}`);
@@ -148,6 +194,33 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
 
     return items.slice(0, 3);
   }, [locationLabel, recentFeatures]);
+  const directoryGroups = useMemo(() => {
+    const primaryRows = [
+      { Icon: Search, key: 'global-search', subtitle: 'Cari lintas Quran, Hadis, Doa, Kajian', title: 'Global Search', type: 'internal', view: 'global-search' },
+      { Icon: BookOpen, key: 'quran', subtitle: 'Baca surah, hafalan, dan murojaah', title: "Al-Qur'an", type: 'tab', tab: 'quran' },
+      { Icon: Book, key: 'hadith', subtitle: 'Baca hadis beserta sanad dan perawi', title: 'Hadis', type: 'tab', tab: 'hadith' },
+      { Icon: Compass, key: 'qibla', subtitle: 'Arah kiblat, tracker, dan jadwal ibadah', title: 'Ibadah', type: 'tab', tab: 'ibadah', params: { view: 'qibla' } },
+      { Icon: Bell, key: 'notifications', subtitle: 'Inbox, reminder, dan pengingat ibadah', title: 'Notifikasi', type: 'feature', featureKey: 'notifications' },
+    ];
+
+    const groupedFeatures = featureGroups.map((group) => ({
+      key: group.key,
+      label: group.label,
+      rows: group.features.map((feature) => ({
+        Icon: featureDirectoryIcons[feature.key] ?? Book,
+        key: feature.key,
+        subtitle: feature.subtitle || group.label,
+        title: feature.title,
+        type: 'feature',
+        featureKey: feature.key,
+      })),
+    }));
+
+    return [
+      { key: 'utama', label: 'Utama', rows: primaryRows },
+      ...groupedFeatures,
+    ];
+  }, []);
 
   const displayName = user?.name || 'Tamu';
   const hasPrayerSchedule = nextPrayer.time !== '--:--' && nextPrayer.countdown !== '--:--:--';
@@ -281,7 +354,10 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   }, [isActive]);
 
   useEffect(() => {
-    if (!isActive || navigation?.current?.view !== 'global-search') return undefined;
+    const activeView = navigation?.current?.view;
+    if (!isActive || (activeView !== 'global-search' && activeView !== 'feature-directory')) {
+      return undefined;
+    }
 
     navigation?.setBack?.(() => {
       navigation?.close?.('home');
@@ -293,6 +369,22 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     };
   }, [isActive, navigation, navigation?.current?.view]);
 
+  const openDirectoryRow = useCallback((row) => {
+    if (row.type === 'internal' && row.view) {
+      navigation?.open?.('home', row.view);
+      return;
+    }
+    if (row.type === 'tab' && row.tab) {
+      navigation?.close?.('home');
+      onOpenTab(row.tab, row.params ?? null);
+      return;
+    }
+    if (row.type === 'feature' && row.featureKey) {
+      navigation?.close?.('home');
+      onOpenTab('belajar', { featureKey: row.featureKey });
+    }
+  }, [navigation, onOpenTab]);
+
   if (navigation?.current?.view === 'global-search') {
     return (
       <GlobalSearchScreen
@@ -303,6 +395,57 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
           onOpenTab(tab, params);
         }}
       />
+    );
+  }
+
+  if (navigation?.current?.view === 'feature-directory') {
+    return (
+      <ScrollView
+        contentContainerStyle={styles.directoryScreen}
+        onMomentumScrollBegin={handleScrollActivity}
+        onScroll={handleScrollActivity}
+        onScrollBeginDrag={handleScrollActivity}
+        scrollEventThrottle={250}
+        showsVerticalScrollIndicator={false}
+        style={styles.scroll}
+      >
+        <View style={styles.directoryHeader}>
+          <Pressable
+            accessibilityRole="button"
+            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+            onPress={() => navigation?.close?.('home')}
+            style={styles.directoryBackButton}
+          >
+            <ArrowLeft color={colors.primary} size={18} strokeWidth={2.2} />
+          </Pressable>
+          <View style={styles.directoryHeaderCopy}>
+            <Text style={styles.directoryTitle}>Semua Fitur</Text>
+            <Text style={styles.directoryMeta}>Pilih fitur berdasarkan kategori</Text>
+          </View>
+        </View>
+        {directoryGroups.map((group) => (
+          <View key={group.key} style={styles.directoryGroup}>
+            <Text style={styles.directoryGroupTitle}>{group.label}</Text>
+            {group.rows.map((row) => (
+              <Pressable
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                key={`${group.key}:${row.key}`}
+                onPress={() => openDirectoryRow(row)}
+                style={styles.directoryRow}
+              >
+                <View style={styles.directoryIcon}>
+                  <row.Icon color={colors.primary} size={16} strokeWidth={2.2} />
+                </View>
+                <View style={styles.directoryRowCopy}>
+                  <Text style={styles.directoryRowTitle}>{row.title}</Text>
+                  <Text style={styles.directoryRowSubtitle}>{row.subtitle}</Text>
+                </View>
+                <ChevronRight color={colors.muted} size={18} strokeWidth={2.3} />
+              </Pressable>
+            ))}
+          </View>
+        ))}
+      </ScrollView>
     );
   }
 
@@ -379,11 +522,17 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       </View>
 
       <View style={styles.menuGrid}>
-        {menuItems.map(({ Icon, featureKey, key, label, params }) => (
+        {menuItems.map(({ Icon, featureKey, internalView, key, label, params }) => (
           <Pressable
             android_ripple={{ color: 'rgba(91, 110, 91, 0.14)', borderless: false }}
             key={label}
-            onPress={() => onOpenTab(key, params ?? (featureKey ? { featureKey } : null))}
+            onPress={() => {
+              if (internalView && navigation?.open) {
+                navigation.open('home', internalView);
+                return;
+              }
+              onOpenTab(key, params ?? (featureKey ? { featureKey } : null));
+            }}
             style={styles.menuItem}
           >
             <View style={styles.menuIcon}>
@@ -538,6 +687,92 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.xl,
     paddingTop: spacing.xl,
+  },
+  directoryScreen: {
+    backgroundColor: colors.bg,
+    flexGrow: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+  directoryHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  directoryBackButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  directoryHeaderCopy: {
+    flex: 1,
+  },
+  directoryTitle: {
+    color: colors.ink,
+    fontFamily: 'serif',
+    fontSize: 19,
+    fontWeight: '900',
+  },
+  directoryMeta: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  directoryGroup: {
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  directoryGroupTitle: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    textTransform: 'uppercase',
+  },
+  directoryRow: {
+    alignItems: 'center',
+    borderTopColor: colors.faint,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 58,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  directoryIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
+  },
+  directoryRowCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  directoryRowTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  directoryRowSubtitle: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 15,
   },
   header: {
     alignItems: 'center',

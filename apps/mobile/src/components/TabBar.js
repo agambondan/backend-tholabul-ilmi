@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BookOpen, GraduationCap, Heart, Home, ScrollText } from 'lucide-react-native';
+import { BookOpen, GraduationCap, HandHeart, Home, LibraryBig } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { radius, spacing } from '../theme';
@@ -9,8 +9,8 @@ import { hapticSelection } from '../utils/haptics';
 export const tabs = [
   { Icon: Home, key: 'home', label: 'Beranda' },
   { Icon: BookOpen, key: 'quran', label: "Al-Qur'an" },
-  { Icon: ScrollText, key: 'hadith', label: 'Hadis' },
-  { Icon: Heart, key: 'ibadah', label: 'Ibadah' },
+  { Icon: LibraryBig, key: 'hadith', label: 'Hadis' },
+  { Icon: HandHeart, key: 'ibadah', label: 'Ibadah' },
   { Icon: GraduationCap, key: 'belajar', label: 'Belajar' },
 ];
 

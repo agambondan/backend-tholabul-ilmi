@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArrowLeft, Book, BookOpen, Languages, Layers, Search, UserRound } from 'lucide-react-native';
-import { searchGlobal } from '../api/client';
+import { searchDoa, searchGlobal, searchKajian } from '../api/client';
 import { IconActionButton, PaperSearchInput } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { allFeatures } from '../data/mobileFeatures';
@@ -15,6 +15,8 @@ const searchFilters = [
   { key: 'all', label: 'Semua', remoteType: 'all' },
   { key: 'quran', label: 'Quran', remoteType: 'ayah' },
   { key: 'hadith', label: 'Hadis', remoteType: 'hadith' },
+  { key: 'doa', label: 'Doa', remoteType: 'all' },
+  { key: 'kajian', label: 'Kajian', remoteType: 'all' },
   { key: 'dictionary', label: 'Kamus', remoteType: 'dictionary' },
   { key: 'perawi', label: 'Perawi', remoteType: 'perawi' },
   { key: 'feature', label: 'Fitur', remoteType: 'all' },
@@ -71,7 +73,15 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
   const [query, setQuery] = useState(initialQuery);
   const [activeFilter, setActiveFilter] = useState('all');
   const [recentSearches, setRecentSearches] = useState([]);
-  const [remoteResults, setRemoteResults] = useState({ ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 });
+  const [remoteResults, setRemoteResults] = useState({
+    ayahs: [],
+    dictionaries: [],
+    doas: [],
+    hadiths: [],
+    kajians: [],
+    perawis: [],
+    total: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -80,13 +90,17 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
   const trimmedQuery = query.trim();
   const hasQuery = trimmedQuery.length >= MIN_QUERY_LENGTH;
   const showAyahs = activeFilter === 'all' || activeFilter === 'quran';
+  const showDoas = activeFilter === 'all' || activeFilter === 'doa';
   const showHadiths = activeFilter === 'all' || activeFilter === 'hadith';
+  const showKajians = activeFilter === 'all' || activeFilter === 'kajian';
   const showDictionaries = activeFilter === 'all' || activeFilter === 'dictionary';
   const showPerawis = activeFilter === 'all' || activeFilter === 'perawi';
   const showFeatures = activeFilter === 'all' || activeFilter === 'feature';
   const totalResults =
     (showAyahs ? remoteResults.ayahs.length : 0) +
+    (showDoas ? remoteResults.doas.length : 0) +
     (showHadiths ? remoteResults.hadiths.length : 0) +
+    (showKajians ? remoteResults.kajians.length : 0) +
     (showDictionaries ? remoteResults.dictionaries.length : 0) +
     (showPerawis ? remoteResults.perawis.length : 0) +
     (showFeatures ? featureResults.length : 0);
@@ -109,7 +123,15 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
 
   useEffect(() => {
     if (!hasQuery) {
-      setRemoteResults({ ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 });
+      setRemoteResults({
+        ayahs: [],
+        dictionaries: [],
+        doas: [],
+        hadiths: [],
+        kajians: [],
+        perawis: [],
+        total: 0,
+      });
       setLoading(false);
       setMessage('');
       return undefined;
@@ -120,21 +142,58 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
     setMessage('');
 
     const timer = setTimeout(async () => {
-      const globalResult = await Promise.resolve(searchGlobal(trimmedQuery, { limit: 16, type: selectedFilter.remoteType })).then(
-        (value) => ({ status: 'fulfilled', value }),
-        (reason) => ({ status: 'rejected', reason }),
-      );
+      const shouldSearchGlobal = ['all', 'quran', 'hadith', 'dictionary', 'perawi'].includes(activeFilter);
+      const shouldSearchDoa = activeFilter === 'all' || activeFilter === 'doa';
+      const shouldSearchKajian = activeFilter === 'all' || activeFilter === 'kajian';
+
+      const [globalResult, doaResult, kajianResult] = await Promise.all([
+        shouldSearchGlobal
+          ? Promise.resolve(searchGlobal(trimmedQuery, { limit: 16, type: selectedFilter.remoteType })).then(
+              (value) => ({ status: 'fulfilled', value }),
+              (reason) => ({ status: 'rejected', reason }),
+            )
+          : Promise.resolve({ status: 'fulfilled', value: { ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 } }),
+        shouldSearchDoa
+          ? Promise.resolve(searchDoa(trimmedQuery, { limit: 10 })).then(
+              (value) => ({ status: 'fulfilled', value }),
+              (reason) => ({ status: 'rejected', reason }),
+            )
+          : Promise.resolve({ status: 'fulfilled', value: [] }),
+        shouldSearchKajian
+          ? Promise.resolve(searchKajian(trimmedQuery, { limit: 10 })).then(
+              (value) => ({ status: 'fulfilled', value }),
+              (reason) => ({ status: 'rejected', reason }),
+            )
+          : Promise.resolve({ status: 'fulfilled', value: [] }),
+      ]);
 
       if (cancelled) return;
 
-      if (globalResult.status === 'fulfilled') {
-        setRemoteResults(globalResult.value);
+      if (globalResult.status === 'fulfilled' && doaResult.status === 'fulfilled' && kajianResult.status === 'fulfilled') {
+        setRemoteResults({
+          ...globalResult.value,
+          doas: doaResult.value,
+          kajians: kajianResult.value,
+        });
         rememberRecentSearch(trimmedQuery).then((items) => {
           if (!cancelled) setRecentSearches(items);
         });
       } else {
-        setRemoteResults({ ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 });
-        setMessage(globalResult.reason?.message ?? 'Pencarian server belum bisa dimuat.');
+        setRemoteResults({
+          ayahs: [],
+          dictionaries: [],
+          doas: [],
+          hadiths: [],
+          kajians: [],
+          perawis: [],
+          total: 0,
+        });
+        setMessage(
+          globalResult.reason?.message ??
+            doaResult.reason?.message ??
+            kajianResult.reason?.message ??
+            'Pencarian server belum bisa dimuat.',
+        );
       }
 
       setLoading(false);
@@ -144,7 +203,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [hasQuery, selectedFilter.remoteType, trimmedQuery]);
+  }, [activeFilter, hasQuery, selectedFilter.remoteType, trimmedQuery]);
 
   const searchChips = recentSearches.length ? recentSearches : quickSuggestions;
   const chipLabel = recentSearches.length ? 'Terakhir dicari' : 'Cari cepat';
@@ -261,6 +320,36 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
               onPress={() => onOpenTab('hadith', { hadithId: item.id })}
               subtitle={item.translation}
               title={item.title || `Hadis ${item.id}`}
+            />
+          ))}
+        </ResultSection>
+      ) : null}
+
+      {showDoas ? (
+        <ResultSection count={remoteResults.doas.length} title="Doa">
+          {remoteResults.doas.map((item) => (
+            <ResultRow
+              Icon={BookOpen}
+              key={`doa-${item.id}`}
+              meta={item.meta || 'Doa'}
+              onPress={() => onOpenTab('belajar', { featureKey: 'doa' })}
+              subtitle={item.body}
+              title={item.title}
+            />
+          ))}
+        </ResultSection>
+      ) : null}
+
+      {showKajians ? (
+        <ResultSection count={remoteResults.kajians.length} title="Kajian">
+          {remoteResults.kajians.map((item) => (
+            <ResultRow
+              Icon={Book}
+              key={`kajian-${item.id}`}
+              meta={item.meta || 'Kajian'}
+              onPress={() => onOpenTab('belajar', { featureKey: 'kajian' })}
+              subtitle={item.body}
+              title={item.title}
             />
           ))}
         </ResultSection>

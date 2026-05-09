@@ -1,12 +1,14 @@
 import * as Linking from 'expo-linking';
+import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { TabBar } from './src/components/TabBar';
 import { FeedbackProvider } from './src/context/FeedbackContext';
 import { SessionProvider } from './src/context/SessionContext';
 import { TabActivityProvider } from './src/context/TabActivityContext';
+import { quranFontAssets } from './src/constants/quranFonts';
 import { ExploreScreen } from './src/screens/ExploreScreen';
 import { HadithScreen } from './src/screens/HadithScreen';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -28,6 +30,7 @@ const normalizeTabRequest = (tab, params = null) => {
 };
 
 export default function App() {
+  const [quranFontsLoaded, quranFontsError] = useFonts(quranFontAssets);
   const [activeTab, setActiveTab] = useState('home');
   const [deepLinkTarget, setDeepLinkTarget] = useState(null);
   const [internalRoutes, setInternalRoutes] = useState({});
@@ -191,6 +194,16 @@ export default function App() {
     [activeTab, clearBack, closeInternalView, internalRoutes, openInternalView, resetInternalViews, setBack],
   );
 
+  if (!quranFontsLoaded && !quranFontsError) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, styles.fontLoading]}>
+          <ActivityIndicator color={colors.primaryDark} size="small" />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <SessionProvider>
@@ -248,5 +261,9 @@ const styles = StyleSheet.create({
   },
   screenPaneHidden: {
     display: 'none',
+  },
+  fontLoading: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

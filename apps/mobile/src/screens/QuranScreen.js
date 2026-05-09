@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ArrowLeft,
+    ArrowRight,
     BookOpen,
     Bookmark,
     BookmarkCheck,
@@ -21,12 +22,14 @@ import {
     ActivityIndicator,
     FlatList,
     Modal,
+    PanResponder,
     Pressable,
     RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
+    useWindowDimensions,
     View,
 } from 'react-native';
 import {
@@ -34,8 +37,9 @@ import {
     getAyahAudio,
     getAyahsForHizb,
     getAyahsForPage,
-    getAyahsForSurah,
+    getAyahsForSurahPage,
     getFirstAyahForSurah,
+    getMufrodatByPage,
     getSurahs,
     getTafsirForAyah,
 } from '../api/client';
@@ -54,6 +58,7 @@ import {
 import { Card, CardTitle } from '../components/Card';
 import { NotesPanel } from '../components/NotesPanel';
 import { EmptyState, IconActionButton } from '../components/Paper';
+import { QURAN_FONT_FAMILIES } from '../constants/quranFonts';
 import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { useTabActivity } from '../context/TabActivityContext';
@@ -73,13 +78,13 @@ const DISPLAY_MODES = [
         key: 'line',
         label: 'Garis',
         title: 'Rapi per baris',
-        description: 'Tanpa kartu, cocok untuk baca cepat dengan terjemah.',
+        description: 'Arab dan terjemah per baris, tanpa info surat dan nomor ayat terpisah.',
     },
     {
         key: 'card',
-        label: 'Card',
-        title: 'Kartu ayat',
-        description: 'Arab, latin, terjemah, dan aksi ayat tampil lengkap.',
+        label: 'Grid',
+        title: 'Grid ayat',
+        description: 'Arab dan terjemah dalam kartu ringkas dengan menu sejajar ayat.',
     },
     {
         key: 'focus',
@@ -96,17 +101,196 @@ const DISPLAY_MODES = [
 ];
 
 const ARABIC_FONTS = [
-    { key: 'default', label: 'Naskh', fontFamily: null },
-    { key: 'uthmani', label: 'Uthmani', fontFamily: 'KFGQPC HAFS Uthmanic Script' },
-    { key: 'indopak', label: 'Indopak', fontFamily: 'Noore Hidayat' },
-    { key: 'amiri', label: 'Amiri', fontFamily: 'Amiri' },
+    { key: 'kitab', label: 'Uthmani', fontFamily: QURAN_FONT_FAMILIES.kitab },
+    { key: 'indopak', label: 'Indopak', fontFamily: QURAN_FONT_FAMILIES.indopak },
+    { key: 'naskh', label: 'Naskh', fontFamily: QURAN_FONT_FAMILIES.naskh },
 ];
+
+const LEGACY_ARABIC_FONT_MAP = {
+    amiri: 'naskh',
+    default: 'kitab',
+    mono: 'naskh',
+    sans: 'indopak',
+    serif: 'kitab',
+    system: 'kitab',
+    uthmani: 'kitab',
+};
 
 const QURAN_TABS = [
     { key: 'surah', label: 'Surah' },
     { key: 'hafalan', label: 'Hafalan' },
     { key: 'murojaah', label: 'Murojaah' },
 ];
+
+const SWIPE_ACTIVATION_DISTANCE = 10;
+const SWIPE_TRIGGER_DISTANCE = 34;
+const SWIPE_EDGE_GUARD = 24;
+const SURAH_PAGE_SIZE = 20;
+const SURAH_PREFETCH_DISTANCE = 620;
+const MUSHAF_FIRST_PAGE = 1;
+const MUSHAF_LAST_PAGE = 604;
+const MIN_ARABIC_FONT_SIZE = 12;
+const MAX_ARABIC_FONT_SIZE = 48;
+const BISMILLAH = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+const ARABIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+const TAJWEED_TEXT_COLORS = {
+    ghn: '#FF7E1E',
+    ham_wasl: '#AAAAAA',
+    idgh_ghn: '#169200',
+    idgh_mus: '#A1A1A1',
+    idgh_w_ghn: '#169200',
+    idghm_shfw: '#58B800',
+    ikhf: '#9400A8',
+    ikhf_shfw: '#D500B7',
+    iqlb: '#26BFFD',
+    madda_necessary: '#000EBC',
+    madda_normal: '#537FFF',
+    madda_obligatory: '#2144C1',
+    madda_permissible: '#4050FF',
+    madda_pbligatory: '#2144C1',
+    qlq: '#DD0008',
+    slnt: '#AAAAAA',
+};
+
+const toArabicDigits = (value) =>
+    String(value ?? '').replace(/\d/g, (digit) => ARABIC_DIGITS[Number(digit)] ?? digit);
+
+const decodeArabicHtml = (value = '') =>
+    String(value)
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+        .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(parseInt(code, 10)));
+
+const stripHtmlTags = (value = '') => decodeArabicHtml(value.replace(/<[^>]+>/g, ''));
+const stripArabicDiacritics = (value = '') =>
+    String(value).replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g, '');
+
+const parseTajweedHtml = (html = '') => {
+    if (!html || !/<tajweed/i.test(html)) return [{ text: stripHtmlTags(html), className: null }];
+
+    const segments = [];
+    const tagPattern = /<tajweed\s+class=["']([^"']+)["']\s*>(.*?)<\/tajweed>/gis;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = tagPattern.exec(html)) !== null) {
+        if (match.index > lastIndex) {
+            segments.push({ text: stripHtmlTags(html.slice(lastIndex, match.index)), className: null });
+        }
+        segments.push({ text: stripHtmlTags(match[2]), className: match[1] });
+        lastIndex = tagPattern.lastIndex;
+    }
+
+    if (lastIndex < html.length) {
+        segments.push({ text: stripHtmlTags(html.slice(lastIndex)), className: null });
+    }
+
+    return segments.filter((segment) => segment.text);
+};
+
+const getAyahIdentity = (ayah) => `${ayah.surahNumber ?? 'surah'}:${ayah.number ?? ayah.id}`;
+
+const clampMushafPage = (page) => {
+    const numeric = Number.parseInt(`${page}`, 10);
+    if (!Number.isFinite(numeric)) return MUSHAF_FIRST_PAGE;
+    return Math.max(MUSHAF_FIRST_PAGE, Math.min(MUSHAF_LAST_PAGE, numeric));
+};
+
+const getFirstPageNumber = (items, fallback = MUSHAF_FIRST_PAGE) => {
+    const pageNumber = items.find((ayah) => Number.isFinite(Number(ayah.pageNumber)))?.pageNumber;
+    return clampMushafPage(pageNumber ?? fallback);
+};
+
+const getMushafTranslationLength = (ayah) => String(ayah.translation || '').length;
+
+const getMushafArabicTokens = (ayah) => {
+    const source = ayah.arabicHtml || ayah.arabic || '';
+    return parseTajweedHtml(source)
+        .flatMap((segment) =>
+            segment.text
+                .split(/(\s+)/)
+                .filter(Boolean)
+                .map((text) => ({ className: segment.className, text })),
+        )
+        .filter((token) => token.text);
+};
+
+const getMushafTokenLength = (token) =>
+    stripArabicDiacritics(token.text).replace(/\s+/g, '').length;
+
+const getMushafFragmentLength = (fragment) =>
+    fragment.segments.reduce((total, token) => total + getMushafTokenLength(token), 0);
+
+const splitMushafAyahFragments = (ayah, maxArabicLength) => {
+    const tokens = getMushafArabicTokens(ayah);
+    const fragments = [];
+    let current = [];
+    let currentLength = 0;
+
+    tokens.forEach((token) => {
+        const tokenLength = getMushafTokenLength(token);
+        const shouldStartNewFragment =
+            current.length > 0 &&
+            tokenLength > 0 &&
+            currentLength + tokenLength > maxArabicLength;
+
+        if (shouldStartNewFragment) {
+            fragments.push({ ayah, fragmentIndex: fragments.length, segments: current, isAyahEnd: false });
+            current = [];
+            currentLength = 0;
+        }
+
+        current.push(token);
+        currentLength += tokenLength;
+    });
+
+    if (current.length) {
+        fragments.push({ ayah, fragmentIndex: fragments.length, segments: current, isAyahEnd: true });
+    }
+
+    return fragments.length ? fragments : [{ ayah, fragmentIndex: 0, segments: [], isAyahEnd: true }];
+};
+
+const buildMushafLineGroups = (items) => {
+    const groups = [];
+    let current = [];
+    let currentArabicLength = 0;
+    let currentTranslationLength = 0;
+    const maxArabicLength = 38;
+    const maxAyahsPerRow = 3;
+    const maxTranslationLength = 150;
+
+    items.forEach((ayah) => {
+        splitMushafAyahFragments(ayah, maxArabicLength).forEach((fragment) => {
+            const fragmentLength = Math.max(1, getMushafFragmentLength(fragment));
+            const translationLength = fragment.isAyahEnd ? getMushafTranslationLength(ayah) : 0;
+            const shouldStartNewGroup =
+                current.length > 0 &&
+                (
+                    current.length >= maxAyahsPerRow ||
+                    currentArabicLength + fragmentLength > maxArabicLength ||
+                    currentTranslationLength + translationLength > maxTranslationLength
+                );
+
+            if (shouldStartNewGroup) {
+                groups.push(current);
+                current = [];
+                currentArabicLength = 0;
+                currentTranslationLength = 0;
+            }
+
+            current.push(fragment);
+            currentArabicLength += fragmentLength;
+            currentTranslationLength += translationLength;
+        });
+    });
+
+    if (current.length) groups.push(current);
+    return groups;
+};
 
 const TAJWEED_GROUPS = [
     {
@@ -273,11 +457,16 @@ const TAJWEED_GROUPS = [
 ];
 
 export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
+    const { width: viewportWidth } = useWindowDimensions();
     const { user } = useSession();
     const { showError, showInfo, showSuccess } = useFeedback();
     const { notifyTabActivity } = useTabActivity();
     const handledDeepLinkId = useRef(null);
     const readerListRef = useRef(null);
+    const mushafPageRequestRef = useRef(0);
+    const swipeInFlightRef = useRef(false);
+    const swipeTouchRef = useRef(null);
+    const surahPaginationRef = useRef({ hasMore: false, loading: false, page: 0, surahNumber: null });
     const [surahs, setSurahs] = useState([]);
     const [selectedSurah, setSelectedSurah] = useState(null);
     const [ayahs, setAyahs] = useState([]);
@@ -285,11 +474,17 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const [bookmarks, setBookmarks] = useState({});
     const [loading, setLoading] = useState(true);
     const [readerLoading, setReaderLoading] = useState(false);
+    const [readerLoadingMore, setReaderLoadingMore] = useState(false);
+    const [mushafPageNumber, setMushafPageNumber] = useState(MUSHAF_FIRST_PAGE);
+    const [mushafPageAyahs, setMushafPageAyahs] = useState([]);
+    const [mushafPageLoading, setMushafPageLoading] = useState(false);
+    // mushafWordsByAyah: { [`${surahNumber}:${ayahNumber}`]: [{wordIndex, arabic, transliteration, indonesian}] }
+    const [mushafWordsByAyah, setMushafWordsByAyah] = useState({});
     const [progress, setProgress] = useState(null);
     const [savingSurah, setSavingSurah] = useState(null);
     const [savingAyah, setSavingAyah] = useState(null);
     const [fontSize, setFontSize] = useState(28);
-    const [arabicFont, setArabicFont] = useState('default');
+    const [arabicFont, setArabicFont] = useState('kitab');
     const [displayMode, setDisplayMode] = useState('card');
     const [activeNoteAyah, setActiveNoteAyah] = useState(null);
     const [referenceState, setReferenceState] = useState({});
@@ -322,20 +517,22 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const [tajweedVisible, setTajweedVisible] = useState(false);
     const [referenceModal, setReferenceModal] = useState({ visible: false, type: null, ayah: null });
     const [ayahActionSheet, setAyahActionSheet] = useState({ visible: false, ayah: null });
+    const [readerMenuVisible, setReaderMenuVisible] = useState(false);
 
     const handleScrollActivity = useCallback(() => {
         notifyTabActivity();
     }, [notifyTabActivity]);
 
     const updateFontSize = async (nextSize) => {
-        const normalized = Math.max(22, Math.min(42, nextSize));
+        const normalized = Math.max(MIN_ARABIC_FONT_SIZE, Math.min(MAX_ARABIC_FONT_SIZE, nextSize));
         setFontSize(normalized);
         await writePreference(preferenceKeys.quranFontSize, normalized);
     };
 
     const updateArabicFont = async (key) => {
-        setArabicFont(key);
-        await writePreference(preferenceKeys.quranArabicFont, key);
+        const normalized = normalizeArabicFontKey(key);
+        setArabicFont(normalized);
+        await writePreference(preferenceKeys.quranArabicFont, normalized);
     };
 
     const updateDisplayMode = async (key) => {
@@ -529,6 +726,18 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
 
     const resetReaderState = () => {
         stopAudio();
+        surahPaginationRef.current = {
+            hasMore: false,
+            keys: new Set(),
+            loadedCount: 0,
+            loading: false,
+            page: 0,
+            surahNumber: null,
+        };
+        setReaderLoadingMore(false);
+        setMushafPageLoading(false);
+        setMushafPageAyahs([]);
+        setMushafWordsByAyah({});
         setAudioState((current) => ({
             ...current,
             activeAyahId: null,
@@ -538,9 +747,90 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         setActiveNoteAyah(null);
         setReferenceModal({ visible: false, type: null, ayah: null });
         setAyahActionSheet({ visible: false, ayah: null });
+        setReaderMenuVisible(false);
         setRevealedAyahs({});
         setTargetAyah(null);
         setMessage('');
+    };
+
+    const appendAyahs = (incoming, expectedTotal = null) => {
+        const pagination = surahPaginationRef.current;
+        const keys = pagination.keys ?? new Set();
+        const nextItems = incoming.filter((ayah) => {
+            const key = getAyahIdentity(ayah);
+            if (keys.has(key)) return false;
+            keys.add(key);
+            return true;
+        });
+
+        pagination.keys = keys;
+        pagination.loadedCount = keys.size;
+        if (expectedTotal && keys.size >= expectedTotal) {
+            pagination.hasMore = false;
+        }
+
+        if (!nextItems.length) return;
+        setAyahs((current) => {
+            const currentKeys = new Set(current.map(getAyahIdentity));
+            const cleanItems = nextItems.filter((ayah) => !currentKeys.has(getAyahIdentity(ayah)));
+            return cleanItems.length ? [...current, ...cleanItems] : current;
+        });
+    };
+
+    const loadSurahPage = async (surahNumber, page = 0) => {
+        const result = await getAyahsForSurahPage(surahNumber, { page, size: SURAH_PAGE_SIZE });
+        const current = surahPaginationRef.current;
+        surahPaginationRef.current = {
+            hasMore: result.hasMore,
+            keys: current.keys ?? new Set(),
+            loadedCount: current.loadedCount ?? 0,
+            loading: false,
+            page: result.page,
+            surahNumber,
+        };
+        return result;
+    };
+
+    const loadMushafPage = async (page, options = {}) => {
+        const nextPage = clampMushafPage(page);
+        const requestId = mushafPageRequestRef.current + 1;
+        mushafPageRequestRef.current = requestId;
+        setMushafPageNumber(nextPage);
+        setPageInput(`${nextPage}`);
+        if (options.items) {
+            setMushafPageAyahs(options.items);
+        } else {
+            setMushafPageAyahs([]);
+        }
+        setMushafPageLoading(true);
+        try {
+            const [items, mufrodatItems] = await Promise.all([
+                getAyahsForPage(nextPage),
+                getMufrodatByPage(nextPage).catch(() => []),
+            ]);
+            if (mushafPageRequestRef.current !== requestId) return items;
+            setMushafPageAyahs(items);
+            const wordMap = {};
+            mufrodatItems.forEach((word) => {
+                const key = `${word.surahNumber ?? ''}:${word.ayahNumber ?? ''}`;
+                if (!wordMap[key]) wordMap[key] = [];
+                wordMap[key].push(word);
+            });
+            Object.values(wordMap).forEach((list) =>
+                list.sort((a, b) => (a.wordIndex ?? 0) - (b.wordIndex ?? 0)),
+            );
+            setMushafWordsByAyah(wordMap);
+            return items;
+        } catch (err) {
+            if (mushafPageRequestRef.current === requestId) {
+                setMessage(err?.message ?? 'Halaman mushaf belum bisa dimuat.');
+            }
+            return [];
+        } finally {
+            if (mushafPageRequestRef.current === requestId) {
+                setMushafPageLoading(false);
+            }
+        }
     };
 
     const openSurah = async (surah, options = {}) => {
@@ -555,7 +845,39 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         setTargetAyah(nextTargetAyah);
         setReaderLoading(true);
         try {
-            setAyahs(await getAyahsForSurah(surah.number));
+            const targetPage = nextTargetAyah?.number
+                ? Math.floor((Number(nextTargetAyah.number) - 1) / SURAH_PAGE_SIZE)
+                : 0;
+            const pages = await Promise.all(
+                Array.from({ length: targetPage + 1 }, (_, page) =>
+                    getAyahsForSurahPage(surah.number, { page, size: SURAH_PAGE_SIZE }),
+                ),
+            );
+            const result = pages[pages.length - 1];
+            const initialAyahs = pages.flatMap((pageResult) => pageResult.items).filter((ayah, index, all) => {
+                const key = getAyahIdentity(ayah);
+                return all.findIndex((item) => getAyahIdentity(item) === key) === index;
+            });
+            const expectedTotal = Number(surah.ayahs);
+            const loadedKeys = new Set(initialAyahs.map(getAyahIdentity));
+            surahPaginationRef.current = {
+                hasMore: result.hasMore && (!expectedTotal || loadedKeys.size < expectedTotal),
+                keys: loadedKeys,
+                loadedCount: loadedKeys.size,
+                loading: false,
+                page: result.page,
+                surahNumber: surah.number,
+            };
+            setAyahs(initialAyahs);
+            const initialPage = getFirstPageNumber(initialAyahs, surah.page ?? MUSHAF_FIRST_PAGE);
+            const pagePreviewAyahs = initialAyahs.filter(
+                (ayah) => Number(ayah.pageNumber) === Number(initialPage),
+            );
+            setMushafPageNumber(initialPage);
+            setMushafPageAyahs(pagePreviewAyahs);
+            if (displayMode === 'mushaf') {
+                await loadMushafPage(initialPage, { items: pagePreviewAyahs });
+            }
             await loadBookmarks();
             if (nextTargetAyah?.number) {
                 setMessage(`Dibuka dari pencarian ke ayat ${nextTargetAyah.number}.`);
@@ -567,6 +889,45 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             setReaderLoading(false);
         }
     };
+
+    const loadMoreSurahAyahs = useCallback(async () => {
+        const current = surahPaginationRef.current;
+        if (
+            !selectedSurah ||
+            selectedSurah.type !== 'surah' ||
+            Number(current.surahNumber) !== Number(selectedSurah.number) ||
+            readerLoading ||
+            current.loading ||
+            !current.hasMore
+        ) {
+            return;
+        }
+
+        const surahNumber = selectedSurah.number;
+        current.loading = true;
+        setReaderLoadingMore(true);
+        try {
+            const result = await loadSurahPage(surahNumber, current.page + 1);
+            appendAyahs(result.items, Number(selectedSurah.ayahs));
+        } catch (err) {
+            surahPaginationRef.current = { ...current, loading: false };
+            setMessage(err?.message ?? 'Ayat berikutnya belum bisa dimuat.');
+        } finally {
+            setReaderLoadingMore(false);
+        }
+    }, [readerLoading, selectedSurah]);
+
+    const handleReaderScroll = useCallback(
+        (event) => {
+            handleScrollActivity();
+            const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+            const distanceFromEnd = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+            if (distanceFromEnd <= SURAH_PREFETCH_DISTANCE) {
+                loadMoreSurahAyahs();
+            }
+        },
+        [handleScrollActivity, loadMoreSurahAyahs],
+    );
 
     const normalizeRangeInput = (value, min, max) => {
         const numeric = Number.parseInt(`${value}`, 10);
@@ -588,10 +949,14 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         });
         setReaderLoading(true);
         try {
-            setAyahs(await getAyahsForPage(page));
+            const items = await getAyahsForPage(page);
+            setAyahs(items);
+            setMushafPageNumber(page);
+            setMushafPageAyahs(items);
             await loadBookmarks();
         } catch (err) {
             setAyahs([]);
+            setMushafPageAyahs([]);
             setMessage(err?.message ?? 'Halaman mushaf belum bisa dimuat.');
         } finally {
             setReaderLoading(false);
@@ -612,10 +977,18 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         });
         setReaderLoading(true);
         try {
-            setAyahs(await getAyahsForHizb(hizb));
+            const items = await getAyahsForHizb(hizb);
+            setAyahs(items);
+            const initialPage = getFirstPageNumber(items);
+            setMushafPageNumber(initialPage);
+            setMushafPageAyahs(items.filter((ayah) => Number(ayah.pageNumber) === Number(initialPage)));
+            if (displayMode === 'mushaf') {
+                await loadMushafPage(initialPage);
+            }
             await loadBookmarks();
         } catch (err) {
             setAyahs([]);
+            setMushafPageAyahs([]);
             setMessage(err?.message ?? 'Hizb belum bisa dimuat.');
         } finally {
             setReaderLoading(false);
@@ -631,8 +1004,194 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
 
     const closeReader = () => {
         stopAudio();
+        setReaderMenuVisible(false);
         setSelectedSurah(null);
     };
+
+    const navigateAdjacentSurah = useCallback(
+        (delta) => {
+            if (!selectedSurah || selectedSurah.type !== 'surah' || readerLoading) return;
+            const currentIndex = surahs.findIndex(
+                (item) => Number(item.number) === Number(selectedSurah.number),
+            );
+            if (currentIndex < 0) return;
+
+            const nextSurah = surahs[currentIndex + delta];
+            if (!nextSurah) {
+                showInfo(delta > 0 ? 'Sudah di surah terakhir.' : 'Sudah di surah pertama.');
+                return;
+            }
+
+            openSurah(nextSurah);
+        },
+        [openSurah, readerLoading, selectedSurah, showInfo, surahs],
+    );
+
+    const triggerAdjacentSurah = useCallback(
+        (delta) => {
+            if (swipeInFlightRef.current) return;
+            swipeInFlightRef.current = true;
+            navigateAdjacentSurah(delta);
+            setTimeout(() => {
+                swipeInFlightRef.current = false;
+            }, 220);
+        },
+        [navigateAdjacentSurah],
+    );
+
+    const navigateAdjacentMushafPage = useCallback(
+        (delta) => {
+            if (!selectedSurah || readerLoading || mushafPageLoading) return;
+            const currentPage = clampMushafPage(mushafPageNumber);
+            const nextPage = currentPage + delta;
+
+            if (nextPage < MUSHAF_FIRST_PAGE || nextPage > MUSHAF_LAST_PAGE) {
+                showInfo(delta > 0 ? 'Sudah di halaman terakhir.' : 'Sudah di halaman pertama.');
+                return;
+            }
+
+            loadMushafPage(nextPage);
+        },
+        [mushafPageLoading, mushafPageNumber, readerLoading, selectedSurah, showInfo],
+    );
+
+    const triggerAdjacentMushafPage = useCallback(
+        (delta) => {
+            if (swipeInFlightRef.current) return;
+            swipeInFlightRef.current = true;
+            navigateAdjacentMushafPage(delta);
+            setTimeout(() => {
+                swipeInFlightRef.current = false;
+            }, 220);
+        },
+        [navigateAdjacentMushafPage],
+    );
+
+    const beginReaderTouch = useCallback(
+        (event) => {
+            const touch = event.nativeEvent;
+            swipeTouchRef.current = {
+                lastX: touch.pageX,
+                lastY: touch.pageY,
+                startX: touch.pageX,
+                startY: touch.pageY,
+                startedNearEdge:
+                    touch.pageX <= SWIPE_EDGE_GUARD ||
+                    touch.pageX >= viewportWidth - SWIPE_EDGE_GUARD,
+            };
+        },
+        [viewportWidth],
+    );
+
+    const moveReaderTouch = useCallback((event) => {
+        if (!swipeTouchRef.current) return;
+        const touch = event.nativeEvent;
+        swipeTouchRef.current.lastX = touch.pageX;
+        swipeTouchRef.current.lastY = touch.pageY;
+    }, []);
+
+    const endReaderTouch = useCallback(() => {
+        const touch = swipeTouchRef.current;
+        swipeTouchRef.current = null;
+        const canSwipe =
+            selectedSurah &&
+            !readerLoading &&
+            (displayMode === 'mushaf' || selectedSurah.type === 'surah');
+        if (!touch || !canSwipe || swipeInFlightRef.current) return;
+
+        const dx = touch.lastX - touch.startX;
+        const dy = touch.lastY - touch.startY;
+        const horizontal = Math.abs(dx);
+        const vertical = Math.abs(dy);
+        const hasDistance = horizontal >= SWIPE_TRIGGER_DISTANCE && horizontal > vertical * 0.82;
+        if (!hasDistance) return;
+        if (touch.startedNearEdge && horizontal < 64) return;
+
+        const delta = dx < 0 ? 1 : -1;
+        if (displayMode === 'mushaf') {
+            triggerAdjacentMushafPage(delta);
+            return;
+        }
+        triggerAdjacentSurah(delta);
+    }, [
+        displayMode,
+        readerLoading,
+        selectedSurah,
+        triggerAdjacentMushafPage,
+        triggerAdjacentSurah,
+    ]);
+
+    const readerSwipeResponder = useMemo(
+        () =>
+            PanResponder.create({
+                onMoveShouldSetPanResponder: (_, gestureState) => {
+                    const canSwipe =
+                        selectedSurah &&
+                        !readerLoading &&
+                        (displayMode === 'mushaf' || selectedSurah.type === 'surah');
+                    if (!canSwipe) return false;
+                    const horizontal = Math.abs(gestureState.dx);
+                    const vertical = Math.abs(gestureState.dy);
+                    return (
+                        horizontal >= SWIPE_ACTIVATION_DISTANCE && horizontal > vertical * 0.72
+                    );
+                },
+                onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+                    const canSwipe =
+                        selectedSurah &&
+                        !readerLoading &&
+                        (displayMode === 'mushaf' || selectedSurah.type === 'surah');
+                    if (!canSwipe) return false;
+                    const horizontal = Math.abs(gestureState.dx);
+                    const vertical = Math.abs(gestureState.dy);
+                    const startedNearEdge =
+                        gestureState.x0 <= SWIPE_EDGE_GUARD ||
+                        gestureState.x0 >= viewportWidth - SWIPE_EDGE_GUARD;
+                    if (horizontal < SWIPE_ACTIVATION_DISTANCE || horizontal <= vertical * 0.72) {
+                        return false;
+                    }
+                    return !startedNearEdge || horizontal >= SWIPE_TRIGGER_DISTANCE;
+                },
+                onPanResponderTerminationRequest: () => false,
+                onPanResponderRelease: (_, gestureState) => {
+                    const canSwipe =
+                        selectedSurah &&
+                        !readerLoading &&
+                        (displayMode === 'mushaf' || selectedSurah.type === 'surah');
+                    if (
+                        !canSwipe ||
+                        swipeInFlightRef.current
+                    ) {
+                        return;
+                    }
+                    const horizontal = Math.abs(gestureState.dx);
+                    const vertical = Math.abs(gestureState.dy);
+                    const startedNearEdge =
+                        gestureState.x0 <= SWIPE_EDGE_GUARD ||
+                        gestureState.x0 >= viewportWidth - SWIPE_EDGE_GUARD;
+                    const velocityX = Math.abs(gestureState.vx);
+                    const hasDistance = horizontal >= SWIPE_TRIGGER_DISTANCE && horizontal > vertical * 0.82;
+                    const hasFlick =
+                        horizontal >= 20 && horizontal > vertical * 0.64 && velocityX >= 0.09;
+                    if (!hasDistance && !hasFlick) return;
+                    if (startedNearEdge && horizontal < 64) return;
+                    const delta = gestureState.dx < 0 ? 1 : -1;
+                    if (displayMode === 'mushaf') {
+                        triggerAdjacentMushafPage(delta);
+                        return;
+                    }
+                    triggerAdjacentSurah(delta);
+                },
+            }),
+        [
+            displayMode,
+            readerLoading,
+            selectedSurah,
+            triggerAdjacentMushafPage,
+            triggerAdjacentSurah,
+            viewportWidth,
+        ],
+    );
 
     const markStarted = async (surah) => {
         if (!user) {
@@ -785,9 +1344,20 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         await writePreference(preferenceKeys.quranAudioQari, qariSlug);
     };
 
-    const getArabicFontFamily = () => {
+    const normalizeArabicFontKey = (key) => LEGACY_ARABIC_FONT_MAP[key] ?? key;
+
+    const getArabicTypography = (extraSize = 0, lineHeightRatio = 1.75) => {
         const font = ARABIC_FONTS.find((f) => f.key === arabicFont);
-        return font?.fontFamily ?? undefined;
+        const size = Math.max(
+            MIN_ARABIC_FONT_SIZE,
+            Math.min(MAX_ARABIC_FONT_SIZE + extraSize, fontSize + extraSize),
+        );
+        return {
+            fontSize: size,
+            fontWeight: '400',
+            lineHeight: Math.round(size * lineHeightRatio),
+            ...(font?.fontFamily ? { fontFamily: font.fontFamily } : {}),
+        };
     };
 
     const renderAudioSources = (ayah) => {
@@ -818,26 +1388,52 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         );
     };
 
+    const renderArabicSpans = (ayah, keyPrefix = 'arabic') => {
+        const source = ayah.arabicHtml || ayah.arabic || '';
+        const segments = ayah.arabicHtml
+            ? parseTajweedHtml(source)
+            : [{ text: source, className: null }];
+
+        return segments.map((segment, index) => {
+            const color = TAJWEED_TEXT_COLORS[segment.className];
+            return (
+                <Text
+                    key={`${keyPrefix}-${ayah.id ?? ayah.number}-${index}`}
+                    style={color ? { color } : null}
+                >
+                    {segment.text}
+                </Text>
+            );
+        });
+    };
+
+    const renderArabicContent = (ayah, arabicStyle, keyPrefix = 'arabic') => (
+        <Text style={arabicStyle}>
+            {renderArabicSpans(ayah, keyPrefix)}
+            <Text style={styles.verseMark}> ۝{toArabicDigits(ayah.number)}</Text>
+        </Text>
+    );
+
     const renderAyahText = (ayah) => {
         const isRevealed = Boolean(revealedAyahs[ayah.id]);
         const hideArabic = !isRevealed && ['hide_arabic', 'hide_all'].includes(memorizationMode);
         const isMushaf = displayMode === 'mushaf';
         const isLine = displayMode === 'line';
         const isFocus = displayMode === 'focus' || isMushaf;
-        const hideTranslation =
-            isFocus || (!isRevealed && ['hide_translation', 'hide_all'].includes(memorizationMode));
-        const hasHiddenContent = hideArabic || (!isFocus && hideTranslation);
-        const fontFamily = getArabicFontFamily();
+        const hideTranslationForMemorization =
+            !isRevealed && ['hide_translation', 'hide_all'].includes(memorizationMode);
+        const hideTranslation = isFocus || hideTranslationForMemorization;
+        const hasHiddenContent = hideArabic || (!isFocus && hideTranslationForMemorization);
         const arabicBaseStyle = isMushaf ? styles.mushafArabic : isLine ? styles.lineArabic : styles.ayahArabic;
-        const resolvedFontSize = isMushaf ? fontSize + 2 : fontSize;
-        const arabicStyle = fontFamily
-            ? [arabicBaseStyle, { fontSize: resolvedFontSize, fontFamily }]
-            : [arabicBaseStyle, { fontSize: resolvedFontSize }];
+        const arabicStyle = [
+            arabicBaseStyle,
+            getArabicTypography(isMushaf ? 2 : 0, isMushaf ? 1.85 : 1.75),
+        ];
 
         return (
             <>
-                {ayah.arabic && !hideArabic ? (
-                    <Text style={arabicStyle}>{ayah.arabic}</Text>
+                {(ayah.arabic || ayah.arabicHtml) && !hideArabic ? (
+                    renderArabicContent(ayah, arabicStyle, `reader-${displayMode}`)
                 ) : null}
                 {hideArabic ? (
                     <View style={styles.hiddenBlock}>
@@ -850,12 +1446,12 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                 {ayah.translation && !hideTranslation ? (
                     <Text style={styles.ayahTranslation}>{ayah.translation}</Text>
                 ) : null}
-                {!isFocus && hideTranslation && !isRevealed ? (
+                {!isFocus && hideTranslationForMemorization ? (
                     <View style={styles.hiddenBlock}>
                         <Text style={styles.hiddenTitle}>Terjemahan disembunyikan untuk latihan</Text>
                     </View>
                 ) : null}
-                {hasHiddenContent ? (
+                {hasHiddenContent && !isLine ? (
                     <Pressable
                         onPress={() => setRevealedAyahs((current) => ({ ...current, [ayah.id]: true }))}
                         style={styles.revealButton}
@@ -866,6 +1462,23 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             </>
         );
     };
+
+    const renderInlineArabicRow = (ayah) => (
+        <View style={styles.inlineArabicRow}>
+            <Pressable
+                accessibilityLabel={`Aksi ayat ${ayah.number}`}
+                accessibilityRole="button"
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
+                onPress={() => setAyahActionSheet({ visible: true, ayah })}
+                style={styles.inlineAyahMenuButton}
+            >
+                <MoreVertical color={colors.primary} size={18} strokeWidth={2.4} />
+            </Pressable>
+            <View style={styles.inlineArabicText}>
+                {renderAyahText(ayah)}
+            </View>
+        </View>
+    );
 
     const renderAyahHeader = (ayah) => {
         const meta = ayah.surahName ? `${ayah.surahName} · Ayah ${ayah.number}` : `Ayah ${ayah.number}`;
@@ -888,27 +1501,19 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         );
     };
 
-    const renderLineAyah = (ayah, isTargetAyah) => {
-        const meta = ayah.surahName ? `${ayah.surahName} · ${ayah.number}` : `Ayah ${ayah.number}`;
+    const renderLineAyah = (ayah, isTargetAyah) => (
+        <View style={[styles.lineAyahRow, isTargetAyah ? styles.targetAyahCard : null]}>
+            {renderInlineArabicRow(ayah)}
+            {audioState.activeAyahId === ayah.id ? renderAudioSources(ayah) : null}
+        </View>
+    );
+
+    const renderReaderFooter = () => {
+        if (!readerLoadingMore) return null;
         return (
-            <View style={[styles.lineAyahRow, isTargetAyah ? styles.targetAyahCard : null]}>
-                <View style={styles.lineAyahHeader}>
-                    <View style={styles.lineAyahNumber}>
-                        <Text style={styles.lineAyahNumberText}>{ayah.number}</Text>
-                    </View>
-                    <Text style={styles.lineAyahMeta}>{meta}</Text>
-                    <Pressable
-                        accessibilityLabel={`Aksi ayat ${ayah.number}`}
-                        accessibilityRole="button"
-                        android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
-                        onPress={() => setAyahActionSheet({ visible: true, ayah })}
-                        style={styles.lineAyahMenuButton}
-                    >
-                        <MoreVertical color={colors.primary} size={18} strokeWidth={2.4} />
-                    </Pressable>
-                </View>
-                {renderAyahText(ayah)}
-                {renderAudioSources(ayah)}
+            <View style={styles.readerLoadingMore}>
+                <ActivityIndicator color={colors.primary} size="small" />
+                <Text style={styles.readerLoadingMoreText}>Memuat ayat berikutnya...</Text>
             </View>
         );
     };
@@ -919,42 +1524,149 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             (targetAyah?.number && Number(targetAyah.number) === Number(ayah.number));
 
         if (displayMode === 'line') return renderLineAyah(ayah, isTargetAyah);
+        if (displayMode === 'focus') {
+            return (
+                <View style={[styles.focusAyahRow, isTargetAyah ? styles.targetAyahCard : null]}>
+                    {renderInlineArabicRow(ayah)}
+                    {audioState.activeAyahId === ayah.id ? renderAudioSources(ayah) : null}
+                </View>
+            );
+        }
 
         return (
             <Card style={[
                 displayMode === 'focus' ? styles.focusAyahCard : null,
                 isTargetAyah ? styles.targetAyahCard : null,
             ]}>
-                {renderAyahHeader(ayah)}
-                {renderAyahText(ayah)}
-                {renderAudioSources(ayah)}
+                {renderInlineArabicRow(ayah)}
+                {audioState.activeAyahId === ayah.id ? renderAudioSources(ayah) : null}
             </Card>
         );
     };
 
+    const renderMushafFragmentSpans = (fragment, keyPrefix) =>
+        fragment.segments.map((segment, index) => {
+            const color = TAJWEED_TEXT_COLORS[segment.className];
+            return (
+                <Text
+                    key={`${keyPrefix}-${index}`}
+                    style={color ? { color } : null}
+                >
+                    {segment.text}
+                </Text>
+            );
+        });
+
+    const renderMushafLineBlock = (group, mushafArabicStyle, showMushafArabic, showMushafTranslation) => {
+        const key = group
+            .map((fragment) =>
+                `${fragment.ayah.surahNumber ?? selectedSurah.number}:${fragment.ayah.number}:${fragment.fragmentIndex}`,
+            )
+            .join('-');
+        return (
+            <View key={`mushaf-line-${key}`} style={styles.mushafAyahBlockLine}>
+                {showMushafArabic ? (
+                    <Text style={mushafArabicStyle}>
+                        {group.map((fragment, fragmentIndex) => {
+                            const ayah = fragment.ayah;
+                            const isTargetAyah =
+                                (targetAyah?.id && Number(targetAyah.id) === Number(ayah.id)) ||
+                                (targetAyah?.number && Number(targetAyah.number) === Number(ayah.number));
+                            return (
+                                <Text
+                                    key={`${ayah.id}-${ayah.surahNumber ?? selectedSurah.number}-${ayah.number}-${fragment.fragmentIndex}`}
+                                    onPress={() => setAyahActionSheet({ visible: true, ayah })}
+                                    style={isTargetAyah ? styles.mushafInlineTarget : null}
+                                >
+                                    {renderMushafFragmentSpans(fragment, `mushaf-line-${ayah.id}-${fragment.fragmentIndex}`)}
+                                    {fragment.isAyahEnd ? (
+                                        <Text style={styles.mushafVerseMark}> ۝{toArabicDigits(ayah.number)} </Text>
+                                    ) : null}
+                                </Text>
+                            );
+                        })}
+                    </Text>
+                ) : null}
+                {showMushafTranslation && group.some((fragment) => fragment.isAyahEnd && fragment.ayah.translation) ? (
+                    <Text style={styles.mushafPageTranslation}>
+                        {group
+                            .filter((fragment) => fragment.isAyahEnd && fragment.ayah.translation)
+                            .map((fragment) => `${toArabicDigits(fragment.ayah.number)}. ${fragment.ayah.translation}`)
+                            .join('  /  ')}
+                    </Text>
+                ) : null}
+            </View>
+        );
+    };
+
+    const renderMushafPerKataAyah = (ayah, words, showMushafArabic, showMushafTranslation) => {
+        const ayahKey = `${ayah.surahNumber ?? selectedSurah.number}:${ayah.number}`;
+        const isTargetAyah =
+            (targetAyah?.id && Number(targetAyah.id) === Number(ayah.id)) ||
+            (targetAyah?.number && Number(targetAyah.number) === Number(ayah.number));
+        return (
+            <Pressable
+                key={`mushaf-perkata-${ayahKey}`}
+                accessibilityRole="button"
+                accessibilityLabel={`Aksi ayat ${ayah.number}`}
+                onPress={() => setAyahActionSheet({ visible: true, ayah })}
+                style={[
+                    styles.mushafPerKataAyah,
+                    isTargetAyah ? styles.mushafPerKataAyahTarget : null,
+                ]}
+            >
+                {showMushafArabic ? (
+                    <View style={styles.mushafPerKataRow}>
+                        {words.map((word) => (
+                            <View
+                                key={`${ayahKey}-w${word.wordIndex}`}
+                                style={styles.mushafWordCell}
+                            >
+                                <Text style={[styles.mushafWordArabic, getArabicTypography(0, 1.4)]}>
+                                    {word.arabic}
+                                </Text>
+                                <Text style={styles.mushafWordLatin}>
+                                    {word.transliteration || ' '}
+                                </Text>
+                                {showMushafTranslation ? (
+                                    <Text style={styles.mushafWordIndo}>
+                                        {word.indonesian || ' '}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        ))}
+                        <View style={styles.mushafVerseEndCell}>
+                            <View style={styles.mushafVerseEndCircle}>
+                                <Text style={styles.mushafVerseEndText}>
+                                    {toArabicDigits(ayah.number)}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                ) : null}
+                {showMushafTranslation && ayah.translation ? (
+                    <Text style={styles.mushafPerKataFullTranslation}>
+                        {`(${ayah.number}) ${ayah.translation}`}
+                    </Text>
+                ) : null}
+            </Pressable>
+        );
+    };
+
     const renderMushafPage = () => {
-        const fontFamily = getArabicFontFamily();
-        const continuousArabicStyle = fontFamily
-            ? [styles.mushafContinuousArabic, { fontFamily, fontSize: fontSize + 4 }]
-            : [styles.mushafContinuousArabic, { fontSize: fontSize + 4 }];
-        const mushafPages = ayahs.reduce((pages, ayah, index) => {
-            const pageNumber = ayah.pageNumber ?? selectedSurah.page ?? `surah-${selectedSurah.number ?? 0}`;
-            const previous = pages[pages.length - 1];
+        const mushafArabicStyle = [
+            styles.mushafPageArabic,
+            getArabicTypography(-3, 1.72),
+        ];
+        const showMushafArabic = !['hide_arabic', 'hide_all'].includes(memorizationMode);
+        const showMushafTranslation = !['hide_translation', 'hide_all'].includes(memorizationMode);
+        const currentPage = clampMushafPage(
+            mushafPageNumber || selectedSurah.page || getFirstPageNumber(ayahs),
+        );
+        const fallbackPageAyahs = ayahs.filter((ayah) => Number(ayah.pageNumber) === Number(currentPage));
+        const pageAyahs = mushafPageAyahs.length ? mushafPageAyahs : fallbackPageAyahs;
 
-            if (previous && previous.pageNumber === pageNumber) {
-                previous.ayahs.push(ayah);
-                return pages;
-            }
-
-            pages.push({
-                ayahs: [ayah],
-                id: `${pageNumber}-${index}`,
-                pageNumber,
-            });
-            return pages;
-        }, []);
-
-        if (readerLoading) {
+        if (readerLoading || (mushafPageLoading && !pageAyahs.length)) {
             return (
                 <View style={styles.mushafPageShell}>
                     <ActivityIndicator color={colors.primary} />
@@ -962,7 +1674,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             );
         }
 
-        if (!ayahs.length) {
+        if (!pageAyahs.length) {
             return (
                 <EmptyState
                     title="Ayat belum tersedia"
@@ -971,62 +1683,111 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             );
         }
 
+        const firstAyah = pageAyahs[0];
+        const lastAyah = pageAyahs[pageAyahs.length - 1];
+        const rangeLabel = firstAyah && lastAyah
+            ? `${firstAyah.surahName || selectedSurah.name} ${firstAyah.number}-${lastAyah.number}`
+            : selectedSurah.meaning || "Al-Qur'an";
+        const juzLabel = firstAyah?.juzNumber ? `${firstAyah.juzNumber}` : '1';
+        const surahLabel = firstAyah?.surahName || selectedSurah.name;
+        const surahNumberLabel =
+            firstAyah?.surahNumber ?? selectedSurah.number ?? '';
+        const showStandaloneBismillah =
+            Number(firstAyah?.number) === 1 &&
+            Number(firstAyah?.surahNumber ?? selectedSurah.number) !== 1 &&
+            Number(firstAyah?.surahNumber ?? selectedSurah.number) !== 9;
+
+        // Decide whether we have per-kata data for ALL ayahs on this page.
+        // If yes → render the per-kata layout (matches reference image).
+        // If no → fall back to existing row-based mushaf layout.
+        const ayahsWithWordCheck = pageAyahs.map((ayah) => {
+            const key = `${ayah.surahNumber ?? selectedSurah.number}:${ayah.number}`;
+            const words = mushafWordsByAyah[key] || [];
+            return { ayah, words };
+        });
+        const hasPerKataDataForAll =
+            ayahsWithWordCheck.length > 0 &&
+            ayahsWithWordCheck.every(({ words }) => words.length > 0);
+
         return (
             <View style={styles.mushafPagesStack}>
-                {mushafPages.map((page) => {
-                    const firstAyah = page.ayahs[0];
-                    const lastAyah = page.ayahs[page.ayahs.length - 1];
-                    const pageLabel = Number.isFinite(Number(page.pageNumber))
-                        ? `Halaman ${page.pageNumber}`
-                        : selectedSurah.name;
-                    const rangeLabel = firstAyah && lastAyah
-                        ? `${firstAyah.surahName || selectedSurah.name} ${firstAyah.number}-${lastAyah.number}`
-                        : selectedSurah.meaning || "Al-Qur'an";
-
-                    return (
-                        <View key={page.id} style={styles.mushafPageShell}>
-                            <View style={styles.mushafFrame}>
-                                <View style={styles.mushafFrameTop}>
-                                    <Text style={styles.mushafFrameChip}>{selectedSurah.name}</Text>
-                                    <Text style={styles.mushafFrameNumber}>{pageLabel}</Text>
-                                    <Text style={styles.mushafFrameChip}>{rangeLabel}</Text>
-                                </View>
-                                <View style={styles.mushafSurahNamePlate}>
-                                    <Text style={styles.mushafSurahTitle}>
-                                        {firstAyah?.surahName || selectedSurah.name}
-                                    </Text>
-                                    <Text style={styles.mushafSurahMeta}>
-                                        {selectedSurah.type === 'surah'
-                                            ? `${page.ayahs.length} ayat pada halaman ini`
-                                            : selectedSurah.meaning || 'Tilawah'}
+                <View key={`mushaf-page-${currentPage}`} style={styles.mushafPageShell}>
+                    <View style={styles.mushafFrameOuter}>
+                        <View style={styles.mushafFrame}>
+                            <View style={styles.mushafFrameTop}>
+                                <View style={styles.mushafFrameJuzBadge}>
+                                    <Text style={styles.mushafFrameJuzText}>
+                                        {`JUZ ${juzLabel}`}
                                     </Text>
                                 </View>
-                                <Text style={continuousArabicStyle}>
-                                    {page.ayahs.map((ayah) => {
-                                        const isTargetAyah =
-                                            (targetAyah?.id && Number(targetAyah.id) === Number(ayah.id)) ||
-                                            (targetAyah?.number && Number(targetAyah.number) === Number(ayah.number));
-                                        return (
-                                            <Text
-                                                key={`${ayah.id}-${ayah.number}`}
-                                                onPress={() => setAyahActionSheet({ visible: true, ayah })}
-                                                style={isTargetAyah ? styles.mushafTargetText : null}
-                                            >
-                                                {ayah.arabic}{' '}
-                                                <Text style={styles.mushafVerseMark}>۝{ayah.number}</Text>{' '}
-                                            </Text>
-                                        );
-                                    })}
+                                <View style={styles.mushafFramePageBadge}>
+                                    <Text style={styles.mushafFramePageText}>
+                                        {currentPage}
+                                    </Text>
+                                </View>
+                                <View style={styles.mushafFrameSurahBadge}>
+                                    <Text style={styles.mushafFrameSurahText}>
+                                        {`${surahNumberLabel}. ${surahLabel}`.trim()}
+                                    </Text>
+                                </View>
+                            </View>
+                            {showStandaloneBismillah ? (
+                                <Text style={[styles.mushafBismillah, getArabicTypography(8, 1.65)]}>
+                                    {BISMILLAH}
                                 </Text>
+                            ) : null}
+                            {hasPerKataDataForAll ? (
+                                <View style={styles.mushafPerKataStack}>
+                                    {ayahsWithWordCheck.map(({ ayah, words }) =>
+                                        renderMushafPerKataAyah(
+                                            ayah,
+                                            words,
+                                            showMushafArabic,
+                                            showMushafTranslation,
+                                        ),
+                                    )}
+                                </View>
+                            ) : (
+                                <View style={styles.mushafAyahBlockStack}>
+                                    {buildMushafLineGroups(pageAyahs).map((group) =>
+                                        renderMushafLineBlock(
+                                            group,
+                                            mushafArabicStyle,
+                                            showMushafArabic,
+                                            showMushafTranslation,
+                                        ),
+                                    )}
+                                </View>
+                            )}
+                            {mushafPageLoading ? (
+                                <View style={styles.mushafInlineLoading}>
+                                    <ActivityIndicator color={colors.primary} size="small" />
+                                </View>
+                            ) : null}
+                            <View style={styles.mushafFrameBottom}>
+                                <Text style={styles.mushafRangeMeta}>{rangeLabel}</Text>
+                                <View style={styles.mushafFootPageBadge}>
+                                    <Text style={styles.mushafFootPageText}>{currentPage}</Text>
+                                </View>
                             </View>
                         </View>
-                    );
-                })}
+                    </View>
+                </View>
             </View>
         );
     };
 
     const renderReaderHeader = () => {
+        const isSeriousMode = displayMode === 'focus' || displayMode === 'mushaf';
+        const selectedSurahNumber = Number(selectedSurah?.number);
+        const currentSurahIndex =
+            selectedSurah?.type === 'surah'
+                ? surahs.findIndex((item) => Number(item.number) === selectedSurahNumber)
+                : -1;
+        const hasPreviousSurah = currentSurahIndex > 0;
+        const hasNextSurah = currentSurahIndex >= 0 && currentSurahIndex < surahs.length - 1;
+        const previousSurah = hasPreviousSurah ? surahs[currentSurahIndex - 1] : null;
+        const nextSurah = hasNextSurah ? surahs[currentSurahIndex + 1] : null;
         const previewAyah = targetAyah
             ? ayahs.find((ayah) =>
                   (targetAyah.id && Number(targetAyah.id) === Number(ayah.id)) ||
@@ -1036,45 +1797,78 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
 
         return (
         <>
-            <View style={styles.readerHeader}>
+            <View style={[styles.readerHeader, isSeriousMode ? styles.readerHeaderSerious : null]}>
                 <View style={styles.readerHeaderTop}>
                     <View style={styles.readerHeaderCopy}>
                         <Text style={styles.readerTitle}>{selectedSurah.name}</Text>
                         <Text style={styles.readerSubtitle}>
-                            {selectedSurah.type === 'surah'
-                                ? `${selectedSurah.meaning || "Bacaan Al-Qur'an"} · ${selectedSurah.ayahs} ayah`
-                                : selectedSurah.meaning || "Bacaan Al-Qur'an"}
+                            {isSeriousMode
+                                ? displayMode === 'mushaf'
+                                    ? `Halaman ${mushafPageNumber} · mode mushaf`
+                                    : selectedSurah.type === 'surah'
+                                    ? `${selectedSurah.ayahs} ayah · mode baca fokus`
+                                    : selectedSurah.meaning || 'Mode baca fokus'
+                                : selectedSurah.type === 'surah'
+                                  ? `${selectedSurah.meaning || "Bacaan Al-Qur'an"} · ${selectedSurah.ayahs} ayah`
+                                  : selectedSurah.meaning || "Bacaan Al-Qur'an"}
                         </Text>
                     </View>
                     <View style={styles.readerHeaderActions}>
-                        <IconActionButton
-                            Icon={SlidersHorizontal}
-                            label="Pengaturan tampilan"
-                            onPress={() => setSettingsVisible(true)}
-                        />
                         <IconActionButton
                             Icon={ArrowLeft}
                             label="Kembali ke daftar surah"
                             onPress={closeReader}
                         />
+                        <IconActionButton
+                            Icon={MoreVertical}
+                            label="Menu baca"
+                            onPress={() => setReaderMenuVisible(true)}
+                        />
                     </View>
                 </View>
             </View>
-            {displayMode === 'mushaf' ? (
-                <View style={styles.mushafPageHeader}>
-                    <Text style={styles.mushafPageChip}>
-                        {selectedSurah.type === 'page' ? `Hal. ${selectedSurah.page}` : selectedSurah.name}
-                    </Text>
-                    <Text style={styles.mushafPageCenter}>
-                        {selectedSurah.type === 'surah' ? `${selectedSurah.ayahs} ayah` : 'Mode Mushaf'}
-                    </Text>
-                    <Text style={styles.mushafPageChip}>
-                        {selectedSurah.type === 'hizb' ? `Hizb ${selectedSurah.hizb}` : 'Tilawah'}
-                    </Text>
+            {selectedSurah.type === 'surah' && displayMode !== 'mushaf' ? (
+                <View style={styles.surahPagerRow}>
+                    <Pressable
+                        accessibilityLabel={
+                            previousSurah
+                                ? `Buka ${previousSurah.name}`
+                                : 'Tidak ada surah sebelumnya'
+                        }
+                        android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                        disabled={!hasPreviousSurah || readerLoading}
+                        onPress={() => triggerAdjacentSurah(-1)}
+                        style={[
+                            styles.surahPagerButton,
+                            !hasPreviousSurah || readerLoading ? styles.disabled : null,
+                        ]}
+                    >
+                        <ArrowLeft color={colors.primaryDark} size={16} strokeWidth={2.2} />
+                        <Text numberOfLines={2} style={styles.surahPagerButtonText}>
+                            {previousSurah ? `${previousSurah.number}. ${previousSurah.name}` : '—'}
+                        </Text>
+                    </Pressable>
+                    <Pressable
+                        accessibilityLabel={
+                            nextSurah ? `Buka ${nextSurah.name}` : 'Tidak ada surah selanjutnya'
+                        }
+                        android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                        disabled={!hasNextSurah || readerLoading}
+                        onPress={() => triggerAdjacentSurah(1)}
+                        style={[
+                            styles.surahPagerButton,
+                            !hasNextSurah || readerLoading ? styles.disabled : null,
+                        ]}
+                    >
+                        <Text numberOfLines={2} style={styles.surahPagerButtonText}>
+                            {nextSurah ? `${nextSurah.number}. ${nextSurah.name}` : '—'}
+                        </Text>
+                        <ArrowRight color={colors.primaryDark} size={16} strokeWidth={2.2} />
+                    </Pressable>
                 </View>
             ) : null}
             {message ? <Text style={styles.message}>{message}</Text> : null}
-            {previewAyah ? (
+            {previewAyah && !isSeriousMode ? (
                 <View style={styles.targetPreview}>
                     <Text style={styles.targetPreviewKicker}>Hasil pencarian</Text>
                     <Text style={styles.targetPreviewTitle}>
@@ -1103,6 +1897,86 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         );
     };
 
+    const renderReaderMenuModal = () => {
+        const isSeriousMode = displayMode === 'focus' || displayMode === 'mushaf';
+        return (
+            <Modal
+                animationType="slide"
+                onRequestClose={() => setReaderMenuVisible(false)}
+                transparent
+                visible={readerMenuVisible}
+            >
+                <Pressable onPress={() => setReaderMenuVisible(false)} style={styles.modalOverlay} />
+                <View style={styles.modalSheet}>
+                    <View style={styles.modalHandle} />
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Menu Baca</Text>
+                        <Pressable
+                            hitSlop={8}
+                            onPress={() => setReaderMenuVisible(false)}
+                            style={styles.modalClose}
+                        >
+                            <X color={colors.muted} size={18} strokeWidth={2.2} />
+                        </Pressable>
+                    </View>
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                        <Pressable
+                            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                            onPress={() => {
+                                setReaderMenuVisible(false);
+                                setSettingsVisible(true);
+                            }}
+                            style={styles.actionSheetRow}
+                        >
+                            <View style={styles.actionSheetIcon}>
+                                <SlidersHorizontal color={colors.primary} size={18} strokeWidth={2.3} />
+                            </View>
+                            <View style={styles.actionSheetCopy}>
+                                <Text style={styles.actionSheetTitle}>Pengaturan tampilan</Text>
+                                <Text style={styles.actionSheetSubtitle}>Ubah mode baca, font, dan ukuran arab</Text>
+                            </View>
+                        </Pressable>
+                        {isSeriousMode ? (
+                            <Pressable
+                                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                                onPress={() => {
+                                    setReaderMenuVisible(false);
+                                    updateDisplayMode('card');
+                                }}
+                                style={styles.actionSheetRow}
+                            >
+                                <View style={styles.actionSheetIcon}>
+                                    <BookOpen color={colors.primary} size={18} strokeWidth={2.3} />
+                                </View>
+                                <View style={styles.actionSheetCopy}>
+                                    <Text style={styles.actionSheetTitle}>Keluar mode fokus</Text>
+                                    <Text style={styles.actionSheetSubtitle}>Kembali ke tampilan card lengkap</Text>
+                                </View>
+                            </Pressable>
+                        ) : null}
+                        <Pressable
+                            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                            onPress={() => {
+                                setReaderMenuVisible(false);
+                                closeReader();
+                            }}
+                            style={styles.actionSheetRow}
+                        >
+                            <View style={styles.actionSheetIcon}>
+                                <ArrowLeft color={colors.primary} size={18} strokeWidth={2.3} />
+                            </View>
+                            <View style={styles.actionSheetCopy}>
+                                <Text style={styles.actionSheetTitle}>Kembali ke daftar surah</Text>
+                                <Text style={styles.actionSheetSubtitle}>Tutup reader dan kembali ke daftar</Text>
+                            </View>
+                        </Pressable>
+                        <View style={styles.modalBottomPad} />
+                    </ScrollView>
+                </View>
+            </Modal>
+        );
+    };
+
     const renderSettingsModal = () => (
         <Modal
             animationType="slide"
@@ -1128,15 +2002,23 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                     <Text style={styles.settingLabel}>Ukuran Teks Arab</Text>
                     <View style={styles.fontSizeRow}>
                         <Pressable
+                            disabled={fontSize <= MIN_ARABIC_FONT_SIZE}
                             onPress={() => updateFontSize(fontSize - 2)}
-                            style={styles.fontSizeButton}
+                            style={[
+                                styles.fontSizeButton,
+                                fontSize <= MIN_ARABIC_FONT_SIZE ? styles.disabled : null,
+                            ]}
                         >
                             <Minus color={colors.ink} size={16} strokeWidth={2.4} />
                         </Pressable>
                         <Text style={styles.fontSizeValue}>{fontSize}px</Text>
                         <Pressable
+                            disabled={fontSize >= MAX_ARABIC_FONT_SIZE}
                             onPress={() => updateFontSize(fontSize + 2)}
-                            style={styles.fontSizeButton}
+                            style={[
+                                styles.fontSizeButton,
+                                fontSize >= MAX_ARABIC_FONT_SIZE ? styles.disabled : null,
+                            ]}
                         >
                             <Plus color={colors.ink} size={16} strokeWidth={2.4} />
                         </Pressable>
@@ -1157,6 +2039,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                                 <Text
                                     style={[
                                         styles.settingChipText,
+                                        font.fontFamily ? { fontFamily: font.fontFamily, fontWeight: '400' } : null,
                                         arabicFont === font.key ? styles.settingChipTextActive : null,
                                     ]}
                                 >
@@ -1206,7 +2089,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                         ))}
                     </View>
                     <Text style={styles.settingHint}>
-                        Mode Fokus dan Mushaf menyembunyikan latin/terjemah supaya layar utama fokus tilawah.
+                        Mode Fokus menyembunyikan latin/terjemah. Mode Mushaf mengikuti pilihan Mode Hafalan.
                     </Text>
 
                     {/* Memorization mode */}
@@ -1445,7 +2328,9 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     };
 
     const renderAyahNotesModal = () => {
-        const ayah = activeNoteAyah ? ayahs.find((item) => item.id === activeNoteAyah) : null;
+        const ayah = activeNoteAyah
+            ? [...ayahs, ...mushafPageAyahs].find((item) => item.id === activeNoteAyah)
+            : null;
         return (
             <Modal
                 animationType="slide"
@@ -1612,6 +2497,19 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     }, [ayahs, readerLoading, selectedSurah, targetAyah]);
 
     useEffect(() => {
+        if (!selectedSurah || displayMode !== 'mushaf') return;
+        if (selectedSurah.type !== 'page' && !ayahs.length) return;
+
+        const nextPage = clampMushafPage(
+            selectedSurah.type === 'page'
+                ? selectedSurah.page
+                : mushafPageNumber || getFirstPageNumber(ayahs, selectedSurah.page),
+        );
+        const previewAyahs = ayahs.filter((ayah) => Number(ayah.pageNumber) === Number(nextPage));
+        loadMushafPage(nextPage, { items: previewAyahs.length ? previewAyahs : undefined });
+    }, [displayMode, selectedSurah?.key]);
+
+    useEffect(() => {
         if (!isActive) return;
         if (selectedSurah) {
             navigation?.setBack(() => {
@@ -1626,7 +2524,9 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     useEffect(() => {
         let mounted = true;
         readPreference(preferenceKeys.quranFontSize, 28).then((value) => {
-            if (mounted && typeof value === 'number') setFontSize(Math.max(22, Math.min(42, value)));
+            if (mounted && typeof value === 'number') {
+                setFontSize(Math.max(MIN_ARABIC_FONT_SIZE, Math.min(MAX_ARABIC_FONT_SIZE, value)));
+            }
         });
         readPreference(preferenceKeys.quranAudioQari, 'Alafasy_64kbps').then((value) => {
             if (mounted && typeof value === 'string')
@@ -1635,8 +2535,11 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         readPreference(preferenceKeys.quranMemorizationMode, 'off').then((value) => {
             if (mounted && MEMORIZATION_MODES.some((m) => m.key === value)) setMemorizationMode(value);
         });
-        readPreference(preferenceKeys.quranArabicFont, 'default').then((value) => {
-            if (mounted && ARABIC_FONTS.some((f) => f.key === value)) setArabicFont(value);
+        readPreference(preferenceKeys.quranArabicFont, 'kitab').then((value) => {
+            const normalizedValue = normalizeArabicFontKey(value);
+            if (mounted && ARABIC_FONTS.some((f) => f.key === normalizedValue)) {
+                setArabicFont(normalizedValue);
+            }
         });
         readPreference(preferenceKeys.quranDisplayMode, 'card').then((value) => {
             const normalizedValue = value === 'normal' ? 'card' : value;
@@ -2050,16 +2953,24 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             return (
                 <>
                     {renderSettingsModal()}
+                    {renderReaderMenuModal()}
                     {renderReferenceModal()}
                     {renderAyahActionSheet()}
                     {renderAyahNotesModal()}
                     {renderTajweedModal()}
                     <ScrollView
                         contentContainerStyle={styles.mushafScrollContent}
+                        directionalLockEnabled
                         keyboardShouldPersistTaps="handled"
                         onMomentumScrollBegin={handleScrollActivity}
                         onScroll={handleScrollActivity}
                         onScrollBeginDrag={handleScrollActivity}
+                        onTouchCancel={() => {
+                            swipeTouchRef.current = null;
+                        }}
+                        onTouchEnd={endReaderTouch}
+                        onTouchMove={moveReaderTouch}
+                        onTouchStart={beginReaderTouch}
                         refreshControl={
                             <RefreshControl
                                 refreshing={readerLoading}
@@ -2071,8 +2982,10 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                         showsVerticalScrollIndicator={false}
                         style={styles.readerList}
                     >
-                        {renderReaderHeader()}
-                        {renderMushafPage()}
+                        <View {...readerSwipeResponder.panHandlers} style={styles.mushafGestureSurface}>
+                            {renderReaderHeader()}
+                            {renderMushafPage()}
+                        </View>
                     </ScrollView>
                 </>
             );
@@ -2081,11 +2994,13 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         return (
             <>
                 {renderSettingsModal()}
+                {renderReaderMenuModal()}
                 {renderReferenceModal()}
                 {renderAyahActionSheet()}
                 {renderAyahNotesModal()}
                 {renderTajweedModal()}
                 <FlatList
+                    {...readerSwipeResponder.panHandlers}
                     key={`${selectedSurah.key ?? selectedSurah.number}:${targetAyah?.id ?? targetAyah?.number ?? 'top'}:${ayahs.length ? 'ready' : 'loading'}`}
                     ref={readerListRef}
                     contentContainerStyle={[
@@ -2113,10 +3028,19 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                             />
                         )
                     }
+                    ListFooterComponent={renderReaderFooter}
                     ListHeaderComponent={renderReaderHeader}
+                    onEndReached={loadMoreSurahAyahs}
+                    onEndReachedThreshold={0.45}
                     onMomentumScrollBegin={handleScrollActivity}
-                    onScroll={handleScrollActivity}
+                    onScroll={handleReaderScroll}
                     onScrollBeginDrag={handleScrollActivity}
+                    onTouchCancel={() => {
+                        swipeTouchRef.current = null;
+                    }}
+                    onTouchEnd={endReaderTouch}
+                    onTouchMove={moveReaderTouch}
+                    onTouchStart={beginReaderTouch}
                     refreshControl={
                         <RefreshControl
                             refreshing={readerLoading}
@@ -2214,12 +3138,19 @@ const styles = StyleSheet.create({
         gap: 0,
         paddingHorizontal: spacing.md,
     },
+    mushafGestureSurface: {
+        minHeight: '100%',
+    },
     readerHeader: {
         borderBottomColor: colors.faint,
         borderBottomWidth: 1,
         marginBottom: spacing.sm,
         paddingBottom: spacing.md,
         paddingTop: spacing.md,
+    },
+    readerHeaderSerious: {
+        marginBottom: spacing.xs,
+        paddingBottom: spacing.sm,
     },
     readerHeaderTop: {
         alignItems: 'flex-start',
@@ -2235,6 +3166,32 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: spacing.sm,
     },
+    surahPagerRow: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    surahPagerButton: {
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderColor: colors.faint,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        flex: 1,
+        flexDirection: 'row',
+        gap: spacing.xs,
+        justifyContent: 'center',
+        minHeight: 34,
+        paddingHorizontal: spacing.sm,
+    },
+    surahPagerButtonText: {
+        color: colors.primaryDark,
+        flexShrink: 1,
+        fontSize: 12,
+        fontWeight: '800',
+        lineHeight: 16,
+        textAlign: 'center',
+    },
     readerTitle: {
         color: colors.ink,
         fontFamily: 'serif',
@@ -2247,38 +3204,17 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         marginTop: spacing.sm,
     },
-    mushafPageHeader: {
+    readerLoadingMore: {
         alignItems: 'center',
-        backgroundColor: '#fff8dc',
-        borderColor: '#c9b675',
-        borderRadius: radius.md,
-        borderWidth: 1,
         flexDirection: 'row',
         gap: spacing.sm,
-        justifyContent: 'space-between',
-        marginBottom: spacing.md,
-        padding: spacing.sm,
+        justifyContent: 'center',
+        paddingVertical: spacing.lg,
     },
-    mushafPageChip: {
-        backgroundColor: colors.surface,
-        borderColor: '#c9b675',
-        borderRadius: 999,
-        borderWidth: 1,
-        color: colors.ink,
-        flex: 1,
-        fontSize: 11,
-        fontWeight: '900',
-        overflow: 'hidden',
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 5,
-        textAlign: 'center',
-    },
-    mushafPageCenter: {
-        color: colors.primaryDark,
-        flex: 1,
+    readerLoadingMoreText: {
+        color: colors.muted,
         fontSize: 12,
-        fontWeight: '900',
-        textAlign: 'center',
+        fontWeight: '800',
     },
     quranTitle: {
         color: colors.ink,
@@ -2519,6 +3455,40 @@ const styles = StyleSheet.create({
     focusAyahCard: {
         paddingBottom: spacing.lg,
     },
+    focusAyahRow: {
+        borderBottomColor: colors.faint,
+        borderBottomWidth: 1,
+        paddingBottom: spacing.lg,
+        paddingTop: spacing.md,
+    },
+    focusAyahHeader: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: spacing.sm,
+    },
+    focusAyahNumber: {
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderColor: colors.faint,
+        borderRadius: 999,
+        borderWidth: 1,
+        height: 28,
+        justifyContent: 'center',
+        width: 28,
+    },
+    focusAyahNumberText: {
+        color: colors.primary,
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    focusAyahMenuButton: {
+        alignItems: 'center',
+        borderRadius: radius.sm,
+        height: 32,
+        justifyContent: 'center',
+        width: 32,
+    },
     targetAyahCard: {
         borderColor: colors.primary,
         borderWidth: 2,
@@ -2559,7 +3529,7 @@ const styles = StyleSheet.create({
     lineAyahRow: {
         borderBottomColor: colors.faint,
         borderBottomWidth: 1,
-        paddingBottom: spacing.lg,
+        paddingBottom: spacing.md,
         paddingTop: spacing.md,
     },
     lineAyahHeader: {
@@ -2597,12 +3567,33 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         width: 32,
     },
+    inlineArabicRow: {
+        alignItems: 'flex-start',
+        flexDirection: 'row',
+        gap: spacing.sm,
+    },
+    inlineArabicText: {
+        flex: 1,
+        minWidth: 0,
+    },
+    inlineAyahMenuButton: {
+        alignItems: 'center',
+        backgroundColor: colors.bg,
+        borderColor: colors.faint,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        height: 34,
+        justifyContent: 'center',
+        marginTop: 4,
+        width: 34,
+    },
     ayahArabic: {
         color: colors.ink,
         fontWeight: '800',
         lineHeight: 48,
-        marginBottom: spacing.md,
+        marginBottom: 0,
         textAlign: 'right',
+        writingDirection: 'rtl',
     },
     lineArabic: {
         color: colors.ink,
@@ -2616,91 +3607,252 @@ const styles = StyleSheet.create({
         gap: spacing.lg,
     },
     mushafPageShell: {
-        backgroundColor: '#fbf6df',
-        borderColor: '#d2bf77',
-        borderRadius: radius.md,
+        backgroundColor: '#f4ecd6',
+        borderColor: '#c8a955',
+        borderRadius: radius.lg,
         borderWidth: 1,
         padding: spacing.sm,
     },
-    mushafFrame: {
-        backgroundColor: '#fffbe8',
-        borderColor: '#2f8f83',
-        borderRadius: radius.sm,
+    mushafFrameOuter: {
+        backgroundColor: '#f8efd4',
+        borderColor: '#1f8f7a',
+        borderRadius: radius.md,
         borderWidth: 2,
-        padding: spacing.md,
+        padding: 4,
+    },
+    mushafFrame: {
+        backgroundColor: '#fdf7e3',
+        borderColor: '#c8a955',
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md,
     },
     mushafFrameTop: {
         alignItems: 'center',
         flexDirection: 'row',
-        gap: spacing.xs,
         justifyContent: 'space-between',
-        marginBottom: spacing.md,
-    },
-    mushafFrameChip: {
-        backgroundColor: colors.surface,
-        borderColor: '#d2bf77',
-        borderRadius: 999,
-        borderWidth: 1,
-        color: colors.ink,
-        flex: 1,
-        fontSize: 10,
-        fontWeight: '900',
-        overflow: 'hidden',
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 5,
-        textAlign: 'center',
-    },
-    mushafFrameNumber: {
-        backgroundColor: '#fffdf2',
-        borderColor: '#2f8f83',
-        borderRadius: 999,
-        borderWidth: 1,
-        color: colors.primaryDark,
-        flex: 0.8,
-        fontSize: 11,
-        fontWeight: '900',
-        overflow: 'hidden',
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 5,
-        textAlign: 'center',
-    },
-    mushafSurahNamePlate: {
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderColor: '#d2bf77',
-        borderRadius: radius.sm,
-        borderWidth: 1,
         marginBottom: spacing.lg,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
     },
-    mushafSurahTitle: {
-        color: colors.ink,
-        fontFamily: 'serif',
-        fontSize: 18,
+    mushafFrameJuzBadge: {
+        backgroundColor: '#fffdf2',
+        borderColor: '#c8a955',
+        borderRadius: 999,
+        borderWidth: 1,
+        flex: 1,
+        marginRight: 6,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 5,
+    },
+    mushafFrameJuzText: {
+        color: '#1f8f7a',
+        fontSize: 11,
+        fontWeight: '900',
+        letterSpacing: 0.6,
+        textAlign: 'center',
+        textTransform: 'uppercase',
+    },
+    mushafFramePageBadge: {
+        alignItems: 'center',
+        backgroundColor: '#1f8f7a',
+        borderColor: '#c8a955',
+        borderRadius: 999,
+        borderWidth: 1,
+        height: 30,
+        justifyContent: 'center',
+        minWidth: 50,
+        paddingHorizontal: spacing.sm,
+    },
+    mushafFramePageText: {
+        color: '#fffdf2',
+        fontSize: 13,
         fontWeight: '900',
     },
-    mushafSurahMeta: {
-        color: colors.muted,
+    mushafFrameSurahBadge: {
+        backgroundColor: '#fffdf2',
+        borderColor: '#c8a955',
+        borderRadius: 999,
+        borderWidth: 1,
+        flex: 1.4,
+        marginLeft: 6,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 5,
+    },
+    mushafFrameSurahText: {
+        color: '#1f8f7a',
         fontSize: 11,
+        fontWeight: '900',
+        letterSpacing: 0.4,
+        textAlign: 'center',
+    },
+    mushafFrameBottom: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: spacing.lg,
+        paddingTop: spacing.sm,
+    },
+    mushafFootPageBadge: {
+        alignItems: 'center',
+        backgroundColor: '#fffdf2',
+        borderColor: '#c8a955',
+        borderRadius: 999,
+        borderWidth: 1,
+        justifyContent: 'center',
+        minWidth: 32,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 3,
+    },
+    mushafFootPageText: {
+        color: '#1f8f7a',
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    mushafPerKataStack: {
+        gap: spacing.md,
+        paddingTop: spacing.sm,
+    },
+    mushafPerKataAyah: {
+        borderRadius: radius.sm,
+        paddingVertical: spacing.xs,
+    },
+    mushafPerKataAyahTarget: {
+        backgroundColor: '#e9f7ef',
+    },
+    mushafPerKataRow: {
+        flexDirection: 'row-reverse',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
+        marginHorizontal: -2,
+    },
+    mushafWordCell: {
+        alignItems: 'center',
+        marginBottom: 6,
+        marginHorizontal: 2,
+        minWidth: 56,
+        paddingHorizontal: 4,
+        paddingVertical: 4,
+    },
+    mushafWordArabic: {
+        color: colors.ink,
+        fontSize: 22,
         fontWeight: '800',
-        marginTop: 2,
+        lineHeight: 32,
+        marginBottom: 2,
+        textAlign: 'center',
+        writingDirection: 'rtl',
+    },
+    mushafWordLatin: {
+        color: '#5b6e5b',
+        fontSize: 9,
+        fontStyle: 'italic',
+        lineHeight: 11,
+        marginBottom: 1,
+        textAlign: 'center',
+    },
+    mushafWordIndo: {
+        color: '#b91c1c',
+        fontSize: 9,
+        fontWeight: '700',
+        lineHeight: 11,
+        textAlign: 'center',
+    },
+    mushafVerseEndCell: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 2,
+        paddingTop: 4,
+    },
+    mushafVerseEndCircle: {
+        alignItems: 'center',
+        backgroundColor: '#fffdf2',
+        borderColor: '#1f8f7a',
+        borderRadius: 999,
+        borderWidth: 1.5,
+        height: 28,
+        justifyContent: 'center',
+        width: 28,
+    },
+    mushafVerseEndText: {
+        color: '#1f8f7a',
+        fontSize: 12,
+        fontWeight: '900',
+    },
+    mushafPerKataFullTranslation: {
+        color: colors.text,
+        fontSize: 11,
+        fontStyle: 'italic',
+        lineHeight: 16,
+        marginTop: 4,
+        paddingHorizontal: 4,
+        textAlign: 'left',
+    },
+    mushafBismillah: {
+        color: colors.ink,
+        fontSize: 30,
+        fontWeight: '900',
+        lineHeight: 52,
+        marginBottom: spacing.md,
+        textAlign: 'center',
+        writingDirection: 'rtl',
     },
     mushafContinuousArabic: {
         color: colors.ink,
         fontWeight: '800',
-        lineHeight: 58,
-        textAlign: 'justify',
+        lineHeight: 64,
+        textAlign: 'right',
         writingDirection: 'rtl',
     },
-    mushafTargetText: {
+    mushafPageArabic: {
+        color: colors.ink,
+        includeFontPadding: false,
+        marginBottom: 2,
+        textAlign: 'right',
+        textAlignVertical: 'top',
+        writingDirection: 'rtl',
+    },
+    mushafAyahBlockStack: {
+        borderTopColor: '#d9cfae',
+        borderTopWidth: 1,
+        marginTop: spacing.sm,
+    },
+    mushafAyahBlockLine: {
+        borderBottomColor: '#d9cfae',
+        borderBottomWidth: 1,
+        paddingBottom: 8,
+        paddingTop: 8,
+    },
+    mushafInlineTarget: {
         backgroundColor: '#e9f7ef',
         color: colors.primaryDark,
     },
+    mushafPageTranslation: {
+        color: colors.text,
+        flex: 0,
+        fontSize: 9,
+        lineHeight: 12,
+        marginTop: 0,
+        textAlign: 'right',
+    },
+    mushafInlineLoading: {
+        alignItems: 'center',
+        paddingTop: spacing.sm,
+    },
     mushafVerseMark: {
-        color: colors.primaryDark,
-        fontSize: 16,
+        color: '#7f6f44',
+        fontSize: 15,
         fontWeight: '900',
+    },
+    verseMark: {
+        color: '#7f6f44',
+        fontSize: 17,
+        fontWeight: '900',
+    },
+    mushafRangeMeta: {
+        color: colors.muted,
+        fontSize: 11,
+        marginTop: spacing.md,
+        textAlign: 'center',
     },
     mushafAyahBlock: {
         backgroundColor: '#fffdf2',

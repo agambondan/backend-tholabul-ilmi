@@ -41,7 +41,17 @@
       "expo-audio",
       "expo-asset",
       "expo-sqlite",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Kitab-Regular.ttf",
+            "./assets/fonts/noorehidayat.ttf",
+            "./assets/fonts/kfc_naskh-webfont.ttf"
+          ]
+        }
+      ]
     ]
   }
 }

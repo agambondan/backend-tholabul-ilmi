@@ -36,6 +36,58 @@ const HADITH_DETAIL_TABS = [
 
 const normalizeSearchText = (value) => String(value ?? '').trim().toLowerCase();
 
+const cleanHadithText = (value) =>
+  String(value ?? '')
+    .replace(/\bHadith\b/gi, 'Hadis')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const HADITH_BOOK_LABELS = {
+  'abu-daud': 'Sunan Abu Daud',
+  bukhari: 'Shahih Bukhari',
+  'ibnu-majah': 'Sunan Ibnu Majah',
+  malik: 'Muwatha Malik',
+  muslim: 'Shahih Muslim',
+  nasai: "Sunan Nasa'i",
+  tirmidzi: 'Jami At-Tirmidzi',
+};
+
+const isGenericHadithLabel = (value) => /^hadis(?:\s+\d+)?$/i.test(cleanHadithText(value));
+
+const formatSlugLabel = (value) => {
+  const slug = cleanHadithText(value).toLowerCase();
+  if (!slug) return '';
+
+  if (HADITH_BOOK_LABELS[slug]) return HADITH_BOOK_LABELS[slug];
+
+  return slug
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
+
+const formatHadithNumber = (hadith) => {
+  const number = hadith?.number ?? hadith?.nomor_hadis ?? hadith?.id;
+  return number ? `No. ${number}` : 'Nomor belum tersedia';
+};
+
+const formatHadithGrade = (grade) => cleanHadithText(grade || 'Derajat belum tersedia');
+
+const formatHadithCount = (count) => Number(count || 0).toLocaleString('id-ID');
+
+const getHadithBookLabel = (hadith) => {
+  const rawBook = cleanHadithText(hadith?.book || hadith?.bookName || hadith?.collection || '');
+  if (rawBook && !isGenericHadithLabel(rawBook)) return rawBook;
+
+  return formatSlugLabel(hadith?.bookSlug) || 'Kitab hadis';
+};
+
+const getHadithTopicLabel = (hadith) => {
+  const topic = cleanHadithText(hadith?.chapterName || hadith?.themeName || hadith?.title || '');
+  return isGenericHadithLabel(topic) ? '' : topic;
+};
+
 export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   const { user } = useSession();
   const { showError, showInfo, showSuccess } = useFeedback();
@@ -56,6 +108,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   const [noteCounts, setNoteCounts] = useState({});
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(HADITH_LIST_PAGE_SIZE);
+  const [hadithTotal, setHadithTotal] = useState(0);
   const [hadithSource, setHadithSource] = useState('backend');
   const [remotePage, setRemotePage] = useState(0);
   const [hasMoreRemote, setHasMoreRemote] = useState(false);
@@ -99,6 +152,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
         const offlineItems = await loadOfflineHadiths(bookSlug);
         if (offlineItems) {
           setHadiths(offlineItems);
+          setHadithTotal(offlineItems.length);
           setHadithSource('offline');
           setRemotePage(0);
           setHasMoreRemote(false);
@@ -110,11 +164,15 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
       setHadithSource('backend');
       setRemotePage(result.page);
       setHasMoreRemote(result.hasMore);
+      setHadithTotal((current) =>
+        result.total || (append ? Math.max(current, page * HADITH_LIST_PAGE_SIZE + result.items.length) : result.items.length),
+      );
       setHadiths((current) => (append ? [...current, ...result.items] : result.items));
       setVisibleCount((current) => (append ? current + result.items.length : HADITH_LIST_PAGE_SIZE));
     } catch (error) {
       if (!append) {
         setHadiths([]);
+        setHadithTotal(0);
         setHasMoreRemote(false);
       }
       setMessage(error?.message ?? 'Daftar hadis belum bisa dimuat.');
@@ -324,7 +382,6 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     .slice(0, 5);
 
   const selectedBookName = books.find((book) => book.slug === selectedBook)?.name ?? 'Semua kitab';
-  const sourceLabel = hadithSource === 'offline' ? 'Perangkat' : 'Backend';
 
   const filteredHadiths = useMemo(() => {
     const term = normalizeSearchText(query);
@@ -347,7 +404,16 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     });
   }, [hadiths, query]);
 
+  const summaryBadge = query ? 'Pencarian aktif' : selectedBook ? 'Kitab dipilih' : `${books.length || 'Semua'} kitab`;
+
   const visibleHadiths = filteredHadiths.slice(0, visibleCount);
+  const displayedHadithCount = visibleHadiths.length;
+  const totalHadithCount = query ? filteredHadiths.length : hadithTotal || filteredHadiths.length;
+  const summaryMeta = loading
+    ? 'Memuat hadis...'
+    : `${formatHadithCount(displayedHadithCount)} hadis ditampilkan dari ${formatHadithCount(totalHadithCount)} ${
+        query ? 'hasil' : 'hadis'
+      }`;
   const hasBufferedHadiths = visibleCount < filteredHadiths.length;
   const hasMoreHadiths = hasBufferedHadiths || (hadithSource === 'backend' && hasMoreRemote);
 
@@ -379,31 +445,56 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     selectedBook,
   ]);
 
-  const renderCompactHadithCard = (hadith, meta = '') => (
-    <View key={`${meta}-${hadith.id}`} style={styles.compactHadithWrapper}>
-      <Pressable onPress={() => openHadith(hadith)} style={styles.compactHadith}>
-        <View style={styles.detailHeader}>
-          <Text style={styles.compactTitle}>{hadith.title}</Text>
-          <Text style={styles.detailMeta}>{hadith.grade || hadith.book}</Text>
-        </View>
-        <Text numberOfLines={3} style={styles.compactTranslation}>
-          {hadith.translation || hadith.book}
-        </Text>
-        {noteCounts[hadith.id] ? <Text style={styles.compactMeta}>{noteCounts[hadith.id]} note</Text> : null}
-      </Pressable>
-      <View style={styles.itemHeaderActions}>
-        <Pressable
-          accessibilityLabel="Aksi hadis"
-          accessibilityRole="button"
-          android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
-          onPress={() => setHadithActionSheet({ visible: true, hadith })}
-          style={styles.itemMenuButton}
-        >
-          <MoreVertical color={colors.primary} size={18} strokeWidth={2.4} />
+  const renderCompactHadithCard = (hadith, meta = '') => {
+    const bookLabel = getHadithBookLabel(hadith);
+    const numberLabel = formatHadithNumber(hadith);
+    const gradeLabel = formatHadithGrade(hadith.grade);
+    const topicLabel = getHadithTopicLabel(hadith);
+    const hasTopic = topicLabel && normalizeSearchText(topicLabel) !== normalizeSearchText(bookLabel);
+
+    return (
+      <View key={`${meta}-${hadith.id}`} style={styles.compactHadithWrapper}>
+        <Pressable onPress={() => openHadith(hadith)} style={styles.compactHadith}>
+          <View style={styles.compactHeaderRow}>
+            <View style={styles.compactIdentity}>
+              <Text numberOfLines={1} style={styles.compactBook}>
+                {bookLabel}
+              </Text>
+              <Text numberOfLines={1} style={styles.compactNumber}>
+                {numberLabel}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityLabel="Aksi hadis"
+              accessibilityRole="button"
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
+              onPress={(event) => {
+                event.stopPropagation();
+                setHadithActionSheet({ visible: true, hadith });
+              }}
+              style={styles.itemMenuButton}
+            >
+              <MoreVertical color={colors.primary} size={18} strokeWidth={2.4} />
+            </Pressable>
+          </View>
+          <View style={styles.compactMetaRow}>
+            <Text numberOfLines={1} style={styles.gradeBadge}>
+              {gradeLabel}
+            </Text>
+            {hasTopic ? (
+              <Text numberOfLines={1} style={styles.compactTopic}>
+                {topicLabel}
+              </Text>
+            ) : null}
+          </View>
+          <Text numberOfLines={3} style={styles.compactTranslation}>
+            {cleanHadithText(hadith.translation || hadith.book)}
+          </Text>
+          {noteCounts[hadith.id] ? <Text style={styles.compactMeta}>{noteCounts[hadith.id]} catatan</Text> : null}
         </Pressable>
       </View>
-    </View>
-  );
+    );
+  };
 
   const sanadPerawi = sanad
     .flatMap((path) => path.mata_sanad ?? [])
@@ -806,18 +897,11 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
       ) : null}
 
       <View style={styles.listSummary}>
-        <View>
+        <View style={styles.listSummaryCopy}>
           <Text style={styles.listSummaryTitle}>{selectedBookName}</Text>
-          <Text style={styles.listSummaryMeta}>
-            {loading
-              ? 'Memuat hadis...'
-              : `${filteredHadiths.length} hadis ditampilkan · ${sourceLabel}`}
-          </Text>
+          <Text style={styles.listSummaryMeta}>{summaryMeta}</Text>
         </View>
-        <View style={styles.summaryBadges}>
-          <Text style={styles.queryBadge}>{sourceLabel}</Text>
-          {query ? <Text style={styles.queryBadge}>Cari</Text> : null}
-        </View>
+        <Text numberOfLines={1} style={styles.queryBadge}>{summaryBadge}</Text>
       </View>
 
       {loading && hadiths.length === 0 ? (
@@ -930,12 +1014,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  summaryBadges: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    justifyContent: 'flex-end',
+  listSummaryCopy: {
+    flex: 1,
+    paddingRight: spacing.md,
   },
   listSummaryTitle: {
     color: colors.ink,
@@ -957,6 +1038,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
+    textAlign: 'center',
   },
   detailTabs: {
     backgroundColor: colors.surface,
@@ -1182,28 +1264,58 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingVertical: spacing.md,
   },
-  hadithListItem: {
-    borderBottomColor: colors.faint,
-    borderBottomWidth: 1,
-    paddingBottom: spacing.sm,
+  compactHeaderRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
   },
-  compactTitle: {
-    color: colors.ink,
+  compactIdentity: {
     flex: 1,
-    fontSize: 13,
+    paddingRight: spacing.xs,
+  },
+  compactBook: {
+    color: colors.ink,
+    fontSize: 14,
     fontWeight: '900',
-    marginRight: spacing.md,
+  },
+  compactNumber: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 2,
+    textTransform: 'uppercase',
+  },
+  compactMetaRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  gradeBadge: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    color: colors.primaryDark,
+    fontSize: 11,
+    fontWeight: '900',
+    overflow: 'hidden',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    textTransform: 'capitalize',
+  },
+  compactTopic: {
+    color: colors.muted,
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '800',
   },
   compactTranslation: {
     color: colors.text,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  compactMeta: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '800',
-    marginTop: spacing.xs,
+    fontSize: 13,
+    lineHeight: 20,
   },
   compactMeta: {
     color: colors.primary,
@@ -1214,13 +1326,9 @@ const styles = StyleSheet.create({
   compactHadithWrapper: {
     position: 'relative',
   },
-  itemHeaderActions: {
-    position: 'absolute',
-    right: spacing.sm,
-    top: spacing.sm,
-  },
   itemMenuButton: {
     alignItems: 'center',
+    borderRadius: 20,
     height: 40,
     justifyContent: 'center',
     width: 40,

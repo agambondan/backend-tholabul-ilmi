@@ -20,13 +20,21 @@ import {
   getPushNotificationRegistration,
   pushNotificationsSupported,
 } from '../utils/pushNotifications';
+import {
+  scheduleSmartReminders,
+  smartNotificationsSupported,
+} from '../utils/smartNotifications';
 import { Card, CardTitle } from './Card';
+import { preferenceKeys, readPreference, writePreference } from '../storage/preferences';
 
 const defaultSettings = [
-  { is_active: true, label: 'Quran Harian', time: '06:00', type: 'daily_quran' },
-  { is_active: true, label: 'Hadis Harian', time: '07:00', type: 'daily_hadith' },
-  { is_active: true, label: 'Doa Harian', time: '18:00', type: 'doa' },
+  { body: 'Buka satu ayat untuk memulai hari.', is_active: true, label: 'Quran Harian', serverSync: true, time: '06:00', type: 'daily_quran' },
+  { body: 'Satu hadis ringkas untuk pengingat harian.', is_active: true, label: 'Hadis Harian', serverSync: true, time: '07:00', type: 'daily_hadith' },
+  { body: 'Baca doa harian pilihanmu.', is_active: true, label: 'Doa Harian', serverSync: true, time: '18:00', type: 'doa' },
+  { body: 'Lanjutkan sesi belajar kajian.', is_active: false, label: 'Kajian', serverSync: false, time: '19:30', type: 'kajian' },
+  { body: 'Waktu murojaah singkat hari ini.', is_active: false, label: 'Murojaah', serverSync: false, time: '20:15', type: 'murojaah' },
 ];
+const defaultQuietHours = { end: '05:00', is_active: false, start: '22:00' };
 
 const labelForType = (type) => defaultSettings.find((item) => item.type === type)?.label ?? type;
 const toTimeDate = (value) => {
@@ -50,6 +58,21 @@ const normalizeSettings = (items) =>
     };
   });
 
+const normalizeQuietHours = (value) => ({
+  end: value?.end ?? defaultQuietHours.end,
+  is_active: Boolean(value?.is_active),
+  start: value?.start ?? defaultQuietHours.start,
+});
+
+const toServerSettings = (items) =>
+  items
+    .filter((item) => item.serverSync)
+    .map((item) => ({
+      is_active: Boolean(item.is_active),
+      time: item.time,
+      type: item.type,
+    }));
+
 const NOTIF_TABS = [
   { key: 'settings', label: 'Pengaturan' },
   { key: 'inbox', label: 'Kotak Masuk' },
@@ -60,10 +83,12 @@ export function NotificationCenter() {
   const { showError, showSuccess } = useFeedback();
   const [activeTab, setActiveTab] = useState('settings');
   const [settings, setSettings] = useState(defaultSettings);
+  const [quietHours, setQuietHours] = useState(defaultQuietHours);
   const [inbox, setInbox] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [pendingSync, setPendingSync] = useState(false);
   const pushAvailability = getPushNotificationAvailability();
   const [pushState, setPushState] = useState({
     activeCount: 0,
@@ -75,20 +100,62 @@ export function NotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [pickerState, setPickerState] = useState({ open: false, type: null, value: toTimeDate('06:00') });
 
+  const syncLocalPreferences = useCallback(async (nextSettings, nextQuietHours, nextScheduled = null) => {
+    await writePreference(preferenceKeys.smartNotifSettings, nextSettings);
+    await writePreference(preferenceKeys.smartNotifQuietHours, nextQuietHours);
+    if (nextScheduled !== null) {
+      await writePreference(preferenceKeys.smartNotifLocalIds, nextScheduled);
+    }
+  }, []);
+
+  const queuePendingSync = useCallback(async (serverSettings) => {
+    await writePreference(preferenceKeys.smartNotifPendingSync, {
+      queued_at: new Date().toISOString(),
+      settings: serverSettings,
+    });
+    setPendingSync(true);
+  }, []);
+
+  const clearPendingSync = useCallback(async () => {
+    await writePreference(preferenceKeys.smartNotifPendingSync, null);
+    setPendingSync(false);
+  }, []);
+
   const load = useCallback(async () => {
     if (!session?.token) return;
 
     setLoading(true);
     setMessage('');
     try {
+      const [storedSettings, storedQuietHours, pendingPayload] = await Promise.all([
+        readPreference(preferenceKeys.smartNotifSettings, null),
+        readPreference(preferenceKeys.smartNotifQuietHours, defaultQuietHours),
+        readPreference(preferenceKeys.smartNotifPendingSync, null),
+      ]);
+
+      let pendingMessage = '';
+      if (pendingPayload?.settings?.length) {
+        try {
+          await saveNotificationSettings(pendingPayload.settings);
+          await clearPendingSync();
+          pendingMessage = 'Pengaturan lokal berhasil disinkronkan.';
+        } catch {
+          setPendingSync(true);
+        }
+      } else {
+        setPendingSync(false);
+      }
+
       const [nextSettings, nextInbox, nextPush] = await Promise.all([
         getNotificationSettings(),
         getNotificationInbox(),
         getPushTokenStatus(),
       ]);
-      setSettings(normalizeSettings(nextSettings));
+      setSettings(normalizeSettings([...(nextSettings ?? []), ...(storedSettings ?? [])]));
+      setQuietHours(normalizeQuietHours(storedQuietHours));
       setInbox(nextInbox.items);
       setUnreadCount(nextInbox.unreadCount);
+      if (pendingMessage) setMessage(pendingMessage);
       if (nextPush.hasActive) {
         setPushState((current) => ({
           ...current,
@@ -105,14 +172,21 @@ export function NotificationCenter() {
     } finally {
       setLoading(false);
     }
-  }, [session?.token]);
+  }, [clearPendingSync, session?.token]);
 
   const updateSetting = (type, patch) => {
     setSettings((current) => current.map((item) => (item.type === type ? { ...item, ...patch } : item)));
   };
 
   const updateWebTime = (type, raw) => {
-    updateSetting(type, { time: raw });
+    if (type === 'quiet_start') {
+      setQuietHours((current) => ({ ...current, start: raw }));
+    } else if (type === 'quiet_end') {
+      setQuietHours((current) => ({ ...current, end: raw }));
+    } else {
+      updateSetting(type, { time: raw });
+    }
+
     if (/^\d{1,2}:\d{2}$/.test(raw)) {
       const [h, m] = raw.split(':').map(Number);
       if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return;
@@ -141,18 +215,62 @@ export function NotificationCenter() {
     if (!pickerState.type) return;
 
     const nextDate = selectedDate ?? pickerState.value;
+    const nextTime = toTimeString(nextDate);
     setPickerState((current) => ({ ...current, value: nextDate }));
-    updateSetting(pickerState.type, { time: toTimeString(nextDate) });
+    if (pickerState.type === 'quiet_start') {
+      setQuietHours((current) => ({ ...current, start: nextTime }));
+      return;
+    }
+    if (pickerState.type === 'quiet_end') {
+      setQuietHours((current) => ({ ...current, end: nextTime }));
+      return;
+    }
+    updateSetting(pickerState.type, { time: nextTime });
   };
 
   const saveSettings = async () => {
     setSaving(true);
     setMessage('');
     try {
-      const saved = await saveNotificationSettings(settings);
-      setSettings(normalizeSettings(saved?.data ?? saved ?? []));
-      setMessage('Pengaturan notifikasi disimpan.');
-      showSuccess('Pengaturan notifikasi disimpan.');
+      const previousScheduled = await readPreference(preferenceKeys.smartNotifLocalIds, []);
+      const localSchedule = await scheduleSmartReminders({
+        previous: previousScheduled,
+        quietHours,
+        reminders: settings,
+      });
+
+      if (!smartNotificationsSupported()) {
+        setMessage('Reminder lokal hanya tersedia di Android atau iOS.');
+      } else if (localSchedule.status === 'denied') {
+        setMessage('Izin notifikasi belum diberikan. Reminder lokal belum aktif.');
+      } else if (localSchedule.status === 'scheduled') {
+        setMessage(`${localSchedule.scheduled.length} reminder lokal dijadwalkan.`);
+      }
+
+      await syncLocalPreferences(
+        settings,
+        quietHours,
+        localSchedule.status === 'scheduled' ? localSchedule.scheduled : previousScheduled,
+      );
+
+      const serverSettings = toServerSettings(settings);
+      try {
+        const saved = await saveNotificationSettings(serverSettings);
+        const merged = normalizeSettings([...(saved?.data ?? saved ?? []), ...settings]);
+        setSettings(merged);
+        await clearPendingSync();
+        await writePreference(preferenceKeys.smartNotifSettings, merged);
+        setMessage('Pengaturan notifikasi disimpan.');
+        showSuccess('Pengaturan notifikasi disimpan.');
+      } catch (syncError) {
+        await queuePendingSync(serverSettings);
+        const queuedMessage =
+          syncError?.message?.toLowerCase().includes('network request failed')
+            ? 'Pengaturan disimpan lokal. Akan sinkron otomatis saat online.'
+            : syncError?.message ?? 'Sinkron backend gagal. Pengaturan lokal tetap aktif.';
+        setMessage(queuedMessage);
+        showSuccess('Pengaturan lokal disimpan.');
+      }
     } catch (error) {
       const nextMessage = error?.message ?? 'Pengaturan belum bisa disimpan.';
       setMessage(nextMessage);
@@ -338,11 +456,75 @@ export function NotificationCenter() {
             {pushState.activeCount ? `${pushState.activeCount} token aktif tersimpan di backend.` : 'Aktifkan dulu untuk menyimpan token perangkat.'}
           </Text>
         </View>
+        <View style={styles.settingRow}>
+          <View style={styles.settingBody}>
+            <Text style={styles.settingTitle}>Quiet hours</Text>
+            <Text style={styles.settingMeta}>Tahan reminder di jam tenang</Text>
+          </View>
+          <Pressable
+            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+            onPress={() => setQuietHours((current) => ({ ...current, is_active: !current.is_active }))}
+            style={[styles.toggle, quietHours.is_active ? styles.toggleActive : null]}
+          >
+            <Text style={[styles.toggleText, quietHours.is_active ? styles.toggleTextActive : null]}>
+              {quietHours.is_active ? 'On' : 'Off'}
+            </Text>
+          </Pressable>
+        </View>
+        {quietHours.is_active ? (
+          <View style={styles.quietHoursRow}>
+            {Platform.OS === 'web' ? (
+              <>
+                <TextInput
+                  autoCapitalize="none"
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={5}
+                  onChangeText={(time) => updateWebTime('quiet_start', time)}
+                  placeholder="22:00"
+                  placeholderTextColor={colors.muted}
+                  style={styles.timeInput}
+                  value={quietHours.start}
+                />
+                <Text style={styles.quietSeparator}>sampai</Text>
+                <TextInput
+                  autoCapitalize="none"
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={5}
+                  onChangeText={(time) => updateWebTime('quiet_end', time)}
+                  placeholder="05:00"
+                  placeholderTextColor={colors.muted}
+                  style={styles.timeInput}
+                  value={quietHours.end}
+                />
+              </>
+            ) : (
+              <>
+                <Pressable
+                  android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                  onPress={() => openTimePicker('quiet_start', quietHours.start)}
+                  style={styles.timeButton}
+                >
+                  <Text style={styles.timeButtonText}>{quietHours.start}</Text>
+                </Pressable>
+                <Text style={styles.quietSeparator}>sampai</Text>
+                <Pressable
+                  android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                  onPress={() => openTimePicker('quiet_end', quietHours.end)}
+                  style={styles.timeButton}
+                >
+                  <Text style={styles.timeButtonText}>{quietHours.end}</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        ) : null}
         {settings.map((item) => (
           <View key={item.type} style={styles.settingRow}>
             <View style={styles.settingBody}>
               <Text style={styles.settingTitle}>{item.label}</Text>
-              <Text style={styles.settingMeta}>Reminder harian</Text>
+              <Text style={styles.settingMeta}>
+                {item.serverSync ? 'Reminder harian · sinkron cloud' : 'Reminder harian · lokal perangkat'}
+              </Text>
             </View>
             {Platform.OS === 'web' ? (
               <TextInput
@@ -383,6 +565,11 @@ export function NotificationCenter() {
         >
           {saving ? <ActivityIndicator color="#ffffff" size="small" /> : <Text style={styles.primaryText}>Simpan pengaturan</Text>}
         </Pressable>
+        {pendingSync ? (
+          <Text style={styles.pendingSyncText}>
+            Ada perubahan yang belum sinkron ke backend. Akan dicoba ulang saat online.
+          </Text>
+        ) : null}
         {message ? <Text style={styles.message}>{message}</Text> : null}
         {pickerState.open && Platform.OS !== 'web' ? (
           <View style={styles.timePickerWrap}>
@@ -500,6 +687,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: spacing.sm,
   },
+  pendingSyncText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 16,
+    marginTop: spacing.sm,
+  },
   primaryButton: {
     alignItems: 'center',
     backgroundColor: colors.primary,
@@ -583,6 +777,18 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 13,
     fontWeight: '900',
+  },
+  quietHoursRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  quietSeparator: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
   },
   settingBody: {
     flex: 1,
