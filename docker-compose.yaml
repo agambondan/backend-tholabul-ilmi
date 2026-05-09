@@ -74,7 +74,7 @@ services:
     restart: unless-stopped
 
   tholabul-ilmi-redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - "63790:6379"
     volumes:

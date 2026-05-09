@@ -27,9 +27,9 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
 - [x] Loading, empty, error, offline, auth, disabled, dan permission state tetap eksplisit.
   - Updated 2026-05-08: mobile punya global feedback toast untuk aksi sukses/gagal pada simpan/update/hapus penting.
 - [x] Semua list panjang memakai virtualization atau pagination.
-- [ ] Web export, Expo Doctor, screenshot smoke, dan native smoke dijalankan sebelum revamp dianggap selesai.
+- [x] Web export, Expo Doctor, screenshot smoke, dan native smoke dijalankan sebelum revamp dianggap selesai.
   - Web export, Expo Doctor, screenshot smoke, dan deep-link smoke selesai 2026-05-08.
-  - Native smoke masih blocked karena tidak ada device terhubung pada sesi final QA.
+  - Native smoke Android (Expo Go) selesai 2026-05-08 via device `985c2f0e`; evidence di `output/native/2026-05-08/`.
 
 ---
 
@@ -267,20 +267,26 @@ Revamp arsitektur navigasi mobile agar mengikuti keputusan final IA:
   - route baru Ibadah/Belajar
   - Passed 2026-05-08: `#/profile`, `#/prayer`, `#/qibla`, `#/explore/quiz`, `#/ilmu/kamus`, `#/ibadah/qibla`, `#/belajar/quiz`, `#/quran/surah/1/1`.
   - Fix 2026-05-08: web hash changes now call deep-link parsing through a `hashchange` listener in `apps/mobile/App.js`.
-- [ ] Native Expo Go smoke Android untuk:
+- [x] Native Expo Go smoke Android untuk:
   - Bottom tab final
   - Avatar -> Profile surface
   - Ibadah hub
   - Belajar hub
   - Hadis tab
   - Qibla
-  - Blocked 2026-05-08: `adb devices` returned no connected devices in this session.
-- [ ] Manual native check jika ADB input masih diblok:
+  - Passed 2026-05-08: Expo Go berhasil di-install via ADB dan bundle native berhasil (`Android Bundled ... index.js`).
+  - Evidence: `output/native/2026-05-08/android-native-smoke-home-2026-05-08.png`, `android-native-smoke-quran-2026-05-08.png`, `android-native-smoke-hadith-2026-05-08.png`, `android-native-smoke-ibadah-2026-05-08.png`, `android-native-smoke-qibla-2026-05-08.png`, `android-native-smoke-belajar-2026-05-08.png`, `android-native-smoke-profile-2026-05-08.png`.
+- [x] Native deep-link sweep Android (canonical + alias) untuk route IA.
+  - Passed 2026-05-08: 30 route diuji via `exp://.../--/<route>` tanpa crash/fatal.
+  - Coverage contoh: `home`, `search/:query`, `global-search/:query`, `quran/surah/:surah/:ayah`, `quran/page/:page`, `quran/hizb/:hizb`, `hadith/:id`, `hadis/:id`, `hadits/:id`, `ibadah`, `prayer`, `sholat`, `qibla`, `kiblat`, `belajar`, `explore`, `ilmu`, `profile/settings|account|notifications|storage|appearance`.
+  - Evidence folder: `output/native/2026-05-08/deeplink-sweep/`.
+- [x] Manual native check jika ADB input masih diblok:
   - Keyboard behavior
   - Native time picker
   - Permission prompts
   - Offline pack confirmation
-  - Blocked 2026-05-08: no Android device connected for physical tap checks.
+  - Passed 2026-05-08 (device `985c2f0e`): ADB input berjalan dan verifikasi form/permission end-to-end selesai.
+  - Evidence: `output/native/2026-05-08/manual-checks/01-keyboard-global-search.png`, `02-location-permission-prompt.png`, `03-offline-download-confirm.png`, `10-native-time-picker-open.png`, `11-storage-before-clear.png`.
 
 ## Suggested Implementation Order
 

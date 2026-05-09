@@ -251,13 +251,16 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
   - Hadith detail tabs
   - Explore feature detail
   - Profile settings
-- [ ] Manual native check untuk:
+  - Konvensi penyimpanan: simpan evidence per tanggal di folder `output/playwright/YYYY-MM-DD/` (web) dan `output/native/YYYY-MM-DD/` (native).
+- [x] Manual native check untuk:
   - Keyboard behavior
   - Native time picker
   - Location permission
   - Compass unavailable state
   - Offline pack guardrail
-  - Blocked 2026-05-08: `adb devices` tidak menemukan device terhubung, jadi physical tap/native permission check belum bisa ditutup dari sesi ini.
+  - Passed 2026-05-08 (device `985c2f0e`): interaksi form/permission tervalidasi dengan ADB tap + screenshot.
+  - Evidence manual checks: `output/native/2026-05-08/manual-checks/01-keyboard-global-search.png`, `02-location-permission-prompt.png`, `03-offline-download-confirm.png`, `10-native-time-picker-open.png`, `11-storage-before-clear.png`.
+  - Compass unavailable fallback: state Qibla tetap aman di jalur fallback (no crash + status card render) pada `output/native/2026-05-08/android-native-smoke-qibla-2026-05-08.png`.
 
 ---
 
@@ -290,3 +293,5 @@ Checklist ini berlaku untuk setiap screen yang dirombak:
 - 2026-05-07 (IA revamp selesai): Tab akhir 5 item adalah Beranda/Quran/Hadis/Ibadah/Belajar (bukan Profil). Profil diakses via avatar/header. Tasklist revamp lengkap di `docs/MOBILE_IA_REVAMP_TASKLIST.md`. Detail UI rule (anti-expand-inline) terdokumentasi di `docs/MOBILE_DESIGN_PATTERNS.md`.
 - 2026-05-07: Mobile fallback data policy diketatkan. Konten mobile tidak lagi memakai silent cache/offline fallback; sumber data hanya backend request atau paket offline yang diunduh eksplisit dari menu Penyimpanan.
 - 2026-05-08: Web/mobile QA akhir untuk route IA dan deep-link alias selesai. Evidence utama ada di `output/playwright/mobile-qa-*.png`; semua 21 smoke route/viewport checks pass setelah fix hash deep-link listener di `apps/mobile/App.js`.
+- 2026-05-08 (lanjutan): Native Android smoke berhasil dijalankan via Expo Go pada device `985c2f0e` dengan bundle sukses (`Android Bundled ... index.js`). Screenshot dipindah ke folder tanggal `output/native/2026-05-08/` untuk traceability.
+- 2026-05-08 (lanjutan 2): Deep-link sweep native dijalankan untuk 30 route canonical+alias (`home/search/quran/hadith/ibadah/belajar/profile` dan alias lama). Semua route terbuka sesuai target tanpa crash; screenshot evidence tersimpan di `output/native/2026-05-08/deeplink-sweep/`.

@@ -27,7 +27,13 @@ dist/
 coverage.out
 
 # API service local data and generated command binaries
-services/api/data/
+# Hadith, tafsir, audio — besar, tidak di-commit
+services/api/data/hadits_*.json
+services/api/data/tafsir/
+services/api/data/tafsirweb/
+services/api/data/ibnukatsir/
+services/api/data/audio/
+# quran_base.json dan mufrodat.json DI-COMMIT sebagai source of truth seed data
 services/api/build/
 services/api/fill_gaps
 services/api/import_hadits
@@ -44,6 +50,14 @@ services/api/seed_quran
 services/api/seed_tajweed
 services/api/translate_i18n
 services/api/update_sources
+services/api/dump_to_files
+services/api/fetch_mufrodat
+services/api/fetch_quran_base
+services/api/fix_idn
+services/api/import_mufrodat
+services/api/import_quran_base
+services/api/seed_mufrodat
+services/api/seed_quran_base
 
 # local tooling state
 .playwright-mcp/
