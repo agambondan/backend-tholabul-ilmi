@@ -27,6 +27,9 @@ func BackfillTranslations(db *gorm.DB) error {
 	if err := backfillTahlilItems(db); err != nil {
 		return err
 	}
+	if err := backfillAsbabunNuzul(db); err != nil {
+		return err
+	}
 	if err := backfillFiqhCategories(db); err != nil {
 		return err
 	}
@@ -58,6 +61,9 @@ func BackfillTranslations(db *gorm.DB) error {
 		return err
 	}
 	if err := backfillAsmaUlHusna(db); err != nil {
+		return err
+	}
+	if err := backfillAmalanItems(db); err != nil {
 		return err
 	}
 	return nil
@@ -141,6 +147,24 @@ func backfillTahlilItems(db *gorm.DB) error {
 			DescriptionIdn: stringPtr(row.TranslationText),
 		}
 		if err := linkTranslation(db, "tahlil_item", "id", row.ID, tr); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func backfillAsbabunNuzul(db *gorm.DB) error {
+	var rows []model.AsbabunNuzul
+	if err := db.Where("translation_id IS NULL").Find(&rows).Error; err != nil {
+		return err
+	}
+	for _, row := range rows {
+		tr := &model.Translation{
+			Idn:            stringPtr(row.Title),
+			LatinIdn:       stringPtr(row.Narrator),
+			DescriptionIdn: stringPtr(row.Content),
+		}
+		if err := linkTranslation(db, "asbabun_nuzul", "id", row.ID, tr); err != nil {
 			return err
 		}
 	}
@@ -325,6 +349,23 @@ func backfillAsmaUlHusna(db *gorm.DB) error {
 			DescriptionIdn: stringPtr(row.Meaning),
 		}
 		if err := linkTranslation(db, "asma_ul_husna", "id", row.ID, tr); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func backfillAmalanItems(db *gorm.DB) error {
+	var rows []model.AmalanItem
+	if err := db.Where("translation_id IS NULL").Find(&rows).Error; err != nil {
+		return err
+	}
+	for _, row := range rows {
+		tr := &model.Translation{
+			Idn:            stringPtr(row.Name),
+			DescriptionIdn: stringPtr(row.Description),
+		}
+		if err := linkTranslation(db, "amalan_item", "id", row.ID, tr); err != nil {
 			return err
 		}
 	}

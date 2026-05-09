@@ -26,6 +26,7 @@ func NewAsbabunNuzulRepository(db *gorm.DB) AsbabunNuzulRepository {
 func (r *asbabunNuzulRepository) FindByAyahID(ayahID int) ([]model.AsbabunNuzul, error) {
 	var items []model.AsbabunNuzul
 	err := r.db.
+		Preload("Translation").
 		Preload("Ayahs").
 		Joins("JOIN asbabun_nuzul_ayahs j ON j.asbabun_nuzul_id = asbabun_nuzul.id").
 		Where("j.ayah_id = ?", ayahID).
@@ -38,6 +39,7 @@ func (r *asbabunNuzulRepository) FindByAyahID(ayahID int) ([]model.AsbabunNuzul,
 func (r *asbabunNuzulRepository) FindBySurahNumber(surahNumber int) ([]model.AsbabunNuzul, error) {
 	var items []model.AsbabunNuzul
 	err := r.db.
+		Preload("Translation").
 		Preload("Ayahs").
 		Joins("JOIN asbabun_nuzul_ayahs j ON j.asbabun_nuzul_id = asbabun_nuzul.id").
 		Joins("JOIN ayah ON ayah.id = j.ayah_id").
@@ -51,7 +53,7 @@ func (r *asbabunNuzulRepository) FindBySurahNumber(surahNumber int) ([]model.Asb
 
 func (r *asbabunNuzulRepository) FindByID(id int) (*model.AsbabunNuzul, error) {
 	var item model.AsbabunNuzul
-	return &item, r.db.Preload("Ayahs").First(&item, id).Error
+	return &item, r.db.Preload("Translation").Preload("Ayahs").First(&item, id).Error
 }
 
 func (r *asbabunNuzulRepository) Create(a *model.AsbabunNuzul) (*model.AsbabunNuzul, error) {

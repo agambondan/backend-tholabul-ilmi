@@ -34,6 +34,10 @@ func (c *asbabunNuzulController) FindByAyahID(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range items {
+		items[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, items)
 }
 
@@ -45,6 +49,10 @@ func (c *asbabunNuzulController) FindBySurahNumber(ctx *fiber.Ctx) error {
 	items, err := c.svc.FindBySurahNumber(number)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range items {
+		items[i].Translation.FilterByLang(lang)
 	}
 	return lib.OK(ctx, items)
 }

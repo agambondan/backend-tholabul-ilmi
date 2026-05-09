@@ -851,13 +851,22 @@ func seedAsbabunNuzulFromFile(db *gorm.DB) {
 				ayahs = append(ayahs, model.Ayah{BaseID: model.BaseID{ID: &id}})
 			}
 		}
+		tr := model.Translation{
+			Idn:            stringPtr(r.Title),
+			LatinIdn:       stringPtr(r.Narrator),
+			DescriptionIdn: stringPtr(r.Content),
+		}
+		if err := db.Create(&tr).Error; err != nil {
+			log.Printf("[seeder] asbabun_nuzul translation '%s': %v", r.Title, err)
+		}
 		item := model.AsbabunNuzul{
-			Title:      r.Title,
-			Narrator:   r.Narrator,
-			Content:    r.Content,
-			Source:     r.Source,
-			DisplayRef: r.DisplayRef,
-			Ayahs:      ayahs,
+			Title:         r.Title,
+			Narrator:      r.Narrator,
+			Content:       r.Content,
+			Source:        r.Source,
+			DisplayRef:    r.DisplayRef,
+			TranslationID: tr.ID,
+			Ayahs:         ayahs,
 		}
 		if err := db.Create(&item).Error; err != nil {
 			log.Printf("[seeder] asbabun_nuzul create '%s': %v", r.Title, err)

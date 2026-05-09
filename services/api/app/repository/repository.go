@@ -208,6 +208,9 @@ func (s *Repositories) Seeder() error {
 	migrations.SeedMufrodatFromFile(s.db)
 	migrations.SeedHadithFromFiles(s.db)
 	migrations.SeedStaticFromFiles(s.db)
+	if err := migrations.BackfillTranslations(s.db); err != nil {
+		return err
+	}
 	// IlmuRijal: PerawiGuru, Sanad, MataSanad, Takhrij — depends on Perawi + Hadith being seeded first
 	migrations.SeedIlmuRijal(s.db)
 	return nil

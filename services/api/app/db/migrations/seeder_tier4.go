@@ -46,13 +46,15 @@ func seedAsbabunNuzul(db *gorm.DB) {
 		var existing model.AsbabunNuzul
 		err = db.Where("title = ?", s.Title).First(&existing).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			translationID := upsertAsbabunNuzulTranslation(db, nil, s)
 			item := model.AsbabunNuzul{
-				Title:      s.Title,
-				Narrator:   s.Narrator,
-				Content:    s.Content,
-				Source:     s.Source,
-				DisplayRef: displayRef,
-				Ayahs:      ayahs,
+				Title:         s.Title,
+				Narrator:      s.Narrator,
+				Content:       s.Content,
+				Source:        s.Source,
+				DisplayRef:    displayRef,
+				TranslationID: translationID,
+				Ayahs:         ayahs,
 			}
 			if err := db.Create(&item).Error; err != nil {
 				fmt.Printf("Warning: create %s: %v\n", s.Title, err)
@@ -68,6 +70,7 @@ func seedAsbabunNuzul(db *gorm.DB) {
 		existing.Content = s.Content
 		existing.Source = s.Source
 		existing.DisplayRef = displayRef
+		existing.TranslationID = upsertAsbabunNuzulTranslation(db, existing.TranslationID, s)
 		if err := db.Save(&existing).Error; err != nil {
 			fmt.Printf("Warning: update %s: %v\n", s.Title, err)
 			continue
@@ -76,6 +79,26 @@ func seedAsbabunNuzul(db *gorm.DB) {
 			fmt.Printf("Warning: replace ayahs %s: %v\n", s.Title, err)
 		}
 	}
+}
+
+func upsertAsbabunNuzulTranslation(db *gorm.DB, existingID *int, s asbabunNuzulSeed) *int {
+	tr := model.Translation{
+		Idn:            stringPtr(s.Title),
+		LatinIdn:       stringPtr(s.Narrator),
+		DescriptionIdn: stringPtr(s.Content),
+	}
+	if existingID != nil {
+		tr.ID = existingID
+		if err := db.Save(&tr).Error; err != nil {
+			fmt.Printf("Warning: update translation for %s: %v\n", s.Title, err)
+		}
+		return existingID
+	}
+	if err := db.Create(&tr).Error; err != nil {
+		fmt.Printf("Warning: create translation for %s: %v\n", s.Title, err)
+		return nil
+	}
+	return tr.ID
 }
 
 // resolveAyahsForAsbab loads the [from..to] range of ayat for a given surah,
