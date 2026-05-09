@@ -83,7 +83,7 @@ func seedAsbabunNuzul(db *gorm.DB) {
 // in the range is missing — better to skip than seed a partial reference.
 func resolveAyahsForAsbab(db *gorm.DB, s asbabunNuzulSeed) ([]model.Ayah, string, error) {
 	var surah model.Surah
-	if err := db.Where("number = ?", s.SurahID).First(&surah).Error; err != nil {
+	if err := db.Preload("Translation").Where("number = ?", s.SurahID).First(&surah).Error; err != nil {
 		return nil, "", fmt.Errorf("surah %d not found", s.SurahID)
 	}
 
@@ -112,6 +112,9 @@ func buildDisplayRef(surah *model.Surah, from, to int) string {
 	name := ""
 	if surah.Identifier != nil {
 		name = strings.TrimSpace(*surah.Identifier)
+	}
+	if name == "" && surah.Translation != nil && surah.Translation.LatinEn != nil {
+		name = strings.TrimSpace(*surah.Translation.LatinEn)
 	}
 	num := 0
 	if surah.Number != nil {
