@@ -11,6 +11,7 @@ import (
 // Must be called after DataSeeds (books already have IDs).
 func SeedIlmuRijal(db *gorm.DB) {
 	seedPerawi(db)
+	seedPerawiGuru(db)
 	seedJarhTadil(db)
 	seedSanadHadith(db)
 }
@@ -220,6 +221,52 @@ func seedPerawi(db *gorm.DB) {
 	}
 
 	db.Clauses(clause.OnConflict{DoNothing: true}).Create(&perawi)
+}
+
+func seedPerawiGuru(db *gorm.DB) {
+	getID := func(namaLatin string) *int {
+		var p model.Perawi
+		if err := db.Where("nama_latin = ?", namaLatin).First(&p).Error; err != nil {
+			return nil
+		}
+		return p.ID
+	}
+
+	type relation struct {
+		guru  string
+		murid string
+	}
+	relations := []relation{
+		{guru: "Muhammad Rasulullah ﷺ", murid: "Abu Hurairah"},
+		{guru: "Muhammad Rasulullah ﷺ", murid: "Abdullah bin Umar"},
+		{guru: "Muhammad Rasulullah ﷺ", murid: "Anas bin Malik"},
+		{guru: "Muhammad Rasulullah ﷺ", murid: "Aisyah Ummul Mukminin"},
+		{guru: "Abdullah bin Umar", murid: "Nafi'"},
+		{guru: "Anas bin Malik", murid: "Muhammad bin Muslim az-Zuhri (Ibnu Syihab)"},
+		{guru: "Nafi'", murid: "Malik bin Anas"},
+		{guru: "Muhammad bin Muslim az-Zuhri (Ibnu Syihab)", murid: "Malik bin Anas"},
+		{guru: "Malik bin Anas", murid: "Muhammad bin Ismail al-Bukhari"},
+		{guru: "Qutaibah bin Sa'id", murid: "Muhammad bin Ismail al-Bukhari"},
+		{guru: "Qutaibah bin Sa'id", murid: "Muslim bin al-Hajjaj"},
+		{guru: "Muhammad bin Ismail al-Bukhari", murid: "Muslim bin al-Hajjaj"},
+		{guru: "Muhammad bin Ismail al-Bukhari", murid: "Abu Dawud as-Sijistani"},
+		{guru: "Muhammad bin Ismail al-Bukhari", murid: "Muhammad bin Isa at-Tirmidzi"},
+		{guru: "Abu Dawud as-Sijistani", murid: "Muhammad bin Isa at-Tirmidzi"},
+	}
+
+	rows := make([]model.PerawiGuru, 0, len(relations))
+	for _, rel := range relations {
+		guruID := getID(rel.guru)
+		muridID := getID(rel.murid)
+		if guruID == nil || muridID == nil {
+			continue
+		}
+		rows = append(rows, model.PerawiGuru{GuruID: guruID, MuridID: muridID})
+	}
+	if len(rows) == 0 {
+		return
+	}
+	db.Clauses(clause.OnConflict{DoNothing: true}).Create(&rows)
 }
 
 // ─── Jarh wa Ta'dil ──────────────────────────────────────────────────────────

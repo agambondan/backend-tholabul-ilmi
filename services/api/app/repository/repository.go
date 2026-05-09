@@ -204,9 +204,12 @@ func (s *Repositories) Seeder() error {
 	}
 	// File-based seeds: baca dari data/ jika belum ada di DB
 	migrations.SeedQuranFromFile(s.db)
+	migrations.SeedTafsirFromFiles(s.db)
 	migrations.SeedMufrodatFromFile(s.db)
 	migrations.SeedHadithFromFiles(s.db)
 	migrations.SeedStaticFromFiles(s.db)
+	// IlmuRijal: PerawiGuru, Sanad, MataSanad, Takhrij — depends on Perawi + Hadith being seeded first
+	migrations.SeedIlmuRijal(s.db)
 	return nil
 }
 

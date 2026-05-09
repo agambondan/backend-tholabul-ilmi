@@ -79,6 +79,7 @@ func main() {
 	d.dumpAsbabunNuzul()
 	d.dumpPerawi()
 	d.dumpJarhTadil()
+	d.dumpPerawiGuru()
 
 	log.Println("Dump selesai!")
 }
@@ -555,5 +556,22 @@ func (d *dumper) dumpJarhTadil() {
 		ORDER BY p.id, jt.id
 	`).Scan(&rows)
 	d.save("jarh_tadil.json", rows)
+}
+
+type perawiGuruRow struct {
+	GuruNamaLatin  string `json:"guru_nama_latin"`
+	MuridNamaLatin string `json:"murid_nama_latin"`
+}
+
+func (d *dumper) dumpPerawiGuru() {
+	var rows []perawiGuruRow
+	d.db.Raw(`
+		SELECT g.nama_latin AS guru_nama_latin, m.nama_latin AS murid_nama_latin
+		FROM perawi_guru pg
+		JOIN perawi g ON g.id = pg.guru_id
+		JOIN perawi m ON m.id = pg.murid_id
+		ORDER BY pg.id
+	`).Scan(&rows)
+	d.save("perawi_guru.json", rows)
 }
 

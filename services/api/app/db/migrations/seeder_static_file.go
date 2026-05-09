@@ -44,6 +44,7 @@ func SeedStaticFromFiles(db *gorm.DB) {
 	seedAsbabunNuzulFromFile(db)
 	seedPerawiFromFile(db)
 	seedJarhTadilFromFile(db)
+	seedPerawiGuruFromFile(db)
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -977,6 +978,51 @@ func seedJarhTadilFromFile(db *gorm.DB) {
 			Columns:   []clause.Column{{Name: "perawi_id"}, {Name: "penilai_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"jenis_nilai", "tingkat", "teks_nilai", "sumber", "halaman", "catatan"}),
 		}).Create(&item)
+	}
+}
+
+// ── Perawi Guru ───────────────────────────────────────────────────────────────
+
+func seedPerawiGuruFromFile(db *gorm.DB) {
+	var count int64
+	db.Model(&model.PerawiGuru{}).Count(&count)
+	if count > 0 {
+		return
+	}
+	type row struct {
+		GuruNamaLatin  string `json:"guru_nama_latin"`
+		MuridNamaLatin string `json:"murid_nama_latin"`
+	}
+	var rows []row
+	if !readStaticJSON("perawi_guru.json", &rows) {
+		return
+	}
+	log.Printf("[seeder] seedPerawiGuruFromFile: %d relasi", len(rows))
+	perawiCache := make(map[string]int)
+	lookupPerawi := func(namaLatin string) (int, bool) {
+		if id, ok := perawiCache[namaLatin]; ok {
+			return id, true
+		}
+		var p model.Perawi
+		if err := db.Where("nama_latin = ?", namaLatin).First(&p).Error; err != nil || p.ID == nil {
+			return 0, false
+		}
+		perawiCache[namaLatin] = *p.ID
+		return *p.ID, true
+	}
+	for _, r := range rows {
+		guruID, ok := lookupPerawi(r.GuruNamaLatin)
+		if !ok {
+			log.Printf("[seeder] perawi_guru: guru '%s' tidak ditemukan — skip", r.GuruNamaLatin)
+			continue
+		}
+		muridID, ok := lookupPerawi(r.MuridNamaLatin)
+		if !ok {
+			log.Printf("[seeder] perawi_guru: murid '%s' tidak ditemukan — skip", r.MuridNamaLatin)
+			continue
+		}
+		item := model.PerawiGuru{GuruID: &guruID, MuridID: &muridID}
+		db.Clauses(clause.OnConflict{DoNothing: true}).Create(&item)
 	}
 }
 
