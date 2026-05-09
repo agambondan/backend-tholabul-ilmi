@@ -139,11 +139,17 @@ func seedBlogPosts(db *gorm.DB) {
 	db.Where("slug = ?", "hadith-sunnah").First(&hadithCat)
 
 	now := time.Now()
+	categoryID := func(cat model.BlogCategory) *int {
+		if cat.ID == nil {
+			return nil
+		}
+		return ptrInt(*cat.ID)
+	}
 	posts := []model.BlogPost{
 		{
 			BaseUUID:    model.BaseUUID{ID: uuid.New()},
 			AuthorID:    adminID,
-			CategoryID:  ptrInt(int(*quranCat.ID)),
+			CategoryID:  categoryID(quranCat),
 			Title:       "Keutamaan Membaca Al-Quran Setiap Hari",
 			Slug:        "keutamaan-membaca-al-quran",
 			Excerpt:     "Membaca Al-Quran adalah ibadah yang sangat mulia dengan pahala yang berlipat ganda.",
@@ -154,7 +160,7 @@ func seedBlogPosts(db *gorm.DB) {
 		{
 			BaseUUID:    model.BaseUUID{ID: uuid.New()},
 			AuthorID:    adminID,
-			CategoryID:  ptrInt(int(*hadithCat.ID)),
+			CategoryID:  categoryID(hadithCat),
 			Title:       "Mengenal Kitab Arbain Nawawi",
 			Slug:        "mengenal-arbain-nawawi",
 			Excerpt:     "Kitab legendaris yang memuat 42 hadis pokok dalam ajaran Islam.",
@@ -163,12 +169,40 @@ func seedBlogPosts(db *gorm.DB) {
 			PublishedAt: &now,
 		},
 	}
+	postTags := map[string][]string{
+		"keutamaan-membaca-al-quran": {"quran", "tilawah", "hafalan"},
+		"mengenal-arbain-nawawi":     {"hadith", "fiqh", "akhlak"},
+	}
 
 	for _, p := range posts {
-		db.Clauses(clause.OnConflict{
+		if err := db.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "slug"}},
-			DoUpdates: clause.AssignmentColumns([]string{"title", "excerpt", "content", "status", "published_at"}),
-		}).Create(&p)
+			DoUpdates: clause.AssignmentColumns([]string{"category_id", "title", "excerpt", "content", "status", "published_at"}),
+		}).Create(&p).Error; err != nil {
+			fmt.Printf("Warning: upsert blog post %s: %v\n", p.Slug, err)
+			continue
+		}
+
+		slugs := postTags[p.Slug]
+		if len(slugs) == 0 {
+			continue
+		}
+		var saved model.BlogPost
+		if err := db.Where("slug = ?", p.Slug).First(&saved).Error; err != nil {
+			fmt.Printf("Warning: lookup blog post %s: %v\n", p.Slug, err)
+			continue
+		}
+		var tags []model.BlogTag
+		if err := db.Where("slug IN ?", slugs).Find(&tags).Error; err != nil {
+			fmt.Printf("Warning: lookup blog tags for %s: %v\n", p.Slug, err)
+			continue
+		}
+		if len(tags) == 0 {
+			continue
+		}
+		if err := db.Model(&saved).Association("Tags").Replace(tags); err != nil {
+			fmt.Printf("Warning: replace blog tags for %s: %v\n", p.Slug, err)
+		}
 	}
 }
 

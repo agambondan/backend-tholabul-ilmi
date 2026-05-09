@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	quranBaseDataFile  = "data/quran_base.json"
-	mufrodatDataFile   = "data/mufrodat.json"
+	quranBaseDataFile = "data/quran_base.json"
+	mufrodatDataFile  = "data/mufrodat.json"
 )
 
 // ── JSON structs (mirror data/quran_base.json) ────────────────────────────────
@@ -24,12 +24,12 @@ type quranBaseJSON struct {
 }
 
 type surahJSON struct {
-	Number          int       `json:"number"`
-	NameAr          string    `json:"name_ar"`
-	NameEn          string    `json:"name_en"`
-	NameTranslation string    `json:"name_translation"`
-	Slug            string    `json:"slug"`
-	RevelationType  string    `json:"revelation_type"`
+	Number          int        `json:"number"`
+	NameAr          string     `json:"name_ar"`
+	NameEn          string     `json:"name_en"`
+	NameTranslation string     `json:"name_translation"`
+	Slug            string     `json:"slug"`
+	RevelationType  string     `json:"revelation_type"`
 	Ayahs           []ayahJSON `json:"ayahs"`
 }
 
@@ -68,9 +68,11 @@ type wordItem struct {
 // SeedQuranFromFile seeds surah and ayah from data/quran_base.json.
 // No-op if the file does not exist or if ayahs are already fully seeded.
 func SeedQuranFromFile(db *gorm.DB) {
-	var ayahCount int64
-	db.Model(&model.Ayah{}).Count(&ayahCount)
-	if ayahCount >= 6236 {
+	var distinctAyahCount int64
+	db.Model(&model.Ayah{}).
+		Select("COUNT(DISTINCT CONCAT(surah_id, ':', number))").
+		Scan(&distinctAyahCount)
+	if distinctAyahCount >= 6236 {
 		return
 	}
 
@@ -111,7 +113,7 @@ func SeedQuranFromFile(db *gorm.DB) {
 			Identifier:     lib.Strptr(sf.NameEn),
 		}
 		if err := db.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "number"}},
+			Columns: []clause.Column{{Name: "number"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"translation_id", "number_of_ayahs", "revelation_type", "slug", "identifier", "updated_at",
 			}),
@@ -127,32 +129,73 @@ func SeedQuranFromFile(db *gorm.DB) {
 		}
 
 		for _, af := range sf.Ayahs {
-			ayahTr := model.Translation{
-				Ar:  lib.Strptr(af.Arabic),
-				Idn: lib.Strptr(af.Indonesian),
-				En:  lib.Strptr(af.English),
-			}
-			if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&ayahTr).Error; err != nil {
-				continue
-			}
 			ayah := model.Ayah{
-				Number:        lib.Intptr(af.Number),
-				SurahID:       surah.ID,
-				TranslationID: ayahTr.ID,
-				JuzNumber:     lib.Intptr(af.Juz),
-				Page:          lib.Intptr(af.Page),
-				Manzil:        lib.Intptr(af.Manzil),
-				Ruku:          lib.Intptr(af.Ruku),
-				HizbQuarter:   lib.Intptr(af.HizbQuarter),
-				Sajda:         lib.Boolptr(af.Sajda),
+				Number:      lib.Intptr(af.Number),
+				SurahID:     surah.ID,
+				JuzNumber:   lib.Intptr(af.Juz),
+				Page:        lib.Intptr(af.Page),
+				Manzil:      lib.Intptr(af.Manzil),
+				Ruku:        lib.Intptr(af.Ruku),
+				HizbQuarter: lib.Intptr(af.HizbQuarter),
+				Sajda:       lib.Boolptr(af.Sajda),
 			}
-			if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&ayah).Error; err != nil {
+			if err := upsertQuranAyahFromFile(db, &ayah, af); err != nil {
 				continue
 			}
 			seeded++
 		}
 	}
 	log.Printf("[seeder] SeedQuranFromFile: %d ayahs seeded", seeded)
+}
+
+func upsertQuranAyahFromFile(db *gorm.DB, ayah *model.Ayah, af ayahJSON) error {
+	var existing model.Ayah
+	err := db.Where("surah_id = ? AND number = ?", ayah.SurahID, af.Number).First(&existing).Error
+	if err == nil {
+		if existing.TranslationID != nil {
+			db.Model(&model.Translation{}).
+				Where("id = ?", *existing.TranslationID).
+				Updates(map[string]interface{}{
+					"ar":  af.Arabic,
+					"idn": af.Indonesian,
+					"en":  af.English,
+				})
+			ayah.TranslationID = existing.TranslationID
+		} else {
+			tr := model.Translation{
+				Ar:  lib.Strptr(af.Arabic),
+				Idn: lib.Strptr(af.Indonesian),
+				En:  lib.Strptr(af.English),
+			}
+			if err := db.Create(&tr).Error; err != nil {
+				return err
+			}
+			ayah.TranslationID = tr.ID
+		}
+		return db.Model(&existing).Updates(map[string]interface{}{
+			"translation_id": ayah.TranslationID,
+			"juz_number":     ayah.JuzNumber,
+			"page":           ayah.Page,
+			"manzil":         ayah.Manzil,
+			"ruku":           ayah.Ruku,
+			"hizb_quarter":   ayah.HizbQuarter,
+			"sajda":          ayah.Sajda,
+		}).Error
+	}
+	if err != gorm.ErrRecordNotFound {
+		return err
+	}
+
+	ayahTr := model.Translation{
+		Ar:  lib.Strptr(af.Arabic),
+		Idn: lib.Strptr(af.Indonesian),
+		En:  lib.Strptr(af.English),
+	}
+	if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&ayahTr).Error; err != nil {
+		return err
+	}
+	ayah.TranslationID = ayahTr.ID
+	return db.Create(ayah).Error
 }
 
 // ── SeedMufrodatFromFile ──────────────────────────────────────────────────────
