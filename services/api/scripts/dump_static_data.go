@@ -570,7 +570,7 @@ func (d *dumper) dumpPerawiGuru() {
 		FROM perawi_guru pg
 		JOIN perawi g ON g.id = pg.guru_id
 		JOIN perawi m ON m.id = pg.murid_id
-		ORDER BY pg.id
+		ORDER BY pg.guru_id, pg.murid_id
 	`).Scan(&rows)
 	d.save("perawi_guru.json", rows)
 }
