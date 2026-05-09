@@ -28,6 +28,10 @@ func (c *doaController) FindAll(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, list)
 }
 
@@ -40,6 +44,7 @@ func (c *doaController) FindByID(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
+	doa.Translation.FilterByLang(lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, doa)
 }
 
@@ -48,6 +53,10 @@ func (c *doaController) FindByCategory(ctx *fiber.Ctx) error {
 	list, err := c.svc.FindByCategory(category)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
 	}
 	return lib.OK(ctx, list)
 }

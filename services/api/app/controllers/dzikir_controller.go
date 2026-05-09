@@ -28,6 +28,10 @@ func (c *dzikirController) FindAll(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, list)
 }
 
@@ -40,6 +44,7 @@ func (c *dzikirController) FindByID(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
+	d.Translation.FilterByLang(lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, d)
 }
 
@@ -49,6 +54,10 @@ func (c *dzikirController) FindByCategory(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, list)
 }
 
@@ -57,6 +66,10 @@ func (c *dzikirController) FindByOccasion(ctx *fiber.Ctx) error {
 	list, err := c.svc.FindByOccasion(occasion)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range list {
+		list[i].Translation.FilterByLang(lang)
 	}
 	return lib.OK(ctx, list)
 }

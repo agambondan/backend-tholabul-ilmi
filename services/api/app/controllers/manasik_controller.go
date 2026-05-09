@@ -29,6 +29,10 @@ func (c *manasikController) FindByType(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range steps {
+		steps[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, steps)
 }
 
@@ -45,5 +49,6 @@ func (c *manasikController) FindByStep(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx, "langkah tidak ditemukan")
 	}
+	s.Translation.FilterByLang(lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, s)
 }

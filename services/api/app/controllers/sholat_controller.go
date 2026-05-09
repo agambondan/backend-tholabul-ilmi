@@ -85,6 +85,10 @@ func (c *sholatController) GetAllGuides(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range guides {
+		guides[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, guides)
 }
 
@@ -97,5 +101,6 @@ func (c *sholatController) GetGuideByStep(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
+	guide.Translation.FilterByLang(lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, guide)
 }
