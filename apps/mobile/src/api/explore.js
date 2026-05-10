@@ -62,6 +62,8 @@ export const normalizeExploreItem = (item, index = 0) => {
   const title = pickText(
     translation.title_en,
     translation.title_idn,
+    translation.en,
+    translation.idn,
     translation.latin_en,
     translation.latin_idn,
     translation.name_en,
@@ -77,10 +79,10 @@ export const normalizeExploreItem = (item, index = 0) => {
   );
   const arabic = pickText(translation.arab, translation.ar, item?.arabic, item?.arab, item?.text_arab);
   const body = pickText(
+    translation.description_en,
+    translation.description_idn,
     translation.text_en,
     translation.text_idn,
-    translation.en,
-    translation.idn,
     translation.text,
     item?.content,
     item?.description,

@@ -91,7 +91,7 @@ export const featureGroups = [
         title: 'Sejarah Islam',
         subtitle: 'Referensi sejarah',
         type: 'list',
-        endpoint: '/api/v1/sejarah',
+        endpoint: '/api/v1/history',
       },
       {
         key: 'fiqh',

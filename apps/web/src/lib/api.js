@@ -367,6 +367,27 @@ export const wiridApi = {
         fetch(`${API_URL}/api/v1/wirid/occasion/${encodeURIComponent(occasion)}`),
 };
 
+export const fiqhApi = {
+    listCategories: () => fetch(`${API_URL}/api/v1/fiqh`),
+    categoryBySlug: (slug) =>
+        fetch(`${API_URL}/api/v1/fiqh/${encodeURIComponent(slug)}`),
+    itemBySlug: (slug) =>
+        fetch(`${API_URL}/api/v1/fiqh/item/${encodeURIComponent(slug)}`),
+};
+
+export const historyApi = {
+    list: (params = {}) => {
+        const q = new URLSearchParams();
+        if (params.category) q.set('category', params.category);
+        if (params.yearFrom) q.set('year_from', String(params.yearFrom));
+        if (params.yearTo) q.set('year_to', String(params.yearTo));
+        const qs = q.toString();
+        return fetch(`${API_URL}/api/v1/history${qs ? `?${qs}` : ''}`);
+    },
+    bySlug: (slug) =>
+        fetch(`${API_URL}/api/v1/history/${encodeURIComponent(slug)}`),
+};
+
 export const imsakiyahApi = {
     monthly: (lat, lng, year, month) =>
         fetch(
