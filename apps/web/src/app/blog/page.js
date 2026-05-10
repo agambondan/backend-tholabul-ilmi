@@ -8,6 +8,7 @@ import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { blogApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
 import { useLayoutMode } from '@/lib/useLayoutMode';
+import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { BsSearch } from 'react-icons/bs';
@@ -15,7 +16,7 @@ import { BsSearch } from 'react-icons/bs';
 const PAGE_SIZE = 10;
 
 export const BlogContent = ({ basePath = '/blog' }) => {
-    const { t } = useLocale();
+    const { t, lang } = useLocale();
     const { isWide } = useLayoutMode();
     const [posts, setPosts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -84,14 +85,17 @@ export const BlogContent = ({ basePath = '/blog' }) => {
 
     const filteredPosts = posts.filter((post) => {
         const query = search.trim().toLowerCase();
+        const title = getLocalizedField(post, 'title', lang);
+        const excerpt = getLocalizedField(post, 'excerpt', lang);
+        const category = getLocalizedField(post, 'category', lang);
         const matchesQuery =
             !query ||
-            post.title?.toLowerCase().includes(query) ||
-            post.excerpt?.toLowerCase().includes(query) ||
+            title?.toLowerCase().includes(query) ||
+            excerpt?.toLowerCase().includes(query) ||
             post.author?.toLowerCase().includes(query) ||
-            post.category?.toLowerCase().includes(query);
+            category?.toLowerCase().includes(query);
         const matchesCategory =
-            !selectedCategory || post.category?.toLowerCase() === selectedCategory.toLowerCase();
+            !selectedCategory || category?.toLowerCase() === selectedCategory.toLowerCase();
 
         if (!query && !selectedCategory) return true;
         return (
@@ -211,22 +215,22 @@ export const BlogContent = ({ basePath = '/blog' }) => {
                                 {post.cover_image && (
                                     <img
                                         src={post.cover_image}
-                                        alt={post.title}
+                                        alt={getLocalizedField(post, 'title', lang)}
                                         className='w-full h-40 object-cover'
                                     />
                                 )}
                                 <div className='p-4'>
-                                    {post.category && (
+                                    {getLocalizedField(post, 'category', lang) && (
                                         <span className='text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-2 block'>
-                                            {post.category}
+                                            {getLocalizedField(post, 'category', lang)}
                                         </span>
                                     )}
                                     <h2 className='font-bold text-emerald-900 dark:text-white mb-1 line-clamp-2'>
-                                        {post.title}
+                                        {getLocalizedField(post, 'title', lang)}
                                     </h2>
-                                    {post.excerpt && (
+                                    {getLocalizedField(post, 'excerpt', lang) && (
                                         <p className='text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3'>
-                                            {post.excerpt}
+                                            {getLocalizedField(post, 'excerpt', lang)}
                                         </p>
                                     )}
                                     <div className='flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>

@@ -181,7 +181,7 @@ func main() {
 	log.Printf("Ditemukan %d Translation IDs dari tabel i18n", len(targetIDs))
 
 	var records []model.Translation
-	db.Where("id IN ? AND en IS NULL AND idn IS NOT NULL", targetIDs).
+	db.Where("id IN ? AND ((en IS NULL AND idn IS NOT NULL) OR (description_en IS NULL AND description_idn IS NOT NULL))", targetIDs).
 		Limit(*batchSize).
 		Find(&records)
 
@@ -196,23 +196,37 @@ func main() {
 	ok, fail := 0, 0
 
 	for i, r := range records {
-		text := ""
-		if r.Idn != nil {
-			text = *r.Idn
+		updates := map[string]interface{}{}
+
+		if (r.En == nil || *r.En == "") && r.Idn != nil && *r.Idn != "" {
+			translated, err := translateID2EN(client, *r.Idn)
+			if err != nil {
+				log.Printf("[%d/%d] ID %d (idn) ERROR: %v", i+1, len(records), *r.ID, err)
+				fail++
+				time.Sleep(requestDelay * 3)
+				continue
+			}
+			updates["en"] = translated
+			time.Sleep(requestDelay)
 		}
-		if text == "" {
+
+		if (r.DescriptionEn == nil || *r.DescriptionEn == "") && r.DescriptionIdn != nil && *r.DescriptionIdn != "" {
+			translated, err := translateID2EN(client, *r.DescriptionIdn)
+			if err != nil {
+				log.Printf("[%d/%d] ID %d (description_idn) ERROR: %v", i+1, len(records), *r.ID, err)
+				fail++
+				time.Sleep(requestDelay * 3)
+				continue
+			}
+			updates["description_en"] = translated
+			time.Sleep(requestDelay)
+		}
+
+		if len(updates) == 0 {
 			continue
 		}
 
-		translated, err := translateID2EN(client, text)
-		if err != nil {
-			log.Printf("[%d/%d] ID %d ERROR: %v", i+1, len(records), *r.ID, err)
-			fail++
-			time.Sleep(requestDelay * 3)
-			continue
-		}
-
-		if err := db.Model(&r).Update("en", translated).Error; err != nil {
+		if err := db.Model(&r).Updates(updates).Error; err != nil {
 			log.Printf("[%d/%d] ID %d DB error: %v", i+1, len(records), *r.ID, err)
 			fail++
 			continue
@@ -223,7 +237,6 @@ func main() {
 			log.Printf("Progress: %d/%d translated, %d error, %.1fs elapsed",
 				ok, len(records), fail, time.Since(start).Seconds())
 		}
-		time.Sleep(requestDelay)
 	}
 
 	log.Printf("Selesai: %d berhasil, %d gagal, %.1fs", ok, fail, time.Since(start).Seconds())
@@ -251,6 +264,11 @@ func collectTargetIDs(db *gorm.DB) []int {
 		"SELECT translation_id FROM islamic_term WHERE translation_id IS NOT NULL",
 		"SELECT translation_id FROM amalan_item WHERE translation_id IS NOT NULL",
 		"SELECT translation_id FROM kajian WHERE translation_id IS NOT NULL",
+		"SELECT translation_id FROM history_event WHERE translation_id IS NOT NULL",
+		"SELECT translation_id FROM blog_category WHERE translation_id IS NOT NULL",
+		"SELECT translation_id FROM blog_tag WHERE translation_id IS NOT NULL",
+		"SELECT translation_id FROM blog_post WHERE translation_id IS NOT NULL",
+		"SELECT translation_id FROM asma_ul_husna WHERE translation_id IS NOT NULL",
 	}
 
 	for _, q := range queries {
