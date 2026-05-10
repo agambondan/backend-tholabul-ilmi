@@ -43,6 +43,10 @@ func (c *hijriController) GetEvents(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range events {
+		events[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, events)
 }
 
@@ -54,6 +58,10 @@ func (c *hijriController) GetEventsByMonth(ctx *fiber.Ctx) error {
 	events, err := c.svc.GetEventsByMonth(month)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range events {
+		events[i].Translation.FilterByLang(lang)
 	}
 	return lib.OK(ctx, events)
 }

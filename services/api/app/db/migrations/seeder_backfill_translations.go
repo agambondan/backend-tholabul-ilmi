@@ -66,6 +66,9 @@ func BackfillTranslations(db *gorm.DB) error {
 	if err := backfillAmalanItems(db); err != nil {
 		return err
 	}
+	if err := backfillIslamicEvents(db); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -366,6 +369,23 @@ func backfillAmalanItems(db *gorm.DB) error {
 			DescriptionIdn: stringPtr(row.Description),
 		}
 		if err := linkTranslation(db, "amalan_item", "id", row.ID, tr); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func backfillIslamicEvents(db *gorm.DB) error {
+	var rows []model.IslamicEvent
+	if err := db.Where("translation_id IS NULL").Find(&rows).Error; err != nil {
+		return err
+	}
+	for _, row := range rows {
+		tr := &model.Translation{
+			Idn:            stringPtr(row.Name),
+			DescriptionIdn: stringPtr(row.Description),
+		}
+		if err := linkTranslation(db, "islamic_event", "id", row.ID, tr); err != nil {
 			return err
 		}
 	}

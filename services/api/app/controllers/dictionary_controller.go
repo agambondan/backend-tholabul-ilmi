@@ -31,6 +31,10 @@ func (c *dictionaryController) FindAll(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range items {
+		items[i].Translation.FilterByLang(lang)
+	}
 	return lib.OK(ctx, items)
 }
 
@@ -39,6 +43,7 @@ func (c *dictionaryController) FindByTerm(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorNotFound(ctx, "istilah tidak ditemukan")
 	}
+	item.Translation.FilterByLang(lib.GetPreferredLang(ctx))
 	return lib.OK(ctx, item)
 }
 
@@ -46,6 +51,10 @@ func (c *dictionaryController) FindByCategory(ctx *fiber.Ctx) error {
 	items, err := c.svc.FindByCategory(model.TermCategory(ctx.Params("category")))
 	if err != nil {
 		return lib.ErrorInternal(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range items {
+		items[i].Translation.FilterByLang(lang)
 	}
 	return lib.OK(ctx, items)
 }

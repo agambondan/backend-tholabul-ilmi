@@ -668,16 +668,24 @@ func seedIslamicEventsFromFile(db *gorm.DB) {
 	}
 	log.Printf("[seeder] seedIslamicEventsFromFile: %d entri", len(rows))
 	for _, r := range rows {
+		tr := model.Translation{
+			Idn:            stringPtr(r.Name),
+			DescriptionIdn: stringPtr(r.Description),
+		}
+		if err := db.Create(&tr).Error; err != nil {
+			log.Printf("[seeder] islamic_event translation '%s': %v", r.Name, err)
+		}
 		item := model.IslamicEvent{
-			Name:        r.Name,
-			HijriMonth:  r.HijriMonth,
-			HijriDay:    r.HijriDay,
-			Category:    model.IslamicEventCategory(r.Category),
-			Description: r.Description,
+			Name:          r.Name,
+			HijriMonth:    r.HijriMonth,
+			HijriDay:      r.HijriDay,
+			Category:      model.IslamicEventCategory(r.Category),
+			Description:   r.Description,
+			TranslationID: tr.ID,
 		}
 		db.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "hijri_month"}, {Name: "hijri_day"}, {Name: "name"}},
-			DoUpdates: clause.AssignmentColumns([]string{"description", "category"}),
+			DoUpdates: clause.AssignmentColumns([]string{"description", "category", "translation_id"}),
 		}).Create(&item)
 	}
 }

@@ -36,9 +36,9 @@ type SholatGuide struct {
 	Arabic          string       `json:"-" gorm:"type:text"`
 	Transliteration string       `json:"-" gorm:"type:text"`
 	TranslationText string       `json:"-" gorm:"column:translation;type:text"`
-	Description     string       `json:"-" gorm:"type:text"`
+	Description     string       `json:"description,omitempty" gorm:"type:text"`
 	Source          string       `json:"source" gorm:"type:varchar(512)"`
-	Notes           string       `json:"-" gorm:"type:text"`
+	Notes           string       `json:"notes,omitempty" gorm:"type:text"`
 	TranslationID   *int         `json:"translation_id,omitempty" gorm:"index"`
 	Translation     *Translation `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }

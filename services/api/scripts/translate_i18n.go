@@ -182,6 +182,7 @@ func main() {
 
 	var records []model.Translation
 	db.Where("id IN ? AND ((en IS NULL AND idn IS NOT NULL) OR (description_en IS NULL AND description_idn IS NOT NULL))", targetIDs).
+		Order("id DESC").
 		Limit(*batchSize).
 		Find(&records)
 
@@ -269,6 +270,7 @@ func collectTargetIDs(db *gorm.DB) []int {
 		"SELECT translation_id FROM blog_tag WHERE translation_id IS NOT NULL",
 		"SELECT translation_id FROM blog_post WHERE translation_id IS NOT NULL",
 		"SELECT translation_id FROM asma_ul_husna WHERE translation_id IS NOT NULL",
+		"SELECT translation_id FROM islamic_event WHERE translation_id IS NOT NULL",
 	}
 
 	for _, q := range queries {

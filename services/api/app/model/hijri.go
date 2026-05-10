@@ -10,11 +10,13 @@ const (
 
 type IslamicEvent struct {
 	BaseID
-	Name        string               `json:"name" gorm:"type:varchar(256);not null;uniqueIndex:idx_islamic_event_date_name"`
-	HijriMonth  int                  `json:"hijri_month" gorm:"not null;index;uniqueIndex:idx_islamic_event_date_name"`
-	HijriDay    int                  `json:"hijri_day" gorm:"not null;uniqueIndex:idx_islamic_event_date_name"`
-	Description string               `json:"description" gorm:"type:text"`
-	Category    IslamicEventCategory `json:"category" gorm:"type:varchar(20);not null;index"`
+	Name          string               `json:"-" gorm:"type:varchar(256);not null;uniqueIndex:idx_islamic_event_date_name"`
+	HijriMonth    int                  `json:"hijri_month" gorm:"not null;index;uniqueIndex:idx_islamic_event_date_name"`
+	HijriDay      int                  `json:"hijri_day" gorm:"not null;uniqueIndex:idx_islamic_event_date_name"`
+	Description   string               `json:"-" gorm:"type:text"`
+	Category      IslamicEventCategory `json:"category" gorm:"type:varchar(20);not null;index"`
+	TranslationID *int                 `json:"translation_id,omitempty" gorm:"index"`
+	Translation   *Translation         `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type HijriDate struct {
