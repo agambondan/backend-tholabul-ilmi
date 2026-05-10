@@ -299,8 +299,8 @@ export const notesApi = {
 
 export const kamusApi = {
     search: (q) =>
-        fetch(`${API_URL}/api/v1/kamus?q=${encodeURIComponent(q)}`),
-    detail: (id) => fetch(`${API_URL}/api/v1/kamus/${id}`),
+        fetch(`${API_URL}/api/v1/dictionary?q=${encodeURIComponent(q)}`),
+    detail: (term) => fetch(`${API_URL}/api/v1/dictionary/${encodeURIComponent(term)}`),
 };
 
 export const manasikApi = {
@@ -434,10 +434,10 @@ export const adminKajianApi = {
 };
 
 export const adminKamusApi = {
-    list: (page = 0, size = 100) => authFetch(`/api/v1/kamus/list?page=${page}&size=${size}`),
-    create: (data) => authFetch('/api/v1/kamus', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => authFetch(`/api/v1/kamus/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => authFetch(`/api/v1/kamus/${id}`, { method: 'DELETE' }),
+    list: (page = 0, size = 100) => authFetch(`/api/v1/dictionary?page=${page}&size=${size}`),
+    create: (data) => authFetch('/api/v1/dictionary', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/dictionary/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/dictionary/${id}`, { method: 'DELETE' }),
 };
 
 export const adminQuizApi = {

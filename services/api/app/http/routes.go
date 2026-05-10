@@ -434,6 +434,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Delete("/history/:id", middlewares.EditorOrAdminMiddleware(), newHistoryController.Delete)
 
 	// #45 Manasik Haji & Umrah (public)
+	master.Get("/manasik", newManasikController.FindAll)
 	master.Get("/manasik/:type", newManasikController.FindByType)
 	master.Get("/manasik/:type/:step", newManasikController.FindByStep)
 

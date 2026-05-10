@@ -10,6 +10,7 @@ import (
 )
 
 type ManasikController interface {
+	FindAll(ctx *fiber.Ctx) error
 	FindByType(ctx *fiber.Ctx) error
 	FindByStep(ctx *fiber.Ctx) error
 }
@@ -18,6 +19,18 @@ type manasikController struct{ svc service.ManasikService }
 
 func NewManasikController(services *service.Services) ManasikController {
 	return &manasikController{services.Manasik}
+}
+
+func (c *manasikController) FindAll(ctx *fiber.Ctx) error {
+	steps, err := c.svc.FindAll()
+	if err != nil {
+		return lib.ErrorInternal(ctx)
+	}
+	lang := lib.GetPreferredLang(ctx)
+	for i := range steps {
+		steps[i].Translation.FilterByLang(lang)
+	}
+	return lib.OK(ctx, steps)
 }
 
 func (c *manasikController) FindByType(ctx *fiber.Ctx) error {

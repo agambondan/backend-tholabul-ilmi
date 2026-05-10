@@ -30,7 +30,7 @@ export default function DashboardKamusPage() {
         timerRef.current = setTimeout(() => {
             setLoading(true);
             fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/kamus?q=${encodeURIComponent(q)}&size=20`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/dictionary?q=${encodeURIComponent(q)}&size=20`,
             )
                 .then((r) => r.json())
                 .then((d) => {
