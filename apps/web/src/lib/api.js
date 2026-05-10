@@ -303,6 +303,10 @@ export const kamusApi = {
     detail: (id) => fetch(`${API_URL}/api/v1/kamus/${id}`),
 };
 
+export const manasikApi = {
+    byType: (type) => fetch(`${API_URL}/api/v1/manasik/${type}`),
+};
+
 export const quizApi = {
     session: ({ count = 10, type = '' } = {}) => {
         const params = new URLSearchParams();

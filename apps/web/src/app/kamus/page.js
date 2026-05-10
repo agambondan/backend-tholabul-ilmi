@@ -51,48 +51,6 @@ const COMMON_WORDS = [
     { arabic: 'بِسْم', latin: 'Bism', meaning: 'Dengan nama (basmalah)', root: 'سمو' },
 ];
 
-const COMMON_WORD_MEANINGS_EN = {
-    Allah: 'Allah, the name of God worshiped',
-    Rabb: 'Lord, Owner, Sustainer',
-    Rahmah: 'Mercy, compassion',
-    "'Ilm": 'Knowledge',
-    Kitab: 'Book, scripture',
-    Quran: 'Recitation, the Quran',
-    Iman: 'Faith, belief',
-    Islam: 'Submission, the religion of Islam',
-    Shalah: 'Prayer, supplication',
-    Zakah: 'Zakat, purification',
-    Shiyam: 'Fasting',
-    Hajj: 'Pilgrimage to Makkah',
-    Taqwa: 'God-consciousness, guarding oneself from what Allah forbids',
-    Shabr: 'Patience, perseverance',
-    Shukr: 'Gratitude, thanks',
-    Tawbah: 'Repentance, returning to Allah',
-    "Du'a": 'Supplication, request',
-    Dzikr: 'Dhikr, remembrance of Allah',
-    Masjid: 'Mosque, place of prostration',
-    Halal: 'Permissible',
-    Haram: 'Forbidden',
-    Sunnah: "The Prophet's way and practice",
-    Fardh: 'Obligatory duty',
-    Nafs: 'Soul, self, desire',
-    Qalb: 'Heart',
-    "'Aql": 'Intellect, reason',
-    Akh: 'Brother',
-    Ukht: 'Sister',
-    Ummah: 'Community, Muslim nation',
-    Amanah: 'Trust, responsibility',
-    Hikmah: 'Wisdom',
-    Rizq: 'Provision, sustenance',
-    Jannah: 'Paradise',
-    Nar: 'Fire, Hellfire',
-    Malak: 'Angel',
-    Nabi: 'Prophet',
-    Rasul: 'Messenger',
-    Muslim: 'One who submits to Allah',
-    "Mu'min": 'Believer',
-    Bism: 'In the name',
-};
 
 export default function KamusPage() {
     const { t, lang } = useLocale();
@@ -101,11 +59,18 @@ export default function KamusPage() {
     const [loading, setLoading] = useState(false);
     const [selected, setSelected] = useState(null);
 
-    const wordMeaning = (word) =>
-        (lang === 'EN' && COMMON_WORD_MEANINGS_EN[word.latin]
-            ? COMMON_WORD_MEANINGS_EN[word.latin]
-            : getLocalizedField(word, 'meaning', lang)) ||
-        word.meaning;
+    const wordMeaning = (word) => {
+        if (lang === 'EN') {
+            return (
+                word.translation?.description_en ||
+                word.translation?.en ||
+                word.definition ||
+                word.meaning ||
+                ''
+            );
+        }
+        return word.definition || word.translation?.description_idn || word.translation?.idn || word.meaning || '';
+    };
 
     const handleSearch = () => {
         const q = query.trim();
