@@ -16,12 +16,12 @@ Tafsir ayat dari berbagai mufassir, bisa diakses per ayat.
 
 ## Evidence
 
-- API controller: services/api/internal/controller/tafsir_controller.go
-- Web page: apps/web/app/(main)/tafsir/page.tsx
-- Mobile screen: apps/mobile/src/screens/QuranScreen.tsx
+- API controller: services/api/app/controllers/tafsir_controller.go
+- Web page: apps/web/src/app/tafsir/page.js
+- Mobile screen: apps/mobile/src/screens/QuranScreen.js
 
 ## Source of Truth
 
-- Model: services/api/internal/model/tafsir.go
-- Controller: services/api/internal/controller/tafsir_controller.go
-- Service: services/api/internal/service/tafsir_service.go
+- Model: services/api/app/model/tafsir.go
+- Controller: services/api/app/controllers/tafsir_controller.go
+- Service: services/api/app/service/tafsir_service.go

@@ -16,14 +16,14 @@ Jadwal sholat harian berdasarkan lokasi (koordinat), dengan 7 metode perhitungan
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/sholat-times.controller.ts`, `services/api/src/controllers/kiblat.controller.ts`
-- Web page: `apps/web/app/jadwal-sholat/page.tsx`, `apps/web/app/kiblat/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`, `apps/mobile/src/screens/PrayerScreen.tsx`
+- API controller: `services/api/app/controllers/prayer_times_controller.go`, `services/api/app/controllers/kiblat_controller.go`
+- Web page: `apps/web/src/app/jadwal-sholat/page.js`, `apps/web/src/app/kiblat/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`, `apps/mobile/src/screens/PrayerScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/sholat-times.routes.ts`
-- `services/api/src/routes/kiblat.routes.ts`
-- `services/api/src/services/prayer-times.service.ts`
-- `apps/web/app/jadwal-sholat/`
-- `apps/web/app/kiblat/`
+- `services/api/app/controllers/prayer_times_controller.go`
+- `services/api/app/controllers/kiblat_controller.go`
+- `services/api/app/services/prayer-times_service.go`
+- `apps/web/src/app/jadwal-sholat/`
+- `apps/web/src/app/kiblat/`

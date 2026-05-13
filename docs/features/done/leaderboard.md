@@ -16,12 +16,11 @@ Ranking berdasarkan streak + hafalan. Memberikan gambaran pencapaian pengguna da
 
 ## Evidence
 
-- API: routes/leaderboard.ts
-- Web: app/(main)/leaderboard/page.tsx, app/(main)/dashboard/leaderboard/page.tsx
-- Mobile: screens/ExploreScreen.tsx
+- API: services/api/app/controllers/leaderboard_controller.go
+- Web: apps/web/src/app/leaderboard/page.js, apps/web/src/app/dashboard/leaderboard/page.js
+- Mobile: apps/mobile/src/screens/ExploreScreen.js
 
 ## Source of Truth
 
-- docs/features/done/leaderboard.md
-- services/api/src/routes/leaderboard.ts
-- apps/web/src/app/(main)/leaderboard/page.tsx
+- services/api/app/controllers/leaderboard_controller.go
+- apps/web/src/app/leaderboard/page.js

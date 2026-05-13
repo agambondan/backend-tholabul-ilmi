@@ -16,11 +16,13 @@ Timeline sejarah Islam dengan tanggal Hijriah dan Masehi, memberikan konteks kro
 
 ## Evidence
 
-- API: `routes/history.js`, `controllers/HistoryController.js`
-- Web: `pages/sejarah/index.tsx`, `pages/dashboard/sejarah.tsx`
-- Mobile: `screens/ExploreScreen.tsx`
+- Web: `apps/web/src/app/sejarah/page.js`, `apps/web/src/app/dashboard/sejarah/page.js`
+- Mobile: `apps/mobile/src/screens/ExploreScreen.js`
+
+- API: services/api/app/controllers/history_controller.go
 
 ## Source of Truth
 
-- `docs/api/history.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/history_controller.go
+- services/api/app/model/history.go
+- services/api/app/services/history_service.go

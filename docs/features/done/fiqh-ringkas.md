@@ -16,11 +16,13 @@ Fiqh ringkas per kategori (thaharah, sholat, puasa, zakat, haji, muamalah) sebag
 
 ## Evidence
 
-- API: `routes/fiqh.js`, `controllers/FiqhController.js`
-- Web: `pages/fiqh/index.tsx`, `pages/dashboard/fiqh.tsx`
-- Mobile: `screens/ExploreScreen.tsx`
+- Web: `apps/web/src/app/fiqh/page.js`, `apps/web/src/app/dashboard/fiqh/page.js`
+- Mobile: `apps/mobile/src/screens/ExploreScreen.js`
+
+- API: services/api/app/controllers/fiqh_controller.go
 
 ## Source of Truth
 
-- `docs/api/fiqh.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/fiqh_controller.go
+- services/api/app/model/fiqh.go
+- services/api/app/services/fiqh_service.go

@@ -16,12 +16,11 @@ Target belajar dengan deadline, bisa track progress. Pengguna dapat menetapkan t
 
 ## Evidence
 
-- API: routes/goals.ts
-- Web: app/(main)/goals/page.tsx, app/(main)/dashboard/goals/page.tsx
-- Mobile: screens/ExploreScreen.tsx
+- API: services/api/app/controllers/goal_controller.go
+- Web: apps/web/src/app/goals/page.js, apps/web/src/app/dashboard/goals/page.js
+- Mobile: apps/mobile/src/screens/ExploreScreen.js
 
 ## Source of Truth
 
-- docs/features/done/goals-target-belajar.md
-- services/api/src/routes/goals.ts
-- apps/web/src/app/(main)/goals/page.tsx
+- services/api/app/controllers/goal_controller.go
+- apps/web/src/app/goals/page.js

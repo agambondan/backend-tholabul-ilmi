@@ -16,11 +16,11 @@ Kalkulator zakat (maal, fitrah, nishab) dengan perhitungan otomatis berdasarkan 
 
 ## Evidence
 
-- API: `services/api/src/routes/zakat.ts`
+- API: `services/api/app/controllers/zakat_controller.go`
 - Web: `apps/web/src/app/zakat/`, `apps/web/src/app/dashboard/zakat/`
-- Mobile: `apps/mobile/src/screens/IbadahScreen.tsx`
+- Mobile: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/services/zakatCalculator.ts`
-- `services/api/src/models/Zakat.ts`
+- `services/api/app/services/zakat_service.go`
+- `services/api/app/model/Zakat.go`

@@ -16,12 +16,12 @@ Tanggal: `2026-05-13`
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/asmaul-husna.controller.ts`
-- Web page: `apps/web/app/asmaul-husna/page.tsx`, `apps/web/app/dashboard/asmaul-husna/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/ExploreScreen.tsx`
+- API controller: `services/api/app/controllers/asmaul_husna_controller.go`
+- Web page: `apps/web/src/app/asmaul-husna/page.js`, `apps/web/src/app/dashboard/asmaul-husna/page.js`
+- Mobile screen: `apps/mobile/src/screens/ExploreScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/asmaul-husna.routes.ts`
-- `services/api/src/services/asmaul-husna.service.ts`
-- `apps/web/app/asmaul-husna/`
+- `services/api/app/controllers/asmaul_husna_controller.go`
+- `services/api/app/services/asmaul_husna_service.go`
+- `apps/web/src/app/asmaul-husna/`

@@ -16,11 +16,13 @@ Kumpulan kajian dan ceramah dalam format video, audio, dan teks yang terorganisi
 
 ## Evidence
 
-- API: `routes/kajian.js`, `controllers/KajianController.js`
-- Web: `pages/kajian/index.tsx`, `pages/dashboard/kajian.tsx`
-- Mobile: `screens/ExploreScreen.tsx`
+- Web: `apps/web/src/app/kajian/page.js`, `apps/web/src/app/dashboard/kajian/page.js`
+- Mobile: `apps/mobile/src/screens/ExploreScreen.js`
+
+- API: services/api/app/controllers/kajian_controller.go
 
 ## Source of Truth
 
-- `docs/api/kajian.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/kajian_controller.go
+- services/api/app/model/kajian.go
+- services/api/app/services/kajian_service.go

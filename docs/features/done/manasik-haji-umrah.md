@@ -16,11 +16,13 @@ Panduan step-by-step manasik haji dan umrah yang interaktif, membantu pengguna m
 
 ## Evidence
 
-- API: `routes/manasik.js`, `controllers/ManasikController.js`
-- Web: `pages/manasik/index.tsx`, `pages/dashboard/manasik.tsx`
-- Mobile: `screens/ExploreScreen.tsx`
+- Web: `apps/web/src/app/manasik/page.js`, `apps/web/src/app/dashboard/manasik/page.js`
+- Mobile: `apps/mobile/src/screens/ExploreScreen.js`
+
+- API: services/api/app/controllers/manasik_controller.go
 
 ## Source of Truth
 
-- `docs/api/manasik.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/manasik_controller.go
+- services/api/app/model/manasik.go
+- services/api/app/services/manasik_service.go

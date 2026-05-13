@@ -16,12 +16,12 @@ Catat sholat 5 waktu per hari, lihat history & statistik.
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/sholat.controller.ts`
-- Web page: `apps/web/app/sholat-tracker/page.tsx`, `apps/web/app/dashboard/sholat-tracker/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`
+- API controller: `services/api/app/controllers/sholat_controller.go`
+- Web page: `apps/web/src/app/sholat-tracker/page.js`, `apps/web/src/app/dashboard/sholat-tracker/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/sholat.routes.ts`
-- `services/api/src/services/sholat.service.ts`
-- `apps/web/app/sholat-tracker/`
+- `services/api/app/controllers/sholat_controller.go`
+- `services/api/app/services/sholat_service.go`
+- `apps/web/src/app/sholat-tracker/`

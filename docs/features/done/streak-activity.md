@@ -16,12 +16,11 @@ Daily streak & aktivitas harian untuk motivasi konsistensi. Melacak hari-hari ak
 
 ## Evidence
 
-- API: routes/streak.ts, routes/activity.ts
-- Web: app/(main)/dashboard/page.tsx, app/(main)/profile/page.tsx
-- Mobile: screens/HomeScreen.tsx, screens/ProfileScreen.tsx
+- API: services/api/app/controllers/streak_controller.go, services/api/app/controllers/streak_controller.go
+- Web: apps/web/src/app/dashboard/page.js, apps/web/src/app/profile/page.js
+- Mobile: apps/mobile/src/screens/HomeScreen.js, apps/mobile/src/screens/ProfileScreen.js
 
 ## Source of Truth
 
-- docs/features/done/streak-activity.md
-- services/api/src/routes/streak.ts
-- apps/web/src/components/StreakWidget.tsx
+- services/api/app/controllers/streak_controller.go
+- apps/web/src/components/StreakWidget.js

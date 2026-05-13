@@ -16,12 +16,12 @@ Pencarian full-text di seluruh konten (Quran, Hadith, Doa, dll) dengan filter.
 
 ## Evidence
 
-- API controller: services/api/internal/controller/search_controller.go
-- Web page: apps/web/app/(main)/search/page.tsx
-- Mobile screen: apps/mobile/src/screens/GlobalSearchScreen.tsx
+- API controller: services/api/app/controllers/search_controller.go
+- Web page: apps/web/src/app/search/page.js
+- Mobile screen: apps/mobile/src/screens/GlobalSearchScreen.js
 
 ## Source of Truth
 
-- Model: services/api/internal/model/search.go
-- Controller: services/api/internal/controller/search_controller.go
-- Service: services/api/internal/service/search_service.go
+- Model: services/api/app/model/search.go
+- Controller: services/api/app/controllers/search_controller.go
+- Service: services/api/app/service/search_service.go

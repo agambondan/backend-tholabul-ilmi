@@ -16,12 +16,12 @@ Arah kiblat dari lokasi user (angle + distance Haversine).
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/kiblat.controller.ts`
-- Web page: `apps/web/app/kiblat/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`
+- API controller: `services/api/app/controllers/kiblat_controller.go`
+- Web page: `apps/web/src/app/kiblat/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/kiblat.routes.ts`
-- `services/api/src/services/kiblat.service.ts`
-- `apps/web/app/kiblat/`
+- `services/api/app/controllers/kiblat_controller.go`
+- `services/api/app/services/kiblat_service.go`
+- `apps/web/src/app/kiblat/`

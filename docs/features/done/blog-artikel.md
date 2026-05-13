@@ -16,11 +16,13 @@ Blog dengan sistem posting, kategori, tags, dan related posts untuk menyediakan 
 
 ## Evidence
 
-- API: `routes/blog.js`, `controllers/BlogController.js`
-- Web: `pages/blog/index.tsx`, `pages/dashboard/blog.tsx`
-- Mobile: `screens/ExploreScreen.tsx`
+- Web: `apps/web/src/app/blog/page.js`, `apps/web/src/app/dashboard/blog/page.js`
+- Mobile: `apps/mobile/src/screens/ExploreScreen.js`
+
+- API: services/api/app/controllers/blog_controller.go
 
 ## Source of Truth
 
-- `docs/api/blog.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/blog_controller.go
+- services/api/app/model/blog.go
+- services/api/app/services/blog_service.go

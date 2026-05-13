@@ -16,12 +16,11 @@ Catatan pribadi yang bisa me-reference ayat atau hadith. Pengguna dapat membuat 
 
 ## Evidence
 
-- API: routes/notes.ts
-- Web: app/(main)/notes/page.tsx, app/(main)/dashboard/notes/page.tsx
-- Mobile: components/NotesPanel.tsx
+- API: services/api/app/controllers/note_controller.go
+- Web: apps/web/src/app/notes/page.js, apps/web/src/app/dashboard/notes/page.js
+- Mobile: apps/mobile/src/components/NotesPanel.js
 
 ## Source of Truth
 
-- docs/features/done/notes-catatan.md
-- services/api/src/routes/notes.ts
-- apps/web/src/app/(main)/notes/page.tsx
+- services/api/app/controllers/note_controller.go
+- apps/web/src/app/notes/page.js

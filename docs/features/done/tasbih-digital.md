@@ -16,9 +16,9 @@ Counter digital untuk tasbih dengan haptic feedback.
 
 ## Evidence
 
-- Web page: `apps/web/app/tasbih/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`
+- Web page: `apps/web/src/app/tasbih/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `apps/web/app/tasbih/`
+- `apps/web/src/app/tasbih/`

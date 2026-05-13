@@ -16,12 +16,11 @@ Notifikasi inbox, push token, reminder email, preferensi notifikasi. Mengirim pe
 
 ## Evidence
 
-- API: routes/notifications.ts
-- Web: app/(main)/notifications/page.tsx, app/(main)/dashboard/notifications/page.tsx
-- Mobile: components/NotificationCenter.tsx
+- API: services/api/app/controllers/notification_controller.go
+- Web: apps/web/src/app/notifications/page.js, apps/web/src/app/dashboard/notifications/page.js
+- Mobile: apps/mobile/src/components/NotificationCenter.js
 
 ## Source of Truth
 
-- docs/features/done/notifications.md
-- services/api/src/routes/notifications.ts
-- apps/web/src/app/(main)/notifications/page.tsx
+- services/api/app/controllers/notification_controller.go
+- apps/web/src/app/notifications/page.js

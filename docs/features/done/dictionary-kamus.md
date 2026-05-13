@@ -16,11 +16,13 @@ Kamus istilah Islami yang searchable per kategori, membantu pengguna memahami is
 
 ## Evidence
 
-- API: `routes/dictionary.js`, `controllers/DictionaryController.js`
-- Web: `pages/kamus/index.tsx`, `pages/dashboard/kamus.tsx`
-- Mobile: `screens/ExploreScreen.tsx`
+- Web: `apps/web/src/app/kamus/page.js`, `apps/web/src/app/dashboard/kamus/page.js`
+- Mobile: `apps/mobile/src/screens/ExploreScreen.js`
+
+- API: services/api/app/controllers/dictionary_controller.go
 
 ## Source of Truth
 
-- `docs/api/dictionary.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/dictionary_controller.go
+- services/api/app/model/dictionary.go
+- services/api/app/services/dictionary_service.go

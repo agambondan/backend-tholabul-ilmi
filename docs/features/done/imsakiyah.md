@@ -16,12 +16,12 @@ Jadwal imsak/fajr/maghrib sebulan Ramadan.
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/imsakiyah.controller.ts`
-- Web page: `apps/web/app/imsakiyah/page.tsx`, `apps/web/app/dashboard/imsakiyah/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`
+- API controller: `services/api/app/controllers/imsakiyah_controller.go`
+- Web page: `apps/web/src/app/imsakiyah/page.js`, `apps/web/src/app/dashboard/imsakiyah/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/imsakiyah.routes.ts`
-- `services/api/src/services/imsakiyah.service.ts`
-- `apps/web/app/imsakiyah/`
+- `services/api/app/controllers/prayer_times_controller.go`
+- `services/api/app/services/imsakiyah_service.go`
+- `apps/web/src/app/imsakiyah/`

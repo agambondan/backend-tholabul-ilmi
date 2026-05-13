@@ -16,11 +16,13 @@ Quiz interaktif 10 soal MCQ random dari berbagai topik keislaman dengan score tr
 
 ## Evidence
 
-- API: `routes/quiz.js`, `controllers/QuizController.js`
-- Web: `pages/quiz/index.tsx`, `pages/dashboard/quiz.tsx`
-- Mobile: `screens/ExploreScreen.tsx`
+- Web: `apps/web/src/app/quiz/page.js`, `apps/web/src/app/dashboard/quiz/page.js`
+- Mobile: `apps/mobile/src/screens/ExploreScreen.js`
+
+- API: services/api/app/controllers/quiz_controller.go
 
 ## Source of Truth
 
-- `docs/api/quiz.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/quiz_controller.go
+- services/api/app/model/quiz.go
+- services/api/app/services/quiz_service.go

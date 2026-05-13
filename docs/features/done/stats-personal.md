@@ -16,12 +16,11 @@ Laporan/rekap pribadi: mingguan, bulanan, tahunan; mencakup sholat, tilawah, haf
 
 ## Evidence
 
-- API: routes/stats.ts
-- Web: app/(main)/stats/page.tsx, app/(main)/dashboard/stats/page.tsx
-- Mobile: screens/ProfileScreen.tsx
+- API: services/api/app/controllers/stats_controller.go
+- Web: apps/web/src/app/stats/page.js, apps/web/src/app/dashboard/stats/page.js
+- Mobile: apps/mobile/src/screens/ProfileScreen.js
 
 ## Source of Truth
 
-- docs/features/done/stats-personal.md
-- services/api/src/routes/stats.ts
-- apps/web/src/app/(main)/stats/page.tsx
+- services/api/app/controllers/stats_controller.go
+- apps/web/src/app/stats/page.js

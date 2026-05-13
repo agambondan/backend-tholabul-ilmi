@@ -16,12 +16,12 @@ Konversi Masehi-Hijriah, tanggal hari ini, event Islam.
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/hijri.controller.ts`
-- Web page: `apps/web/app/hijri/page.tsx`, `apps/web/app/dashboard/hijri/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`
+- API controller: `services/api/app/controllers/hijri_controller.go`
+- Web page: `apps/web/src/app/hijri/page.js`, `apps/web/src/app/dashboard/hijri/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/hijri.routes.ts`
-- `services/api/src/services/hijri.service.ts`
-- `apps/web/app/hijri/`
+- `services/api/app/controllers/hijri_controller.go`
+- `services/api/app/services/hijri_service.go`
+- `apps/web/src/app/hijri/`

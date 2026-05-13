@@ -16,10 +16,10 @@ Portal developer untuk integrasi eksternal: register sebagai developer, membuat 
 
 ## Evidence
 
-- API: `services/api/src/routes/developer.ts`
+- API: `services/api/app/controllers/api_key_controller.go`
 - Web: `apps/web/src/app/dev/`
 
 ## Source of Truth
 
-- `services/api/src/middleware/apiKey.ts`
-- `services/api/src/models/ApiKey.ts`
+- `services/api/app/controllers/apiKey_controller.go`
+- `services/api/app/model/ApiKey.go`

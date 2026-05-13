@@ -16,12 +16,12 @@ Baca Quran dengan choice display mode, multi font, tajweed, audio murotal per ay
 
 ## Evidence
 
-- API controller: services/api/internal/controller/quran_controller.go
-- Web page: apps/web/app/(main)/quran/page.tsx
-- Mobile screen: apps/mobile/src/screens/QuranScreen.tsx
+- API controller: services/api/app/controllers/quran_controller.go
+- Web page: apps/web/src/app/quran/page.js
+- Mobile screen: apps/mobile/src/screens/QuranScreen.js
 
 ## Source of Truth
 
-- Model: services/api/internal/model/quran.go
-- Controller: services/api/internal/controller/quran_controller.go
-- Service: services/api/internal/service/quran_service.go
+- Model: services/api/app/model/quran.go
+- Controller: services/api/app/controllers/quran_controller.go
+- Service: services/api/app/service/quran_service.go

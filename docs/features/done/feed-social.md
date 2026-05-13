@@ -16,12 +16,11 @@ Feed aktivitas: postingan, likes, komentar. Membangun komunitas dengan memungkin
 
 ## Evidence
 
-- API: routes/feed.ts, routes/comments.ts
-- Web: app/(main)/dashboard/page.tsx
-- Mobile: screens/ExploreScreen.tsx
+- API: services/api/app/controllers/feed_controller.go, services/api/app/controllers/comment_controller.go
+- Web: apps/web/src/app/dashboard/page.js
+- Mobile: apps/mobile/src/screens/ExploreScreen.js
 
 ## Source of Truth
 
-- docs/features/done/feed-social.md
-- services/api/src/routes/feed.ts
-- services/api/src/routes/comments.ts
+- services/api/app/controllers/feed_controller.go
+- services/api/app/controllers/comment_controller.go

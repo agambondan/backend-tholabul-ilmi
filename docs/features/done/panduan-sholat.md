@@ -16,12 +16,12 @@ Panduan sholat step-by-step: syarat, rukun, sunnah, baca'an, gerakan.
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/sholat.controller.ts`
-- Web page: `apps/web/app/panduan-sholat/page.tsx`, `apps/web/app/dashboard/panduan-sholat/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`
+- API controller: `services/api/app/controllers/sholat_controller.go`
+- Web page: `apps/web/src/app/panduan-sholat/page.js`, `apps/web/src/app/dashboard/panduan-sholat/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/sholat.routes.ts`
-- `services/api/src/services/panduan-sholat.service.ts`
-- `apps/web/app/panduan-sholat/`
+- `services/api/app/controllers/sholat_controller.go`
+- `services/api/app/services/panduan-sholat_service.go`
+- `apps/web/src/app/panduan-sholat/`

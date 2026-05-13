@@ -16,12 +16,11 @@ Bookmark multi-tipe (ayat, hadith, doa, artikel) dengan warna/label, sync lintas
 
 ## Evidence
 
-- API: routes/bookmarks.ts
-- Web: app/(main)/bookmarks/page.tsx, app/(main)/dashboard/bookmarks/page.tsx
-- Mobile: components/BookmarkButton.tsx
+- API: services/api/app/controllers/bookmark_controller.go
+- Web: apps/web/src/app/bookmarks/page.js, apps/web/src/app/dashboard/bookmarks/page.js
+- Mobile: components/BookmarkButton.js
 
 ## Source of Truth
 
-- docs/features/done/bookmark-system.md
-- apps/web/src/lib/api/bookmarks.ts
-- services/api/src/routes/bookmarks.ts
+- apps/web/src/lib/api/bookmarks.js
+- services/api/app/controllers/bookmark_controller.go

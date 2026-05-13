@@ -16,12 +16,11 @@ Poin, badge, dan pencapaian yang bisa di-unlock. Sistem reward untuk memberikan 
 
 ## Evidence
 
-- API: routes/achievements.ts
-- Web: app/(main)/dashboard/page.tsx
-- Mobile: screens/ProfileScreen.tsx
+- API: services/api/app/controllers/achievement_controller.go
+- Web: apps/web/src/app/dashboard/page.js
+- Mobile: apps/mobile/src/screens/ProfileScreen.js
 
 ## Source of Truth
 
-- docs/features/done/achievement-badge.md
-- services/api/src/routes/achievements.ts
-- apps/web/src/components/AchievementCard.tsx
+- services/api/app/controllers/achievement_controller.go
+- apps/web/src/components/AchievementCard.js

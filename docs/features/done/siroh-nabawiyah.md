@@ -16,11 +16,13 @@ Menyediakan bacaan siroh nabi Muhammad SAW yang terstruktur per kategori, memuda
 
 ## Evidence
 
-- API: `routes/siroh.js`, `controllers/SirohController.js`
-- Web: `pages/siroh/index.tsx`, `pages/dashboard/siroh.tsx`
-- Mobile: `screens/ExploreScreen.tsx`
+- Web: `apps/web/src/app/siroh/page.js`, `apps/web/src/app/dashboard/siroh/page.js`
+- Mobile: `apps/mobile/src/screens/ExploreScreen.js`
+
+- API: services/api/app/controllers/siroh_controller.go
 
 ## Source of Truth
 
-- `docs/api/siroh.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/siroh_controller.go
+- services/api/app/model/siroh.go
+- services/api/app/services/siroh_service.go

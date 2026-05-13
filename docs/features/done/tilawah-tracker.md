@@ -16,11 +16,13 @@ Mencatat bacaan Quran harian (halaman, juz) dan menyediakan statistik tilawah un
 
 ## Evidence
 
-- API: `routes/tilawah.js`, `controllers/TilawahController.js`
-- Web: `pages/tilawah/index.tsx`, `pages/dashboard/tilawah.tsx`
-- Mobile: `screens/QuranScreen.tsx` (tilawah section)
+- Web: `apps/web/src/app/tilawah/page.js`, `apps/web/src/app/dashboard/tilawah/page.js`
+- Mobile: `apps/mobile/src/screens/QuranScreen.js` (tilawah section)
+
+- API: services/api/app/controllers/tilawah_controller.go
 
 ## Source of Truth
 
-- `docs/api/tilawah.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/tilawah_controller.go
+- services/api/app/model/tilawah.go
+- services/api/app/services/tilawah_service.go

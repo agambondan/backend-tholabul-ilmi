@@ -16,11 +16,13 @@ Tracker menghafal Quran per surah dengan progress status dan muroja'ah mode untu
 
 ## Evidence
 
-- API: `routes/hafalan.js`, `controllers/HafalanController.js`
-- Web: `pages/hafalan/index.tsx`, `pages/muroja-ah/index.tsx`, `pages/dashboard/hafalan.tsx`, `pages/dashboard/muroja-ah.tsx`
-- Mobile: `screens/QuranScreen.tsx`
+- Web: `apps/web/src/app/hafalan/page.js`, `apps/web/src/app/muroja-ah/page.js`, `apps/web/src/app/dashboard/hafalan/page.js`, `apps/web/src/app/dashboard/muroja-ah/page.js`
+- Mobile: `apps/mobile/src/screens/QuranScreen.js`
+
+- API: services/api/app/controllers/hafalan_controller.go, services/api/app/controllers/murojaah_controller.go
 
 ## Source of Truth
 
-- `docs/api/hafalan.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/hafalan_controller.go, services/api/app/controllers/murojaah_controller.go
+- services/api/app/model/hafalan.go
+- services/api/app/services/hafalan_service.go

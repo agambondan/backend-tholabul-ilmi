@@ -16,12 +16,11 @@ Jurnal refleksi harian dengan mood picker. Pengguna dapat melakukan introspeksi 
 
 ## Evidence
 
-- API: routes/muhasabah.ts
-- Web: app/(main)/muhasabah/page.tsx, app/(main)/dashboard/muhasabah/page.tsx
-- Mobile: components/MuhasabahCard.tsx
+- API: services/api/app/controllers/muhasabah_controller.go
+- Web: apps/web/src/app/muhasabah/page.js, apps/web/src/app/dashboard/muhasabah/page.js
+- Mobile: components/MuhasabahCard.js
 
 ## Source of Truth
 
-- docs/features/done/muhasabah-harian.md
-- services/api/src/routes/muhasabah.ts
-- apps/web/src/app/(main)/muhasabah/page.tsx
+- services/api/app/controllers/muhasabah_controller.go
+- apps/web/src/app/muhasabah/page.js

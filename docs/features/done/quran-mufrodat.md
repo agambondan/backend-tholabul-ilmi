@@ -16,12 +16,12 @@ Kosakata per-kata (mufrodat) untuk setiap ayat Al-Quran dengan terjemahan dan ak
 
 ## Evidence
 
-- API controller: services/api/internal/controller/mufrodat_controller.go
-- Web page: apps/web/app/(main)/quran/page.tsx
-- Mobile screen: apps/mobile/src/screens/QuranScreen.tsx
+- API controller: services/api/app/controllers/mufrodat_controller.go
+- Web page: apps/web/src/app/quran/page.js
+- Mobile screen: apps/mobile/src/screens/QuranScreen.js
 
 ## Source of Truth
 
-- Model: services/api/internal/model/mufrodat.go
-- Controller: services/api/internal/controller/mufrodat_controller.go
-- Service: services/api/internal/service/mufrodat_service.go
+- Model: services/api/app/model/mufrodat.go
+- Controller: services/api/app/controllers/mufrodat_controller.go
+- Service: services/api/app/service/mufrodat_service.go

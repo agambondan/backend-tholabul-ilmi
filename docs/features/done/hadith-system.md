@@ -16,12 +16,12 @@ Baca, cari, dan eksplorasi hadith dari multi-kitab dengan detail sanad, takhrij,
 
 ## Evidence
 
-- API controller: services/api/internal/controller/hadith_controller.go
-- Web page: apps/web/app/(main)/hadith/page.tsx
-- Mobile screen: apps/mobile/src/screens/HadithScreen.tsx
+- API controller: services/api/app/controllers/hadith_controller.go
+- Web page: apps/web/src/app/hadith/page.js
+- Mobile screen: apps/mobile/src/screens/HadithScreen.js
 
 ## Source of Truth
 
-- Model: services/api/internal/model/hadith.go
-- Controller: services/api/internal/controller/hadith_controller.go
-- Service: services/api/internal/service/hadith_service.go
+- Model: services/api/app/model/hadith.go
+- Controller: services/api/app/controllers/hadith_controller.go
+- Service: services/api/app/service/hadith_service.go

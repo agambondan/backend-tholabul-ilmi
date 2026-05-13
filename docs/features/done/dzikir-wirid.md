@@ -16,14 +16,14 @@ Baca & amalkan dzikir pagi/petang dan wirid based on occasion, dengan dzikir log
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/dzikir.controller.ts`, `services/api/src/controllers/wirid.controller.ts`
-- Web page: `apps/web/app/dzikir/page.tsx`, `apps/web/app/wirid/page.tsx`, `apps/web/app/dashboard/dzikir/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`
+- API controller: `services/api/app/controllers/dzikir_controller.go`, `services/api/app/controllers/wirid_controller.go`
+- Web page: `apps/web/src/app/dzikir/page.js`, `apps/web/src/app/wirid/page.js`, `apps/web/src/app/dashboard/dzikir/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/dzikir.routes.ts`
-- `services/api/src/routes/wirid.routes.ts`
-- `services/api/src/services/dzikir.service.ts`
-- `apps/web/app/dzikir/`
-- `apps/web/app/wirid/`
+- `services/api/app/controllers/dzikir_controller.go`
+- `services/api/app/controllers/dzikir_controller.go`
+- `services/api/app/services/dzikir_service.go`
+- `apps/web/src/app/dzikir/`
+- `apps/web/src/app/wirid/`

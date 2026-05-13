@@ -16,12 +16,12 @@ Registrasi, login JWT, forgot/reset password, role-based access control (admin/e
 
 ## Evidence
 
-- API: `services/api/src/routes/auth.ts`, `services/api/src/routes/users.ts`
+- API: `services/api/app/controllers/user_controller.go`, `services/api/app/controllers/user_controller.go`
 - Web: `apps/web/src/app/auth/`, `apps/web/src/app/profile/`
-- Mobile: `apps/mobile/src/contexts/SessionContext.tsx`, `apps/mobile/src/screens/ProfileScreen.tsx`
+- Mobile: `apps/mobile/src/contexts/SessionContext.js`, `apps/mobile/src/screens/ProfileScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/middleware/auth.ts`
-- `services/api/src/middleware/rbac.ts`
-- `services/api/src/models/User.ts`
+- `services/api/app/controllers/auth_controller.go`
+- `services/api/app/controllers/rbac_controller.go`
+- `services/api/app/model/User.go`

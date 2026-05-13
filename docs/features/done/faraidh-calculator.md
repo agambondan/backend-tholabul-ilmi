@@ -16,11 +16,11 @@ Kalkulator waris (faraidh) dengan perhitungan Ashabul Furudh, Ashabah, Aul, dan 
 
 ## Evidence
 
-- API: `services/api/src/routes/faraidh.ts`
+- API: `services/api/app/controllers/faraidh_controller.go`
 - Web: `apps/web/src/app/faraidh/`, `apps/web/src/app/dashboard/faraidh/`
-- Mobile: `apps/mobile/src/screens/IbadahScreen.tsx`
+- Mobile: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/services/faraidhCalculator.ts`
-- `services/api/src/models/Faraidh.ts`
+- `services/api/app/services/faraidhCalculator_service.go`
+- `services/api/app/model/Faraidh.go`

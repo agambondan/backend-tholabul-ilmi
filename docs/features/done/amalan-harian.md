@@ -16,12 +16,11 @@ Checklist amalan sunnah harian. Membantu pengguna melacak dan membiasakan amalan
 
 ## Evidence
 
-- API: routes/amalan.ts
-- Web: app/(main)/amalan/page.tsx, app/(main)/dashboard/amalan/page.tsx
-- Mobile: screens/IbadahScreen.tsx
+- API: services/api/app/controllers/amalan_controller.go
+- Web: apps/web/src/app/amalan/page.js, apps/web/src/app/dashboard/amalan/page.js
+- Mobile: apps/mobile/src/screens/IbadahScreen.js
 
 ## Source of Truth
 
-- docs/features/done/amalan-harian.md
-- services/api/src/routes/amalan.ts
-- apps/web/src/app/(main)/amalan/page.tsx
+- services/api/app/controllers/amalan_controller.go
+- apps/web/src/app/amalan/page.js

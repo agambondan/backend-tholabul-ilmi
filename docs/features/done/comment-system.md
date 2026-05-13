@@ -16,11 +16,11 @@ Sistem komentar untuk blog, hadith, dan konten lainnya dengan threading, likes, 
 
 ## Evidence
 
-- API: `services/api/src/routes/comments.ts`
-- Web: `apps/web/src/components/CommentSection.tsx`
-- Mobile: `apps/mobile/src/screens/ExploreScreen.tsx`
+- API: `services/api/app/controllers/comment_controller.go`
+- Web: `apps/web/src/components/CommentSection.js`
+- Mobile: `apps/mobile/src/screens/ExploreScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/models/Comment.ts`
-- `services/api/src/middleware/commentModeration.ts`
+- `services/api/app/model/Comment.go`
+- `services/api/app/controllers/comment_controller.go`

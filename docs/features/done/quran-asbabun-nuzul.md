@@ -16,12 +16,12 @@ Sebab-sebab turun ayat, terkait langsung dengan tafsir.
 
 ## Evidence
 
-- API controller: services/api/internal/controller/asbabun_nuzul_controller.go
-- Web page: apps/web/app/(main)/asbabun-nuzul/page.tsx
-- Mobile screen: apps/mobile/src/screens/QuranScreen.tsx
+- API controller: services/api/app/controllers/asbabun_nuzul_controller.go
+- Web page: apps/web/src/app/asbabun-nuzul/page.js
+- Mobile screen: apps/mobile/src/screens/QuranScreen.js
 
 ## Source of Truth
 
-- Model: services/api/internal/model/asbabun_nuzul.go
-- Controller: services/api/internal/controller/asbabun_nuzul_controller.go
-- Service: services/api/internal/service/asbabun_nuzul_service.go
+- Model: services/api/app/model/asbabun_nuzul.go
+- Controller: services/api/app/controllers/asbabun_nuzul_controller.go
+- Service: services/api/app/service/asbabun_nuzul_service.go

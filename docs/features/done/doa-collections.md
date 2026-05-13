@@ -16,13 +16,13 @@ Baca & cari kumpulan doa sehari-hari per kategori (pagi, petang, makan, tidur, s
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/doa.controller.ts`
-- Web page: `apps/web/app/doa/page.tsx`, `apps/web/app/dashboard/doa/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`
+- API controller: `services/api/app/controllers/doa_controller.go`
+- Web page: `apps/web/src/app/doa/page.js`, `apps/web/src/app/dashboard/doa/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/doa.routes.ts`
-- `services/api/src/services/doa.service.ts`
-- `apps/web/app/doa/`
+- `services/api/app/controllers/doa_controller.go`
+- `services/api/app/services/doa_service.go`
+- `apps/web/src/app/doa/`
 - `apps/mobile/src/screens/`

@@ -16,12 +16,11 @@ Progress baca Quran & Hadith: melacak posisi terakhir, persentase selesai, dan r
 
 ## Evidence
 
-- API: routes/progress.ts
-- Web: app/(main)/quran/page.tsx, app/(main)/hadith/page.tsx
-- Mobile: screens/QuranScreen.tsx, screens/HadithScreen.tsx
+- API: services/api/app/controllers/reading_progress_controller.go
+- Web: apps/web/src/app/quran/page.js, apps/web/src/app/hadith/page.js
+- Mobile: apps/mobile/src/screens/QuranScreen.js, apps/mobile/src/screens/HadithScreen.js
 
 ## Source of Truth
 
-- docs/features/done/reading-progress.md
-- services/api/src/routes/progress.ts
-- apps/web/src/lib/hooks/useReadingProgress.ts
+- services/api/app/controllers/reading_progress_controller.go
+- apps/web/src/lib/hooks/useReadingProgress.js

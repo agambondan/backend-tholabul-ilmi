@@ -16,12 +16,12 @@ Bacaan Tahlil dan Yasin terstruktur untuk tahlilan/wirid kematian.
 
 ## Evidence
 
-- API controller: `services/api/src/controllers/tahlil.controller.ts`
-- Web page: `apps/web/app/tahlil/page.tsx`
-- Mobile screen: `apps/mobile/src/screens/IbadahScreen.tsx`
+- API controller: `services/api/app/controllers/tahlil_controller.go`
+- Web page: `apps/web/src/app/tahlil/page.js`
+- Mobile screen: `apps/mobile/src/screens/IbadahScreen.js`
 
 ## Source of Truth
 
-- `services/api/src/routes/tahlil.routes.ts`
-- `services/api/src/services/tahlil.service.ts`
-- `apps/web/app/tahlil/`
+- `services/api/app/controllers/tahlil_controller.go`
+- `services/api/app/services/tahlil_service.go`
+- `apps/web/src/app/tahlil/`

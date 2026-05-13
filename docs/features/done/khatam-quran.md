@@ -16,11 +16,13 @@ Target khatam 6236 ayat dengan progress per juz dan rekomendasi bacaan harian, m
 
 ## Evidence
 
-- API: `routes/readingProgress.js`, `controllers/ReadingProgressController.js`
-- Web: `pages/khatam/index.tsx`, `pages/dashboard/khatam.tsx`
-- Mobile: `screens/QuranScreen.tsx` (khatam section)
+- Web: `apps/web/src/app/khatam/page.js`, `apps/web/src/app/dashboard/khatam/page.js`
+- Mobile: `apps/mobile/src/screens/QuranScreen.js` (khatam section)
+
+- API: services/api/app/controllers/reading_progress_controller.go
 
 ## Source of Truth
 
-- `docs/api/reading-progress.md`
-- `docs/mobile/IA.md`
+- services/api/app/controllers/reading_progress_controller.go
+- services/api/app/model/reading_progress.go
+- services/api/app/services/reading_progress_service.go

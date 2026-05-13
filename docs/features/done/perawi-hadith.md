@@ -16,12 +16,12 @@ Database perawi/narrator hadith dengan biografi, tabaqah, guru-murid, dan status
 
 ## Evidence
 
-- API controller: services/api/internal/controller/perawi_controller.go
-- Web page: apps/web/app/(main)/perawi/page.tsx
-- Mobile screen: apps/mobile/src/screens/HadithScreen.tsx
+- API controller: services/api/app/controllers/perawi_controller.go
+- Web page: apps/web/src/app/perawi/page.js
+- Mobile screen: apps/mobile/src/screens/HadithScreen.js
 
 ## Source of Truth
 
-- Model: services/api/internal/model/perawi.go
-- Controller: services/api/internal/controller/perawi_controller.go
-- Service: services/api/internal/service/perawi_service.go
+- Model: services/api/app/model/perawi.go
+- Controller: services/api/app/controllers/perawi_controller.go
+- Service: services/api/app/service/perawi_service.go
