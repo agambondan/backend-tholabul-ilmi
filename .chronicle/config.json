@@ -1,6 +1,7 @@
 {
-    "project_id": "692bcafd-e8f6-4a1b-830d-3a89461703d1",
-    "project_name": "personal-tholabul-ilmi",
-    "canonical_root": "/home/firman/works/me/thollabul-ilmi",
-    "associated_at": "2026-05-03T01:09:31Z"
+  "project_id": "77ef1870-7929-4581-bf8c-2723323c1ccc",
+  "project_name": "Default Project",
+  "repo_identity": "github:agambondan/thollabul-ilmi",
+  "canonical_root": "/home/firman/works/me/thollabul-ilmi",
+  "associated_at": "2026-05-09T14:49:07Z"
 }
