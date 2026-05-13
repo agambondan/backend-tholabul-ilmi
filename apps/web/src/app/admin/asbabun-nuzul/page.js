@@ -9,9 +9,44 @@ import { BsPencil, BsPlusCircle, BsTrash, BsX } from 'react-icons/bs';
 const EMPTY_FORM = {
     surah_number: '',
     ayah_number: '',
+    ayah_end: '',
     title: '',
+    narrator: '',
     content: '',
     source: '',
+    display_ref: '',
+};
+
+const primaryRef = (item) => item?.ayah_refs?.[0] ?? item?.ayahs?.[0] ?? {};
+
+const lastRef = (item) => {
+    const refs = item?.ayah_refs;
+    if (Array.isArray(refs) && refs.length > 0) return refs[refs.length - 1];
+    return primaryRef(item);
+};
+
+const getSurahNumber = (item) =>
+    item?.surah_number ?? primaryRef(item)?.surah_number ?? primaryRef(item)?.surah?.number ?? '';
+
+const getAyahStart = (item) =>
+    item?.ayah_start ?? item?.ayah_number ?? primaryRef(item)?.ayah_number ?? primaryRef(item)?.number ?? '';
+
+const getAyahEnd = (item) =>
+    item?.ayah_end ?? lastRef(item)?.ayah_number ?? lastRef(item)?.number ?? getAyahStart(item);
+
+const formatAyahRange = (item) => {
+    const start = getAyahStart(item);
+    const end = getAyahEnd(item);
+    if (!start) return '-';
+    return end && Number(end) !== Number(start) ? `${start}-${end}` : start;
+};
+
+const buildAyahRefs = (surahNumber, ayahStart, ayahEnd) => {
+    const end = ayahEnd && ayahEnd >= ayahStart ? ayahEnd : ayahStart;
+    return Array.from({ length: end - ayahStart + 1 }, (_, index) => ({
+        surah_number: surahNumber,
+        ayah_number: ayahStart + index,
+    }));
 };
 
 const AdminAsbabunNuzulPage = () => {
@@ -34,8 +69,8 @@ const AdminAsbabunNuzulPage = () => {
             setItems(
                 [...arr].sort(
                     (a, b) =>
-                        (a.surah_number ?? 0) - (b.surah_number ?? 0) ||
-                        (a.ayah_number ?? 0) - (b.ayah_number ?? 0),
+                        (Number(getSurahNumber(a)) || 0) - (Number(getSurahNumber(b)) || 0) ||
+                        (Number(getAyahStart(a)) || 0) - (Number(getAyahStart(b)) || 0),
                 ),
             );
         } catch {
@@ -58,11 +93,14 @@ const AdminAsbabunNuzulPage = () => {
     const openEdit = (item) => {
         setEditId(item.id ?? item._id);
         setForm({
-            surah_number: item.surah_number ?? '',
-            ayah_number: item.ayah_number ?? '',
+            surah_number: getSurahNumber(item),
+            ayah_number: getAyahStart(item),
+            ayah_end: Number(getAyahEnd(item)) !== Number(getAyahStart(item)) ? getAyahEnd(item) : '',
             title: item.title ?? '',
+            narrator: item.narrator ?? '',
             content: item.content ?? '',
             source: item.source ?? '',
+            display_ref: item.display_ref ?? '',
         });
         setShowModal(true);
     };
@@ -70,10 +108,16 @@ const AdminAsbabunNuzulPage = () => {
     const save = async () => {
         setSaving(true);
         try {
+            const surahNumber = Number(form.surah_number);
+            const ayahStart = Number(form.ayah_number);
+            const ayahEnd = Number(form.ayah_end) || ayahStart;
             const payload = {
                 ...form,
-                surah_number: Number(form.surah_number),
-                ayah_number: Number(form.ayah_number),
+                surah_number: surahNumber,
+                ayah_number: ayahStart,
+                ayah_start: ayahStart,
+                ayah_end: ayahEnd,
+                ayah_refs: buildAyahRefs(surahNumber, ayahStart, ayahEnd),
             };
             if (editId) {
                 await adminAsbabunNuzulApi.update(editId, payload);
@@ -99,8 +143,10 @@ const AdminAsbabunNuzulPage = () => {
 
     const filtered = items.filter(
         (i) =>
-            i.title?.toLowerCase().includes(search.toLowerCase()) ||
-            String(i.surah_number).includes(search),
+            getLocalizedField(i, 'title', lang).toLowerCase().includes(search.toLowerCase()) ||
+            getLocalizedField(i, 'content', lang).toLowerCase().includes(search.toLowerCase()) ||
+            String(getSurahNumber(i)).includes(search) ||
+            String(i.display_ref ?? '').toLowerCase().includes(search.toLowerCase()),
     );
 
     return (
@@ -162,10 +208,10 @@ const AdminAsbabunNuzulPage = () => {
                                     className='hover:bg-gray-50 dark:hover:bg-slate-750'
                                 >
                                     <td className='px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs'>
-                                        {item.surah_number}
+                                        {getSurahNumber(item)}
                                     </td>
                                     <td className='px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs'>
-                                        {item.ayah_number}
+                                        {formatAyahRange(item)}
                                     </td>
                                     <td className='px-4 py-3 text-gray-900 dark:text-white font-medium max-w-xs truncate'>
                                         {getLocalizedField(item, 'title', lang)}
@@ -225,7 +271,7 @@ const AdminAsbabunNuzulPage = () => {
                             </button>
                         </div>
                         <div className='p-5 space-y-4'>
-                            <div className='grid grid-cols-2 gap-4'>
+                            <div className='grid grid-cols-3 gap-4'>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
                                         {t('admin.asbabun.surah_number')}
@@ -246,7 +292,7 @@ const AdminAsbabunNuzulPage = () => {
                                 </div>
                                 <div>
                                     <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
-                                        {t('admin.asbabun.ayah_number')}
+                                        Ayat awal
                                     </label>
                                     <input
                                         type='number'
@@ -258,6 +304,24 @@ const AdminAsbabunNuzulPage = () => {
                                             })
                                         }
                                         min={1}
+                                        className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
+                                    />
+                                </div>
+                                <div>
+                                    <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
+                                        Ayat akhir
+                                    </label>
+                                    <input
+                                        type='number'
+                                        value={form.ayah_end}
+                                        onChange={(e) =>
+                                            setForm({
+                                                ...form,
+                                                ayah_end: e.target.value,
+                                            })
+                                        }
+                                        min={1}
+                                        placeholder='Opsional'
                                         className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
                                     />
                                 </div>
@@ -274,6 +338,36 @@ const AdminAsbabunNuzulPage = () => {
                                     }
                                     className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
                                 />
+                            </div>
+                            <div className='grid grid-cols-2 gap-4'>
+                                <div>
+                                    <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
+                                        Perawi
+                                    </label>
+                                    <input
+                                        type='text'
+                                        value={form.narrator}
+                                        onChange={(e) =>
+                                            setForm({ ...form, narrator: e.target.value })
+                                        }
+                                        placeholder='e.g. Ibnu Abbas'
+                                        className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
+                                    />
+                                </div>
+                                <div>
+                                    <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
+                                        Referensi tampil
+                                    </label>
+                                    <input
+                                        type='text'
+                                        value={form.display_ref}
+                                        onChange={(e) =>
+                                            setForm({ ...form, display_ref: e.target.value })
+                                        }
+                                        placeholder='QS 2:6-16'
+                                        className='w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white'
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
@@ -312,7 +406,13 @@ const AdminAsbabunNuzulPage = () => {
                             </button>
                             <button
                                 onClick={save}
-                                disabled={saving || !form.title || !form.surah_number}
+                                disabled={
+                                    saving ||
+                                    !form.title ||
+                                    !form.content ||
+                                    !form.surah_number ||
+                                    !form.ayah_number
+                                }
                                 className='flex-1 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium'
                             >
                                 {saving ? t('common.saving') : t('common.save')}

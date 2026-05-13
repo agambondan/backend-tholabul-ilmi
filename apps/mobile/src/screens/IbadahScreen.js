@@ -12,8 +12,9 @@ import {
   ScrollText,
   Sparkles,
 } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Card } from '../components/Card';
+import { ContentCard } from '../components/ContentCard';
 import { CompactRow, SectionHeader } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { colors, radius, spacing } from '../theme';
@@ -158,22 +159,20 @@ const sections = [
 
 function HeroAction({ Icon, title, subtitle, onPress }) {
   return (
-    <Pressable
-      accessibilityLabel={`${title}. ${subtitle}`}
-      accessibilityRole="button"
-      android_ripple={{ color: 'rgba(255, 255, 255, 0.14)', borderless: false }}
+    <ContentCard
+      Icon={Icon}
+      iconColor={colors.onPrimary}
+      iconSize={20}
+      iconStyle={styles.heroIcon}
+      iconStrokeWidth={2.4}
       onPress={onPress}
       style={styles.hero}
-    >
-      <View style={styles.heroIcon}>
-        <Icon color={colors.onPrimary} size={20} strokeWidth={2.4} />
-      </View>
-      <View style={styles.heroCopy}>
-        <Text style={styles.heroTitle}>{title}</Text>
-        <Text style={styles.heroSubtitle}>{subtitle}</Text>
-      </View>
-      <ChevronRight color={colors.onPrimary} size={20} strokeWidth={2.5} />
-    </Pressable>
+      subtitle={subtitle}
+      subtitleStyle={styles.heroSubtitle}
+      title={title}
+      titleStyle={styles.heroTitle}
+      trailing={<ChevronRight color={colors.onPrimary} size={20} strokeWidth={2.5} />}
+    />
   );
 }
 
@@ -252,13 +251,11 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: 'center',
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
     borderRadius: radius.lg,
     flexDirection: 'row',
     gap: spacing.md,
     padding: spacing.lg,
-  },
-  heroCopy: {
-    flex: 1,
   },
   heroGap: {
     height: spacing.sm,

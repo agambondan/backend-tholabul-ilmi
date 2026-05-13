@@ -25,14 +25,21 @@ screen tidak punya chrome, card, modal, dan header yang beda-beda.
 - Refactor sudah bergerak di `apps/mobile/src/components/`.
 - Screen prioritas yang tersentuh: Quran, Hadis, Ibadah, Belajar/Explore,
   Home, Global Search.
+- Shared primitive terbaru:
+  - `AppModalSheet` untuk modal/bottom sheet.
+  - `AppActionSheet` untuk menu aksi.
+  - `ContentCard` untuk card/list row dengan metadata fleksibel.
+  - `DetailHeader` untuk header detail layar.
+  - `SectionHeader` untuk header section compact dengan meta/actions.
 
 ## Task List
 
-1. Audit screen yang masih punya modal/card/header custom lokal.
-2. Migrasikan pattern yang berulang ke shared component.
-3. Pastikan shared component menerima override style dan render field tambahan.
-4. Jalankan parse/export mobile setelah migrasi besar.
-5. Smoke test device untuk route utama.
+1. `DONE` Audit screen yang masih punya modal/card/header custom lokal.
+2. `DONE` Migrasikan pattern yang berulang ke shared component.
+3. `DONE` Pastikan shared component menerima override style dan render field
+   tambahan.
+4. `DONE` Jalankan parse/export mobile setelah migrasi besar.
+5. `PENDING_DEVICE` Smoke test device untuk route utama.
 
 ## Acceptance Criteria
 
@@ -43,11 +50,30 @@ screen tidak punya chrome, card, modal, dan header yang beda-beda.
 
 ## Evidence
 
-- Device smoke masih wajib sebelum status dinaikkan ke `DONE`.
+- `apps/mobile/src/components/SectionHeader.js` ditambahkan untuk section
+  header compact yang bisa override style, meta, subtitle, dan actions.
+- Hadith detail sanad/perawi memakai `SectionHeader`, mengganti header lokal
+  `detailHeader/detailTitle/detailMeta`.
+- Notification Center memakai `SectionHeader` untuk header jadwal aktif dan
+  item kotak masuk, supaya metadata kecil tidak punya style lokal berulang.
+- Dead style Hadith untuk modal/action sheet/card lokal dibersihkan setelah
+  migrasi ke `AppActionSheet` dan `ContentCard`.
+- `AppModalSheet` sekarang punya footer sticky default lewat prop
+  `stickyFooter`, sehingga action/footer modal tidak ikut terdorong ke dalam
+  scroll body pada konten panjang.
+- `AppActionSheet` meneruskan slot `footer` ke `AppModalSheet`, bukan merender
+  footer sebagai children biasa.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-shared-section-header-export`
+  `PASS`.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-notification-section-header-export`
+  `PASS`.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-mobile-sticky-modal-footer-export`
+  `PASS`.
+- Device smoke masih wajib sebelum status dinaikkan ke `DONE`; `adb devices -l`
+  belum menampilkan device pada verifikasi terakhir.
 
 ## Source of Truth
 
 - `docs/MOBILE_DESIGN_PATTERNS.md`
 - `docs/INDEX.md`
 - `apps/mobile/src/components/`
-

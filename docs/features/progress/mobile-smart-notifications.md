@@ -30,10 +30,11 @@ mengatur kategori, waktu tenang, reminder, dan inbox notifikasi.
 
 ## Task List
 
-1. Polish copy agar tidak memakai istilah teknis.
-2. Seragamkan state dari backend dan storage mobile.
-3. Validasi retry/offline behavior.
-4. Smoke reminder di device.
+1. `DONE` Polish copy agar tidak memakai istilah teknis.
+2. `DONE` Seragamkan state dari backend dan storage mobile.
+3. `DONE_STRUCTURAL` Validasi retry/offline behavior lewat state lokal dan
+   pending sync.
+4. `PENDING_DEVICE` Smoke reminder di device.
 
 ## Acceptance Criteria
 
@@ -44,11 +45,20 @@ mengatur kategori, waktu tenang, reminder, dan inbox notifikasi.
 
 ## Evidence
 
-- Device smoke masih wajib sebelum status dinaikkan ke `DONE`.
+- Notification Center tetap bisa dipakai tanpa login untuk reminder lokal;
+  login hanya diperlukan untuk push cloud dan kotak masuk.
+- Copy teknis seperti `backend`/`perangkat` dipetakan ke wording user-facing
+  seperti `cloud`, `HP ini`, dan `sesi aktif`.
+- Pending sync punya retry eksplisit dan tetap menyimpan reminder lokal saat
+  cloud/offline gagal.
+- Header jadwal aktif dan item kotak masuk memakai shared `SectionHeader`.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-notification-section-header-export`
+  `PASS`.
+- Device smoke masih wajib sebelum status dinaikkan ke `DONE`; `adb devices -l`
+  belum menampilkan device pada verifikasi terakhir.
 
 ## Source of Truth
 
 - `docs/MOBILE_FEATURE_REFERENCE.md`
 - `apps/mobile/src/components/NotificationCenter.js`
 - `apps/mobile/src/utils/smartNotifications.js`
-

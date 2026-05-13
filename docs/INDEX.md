@@ -14,6 +14,7 @@ Panduan navigasi dokumen project. Baca ini sebelum mulai task supaya tidak salah
 | [api/roadmap-status.md](./api/roadmap-status.md) | Status terkini tiap fitur backend | ✅ Aktif |
 | [web/web-status.md](./web/web-status.md) | Status halaman dan komponen web (Next.js) | ✅ Aktif |
 | [features/README.md](./features/README.md) | Status feature per slice: todo, progress, done, onhold | ✅ Aktif |
+| [reviews/README.md](./reviews/README.md) | Review lintas mobile, web, API, sync, dan UX | ✅ Aktif |
 
 ---
 
@@ -42,6 +43,19 @@ Panduan navigasi dokumen project. Baca ini sebelum mulai task supaya tidak salah
 | [features/progress/](./features/progress/) | Feature yang sedang aktif dikerjakan |
 | [features/done/](./features/done/) | Feature yang sudah selesai dan ditutup |
 | [features/onhold/](./features/onhold/) | Feature yang ditunda karena blocker/dependency |
+
+---
+
+## Review Docs
+
+| Dokumen | Isi |
+|---|---|
+| **[reviews/README.md](./reviews/README.md)** | **← Hub hasil review lintas platform.** |
+| [reviews/2026-05-13-deep-review-summary.md](./reviews/2026-05-13-deep-review-summary.md) | Ringkasan prioritas hasil deep review |
+| [reviews/2026-05-13-contract-sync-review.md](./reviews/2026-05-13-contract-sync-review.md) | Drift kontrak API antara web, mobile, dan backend |
+| [reviews/2026-05-13-mobile-ui-ux-review.md](./reviews/2026-05-13-mobile-ui-ux-review.md) | Risiko bug dan polish UI/UX mobile |
+| [reviews/2026-05-13-web-dashboard-review.md](./reviews/2026-05-13-web-dashboard-review.md) | Risiko web dashboard/admin dan sync data personal |
+| [reviews/2026-05-13-verification-log.md](./reviews/2026-05-13-verification-log.md) | Evidence command review |
 
 ---
 

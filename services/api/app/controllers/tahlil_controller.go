@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/agambondan/islamic-explorer/app/lib"
+	"github.com/agambondan/islamic-explorer/app/model"
 	service "github.com/agambondan/islamic-explorer/app/services"
 	"github.com/gofiber/fiber/v2"
 )
@@ -11,10 +12,38 @@ import (
 type TahlilController interface {
 	FindAll(ctx *fiber.Ctx) error
 	FindByID(ctx *fiber.Ctx) error
+	FindAllItems(ctx *fiber.Ctx) error
+	CreateItem(ctx *fiber.Ctx) error
+	UpdateItem(ctx *fiber.Ctx) error
+	DeleteItem(ctx *fiber.Ctx) error
 }
 
 type tahlilController struct {
 	svc service.TahlilService
+}
+
+type tahlilAdminRequest struct {
+	Step            int    `json:"step"`
+	Title           string `json:"title"`
+	Arabic          string `json:"arabic"`
+	Transliteration string `json:"transliteration"`
+	Translation     string `json:"translation"`
+	Repeat          int    `json:"repeat"`
+	CollectionID    *int   `json:"collection_id"`
+	CollectionType  string `json:"collection_type"`
+}
+
+type tahlilAdminResponse struct {
+	ID              *int   `json:"id,omitempty"`
+	CollectionID    *int   `json:"collection_id,omitempty"`
+	CollectionType  string `json:"collection_type,omitempty"`
+	Step            int    `json:"step"`
+	SortOrder       int    `json:"sort_order"`
+	Title           string `json:"title"`
+	Arabic          string `json:"arabic"`
+	Transliteration string `json:"transliteration"`
+	Translation     string `json:"translation"`
+	Repeat          int    `json:"repeat"`
 }
 
 func NewTahlilController(services *service.Services) TahlilController {
@@ -39,4 +68,105 @@ func (c *tahlilController) FindByID(ctx *fiber.Ctx) error {
 		return lib.ErrorNotFound(ctx)
 	}
 	return lib.OK(ctx, col)
+}
+
+func (c *tahlilController) FindAllItems(ctx *fiber.Ctx) error {
+	items, err := c.svc.FindAllItems()
+	if err != nil {
+		return lib.ErrorInternal(ctx)
+	}
+	result := make([]tahlilAdminResponse, 0, len(items))
+	for i := range items {
+		result = append(result, tahlilItemToAdminResponse(&items[i]))
+	}
+	return lib.OK(ctx, fiber.Map{"items": result})
+}
+
+func (c *tahlilController) CreateItem(ctx *fiber.Ctx) error {
+	req := new(tahlilAdminRequest)
+	if err := lib.BodyParser(ctx, req); err != nil {
+		return lib.ErrorBadRequest(ctx, err)
+	}
+	item, err := c.tahlilItemFromAdminRequest(req)
+	if err != nil {
+		return lib.ErrorInternal(ctx)
+	}
+	saved, err := c.svc.CreateItem(item)
+	if err != nil {
+		return lib.ErrorConflict(ctx, err)
+	}
+	return lib.OK(ctx, tahlilItemToAdminResponse(saved))
+}
+
+func (c *tahlilController) UpdateItem(ctx *fiber.Ctx) error {
+	id, err := strconv.Atoi(ctx.Params("id"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, "invalid id")
+	}
+	req := new(tahlilAdminRequest)
+	if err := lib.BodyParser(ctx, req); err != nil {
+		return lib.ErrorBadRequest(ctx, err)
+	}
+	item, err := c.tahlilItemFromAdminRequest(req)
+	if err != nil {
+		return lib.ErrorInternal(ctx)
+	}
+	saved, err := c.svc.UpdateItem(id, item)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, tahlilItemToAdminResponse(saved))
+}
+
+func (c *tahlilController) DeleteItem(ctx *fiber.Ctx) error {
+	id, err := strconv.Atoi(ctx.Params("id"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, "invalid id")
+	}
+	if err := c.svc.DeleteItem(id); err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx)
+}
+
+func (c *tahlilController) tahlilItemFromAdminRequest(req *tahlilAdminRequest) (*model.TahlilItem, error) {
+	collectionID := req.CollectionID
+	if collectionID == nil {
+		t := model.TahlilTypeTahlil
+		if req.CollectionType != "" {
+			t = model.TahlilType(req.CollectionType)
+		}
+		col, err := c.svc.EnsureCollection(t)
+		if err != nil {
+			return nil, err
+		}
+		collectionID = col.ID
+	}
+	repeat := req.Repeat
+	if repeat <= 0 {
+		repeat = 1
+	}
+	return &model.TahlilItem{
+		CollectionID:    collectionID,
+		SortOrder:       req.Step,
+		Label:           req.Title,
+		Arabic:          req.Arabic,
+		Transliteration: req.Transliteration,
+		TranslationText: req.Translation,
+		Repeat:          repeat,
+	}, nil
+}
+
+func tahlilItemToAdminResponse(item *model.TahlilItem) tahlilAdminResponse {
+	return tahlilAdminResponse{
+		ID:              item.ID,
+		CollectionID:    item.CollectionID,
+		Step:            item.SortOrder,
+		SortOrder:       item.SortOrder,
+		Title:           item.Label,
+		Arabic:          item.Arabic,
+		Transliteration: item.Transliteration,
+		Translation:     item.TranslationText,
+		Repeat:          item.Repeat,
+	}
 }

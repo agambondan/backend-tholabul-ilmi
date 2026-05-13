@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArrowLeft, Book, BookOpen, Languages, Layers, Search, UserRound } from 'lucide-react-native';
 import { searchDoa, searchGlobal, searchKajian } from '../api/client';
+import { ContentCard } from '../components/ContentCard';
 import { IconActionButton, PaperSearchInput } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { allFeatures } from '../data/mobileFeatures';
@@ -23,6 +24,52 @@ const searchFilters = [
 ];
 
 const normalizeQuery = (value = '') => value.trim().toLowerCase();
+const emptyGlobalResult = { ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 };
+const emptyRemoteResults = { ...emptyGlobalResult, doas: [], kajians: [] };
+const emptyStateByFilter = {
+  all: {
+    title: 'Belum ada hasil',
+    text: 'Coba kata lain, nama surah, nomor hadis, tema doa, atau buka Semua Fitur.',
+  },
+  dictionary: {
+    title: 'Kata belum ditemukan',
+    text: 'Coba akar kata Arab, transliterasi, atau istilah yang lebih pendek.',
+  },
+  doa: {
+    title: 'Doa belum ditemukan',
+    text: 'Coba cari dengan tema seperti pagi, malam, safar, atau perlindungan.',
+  },
+  feature: {
+    title: 'Fitur belum ditemukan',
+    text: 'Coba cari dengan nama fitur seperti kiblat, zakat, dzikir, atau kajian.',
+  },
+  hadith: {
+    title: 'Hadis belum ditemukan',
+    text: 'Coba kata kunci tema, nomor hadis, atau nama kitab hadis.',
+  },
+  kajian: {
+    title: 'Kajian belum ditemukan',
+    text: 'Coba nama tema, pembicara, atau istilah yang lebih umum.',
+  },
+  perawi: {
+    title: 'Perawi belum ditemukan',
+    text: 'Coba nama lengkap, kunyah, atau ejaan latin yang berbeda.',
+  },
+  quran: {
+    title: 'Ayat belum ditemukan',
+    text: 'Coba nama surah, nomor ayat, atau kata terjemahan yang lebih umum.',
+  },
+};
+
+const cleanMeta = (value, fallback) => {
+  const raw = `${value ?? ''}`.trim();
+  if (!raw) return fallback;
+  const normalized = raw.toLowerCase();
+  if (['backend', 'server', 'storage', 'device', 'perangkat'].includes(normalized)) {
+    return fallback;
+  }
+  return raw;
+};
 
 const findFeatureResults = (query) => {
   const normalized = normalizeQuery(query);
@@ -53,20 +100,35 @@ const ResultSection = ({ children, count, title }) => {
 };
 
 const ResultRow = ({ Icon, meta, onPress, subtitle, title }) => (
-  <Pressable
-    android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-    onPress={onPress}
+  <ContentCard
+    Icon={Icon}
+    meta={meta}
+    onPress={() => {
+      Keyboard.dismiss();
+      onPress?.();
+    }}
+    subtitle={subtitle}
     style={styles.resultRow}
-  >
-    <View style={styles.resultIcon}>
-      <Icon color={colors.primary} size={18} strokeWidth={2.2} />
+    title={title}
+  />
+);
+
+const LoadingSearchState = ({ label }) => (
+  <View style={styles.loadingCard}>
+    <View style={styles.loadingHeader}>
+      <ActivityIndicator color={colors.primary} size="small" />
+      <Text style={styles.loadingText}>Mencari {label.toLowerCase()}...</Text>
     </View>
-    <View style={styles.resultCopy}>
-      <Text numberOfLines={2} style={styles.resultTitle}>{title}</Text>
-      {subtitle ? <Text numberOfLines={2} style={styles.resultSubtitle}>{subtitle}</Text> : null}
-    </View>
-    {meta ? <Text style={styles.resultMeta}>{meta}</Text> : null}
-  </Pressable>
+    {[0, 1, 2].map((item) => (
+      <View key={`search-loading-${item}`} style={styles.loadingSkeleton}>
+        <View style={styles.loadingSkeletonIcon} />
+        <View style={styles.loadingSkeletonCopy}>
+          <View style={styles.loadingSkeletonTitle} />
+          <View style={styles.loadingSkeletonLine} />
+        </View>
+      </View>
+    ))}
+  </View>
 );
 
 export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
@@ -104,6 +166,23 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
     (showDictionaries ? remoteResults.dictionaries.length : 0) +
     (showPerawis ? remoteResults.perawis.length : 0) +
     (showFeatures ? featureResults.length : 0);
+  const filterCounts = {
+    all:
+      remoteResults.ayahs.length +
+      remoteResults.doas.length +
+      remoteResults.hadiths.length +
+      remoteResults.kajians.length +
+      remoteResults.dictionaries.length +
+      remoteResults.perawis.length +
+      featureResults.length,
+    dictionary: remoteResults.dictionaries.length,
+    doa: remoteResults.doas.length,
+    feature: featureResults.length,
+    hadith: remoteResults.hadiths.length,
+    kajian: remoteResults.kajians.length,
+    perawi: remoteResults.perawis.length,
+    quran: remoteResults.ayahs.length,
+  };
 
   useEffect(() => {
     if (initialQuery) setQuery(initialQuery);
@@ -123,15 +202,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
 
   useEffect(() => {
     if (!hasQuery) {
-      setRemoteResults({
-        ayahs: [],
-        dictionaries: [],
-        doas: [],
-        hadiths: [],
-        kajians: [],
-        perawis: [],
-        total: 0,
-      });
+      setRemoteResults(emptyRemoteResults);
       setLoading(false);
       setMessage('');
       return undefined;
@@ -152,7 +223,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
               (value) => ({ status: 'fulfilled', value }),
               (reason) => ({ status: 'rejected', reason }),
             )
-          : Promise.resolve({ status: 'fulfilled', value: { ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 } }),
+          : Promise.resolve({ status: 'fulfilled', value: emptyGlobalResult }),
         shouldSearchDoa
           ? Promise.resolve(searchDoa(trimmedQuery, { limit: 10 })).then(
               (value) => ({ status: 'fulfilled', value }),
@@ -169,31 +240,33 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
 
       if (cancelled) return;
 
-      if (globalResult.status === 'fulfilled' && doaResult.status === 'fulfilled' && kajianResult.status === 'fulfilled') {
-        setRemoteResults({
-          ...globalResult.value,
-          doas: doaResult.value,
-          kajians: kajianResult.value,
-        });
+      const nextGlobal = globalResult.status === 'fulfilled' ? globalResult.value : emptyGlobalResult;
+      const nextDoas = doaResult.status === 'fulfilled' ? doaResult.value : [];
+      const nextKajians = kajianResult.status === 'fulfilled' ? kajianResult.value : [];
+      const failedModules = [
+        globalResult.status === 'rejected' && shouldSearchGlobal ? 'Quran/Hadis' : null,
+        doaResult.status === 'rejected' && shouldSearchDoa ? 'Doa' : null,
+        kajianResult.status === 'rejected' && shouldSearchKajian ? 'Kajian' : null,
+      ].filter(Boolean);
+
+      setRemoteResults({
+        ...nextGlobal,
+        doas: nextDoas,
+        kajians: nextKajians,
+      });
+
+      if (failedModules.length) {
+        setMessage(`Sebagian hasil belum bisa dimuat: ${failedModules.join(', ')}.`);
+        if (nextGlobal.ayahs.length || nextGlobal.hadiths.length || nextDoas.length || nextKajians.length || featureResults.length) {
+          rememberRecentSearch(trimmedQuery).then((items) => {
+            if (!cancelled) setRecentSearches(items);
+          });
+        }
+      } else {
+        setMessage('');
         rememberRecentSearch(trimmedQuery).then((items) => {
           if (!cancelled) setRecentSearches(items);
         });
-      } else {
-        setRemoteResults({
-          ayahs: [],
-          dictionaries: [],
-          doas: [],
-          hadiths: [],
-          kajians: [],
-          perawis: [],
-          total: 0,
-        });
-        setMessage(
-          globalResult.reason?.message ??
-            doaResult.reason?.message ??
-            kajianResult.reason?.message ??
-            'Pencarian server belum bisa dimuat.',
-        );
       }
 
       setLoading(false);
@@ -203,10 +276,12 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [activeFilter, hasQuery, selectedFilter.remoteType, trimmedQuery]);
+  }, [activeFilter, featureResults.length, hasQuery, selectedFilter.remoteType, trimmedQuery]);
 
   const searchChips = recentSearches.length ? recentSearches : quickSuggestions;
   const chipLabel = recentSearches.length ? 'Terakhir dicari' : 'Cari cepat';
+  const resultSummary = `${totalResults} hasil untuk "${trimmedQuery}"`;
+  const emptyState = emptyStateByFilter[activeFilter] ?? emptyStateByFilter.all;
 
   return (
     <Screen
@@ -229,6 +304,8 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
           >
             {searchFilters.map((filter) => {
               const active = filter.key === activeFilter;
+              const count = filterCounts[filter.key] ?? 0;
+              const label = hasQuery && count ? `${filter.label} ${count}` : filter.label;
               return (
                 <Pressable
                   android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
@@ -236,7 +313,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
                   onPress={() => setActiveFilter(filter.key)}
                   style={[styles.filterChip, active && styles.filterChipActive]}
                 >
-                  <Text style={[styles.filterText, active && styles.filterTextActive]}>{filter.label}</Text>
+                  <Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text>
                 </Pressable>
               );
             })}
@@ -273,19 +350,21 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
         </View>
       ) : null}
 
-      {loading ? (
-        <View style={styles.loadingRow}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={styles.loadingText}>Mencari...</Text>
-        </View>
-      ) : null}
+      {loading ? <LoadingSearchState label={selectedFilter.label} /> : null}
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
 
+      {hasQuery && !loading && totalResults ? (
+        <View style={styles.resultSummary}>
+          <Search color={colors.primary} size={15} strokeWidth={2.2} />
+          <Text style={styles.resultSummaryText}>{resultSummary}</Text>
+        </View>
+      ) : null}
+
       {hasQuery && !loading && !totalResults ? (
         <View style={styles.hintCard}>
-          <Text style={styles.hintTitle}>Belum ada hasil</Text>
-          <Text style={styles.hintText}>Coba kata lain atau buka tab Belajar untuk melihat semua fitur.</Text>
+          <Text style={styles.hintTitle}>{emptyState.title}</Text>
+          <Text style={styles.hintText}>{emptyState.text}</Text>
         </View>
       ) : null}
 
@@ -295,7 +374,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
             <ResultRow
               Icon={BookOpen}
               key={`ayah-${item.id}`}
-              meta={item.surahNumber ? `Surah ${item.surahNumber}` : 'Quran'}
+              meta={item.surahNumber ? `Surah ${item.surahNumber}` : 'Al-Quran'}
               onPress={() =>
                 onOpenTab('quran', {
                   ayahId: item.id,
@@ -316,7 +395,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
             <ResultRow
               Icon={Book}
               key={`hadith-${item.id}`}
-              meta={item.book || 'Hadis'}
+              meta={cleanMeta(item.book, 'Hadis')}
               onPress={() => onOpenTab('hadith', { hadithId: item.id })}
               subtitle={item.translation}
               title={item.title || `Hadis ${item.id}`}
@@ -331,7 +410,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
             <ResultRow
               Icon={BookOpen}
               key={`doa-${item.id}`}
-              meta={item.meta || 'Doa'}
+              meta={cleanMeta(item.meta, 'Doa')}
               onPress={() => onOpenTab('belajar', { featureKey: 'doa' })}
               subtitle={item.body}
               title={item.title}
@@ -346,7 +425,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
             <ResultRow
               Icon={Book}
               key={`kajian-${item.id}`}
-              meta={item.meta || 'Kajian'}
+              meta={cleanMeta(item.meta, 'Kajian')}
               onPress={() => onOpenTab('belajar', { featureKey: 'kajian' })}
               subtitle={item.body}
               title={item.title}
@@ -361,7 +440,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
             <ResultRow
               Icon={Layers}
               key={`feature-${feature.key}`}
-              meta={feature.group}
+              meta={cleanMeta(feature.group, 'Fitur')}
               onPress={() => onOpenTab('belajar', { featureKey: feature.key, focusSearch: feature.type === 'kamus' })}
               subtitle={feature.subtitle}
               title={feature.title}
@@ -376,7 +455,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
             <ResultRow
               Icon={Languages}
               key={`dictionary-${item.id}`}
-              meta={item.category || 'Kamus'}
+              meta={cleanMeta(item.category, 'Kamus')}
               onPress={() => onOpenTab('belajar', { featureKey: 'kamus', focusSearch: true })}
               subtitle={item.body}
               title={item.title}
@@ -391,7 +470,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
             <ResultRow
               Icon={UserRound}
               key={`perawi-${item.id}`}
-              meta={item.status || 'Perawi'}
+              meta={cleanMeta(item.status, 'Perawi')}
               onPress={() => onOpenTab('belajar', { featureKey: 'perawi' })}
               subtitle={item.body}
               title={item.title}
@@ -462,11 +541,52 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '900',
   },
-  loadingRow: {
+  loadingCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    ...shadows.paper,
+  },
+  loadingHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  loadingSkeleton: {
+    alignItems: 'center',
+    borderTopColor: colors.faint,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 48,
+    paddingTop: spacing.sm,
+  },
+  loadingSkeletonCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  loadingSkeletonIcon: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.sm,
+    height: 34,
+    width: 34,
+  },
+  loadingSkeletonLine: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 999,
+    height: 9,
+    marginTop: spacing.xs,
+    width: '58%',
+  },
+  loadingSkeletonTitle: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 999,
+    height: 11,
+    width: '78%',
   },
   loadingText: {
     color: colors.muted,
@@ -507,50 +627,26 @@ const styles = StyleSheet.create({
   quickWrap: {
     marginTop: spacing.md,
   },
-  resultCopy: {
-    flex: 1,
-  },
-  resultIcon: {
+  resultSummary: {
     alignItems: 'center',
+    alignSelf: 'flex-start',
     backgroundColor: colors.surfaceMuted,
     borderColor: colors.faint,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
-  resultMeta: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: '900',
-    marginLeft: spacing.sm,
-    maxWidth: 86,
-    textAlign: 'right',
-  },
-  resultRow: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.faint,
-    borderRadius: radius.md,
+    borderRadius: 999,
     borderWidth: 1,
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-    minHeight: 66,
-    padding: spacing.sm,
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
   },
-  resultSubtitle: {
-    color: colors.muted,
+  resultSummaryText: {
+    color: colors.primary,
     fontSize: 12,
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  resultTitle: {
-    color: colors.ink,
-    fontSize: 13,
     fontWeight: '900',
-    lineHeight: 18,
+  },
+  resultRow: {
+    marginTop: spacing.sm,
   },
   section: {
     marginBottom: spacing.lg,

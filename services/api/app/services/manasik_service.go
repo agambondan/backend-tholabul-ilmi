@@ -9,6 +9,9 @@ type ManasikService interface {
 	FindAll() ([]model.ManasikStep, error)
 	FindByType(t model.ManasikType) ([]model.ManasikStep, error)
 	FindByTypeAndStep(t model.ManasikType, step int) (*model.ManasikStep, error)
+	Create(step *model.ManasikStep) (*model.ManasikStep, error)
+	Update(id int, step *model.ManasikStep) (*model.ManasikStep, error)
+	Delete(id int) error
 }
 
 type manasikService struct{ repo repository.ManasikRepository }
@@ -27,4 +30,16 @@ func (s *manasikService) FindByType(t model.ManasikType) ([]model.ManasikStep, e
 
 func (s *manasikService) FindByTypeAndStep(t model.ManasikType, step int) (*model.ManasikStep, error) {
 	return s.repo.FindByTypeAndStep(t, step)
+}
+
+func (s *manasikService) Create(step *model.ManasikStep) (*model.ManasikStep, error) {
+	return s.repo.Create(step)
+}
+
+func (s *manasikService) Update(id int, step *model.ManasikStep) (*model.ManasikStep, error) {
+	return s.repo.Update(id, step)
+}
+
+func (s *manasikService) Delete(id int) error {
+	return s.repo.Delete(id)
 }

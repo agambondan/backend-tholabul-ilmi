@@ -7,11 +7,13 @@ import (
 )
 
 type QuizRepository interface {
+	FindAll(page, size int) ([]model.Quiz, error)
 	FindSession(quizType model.QuizType, count int) ([]model.Quiz, error)
 	FindByID(id int) (*model.Quiz, error)
 	SaveResult(r *model.UserQuizResult) error
 	GetStats(userID uuid.UUID) (*model.QuizStats, error)
 	Create(q *model.Quiz) (*model.Quiz, error)
+	Update(id int, q *model.Quiz) (*model.Quiz, error)
 	Delete(id int) error
 }
 
@@ -19,6 +21,22 @@ type quizRepository struct{ db *gorm.DB }
 
 func NewQuizRepository(db *gorm.DB) QuizRepository {
 	return &quizRepository{db}
+}
+
+func (r *quizRepository) FindAll(page, size int) ([]model.Quiz, error) {
+	if page < 0 {
+		page = 0
+	}
+	if size <= 0 {
+		size = 100
+	}
+	var items []model.Quiz
+	err := r.db.Preload("Translation").
+		Order("id ASC").
+		Offset(page * size).
+		Limit(size).
+		Find(&items).Error
+	return items, err
 }
 
 func (r *quizRepository) FindSession(quizType model.QuizType, count int) ([]model.Quiz, error) {
@@ -55,6 +73,21 @@ func (r *quizRepository) GetStats(userID uuid.UUID) (*model.QuizStats, error) {
 
 func (r *quizRepository) Create(q *model.Quiz) (*model.Quiz, error) {
 	return q, r.db.Create(q).Error
+}
+
+func (r *quizRepository) Update(id int, q *model.Quiz) (*model.Quiz, error) {
+	updates := map[string]interface{}{
+		"type":           q.Type,
+		"question_text":  q.QuestionText,
+		"correct_answer": q.CorrectAnswer,
+		"options":        q.Options,
+		"explanation":    q.Explanation,
+		"difficulty":     q.Difficulty,
+	}
+	if err := r.db.Model(&model.Quiz{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	return r.FindByID(id)
 }
 
 func (r *quizRepository) Delete(id int) error {

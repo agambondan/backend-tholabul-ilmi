@@ -252,3 +252,25 @@ interface Hadith {
 - `grade_notes` untuk Sunan berisi penjelasan umum kitab (bukan per-hadits) — tampilkan sebagai info/disclaimer
 - `sanad` saat ini masih `null` untuk semua hadits (akan diisi bertahap) — gunakan `<details>` agar tidak memakan space
 - Link ke sunnah.com: gunakan slug kitab dari `book.slug` + nomor → `https://sunnah.com/{slug}:{number}` (lihat task [web app-task-hadith-source-links.md](./web app-task-hadith-source-links.md))
+
+## Implementation Update
+
+Status: `DONE`
+
+- `apps/web/src/components/GradeBadge.js` menyediakan badge derajat hadis dan
+  panel `HadithAuthenticity`.
+- `/hadith/[slug]` menampilkan badge pada list dan panel autentikasi pada
+  detail/card hadis.
+- `/dashboard/hadith/[slug]` menampilkan badge dan panel autentikasi pada card
+  dashboard.
+- `/search` menampilkan badge derajat untuk hasil pencarian hadis.
+- Field kosong seperti `grade`, `grade_notes`, dan `sanad` ditangani tanpa
+  menampilkan section kosong.
+
+Evidence:
+
+```bash
+npm --prefix apps/web run lint -- --file src/components/GradeBadge.js --file 'src/app/hadith/[slug]/HadithPage.js' --file src/app/search/SearchClient.js --file 'src/app/dashboard/hadith/[slug]/page.js'
+```
+
+Result: `PASS`

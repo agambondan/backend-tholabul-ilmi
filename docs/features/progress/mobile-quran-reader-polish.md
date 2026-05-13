@@ -20,6 +20,8 @@ utama, bukan list data biasa.
     - mode mushaf untuk pindah halaman
     - mode selain mushaf untuk pindah surah
   - tab bar disembunyikan ketika reader Quran aktif agar tidak mengganggu
+  - hasil Global Search ke Quran langsung mengarah ke ayat target tanpa
+    preview ayat penuh ganda di header
 - API:
   - tetap memakai endpoint Quran existing seperti `GET /ayah/page/:page` dan
     `GET /ayah/surah/number/:number`
@@ -53,6 +55,34 @@ utama, bukan list data biasa.
 
 ## Evidence
 
+- Backend Quran lookup hardening:
+  - `services/api/app/repository/ayah_repository.go` sekarang memakai order
+    column qualified (`"ayah".id`) pada query join Translation/Surah agar tidak
+    rawan ambiguous `id` saat paginated Quran endpoint dipanggil.
+  - `GET /api/v1/ayah/daily` sekarang memilih ayah harian dari jumlah ayat
+    aktual di DB melalui service, bukan angka hardcoded `6236` di controller.
+  - `services/api/app/repository/ayah_repository_test.go` menutup query
+    `FindAll`, `FindByNumber`, `FindBySurahNumber`, `FindByPage`,
+    `FindByHizbQuarter`, dan `FindDaily`.
+  - `services/api/app/services/ayah_service_test.go` menjaga daily ayah tetap
+    berada dalam range count DB dan error saat count kosong.
+- Mobile search-to-reader hardening:
+  - `apps/mobile/src/screens/QuranScreen.js` sekarang auto-scroll sekali ke
+    ayat target setelah Global Search membuka reader surah.
+  - preview hasil pencarian di reader diubah menjadi banner kecil, bukan
+    render ayat penuh kedua, sehingga ayat target hanya dibaca dari daftar
+    utama.
+- Mobile gesture hardening:
+  - Quran reader sekarang memakai satu jalur gesture swipe berbasis touch
+    tracking dengan edge guard, bukan kombinasi `PanResponder` plus touch
+    handler yang bisa berebut dengan `FlatList`/`ScrollView`.
+- `cd services/api && go test ./app/repository` `PASS`.
+- `cd services/api && go test ./app/controllers ./app/services ./app/repository ./app/http`
+  `PASS`.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-mobile-search-target-export`
+  `PASS`.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-mobile-quran-gesture-export`
+  `PASS`.
 - Device smoke masih wajib sebelum status dinaikkan ke `DONE`.
 
 ## Source of Truth
@@ -60,4 +90,3 @@ utama, bukan list data biasa.
 - `docs/MOBILE_IA_FINAL_APPROACH.md`
 - `docs/MOBILE_FEATURE_REFERENCE.md`
 - `apps/mobile/src/screens/QuranScreen.js`
-

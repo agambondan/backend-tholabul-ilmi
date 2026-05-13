@@ -95,7 +95,14 @@ export const normalizeAyah = (item) => ({
     item.surah_name ??
     '',
   arabic: item.translation?.arab ?? item.translation?.ar ?? item.arabic ?? '',
-  arabicHtml: item.translation?.ar_html ?? item.ar_html ?? '',
+  arabicHtml:
+    item.translation?.ar_html ??
+    item.translation?.ar_format ??
+    item.translation?.ar_tajweed ??
+    item.ar_html ??
+    item.ar_format ??
+    item.ar_tajweed ??
+    '',
   latin: item.translation?.latin_en ?? item.translation?.latin_idn ?? item.latin ?? '',
   translation:
     item.translation?.text_en ??

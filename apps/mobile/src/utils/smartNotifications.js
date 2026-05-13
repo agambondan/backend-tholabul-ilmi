@@ -32,12 +32,27 @@ const isQuietHourTime = (time, quietHours) => {
   return timeMinutes >= start || timeMinutes < end;
 };
 
-const adjustTimeForQuietHours = (time, quietHours) => {
+export const resolveSmartReminderTime = (time, quietHours) => {
   if (!isQuietHourTime(time, quietHours)) return time;
   const fallback = toMinutes(quietHours?.end);
   if (fallback === null) return time;
   return fromMinutes(fallback);
 };
+
+export const getSmartReminderSchedule = ({
+  quietHours = { end: '05:00', is_active: false, start: '22:00' },
+  reminders = [],
+}) =>
+  reminders
+    .filter((item) => item?.is_active && item?.time)
+    .map((item) => {
+      const scheduledTime = resolveSmartReminderTime(item.time, quietHours);
+      return {
+        ...item,
+        scheduledTime,
+        shiftedByQuietHours: scheduledTime !== item.time,
+      };
+    });
 
 const getNotifications = () => {
   if (Platform.OS === 'web') return null;
@@ -120,7 +135,7 @@ export const scheduleSmartReminders = async ({
   const scheduled = [];
 
   for (const item of active) {
-    const fireTime = adjustTimeForQuietHours(item.time, quietHours);
+    const fireTime = resolveSmartReminderTime(item.time, quietHours);
     const minutes = toMinutes(fireTime);
     if (minutes === null) continue;
     const hour = Math.floor(minutes / 60);

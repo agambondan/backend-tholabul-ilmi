@@ -135,6 +135,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	// Ayah (read: public; write: admin)
 	master.Post("/ayah", admin, newAyahController.Create)
 	master.Get("/ayah", newAyahController.FindAll)
+	master.Get("/ayah/daily", newAyahController.FindDaily)
 	master.Get("/ayah/:id", newAyahController.FindById)
 	master.Get("/ayah/number/:number", newAyahController.FindByNumber)
 	master.Get("/ayah/surah/number/:number", newAyahController.FindBySurahNumber)
@@ -326,6 +327,9 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/dzikir", newDzikirController.FindAll)
 	master.Get("/dzikir/category/:category", newDzikirController.FindByCategory)
 	master.Get("/dzikir/:id", newDzikirController.FindByID)
+	master.Post("/dzikir", middlewares.EditorOrAdminMiddleware(), newDzikirController.Create)
+	master.Put("/dzikir/:id", middlewares.EditorOrAdminMiddleware(), newDzikirController.Update)
+	master.Delete("/dzikir/:id", middlewares.EditorOrAdminMiddleware(), newDzikirController.Delete)
 
 	// Dzikir Log (protected — daily tracker)
 	master.Post("/dzikir/log", jwt, newDzikirLogController.Log)
@@ -375,6 +379,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Post("/fiqh/categories", middlewares.EditorOrAdminMiddleware(), newFiqhController.CreateCategory)
 	master.Put("/fiqh/categories/:id", middlewares.EditorOrAdminMiddleware(), newFiqhController.UpdateCategory)
 	master.Delete("/fiqh/categories/:id", middlewares.EditorOrAdminMiddleware(), newFiqhController.DeleteCategory)
+	master.Get("/fiqh/items", middlewares.EditorOrAdminMiddleware(), newFiqhController.FindAllItems)
 	master.Get("/fiqh/:slug/:id", newFiqhController.FindItemByCategoryAndID)
 	master.Get("/fiqh/item/:slug", newFiqhController.FindItemBySlug)
 	master.Get("/fiqh/:slug", newFiqhController.FindCategoryBySlug)
@@ -385,6 +390,10 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 
 	// Tahlil & Yasin (public)
 	master.Get("/tahlil", newTahlilController.FindAll)
+	master.Get("/tahlil/items", middlewares.EditorOrAdminMiddleware(), newTahlilController.FindAllItems)
+	master.Post("/tahlil/items", middlewares.EditorOrAdminMiddleware(), newTahlilController.CreateItem)
+	master.Put("/tahlil/items/:id", middlewares.EditorOrAdminMiddleware(), newTahlilController.UpdateItem)
+	master.Delete("/tahlil/items/:id", middlewares.EditorOrAdminMiddleware(), newTahlilController.DeleteItem)
 	master.Get("/tahlil/:id", newTahlilController.FindByID)
 
 	// Koleksi Kajian (public read, editor/admin write)
@@ -395,7 +404,11 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Delete("/kajian/:id", middlewares.EditorOrAdminMiddleware(), newKajianController.Delete)
 
 	// Wirid Khusus (public — query dzikir by occasion)
+	master.Get("/wirid", newDzikirController.FindAll)
 	master.Get("/wirid/occasion/:occasion", newDzikirController.FindByOccasion)
+	master.Post("/wirid", middlewares.EditorOrAdminMiddleware(), newDzikirController.Create)
+	master.Put("/wirid/:id", middlewares.EditorOrAdminMiddleware(), newDzikirController.Update)
+	master.Delete("/wirid/:id", middlewares.EditorOrAdminMiddleware(), newDzikirController.Delete)
 
 	// User Custom Wirid
 	master.Post("/user-wird", jwt, newUserWirdController.Create)
@@ -435,6 +448,10 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 
 	// #45 Manasik Haji & Umrah (public)
 	master.Get("/manasik", newManasikController.FindAll)
+	master.Get("/manasik/items", middlewares.EditorOrAdminMiddleware(), newManasikController.FindAllAdmin)
+	master.Post("/manasik", middlewares.EditorOrAdminMiddleware(), newManasikController.Create)
+	master.Put("/manasik/:id", middlewares.EditorOrAdminMiddleware(), newManasikController.Update)
+	master.Delete("/manasik/:id", middlewares.EditorOrAdminMiddleware(), newManasikController.Delete)
 	master.Get("/manasik/:type", newManasikController.FindByType)
 	master.Get("/manasik/:type/:step", newManasikController.FindByStep)
 
@@ -442,6 +459,10 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/quiz/session", newQuizController.GetSession)
 	master.Post("/quiz/submit", jwt, newQuizController.Submit)
 	master.Get("/quiz/stats", jwt, newQuizController.GetStats)
+	master.Get("/quiz/questions/all", admin, newQuizController.ListQuestions)
+	master.Post("/quiz/questions", admin, newQuizController.CreateQuestion)
+	master.Put("/quiz/questions/:id", admin, newQuizController.UpdateQuestion)
+	master.Delete("/quiz/questions/:id", admin, newQuizController.Delete)
 	master.Post("/quiz", admin, newQuizController.Create)
 	master.Delete("/quiz/:id", admin, newQuizController.Delete)
 
@@ -505,6 +526,8 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/hijri/events/:month", newHijriController.GetEventsByMonth)
 
 	// #25 Asbabun Nuzul (public read, editor/admin write)
+	master.Get("/asbabun-nuzul", newAsbabunNuzulController.FindAll)
+	master.Get("/asbabun-nuzul/list", newAsbabunNuzulController.FindAll)
 	master.Get("/asbabun-nuzul/ayah/:id", newAsbabunNuzulController.FindByAyahID)
 	master.Get("/asbabun-nuzul/surah/:number", newAsbabunNuzulController.FindBySurahNumber)
 	master.Post("/asbabun-nuzul", middlewares.EditorOrAdminMiddleware(), newAsbabunNuzulController.Create)

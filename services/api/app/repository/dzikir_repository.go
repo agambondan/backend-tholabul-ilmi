@@ -10,6 +10,9 @@ type DzikirRepository interface {
 	FindByID(id int) (*model.Dzikir, error)
 	FindByCategory(category model.DzikirCategory) ([]model.Dzikir, error)
 	FindByOccasion(occasion string) ([]model.Dzikir, error)
+	Create(d *model.Dzikir) (*model.Dzikir, error)
+	Update(id int, d *model.Dzikir) (*model.Dzikir, error)
+	Delete(id int) error
 }
 
 type dzikirRepository struct {
@@ -42,4 +45,50 @@ func (r *dzikirRepository) FindByOccasion(occasion string) ([]model.Dzikir, erro
 	var list []model.Dzikir
 	err := r.db.Preload("Translation").Where("occasion = ?", occasion).Order("id").Limit(100).Find(&list).Error
 	return list, err
+}
+
+func (r *dzikirRepository) Create(d *model.Dzikir) (*model.Dzikir, error) {
+	trID, err := upsertContentTranslation(r.db, nil, d.Title, d.Arabic, d.Transliteration, d.TranslationText)
+	if err != nil {
+		return nil, err
+	}
+	d.TranslationID = trID
+	if err := r.db.Create(d).Error; err != nil {
+		return nil, err
+	}
+	return r.FindByID(*d.ID)
+}
+
+func (r *dzikirRepository) Update(id int, d *model.Dzikir) (*model.Dzikir, error) {
+	var existing model.Dzikir
+	if err := r.db.First(&existing, id).Error; err != nil {
+		return nil, err
+	}
+	trID, err := upsertContentTranslation(r.db, existing.TranslationID, d.Title, d.Arabic, d.Transliteration, d.TranslationText)
+	if err != nil {
+		return nil, err
+	}
+	updates := map[string]interface{}{
+		"category":        d.Category,
+		"occasion":        d.Occasion,
+		"title":           d.Title,
+		"arabic":          d.Arabic,
+		"transliteration": d.Transliteration,
+		"translation":     d.TranslationText,
+		"count":           d.Count,
+		"fadhilah":        d.Fadhilah,
+		"fadhilah_idn":    d.FadhilahIdn,
+		"fadhilah_en":     d.FadhilahEn,
+		"source":          d.Source,
+		"audio_url":       d.AudioURL,
+		"translation_id":  trID,
+	}
+	if err := r.db.Model(&existing).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	return r.FindByID(id)
+}
+
+func (r *dzikirRepository) Delete(id int) error {
+	return r.db.Delete(&model.Dzikir{}, id).Error
 }

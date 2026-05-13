@@ -12,6 +12,7 @@ type AyahRepository interface {
 	FindAll(*fiber.Ctx) *paginate.Page
 	FindById(*int) (*model.Ayah, error)
 	FindManyByIds(ids []int) ([]model.Ayah, error)
+	FindDaily(number int) (*model.Ayah, error)
 	FindByNumber(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindBySurahNumber(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindByPage(page int) ([]model.Ayah, error)
@@ -39,7 +40,7 @@ func (c *ayahRepo) Save(Ayah *model.Ayah) (*model.Ayah, error) {
 
 func (c *ayahRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	var ayahs []model.Ayah
-	mod := c.db.Model(&model.Ayah{}).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Order("id")
+	mod := c.db.Model(&model.Ayah{}).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Order(`"ayah".id`)
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&ayahs)
 
 	return &page
@@ -61,9 +62,26 @@ func (c *ayahRepo) FindManyByIds(ids []int) ([]model.Ayah, error) {
 	return ayahs, err
 }
 
+func (c *ayahRepo) FindDaily(number int) (*model.Ayah, error) {
+	if number < 1 {
+		number = 1
+	}
+
+	var ayah model.Ayah
+	err := c.db.Model(&model.Ayah{}).
+		Joins("Translation").
+		Joins("Surah").
+		Joins("Surah.Translation").
+		Order(`"ayah".id`).
+		Offset(number - 1).
+		Limit(1).
+		First(&ayah).Error
+	return &ayah, err
+}
+
 func (c *ayahRepo) FindByNumber(ctx *fiber.Ctx, number *int) (*paginate.Page, error) {
 	var ayahs []*model.Ayah
-	mod := c.db.Model(&model.Ayah{}).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Where(`"ayah".number = ?`, number).Order("id")
+	mod := c.db.Model(&model.Ayah{}).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Where(`"ayah".number = ?`, number).Order(`"ayah".id`)
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&ayahs)
 
 	return &page, nil
@@ -71,7 +89,7 @@ func (c *ayahRepo) FindByNumber(ctx *fiber.Ctx, number *int) (*paginate.Page, er
 
 func (c *ayahRepo) FindBySurahNumber(ctx *fiber.Ctx, number *int) (*paginate.Page, error) {
 	var ayahs []*model.Ayah
-	mod := c.db.Model(&model.Ayah{}).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Where(`"Surah".number = ?`, number).Order(`id, "Surah".id`)
+	mod := c.db.Model(&model.Ayah{}).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Where(`"Surah".number = ?`, number).Order(`"ayah".id, "Surah".id`)
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&ayahs)
 
 	return &page, nil

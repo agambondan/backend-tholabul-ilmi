@@ -15,3 +15,8 @@ type AsbabunNuzul struct {
 	Translation   *Translation `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 	Ayahs         []Ayah       `json:"ayahs,omitempty" gorm:"many2many:asbabun_nuzul_ayahs;"`
 }
+
+type AyahReference struct {
+	SurahNumber int `json:"surah_number"`
+	AyahNumber  int `json:"ayah_number"`
+}

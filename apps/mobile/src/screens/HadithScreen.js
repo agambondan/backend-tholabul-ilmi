@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, MoreVertical, X } from 'lucide-react-native';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   getHadithBooks,
   getHadithDetail,
@@ -15,9 +15,12 @@ import {
   getPerawiMurid,
 } from '../api/client';
 import { addBookmark, deleteBookmark, getBookmarks, getNotesByType } from '../api/personal';
+import { AppActionSheet, ActionSheetRow } from '../components/AppActionSheet';
 import { Card, CardTitle } from '../components/Card';
+import { ContentCard } from '../components/ContentCard';
 import { NotesPanel } from '../components/NotesPanel';
 import { ActionPill, IconActionButton, PaperSearchInput } from '../components/Paper';
+import { SectionHeader } from '../components/SectionHeader';
 import { Screen } from '../components/Screen';
 import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
@@ -52,6 +55,16 @@ const HADITH_BOOK_LABELS = {
   tirmidzi: 'Jami At-Tirmidzi',
 };
 
+const HADITH_BOOK_SHORT_LABELS = {
+  'abu-daud': 'Abu Daud',
+  bukhari: 'Bukhari',
+  'ibnu-majah': 'Ibnu Majah',
+  malik: 'Malik',
+  muslim: 'Muslim',
+  nasai: "Nasa'i",
+  tirmidzi: 'Tirmidzi',
+};
+
 const isGenericHadithLabel = (value) => /^hadis(?:\s+\d+)?$/i.test(cleanHadithText(value));
 
 const formatSlugLabel = (value) => {
@@ -72,7 +85,17 @@ const formatHadithNumber = (hadith) => {
   return number ? `No. ${number}` : 'Nomor belum tersedia';
 };
 
-const formatHadithGrade = (grade) => cleanHadithText(grade || 'Derajat belum tersedia');
+const formatHadithGrade = (grade) => {
+  const cleaned = cleanHadithText(grade);
+  if (!cleaned) return 'Belum dinilai';
+
+  const normalized = cleaned.toLowerCase();
+  if (['sahih', 'shahih', 'ṣaḥīḥ'].includes(normalized)) return 'Shahih';
+  if (normalized === 'hasan sahih' || normalized === 'hasan shahih') return 'Hasan Shahih';
+  if (normalized === 'hasan') return 'Hasan';
+  if (['dhaif', "da'if", 'lemah'].includes(normalized)) return "Dha'if";
+  return cleaned;
+};
 
 const formatHadithCount = (count) => Number(count || 0).toLocaleString('id-ID');
 
@@ -81,6 +104,22 @@ const getHadithBookLabel = (hadith) => {
   if (rawBook && !isGenericHadithLabel(rawBook)) return rawBook;
 
   return formatSlugLabel(hadith?.bookSlug) || 'Kitab hadis';
+};
+
+const getHadithBookShortLabel = (hadith) => {
+  const slug = cleanHadithText(hadith?.bookSlug).toLowerCase();
+  if (HADITH_BOOK_SHORT_LABELS[slug]) return HADITH_BOOK_SHORT_LABELS[slug];
+
+  const bookLabel = getHadithBookLabel(hadith);
+  return bookLabel
+    .replace(/^shahih\s+/i, '')
+    .replace(/^sunan\s+/i, '')
+    .replace(/^jami\s+/i, '')
+    .replace(/^muwatha\s+/i, '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .join(' ') || 'Hadis';
 };
 
 const getHadithTopicLabel = (hadith) => {
@@ -404,7 +443,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     });
   }, [hadiths, query]);
 
-  const summaryBadge = query ? 'Pencarian aktif' : selectedBook ? 'Kitab dipilih' : `${books.length || 'Semua'} kitab`;
+  const summaryBadge = query ? 'Pencarian' : selectedBook ? 'Filter kitab' : `${books.length || 'Semua'} kitab`;
 
   const visibleHadiths = filteredHadiths.slice(0, visibleCount);
   const displayedHadithCount = visibleHadiths.length;
@@ -447,52 +486,39 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
 
   const renderCompactHadithCard = (hadith, meta = '') => {
     const bookLabel = getHadithBookLabel(hadith);
+    const bookShortLabel = getHadithBookShortLabel(hadith);
     const numberLabel = formatHadithNumber(hadith);
     const gradeLabel = formatHadithGrade(hadith.grade);
+    const gradeUnknown = gradeLabel === 'Belum dinilai';
     const topicLabel = getHadithTopicLabel(hadith);
     const hasTopic = topicLabel && normalizeSearchText(topicLabel) !== normalizeSearchText(bookLabel);
+    const bodyText = cleanHadithText(hadith.translation || hadith.arabic || 'Teks hadis belum tersedia.');
 
     return (
-      <View key={`${meta}-${hadith.id}`} style={styles.compactHadithWrapper}>
-        <Pressable onPress={() => openHadith(hadith)} style={styles.compactHadith}>
-          <View style={styles.compactHeaderRow}>
-            <View style={styles.compactIdentity}>
-              <Text numberOfLines={1} style={styles.compactBook}>
-                {bookLabel}
-              </Text>
-              <Text numberOfLines={1} style={styles.compactNumber}>
-                {numberLabel}
-              </Text>
-            </View>
-            <Pressable
-              accessibilityLabel="Aksi hadis"
-              accessibilityRole="button"
-              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
-              onPress={(event) => {
-                event.stopPropagation();
-                setHadithActionSheet({ visible: true, hadith });
-              }}
-              style={styles.itemMenuButton}
-            >
-              <MoreVertical color={colors.primary} size={18} strokeWidth={2.4} />
-            </Pressable>
-          </View>
-          <View style={styles.compactMetaRow}>
-            <Text numberOfLines={1} style={styles.gradeBadge}>
-              {gradeLabel}
-            </Text>
-            {hasTopic ? (
-              <Text numberOfLines={1} style={styles.compactTopic}>
-                {topicLabel}
-              </Text>
-            ) : null}
-          </View>
-          <Text numberOfLines={3} style={styles.compactTranslation}>
-            {cleanHadithText(hadith.translation || hadith.book)}
-          </Text>
-          {noteCounts[hadith.id] ? <Text style={styles.compactMeta}>{noteCounts[hadith.id]} catatan</Text> : null}
-        </Pressable>
-      </View>
+      <ContentCard
+        key={`${meta}-${hadith.id}`}
+        metaRail={[
+          { label: bookShortLabel, textStyle: styles.railBook },
+          { label: numberLabel, textStyle: styles.railNumber },
+          {
+            active: !gradeUnknown,
+            label: gradeLabel,
+            textStyle: gradeUnknown ? styles.railGradeMuted : null,
+            variant: 'badge',
+          },
+        ]}
+        numberOfSubtitleLines={3}
+        onMenuPress={() => setHadithActionSheet({ visible: true, hadith })}
+        onPress={() => openHadith(hadith)}
+        style={styles.compactHadith}
+        subtitle={bodyText}
+        subtitleStyle={styles.compactTranslation}
+        title={hasTopic ? topicLabel : bookLabel}
+        titleStyle={styles.compactBook}
+        eyebrow={hasTopic ? bookLabel : 'Kutipan hadis'}
+        eyebrowStyle={styles.compactNumber}
+        footer={noteCounts[hadith.id] ? <Text style={styles.compactMeta}>{noteCounts[hadith.id]} catatan</Text> : null}
+      />
     );
   };
 
@@ -555,90 +581,48 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     const isBookmarked = Boolean(bookmarks[hadith.id]);
 
     return (
-      <Modal
-        animationType="slide"
-        onRequestClose={() => setHadithActionSheet({ visible: false, hadith: null })}
-        transparent
+      <AppActionSheet
+        onClose={() => setHadithActionSheet({ visible: false, hadith: null })}
+        subtitle={hadith.title}
+        title="Aksi Hadis"
         visible={visible}
       >
-        <Pressable
-          onPress={() => setHadithActionSheet({ visible: false, hadith: null })}
-          style={styles.modalOverlay}
+        <ActionSheetRow
+          Icon={BookOpen}
+          onPress={() => {
+            setHadithActionSheet({ visible: false, hadith: null });
+            openHadith(hadith);
+          }}
+          subtitle="Buka teks lengkap dan sanad"
+          title="Detail"
         />
-        <View style={styles.modalSheet}>
-          <View style={styles.modalHandle} />
-          <View style={styles.modalHeader}>
-            <View style={styles.modalHeaderCopy}>
-              <Text style={styles.modalTitle}>Aksi Hadis</Text>
-              <Text style={styles.modalMeta} numberOfLines={1}>{hadith.title}</Text>
-            </View>
-            <Pressable
-              hitSlop={8}
-              onPress={() => setHadithActionSheet({ visible: false, hadith: null })}
-              style={styles.modalClose}
-            >
-              <X color={colors.muted} size={18} strokeWidth={2.2} />
-            </Pressable>
-          </View>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <Pressable
-              accessibilityRole="button"
-              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-              onPress={() => {
-                setHadithActionSheet({ visible: false, hadith: null });
-                openHadith(hadith);
-              }}
-              style={styles.actionSheetRow}
-            >
-              <View style={styles.actionSheetIcon}>
-                <BookOpen color={colors.primary} size={18} strokeWidth={2.3} />
-              </View>
-              <View style={styles.actionSheetCopy}>
-                <Text style={styles.actionSheetTitle}>Detail</Text>
-                <Text style={styles.actionSheetSubtitle}>Buka teks lengkap dan sanad</Text>
-              </View>
-            </Pressable>
-
-            {user ? (
-              <Pressable
-                accessibilityRole="button"
-                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-                disabled={savingId === hadith.id}
-                onPress={() => {
-                  setHadithActionSheet({ visible: false, hadith: null });
-                  toggleBookmark(hadith);
-                }}
-                style={[styles.actionSheetRow, isBookmarked ? styles.actionSheetRowActive : null]}
-              >
-                <View style={styles.actionSheetIcon}>
-                  {isBookmarked ? (
-                    <BookmarkCheck color={colors.onPrimary} size={18} strokeWidth={2.3} />
-                  ) : (
-                    <Bookmark color={colors.primary} size={18} strokeWidth={2.3} />
-                  )}
-                </View>
-                <View style={styles.actionSheetCopy}>
-                  <Text style={[styles.actionSheetTitle, isBookmarked ? styles.actionSheetTitleActive : null]}>
-                    {isBookmarked ? 'Hapus Bookmark' : 'Bookmark Hadis'}
-                  </Text>
-                  <Text style={[styles.actionSheetSubtitle, isBookmarked ? styles.actionSheetSubtitleActive : null]}>
-                    {isBookmarked ? 'Hapus dari koleksi pribadi' : 'Simpan ke koleksi pribadi'}
-                  </Text>
-                </View>
-              </Pressable>
-            ) : null}
-            <View style={styles.modalBottomPad} />
-          </ScrollView>
-        </View>
-      </Modal>
+        {user ? (
+          <ActionSheetRow
+            Icon={isBookmarked ? BookmarkCheck : Bookmark}
+            active={isBookmarked}
+            disabled={savingId === hadith.id}
+            onPress={() => {
+              setHadithActionSheet({ visible: false, hadith: null });
+              toggleBookmark(hadith);
+            }}
+            subtitle={isBookmarked ? 'Hapus dari koleksi pribadi' : 'Simpan ke koleksi pribadi'}
+            title={isBookmarked ? 'Hapus Bookmark' : 'Bookmark Hadis'}
+          />
+        ) : null}
+      </AppActionSheet>
     );
   };
 
   if (selectedHadith) {
+    const selectedHadithBook = getHadithBookLabel(selectedHadith);
+    const selectedHadithNumber = formatHadithNumber(selectedHadith);
+    const selectedHadithGrade = formatHadithGrade(selectedHadith.grade);
+    const selectedHadithTitle = getHadithTopicLabel(selectedHadith) || `${selectedHadithBook} ${selectedHadithNumber}`;
+
     return (
       <Screen
         title="Detail Hadis"
-        subtitle={`${selectedHadith.book || 'Hadis'}${selectedHadith.number ? ` · No. ${selectedHadith.number}` : ''}`}
+        subtitle={`${selectedHadithBook} · ${selectedHadithNumber} · ${selectedHadithGrade}`}
         refreshing={detailLoading}
         onRefresh={() => openHadith(selectedHadith)}
         actions={<IconActionButton Icon={ArrowLeft} label="Kembali ke daftar hadis" onPress={() => setSelectedHadith(null)} />}
@@ -649,9 +633,9 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
         {detailTab === 'text' ? (
           <>
             <Card>
-              <CardTitle meta={selectedHadith.grade || selectedHadith.book}>{selectedHadith.title}</CardTitle>
+              <CardTitle meta={selectedHadithGrade}>{selectedHadithTitle}</CardTitle>
               {selectedHadith.arabic ? <Text style={styles.arabic}>{selectedHadith.arabic}</Text> : null}
-              <Text style={styles.translation}>{selectedHadith.translation || selectedHadith.book}</Text>
+              <Text style={styles.translation}>{cleanHadithText(selectedHadith.translation || selectedHadith.book)}</Text>
               {selectedHadith.gradeNotes ? <Text style={styles.detailNote}>{selectedHadith.gradeNotes}</Text> : null}
               {selectedHadith.sanad ? <Text style={styles.inlineSanad}>{selectedHadith.sanad}</Text> : null}
               {user ? (
@@ -694,10 +678,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
             ) : (
               sanad.map((path, index) => (
                 <View key={`${path.id}-${index}`} style={styles.detailBlock}>
-                  <View style={styles.detailHeader}>
-                    <Text style={styles.detailTitle}>Jalur {path.nomor_jalur ?? index + 1}</Text>
-                    <Text style={styles.detailMeta}>{path.status_sanad || path.jenis || 'sanad'}</Text>
-                  </View>
+                  <SectionHeader title={`Jalur ${path.nomor_jalur ?? index + 1}`} meta={path.status_sanad || path.jenis || 'sanad'} />
                   {path.catatan ? <Text style={styles.detailNote}>{path.catatan}</Text> : null}
                   {(path.mata_sanad ?? []).map((mata, mataIndex) => (
                     <Pressable
@@ -744,12 +725,10 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
 
             {selectedPerawi ? (
               <View style={styles.narratorPanel}>
-                <View style={styles.detailHeader}>
-                  <Text style={styles.detailTitle}>
-                    {selectedPerawi.nama_latin || selectedPerawi.nama_lengkap || `Perawi ${selectedPerawi.id}`}
-                  </Text>
-                  <Text style={styles.detailMeta}>{selectedPerawi.tabaqah || selectedPerawi.status || 'perawi'}</Text>
-                </View>
+                <SectionHeader
+                  title={selectedPerawi.nama_latin || selectedPerawi.nama_lengkap || `Perawi ${selectedPerawi.id}`}
+                  meta={selectedPerawi.tabaqah || selectedPerawi.status || 'perawi'}
+                />
                 {selectedPerawi.nama_arab ? <Text style={styles.perawiArabic}>{selectedPerawi.nama_arab}</Text> : null}
                 {selectedPerawi.nama_lengkap ? <Text style={styles.detailNote}>{selectedPerawi.nama_lengkap}</Text> : null}
                 <Text style={styles.chainMeta}>
@@ -1101,23 +1080,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingVertical: spacing.md,
   },
-  detailHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  detailTitle: {
-    color: colors.ink,
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  detailMeta: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'capitalize',
-  },
   detailNote: {
     color: colors.muted,
     fontSize: 12,
@@ -1260,20 +1222,31 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   compactHadith: {
+    backgroundColor: 'transparent',
     borderBottomColor: colors.faint,
     borderBottomWidth: 1,
+    borderRadius: 0,
+    borderWidth: 0,
+    marginTop: 0,
+    paddingHorizontal: 0,
     paddingVertical: spacing.md,
   },
-  compactHeaderRow: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+  railBook: {
+    color: colors.primaryDark,
+    fontSize: 12,
+    fontWeight: '900',
+    textAlign: 'center',
   },
-  compactIdentity: {
-    flex: 1,
-    paddingRight: spacing.xs,
+  railNumber: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: '900',
+    marginTop: spacing.xs,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  railGradeMuted: {
+    color: colors.muted,
   },
   compactBook: {
     color: colors.ink,
@@ -1287,31 +1260,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textTransform: 'uppercase',
   },
-  compactMetaRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  gradeBadge: {
-    backgroundColor: colors.surfaceMuted,
-    borderColor: colors.faint,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    color: colors.primaryDark,
-    fontSize: 11,
-    fontWeight: '900',
-    overflow: 'hidden',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    textTransform: 'capitalize',
-  },
-  compactTopic: {
-    color: colors.muted,
-    flex: 1,
-    fontSize: 11,
-    fontWeight: '800',
-  },
   compactTranslation: {
     color: colors.text,
     fontSize: 13,
@@ -1322,16 +1270,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     marginTop: spacing.xs,
-  },
-  compactHadithWrapper: {
-    position: 'relative',
-  },
-  itemMenuButton: {
-    alignItems: 'center',
-    borderRadius: 20,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
   },
   loadMoreButton: {
     alignItems: 'center',
@@ -1381,106 +1319,5 @@ const styles = StyleSheet.create({
   },
   activeButtonText: {
     color: colors.primaryDark,
-  },
-  actionSheetRow: {
-    alignItems: 'center',
-    borderRadius: radius.md,
-    flexDirection: 'row',
-    padding: spacing.md,
-  },
-  actionSheetRowActive: {
-    backgroundColor: colors.primary,
-  },
-  actionSheetIcon: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 24,
-  },
-  actionSheetCopy: {
-    flex: 1,
-    marginLeft: spacing.md,
-  },
-  actionSheetTitle: {
-    color: colors.ink,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  actionSheetTitleActive: {
-    color: colors.onPrimary,
-  },
-  actionSheetSubtitle: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  actionSheetSubtitleActive: {
-    color: colors.onPrimary,
-    opacity: 0.8,
-  },
-  modalOverlay: {
-    backgroundColor: 'rgba(0,0,0,0.38)',
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  modalSheet: {
-    backgroundColor: colors.bg,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    bottom: 0,
-    elevation: 24,
-    left: 0,
-    maxHeight: '80%',
-    position: 'absolute',
-    right: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-  },
-  modalHandle: {
-    alignSelf: 'center',
-    backgroundColor: colors.faint,
-    borderRadius: 2,
-    height: 4,
-    marginTop: spacing.md,
-    width: 40,
-  },
-  modalHeader: {
-    alignItems: 'center',
-    borderBottomColor: colors.faint,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: spacing.lg,
-  },
-  modalHeaderCopy: {
-    flex: 1,
-    paddingRight: spacing.md,
-  },
-  modalTitle: {
-    color: colors.ink,
-    fontFamily: 'serif',
-    fontSize: 19,
-    fontWeight: '900',
-  },
-  modalMeta: {
-    color: colors.muted,
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  modalClose: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 99,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-  modalBottomPad: {
-    height: 40,
   },
 });

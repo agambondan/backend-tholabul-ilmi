@@ -6,7 +6,7 @@ import { getLocalizedField } from '@/lib/translation';
 import { useEffect, useState } from 'react';
 import { BsPencil, BsPlusCircle, BsTrash, BsX } from 'react-icons/bs';
 
-const CATEGORIES = ['pagi', 'petang', 'sesudah-sholat', 'malam', 'umum'];
+const CATEGORIES = ['pagi', 'petang', 'setelah_sholat', 'tidur', 'dzikir_umum'];
 
 const EMPTY_FORM = {
     title: '',
@@ -90,9 +90,13 @@ const AdminWirdPage = () => {
     };
 
     const filtered = items.filter(
-        (i) =>
-            i.title?.toLowerCase().includes(search.toLowerCase()) ||
-            i.category?.toLowerCase().includes(search.toLowerCase()),
+        (i) => {
+            const title = getLocalizedField(i, 'title', lang);
+            return (
+                title?.toLowerCase().includes(search.toLowerCase()) ||
+                i.category?.toLowerCase().includes(search.toLowerCase())
+            );
+        },
     );
 
     return (

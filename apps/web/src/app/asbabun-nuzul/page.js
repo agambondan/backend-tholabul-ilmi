@@ -15,6 +15,17 @@ import { BsSearch } from 'react-icons/bs';
 const SURAH_COUNT = 114;
 const QUICK_SURAH = [1, 2, 4, 18, 36, 67, 112];
 
+const asbabunAyahStart = (item) => item?.ayah_number ?? item?.ayah_start ?? item?.ayah_refs?.[0]?.ayah_number;
+const asbabunAyahLabel = (item, t) => {
+    if (item?.display_ref) return item.display_ref;
+    const start = asbabunAyahStart(item);
+    const end = item?.ayah_end ?? item?.ayah_refs?.[item?.ayah_refs?.length - 1]?.ayah_number;
+    if (!start) return `${t('asbabun.ayah_prefix')} ${item?.ayah_id ?? '-'}`;
+    return end && Number(end) !== Number(start)
+        ? `${t('asbabun.ayah_prefix')} ${start}-${end}`
+        : `${t('asbabun.ayah_prefix')} ${start}`;
+};
+
 export const AsbabunNuzulContent = () => {
     const { t, lang } = useLocale();
     const { isWide } = useLayoutMode();
@@ -140,10 +151,10 @@ export const AsbabunNuzulContent = () => {
                             >
                                 <div className='flex items-center gap-2 mb-3'>
                                     <Link
-                                        href={`/quran/${surahNumber}/${item.ayah_number ?? ''}`}
+                                        href={`/quran/${surahNumber}/${asbabunAyahStart(item) ?? ''}`}
                                         className='text-xs px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium hover:bg-emerald-100 transition-colors'
                                     >
-                                        {t('asbabun.ayah_prefix')} {item.ayah_number ?? item.ayah_id}
+                                        {asbabunAyahLabel(item, t)}
                                     </Link>
                                     {item.source && (
                                         <span className='text-xs text-gray-400 dark:text-gray-500'>

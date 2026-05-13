@@ -1,6 +1,9 @@
 package service
 
 import (
+	"errors"
+	"time"
+
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -11,6 +14,7 @@ type AyahService interface {
 	Create(*model.Ayah) (*model.Ayah, error)
 	FindAll(*fiber.Ctx) *paginate.Page
 	FindById(*int) (*model.Ayah, error)
+	FindDaily() (*model.Ayah, error)
 	FindByNumber(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindBySurahNumber(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindByPage(page int) ([]model.Ayah, error)
@@ -39,6 +43,21 @@ func (c *ayahService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 
 func (c *ayahService) FindById(id *int) (*model.Ayah, error) {
 	return c.ayah.FindById(id)
+}
+
+func (c *ayahService) FindDaily() (*model.Ayah, error) {
+	count, err := c.ayah.Count()
+	if err != nil {
+		return nil, err
+	}
+	if count == nil || *count == 0 {
+		return nil, errors.New("ayah count is empty")
+	}
+
+	now := time.Now().UTC()
+	seed := int64(now.YearDay()) + int64(now.Year())*1000
+	number := int(seed%*count) + 1
+	return c.ayah.FindDaily(number)
 }
 
 func (c *ayahService) FindByNumber(ctx *fiber.Ctx, number *int) (*paginate.Page, error) {

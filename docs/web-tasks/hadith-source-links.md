@@ -93,3 +93,24 @@ function SourceBadges({ source }) {
 ## API Response
 
 Field `source` sudah ada di response API API service. Tidak ada perubahan API yang diperlukan.
+
+## Implementation Update
+
+Status: `DONE`
+
+- `apps/web/src/components/SourceBadges.js` sekarang parse `source` menjadi
+  link eksternal `sunnah.com` untuk Bukhari, Muslim, Abu Dawud, Tirmidzi,
+  Ibnu Majah, Nasai, dan Ahmad.
+- Referensi Quran `QS. {Surah}: {Ayat}` diarahkan ke route internal
+  `/quran/surah/{Surah}#{Ayat}`.
+- Referensi yang tidak punya mapping stabil tetap dirender sebagai teks biasa.
+- Halaman `/doa`, `/dzikir`, dan `/panduan-sholat` sudah memakai
+  `SourceBadges`, jadi tidak butuh perubahan per-page lagi.
+
+Evidence:
+
+```bash
+npm --prefix apps/web run lint -- --file src/components/SourceBadges.js
+```
+
+Result: `PASS`

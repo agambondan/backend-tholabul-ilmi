@@ -21,10 +21,12 @@ import {
   pushNotificationsSupported,
 } from '../utils/pushNotifications';
 import {
+  getSmartReminderSchedule,
   scheduleSmartReminders,
   smartNotificationsSupported,
 } from '../utils/smartNotifications';
 import { Card, CardTitle } from './Card';
+import { SectionHeader } from './SectionHeader';
 import { preferenceKeys, readPreference, writePreference } from '../storage/preferences';
 
 const defaultSettings = [
@@ -37,6 +39,12 @@ const defaultSettings = [
 const defaultQuietHours = { end: '05:00', is_active: false, start: '22:00' };
 
 const labelForType = (type) => defaultSettings.find((item) => item.type === type)?.label ?? type;
+const cleanPushMessage = (value = '') =>
+  `${value}`
+    .replace(/backend/gi, 'cloud')
+    .replace(/perangkat ini/gi, 'HP ini')
+    .replace(/perangkat aktif/gi, 'sesi aktif');
+
 const toTimeDate = (value) => {
   const now = new Date();
   const match = /^(\d{1,2}):(\d{2})$/.exec(`${value ?? ''}`);
@@ -81,6 +89,7 @@ const NOTIF_TABS = [
 export function NotificationCenter() {
   const { session } = useSession();
   const { showError, showSuccess } = useFeedback();
+  const hasSession = Boolean(session?.token);
   const [activeTab, setActiveTab] = useState('settings');
   const [settings, setSettings] = useState(defaultSettings);
   const [quietHours, setQuietHours] = useState(defaultQuietHours);
@@ -99,6 +108,9 @@ export function NotificationCenter() {
   });
   const [unreadCount, setUnreadCount] = useState(0);
   const [pickerState, setPickerState] = useState({ open: false, type: null, value: toTimeDate('06:00') });
+  const activeReminderCount = settings.filter((item) => item.is_active).length;
+  const reminderPreview = getSmartReminderSchedule({ quietHours, reminders: settings });
+  const visibleTabs = hasSession ? NOTIF_TABS : NOTIF_TABS.filter((tab) => tab.key === 'settings');
 
   const syncLocalPreferences = useCallback(async (nextSettings, nextQuietHours, nextScheduled = null) => {
     await writePreference(preferenceKeys.smartNotifSettings, nextSettings);
@@ -122,8 +134,6 @@ export function NotificationCenter() {
   }, []);
 
   const load = useCallback(async () => {
-    if (!session?.token) return;
-
     setLoading(true);
     setMessage('');
     try {
@@ -132,6 +142,16 @@ export function NotificationCenter() {
         readPreference(preferenceKeys.smartNotifQuietHours, defaultQuietHours),
         readPreference(preferenceKeys.smartNotifPendingSync, null),
       ]);
+
+      const localSettings = normalizeSettings(storedSettings ?? []);
+      const localQuietHours = normalizeQuietHours(storedQuietHours);
+      setSettings(localSettings);
+      setQuietHours(localQuietHours);
+      setPendingSync(Boolean(pendingPayload?.settings?.length));
+      setInbox([]);
+      setUnreadCount(0);
+
+      if (!session?.token) return;
 
       let pendingMessage = '';
       if (pendingPayload?.settings?.length) {
@@ -151,8 +171,11 @@ export function NotificationCenter() {
         getNotificationInbox(),
         getPushTokenStatus(),
       ]);
-      setSettings(normalizeSettings([...(nextSettings ?? []), ...(storedSettings ?? [])]));
-      setQuietHours(normalizeQuietHours(storedQuietHours));
+      const mergedSettings = pendingPayload?.settings?.length
+        ? normalizeSettings([...(storedSettings ?? []), ...(nextSettings ?? [])])
+        : normalizeSettings([...(nextSettings ?? []), ...(storedSettings ?? [])]);
+      setSettings(mergedSettings);
+      setQuietHours(localQuietHours);
       setInbox(nextInbox.items);
       setUnreadCount(nextInbox.unreadCount);
       if (pendingMessage) setMessage(pendingMessage);
@@ -168,7 +191,7 @@ export function NotificationCenter() {
         }));
       }
     } catch (error) {
-      setMessage(error?.message ?? 'Notifikasi belum bisa dimuat.');
+      setMessage(error?.message ?? 'Pengaturan lokal dipakai. Sinkron cloud belum bisa dimuat.');
     } finally {
       setLoading(false);
     }
@@ -254,6 +277,14 @@ export function NotificationCenter() {
       );
 
       const serverSettings = toServerSettings(settings);
+      if (!session?.token) {
+        await queuePendingSync(serverSettings);
+        const localOnlyMessage = 'Pengingat lokal disimpan. Sinkron cloud aktif setelah login atau online.';
+        setMessage(localOnlyMessage);
+        showSuccess('Pengingat lokal disimpan.');
+        return;
+      }
+
       try {
         const saved = await saveNotificationSettings(serverSettings);
         const merged = normalizeSettings([...(saved?.data ?? saved ?? []), ...settings]);
@@ -267,12 +298,39 @@ export function NotificationCenter() {
         const queuedMessage =
           syncError?.message?.toLowerCase().includes('network request failed')
             ? 'Pengaturan disimpan lokal. Akan sinkron otomatis saat online.'
-            : syncError?.message ?? 'Sinkron backend gagal. Pengaturan lokal tetap aktif.';
+            : syncError?.message ?? 'Sinkron cloud gagal. Pengaturan lokal tetap aktif.';
         setMessage(queuedMessage);
         showSuccess('Pengaturan lokal disimpan.');
       }
     } catch (error) {
       const nextMessage = error?.message ?? 'Pengaturan belum bisa disimpan.';
+      setMessage(nextMessage);
+      showError(nextMessage);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const retryPendingSync = async () => {
+    if (!session?.token) {
+      setMessage('Login dulu untuk menyinkronkan pengaturan ke cloud.');
+      return;
+    }
+
+    setSaving(true);
+    setMessage('');
+    try {
+      const serverSettings = toServerSettings(settings);
+      const saved = await saveNotificationSettings(serverSettings);
+      const merged = normalizeSettings([...(saved?.data ?? saved ?? []), ...settings]);
+      setSettings(merged);
+      await clearPendingSync();
+      await writePreference(preferenceKeys.smartNotifSettings, merged);
+      setMessage('Pengaturan berhasil disinkronkan ke cloud.');
+      showSuccess('Pengaturan berhasil disinkronkan.');
+    } catch (error) {
+      await queuePendingSync(toServerSettings(settings));
+      const nextMessage = error?.message ?? 'Sinkron cloud belum berhasil. Pengaturan lokal tetap aktif.';
       setMessage(nextMessage);
       showError(nextMessage);
     } finally {
@@ -388,19 +446,16 @@ export function NotificationCenter() {
     load();
   }, [load]);
 
-  if (!session?.token) {
-    return (
-      <Card>
-        <CardTitle meta="Masuk akun">Pusat Notifikasi</CardTitle>
-        <Text style={styles.body}>Masuk dari tab Profil untuk mengatur pengingat dan melihat notifikasi.</Text>
-      </Card>
-    );
-  }
+  useEffect(() => {
+    if (!hasSession && activeTab !== 'settings') {
+      setActiveTab('settings');
+    }
+  }, [activeTab, hasSession]);
 
   return (
     <View>
       <View style={styles.tabs}>
-        {NOTIF_TABS.map((tab) => (
+        {visibleTabs.map((tab) => (
           <Pressable
             android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
             key={tab.key}
@@ -417,34 +472,46 @@ export function NotificationCenter() {
 
       {activeTab === 'settings' ? (
       <Card>
-        <CardTitle meta="Pengingat">Pengaturan Notifikasi</CardTitle>
+        <CardTitle meta={hasSession ? `${activeReminderCount} aktif · sinkron cloud` : `${activeReminderCount} aktif · lokal`}>
+          Pengaturan Notifikasi
+        </CardTitle>
+        {!hasSession ? (
+          <View style={styles.localNotice}>
+            <Text style={styles.localNoticeTitle}>Reminder lokal tetap aktif</Text>
+            <Text style={styles.localNoticeText}>
+              Simpan jadwal di HP ini. Login diperlukan hanya untuk push cloud dan kotak masuk.
+            </Text>
+          </View>
+        ) : null}
         <View style={styles.pushBox}>
           <View style={styles.pushIcon}>
             <BellRing color={colors.primary} size={18} strokeWidth={2.2} />
           </View>
           <View style={styles.pushCopy}>
             <Text style={styles.settingTitle}>Push native</Text>
-            <Text style={styles.settingMeta}>{pushState.message}</Text>
+            <Text style={styles.settingMeta}>
+              {hasSession ? cleanPushMessage(pushState.message) : 'Login untuk push cloud. Reminder lokal tidak perlu login.'}
+            </Text>
           </View>
           <Pressable
             android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-            disabled={pushState.loading || !pushNotificationsSupported()}
+            disabled={!hasSession || pushState.loading || !pushNotificationsSupported()}
             onPress={enablePush}
-            style={[styles.pushButton, (pushState.loading || !pushNotificationsSupported()) ? styles.disabled : null]}
+            style={[styles.pushButton, (!hasSession || pushState.loading || !pushNotificationsSupported()) ? styles.disabled : null]}
           >
             {pushState.loading ? (
               <ActivityIndicator color={colors.primary} size="small" />
             ) : (
-              <Text style={styles.pushButtonText}>{pushState.status === 'enabled' ? 'Aktif' : 'Aktifkan'}</Text>
+              <Text style={styles.pushButtonText}>{!hasSession ? 'Login' : pushState.status === 'enabled' ? 'Aktif' : 'Aktifkan'}</Text>
             )}
           </Pressable>
         </View>
         <View style={styles.pushActions}>
           <Pressable
             android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-            disabled={pushState.testLoading || pushState.status !== 'enabled'}
+            disabled={!hasSession || pushState.testLoading || pushState.status !== 'enabled'}
             onPress={testPush}
-            style={[styles.secondaryButtonCompact, (pushState.testLoading || pushState.status !== 'enabled') ? styles.disabled : null]}
+            style={[styles.secondaryButtonCompact, (!hasSession || pushState.testLoading || pushState.status !== 'enabled') ? styles.disabled : null]}
           >
             {pushState.testLoading ? (
               <ActivityIndicator color={colors.primary} size="small" />
@@ -453,7 +520,11 @@ export function NotificationCenter() {
             )}
           </Pressable>
           <Text style={styles.pushHint}>
-            {pushState.activeCount ? `${pushState.activeCount} token aktif tersimpan di backend.` : 'Aktifkan dulu untuk menyimpan token perangkat.'}
+            {!hasSession
+              ? 'Pengingat lokal akan dijadwalkan dari tombol simpan di bawah.'
+              : pushState.activeCount
+                ? `${pushState.activeCount} sesi push aktif tersimpan di cloud.`
+                : 'Aktifkan dulu untuk menyalakan push cloud.'}
           </Text>
         </View>
         <View style={styles.settingRow}>
@@ -523,7 +594,7 @@ export function NotificationCenter() {
             <View style={styles.settingBody}>
               <Text style={styles.settingTitle}>{item.label}</Text>
               <Text style={styles.settingMeta}>
-                {item.serverSync ? 'Reminder harian · sinkron cloud' : 'Reminder harian · lokal perangkat'}
+                {item.serverSync ? 'Reminder harian · sinkron cloud' : 'Reminder harian · lokal aplikasi'}
               </Text>
             </View>
             {Platform.OS === 'web' ? (
@@ -557,6 +628,36 @@ export function NotificationCenter() {
             </Pressable>
           </View>
         ))}
+        {reminderPreview.length ? (
+          <View style={styles.previewBox}>
+            <SectionHeader
+              meta={`${reminderPreview.length} reminder`}
+              metaStyle={styles.previewMeta}
+              style={styles.previewHeader}
+              title="Jadwal aktif"
+              titleStyle={styles.previewTitle}
+            />
+            {reminderPreview.map((item) => (
+              <View key={`preview-${item.type}`} style={styles.previewRow}>
+                <View style={styles.previewDot} />
+                <View style={styles.previewCopy}>
+                  <Text style={styles.previewName}>{item.label}</Text>
+                  <Text style={styles.previewNote}>
+                    {item.shiftedByQuietHours
+                      ? `Ditahan dari ${item.time} sampai quiet hours selesai`
+                      : item.serverSync ? 'Sinkron cloud dan reminder lokal' : 'Reminder lokal aplikasi'}
+                  </Text>
+                </View>
+                <Text style={styles.previewTime}>{item.scheduledTime}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.previewBox}>
+            <Text style={styles.previewTitle}>Belum ada reminder aktif</Text>
+            <Text style={styles.previewNote}>Aktifkan minimal satu kategori untuk menjadwalkan pengingat.</Text>
+          </View>
+        )}
         <Pressable
           android_ripple={{ color: 'rgba(255, 255, 255, 0.12)', borderless: false }}
           disabled={saving}
@@ -566,9 +667,19 @@ export function NotificationCenter() {
           {saving ? <ActivityIndicator color="#ffffff" size="small" /> : <Text style={styles.primaryText}>Simpan pengaturan</Text>}
         </Pressable>
         {pendingSync ? (
-          <Text style={styles.pendingSyncText}>
-            Ada perubahan yang belum sinkron ke backend. Akan dicoba ulang saat online.
-          </Text>
+          <View style={styles.pendingSyncBox}>
+            <Text style={styles.pendingSyncText}>
+              Ada perubahan yang belum sinkron ke cloud. Pengingat lokal tetap aktif.
+            </Text>
+            <Pressable
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+              disabled={saving || !hasSession}
+              onPress={retryPendingSync}
+              style={[styles.pendingSyncButton, (saving || !hasSession) ? styles.disabled : null]}
+            >
+              <Text style={styles.pendingSyncButtonText}>{hasSession ? 'Sinkron sekarang' : 'Login untuk sinkron'}</Text>
+            </Pressable>
+          </View>
         ) : null}
         {message ? <Text style={styles.message}>{message}</Text> : null}
         {pickerState.open && Platform.OS !== 'web' ? (
@@ -595,7 +706,7 @@ export function NotificationCenter() {
       <Card>
         <CardTitle meta={`${unreadCount} belum dibaca`}>Kotak Masuk</CardTitle>
         {loading ? <ActivityIndicator color={colors.primary} /> : null}
-        {!loading && inbox.length === 0 ? <Text style={styles.body}>No notification inbox items yet.</Text> : null}
+        {!loading && inbox.length === 0 ? <Text style={styles.body}>Belum ada notifikasi masuk.</Text> : null}
         {inbox.map((item) => (
           <Pressable
             android_ripple={{ color: 'rgba(91, 110, 91, 0.08)', borderless: false }}
@@ -603,10 +714,13 @@ export function NotificationCenter() {
             onPress={() => markRead(item.id)}
             style={[styles.inboxItem, !item.is_read ? styles.unreadItem : null]}
           >
-            <View style={styles.inboxHeader}>
-              <Text style={styles.inboxTitle}>{item.title || labelForType(item.type)}</Text>
-              <Text style={styles.inboxType}>{item.is_read ? 'Terbaca' : 'Baru'}</Text>
-            </View>
+            <SectionHeader
+              meta={item.is_read ? 'Terbaca' : 'Baru'}
+              metaStyle={styles.inboxType}
+              style={styles.inboxHeader}
+              title={item.title || labelForType(item.type)}
+              titleStyle={styles.inboxTitle}
+            />
             {item.body ? <Text style={styles.body}>{item.body}</Text> : null}
             <Text style={styles.settingMeta}>{[labelForType(item.type), item.ref_id].filter(Boolean).join(' · ')}</Text>
           </Pressable>
@@ -681,18 +795,62 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
     textTransform: 'uppercase',
   },
+  localNotice: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
+  },
+  localNoticeText: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  localNoticeTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
   message: {
     color: colors.primary,
     fontSize: 12,
     fontWeight: '700',
     marginTop: spacing.sm,
   },
+  pendingSyncBox: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.sm,
+    padding: spacing.sm,
+  },
+  pendingSyncButton: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+    minHeight: 32,
+    paddingHorizontal: spacing.sm,
+  },
+  pendingSyncButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
   pendingSyncText: {
     color: colors.muted,
     fontSize: 11,
     fontWeight: '700',
     lineHeight: 16,
-    marginTop: spacing.sm,
   },
   primaryButton: {
     alignItems: 'center',
@@ -755,6 +913,66 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 16,
     marginTop: spacing.xs,
+  },
+  previewBox: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.md,
+    padding: spacing.md,
+  },
+  previewCopy: {
+    flex: 1,
+  },
+  previewDot: {
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    height: 8,
+    marginTop: 7,
+    width: 8,
+  },
+  previewHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  previewMeta: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  previewName: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  previewNote: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  previewRow: {
+    alignItems: 'flex-start',
+    borderTopColor: colors.faint,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  previewTime: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '900',
+    marginTop: 1,
+  },
+  previewTitle: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: '900',
   },
   secondaryButton: {
     alignItems: 'center',

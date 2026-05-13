@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   Bell,
   Book,
   Bookmark,
@@ -27,6 +26,8 @@ import * as Location from 'expo-location';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { getDailyAyah, getDailyHadith, getPrayerTimes } from '../api/client';
+import { ContentCard } from '../components/ContentCard';
+import { DetailHeader } from '../components/DetailHeader';
 import { useSession } from '../context/SessionContext';
 import { useTabActivity } from '../context/TabActivityContext';
 import { getTodayPrayerLog } from '../api/personal';
@@ -409,46 +410,35 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
         showsVerticalScrollIndicator={false}
         style={styles.scroll}
       >
-        <View style={styles.directoryHeader}>
-          <Pressable
-            accessibilityRole="button"
-            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-            onPress={() => navigation?.close?.('home')}
-            style={styles.directoryBackButton}
-          >
-            <ArrowLeft color={colors.primary} size={18} strokeWidth={2.2} />
-          </Pressable>
-          <View style={styles.directoryHeaderCopy}>
-            <Text style={styles.directoryTitle}>Semua Fitur</Text>
-            <Text style={styles.directoryMeta}>Pilih fitur berdasarkan kategori</Text>
-          </View>
-        </View>
+        <DetailHeader
+          onBack={() => navigation?.close?.('home')}
+          subtitle="Pilih fitur berdasarkan kategori"
+          title="Semua Fitur"
+        />
         {directoryGroups.map((group) => (
           <View key={group.key} style={styles.directoryGroup}>
             <Text style={styles.directoryGroupTitle}>{group.label}</Text>
             {group.rows.map((row) => (
-              <Pressable
-                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+              <ContentCard
+                Icon={row.Icon}
+                iconSize={16}
+                iconStyle={styles.directoryIcon}
+                iconStrokeWidth={2.2}
                 key={`${group.key}:${row.key}`}
                 onPress={() => openDirectoryRow(row)}
                 style={styles.directoryRow}
-              >
-                <View style={styles.directoryIcon}>
-                  <row.Icon color={colors.primary} size={16} strokeWidth={2.2} />
-                </View>
-                <View style={styles.directoryRowCopy}>
-                  <Text style={styles.directoryRowTitle}>{row.title}</Text>
-                  <Text style={styles.directoryRowSubtitle}>{row.subtitle}</Text>
-                </View>
-                <ChevronRight color={colors.muted} size={18} strokeWidth={2.3} />
-              </Pressable>
+                subtitle={row.subtitle}
+                subtitleStyle={styles.directoryRowSubtitle}
+                title={row.title}
+                titleStyle={styles.directoryRowTitle}
+                trailing={<ChevronRight color={colors.muted} size={18} strokeWidth={2.3} />}
+              />
             ))}
           </View>
         ))}
       </ScrollView>
     );
   }
-
   return (
     <ScrollView
       contentContainerStyle={styles.screen}
@@ -575,21 +565,18 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
             <Star color={colors.primary} size={18} strokeWidth={2.2} />
           </View>
           {pinnedFeatures.map((feature) => (
-            <Pressable
-              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+            <ContentCard
+              Icon={Star}
+              iconStyle={styles.recentIcon}
               key={feature.key}
               onPress={() => onOpenTab('belajar', { featureKey: feature.key })}
               style={styles.recentRow}
-            >
-              <View style={styles.recentIcon}>
-                <Star color={colors.primary} size={16} strokeWidth={2.2} />
-              </View>
-              <View style={styles.recentText}>
-                <Text style={styles.recentRowTitle}>{feature.title}</Text>
-                <Text style={styles.recentRowSubtitle}>{feature.subtitle || feature.group || 'Belajar'}</Text>
-              </View>
-              <ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />
-            </Pressable>
+              subtitle={feature.subtitle || feature.group || 'Belajar'}
+              subtitleStyle={styles.recentRowSubtitle}
+              title={feature.title}
+              titleStyle={styles.recentRowTitle}
+              trailing={<ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />}
+            />
           ))}
         </View>
       ) : null}
@@ -604,39 +591,33 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
             <Clock3 color={colors.primary} size={18} strokeWidth={2.2} />
           </View>
           {recentFeatures.map((feature) => (
-            <Pressable
-              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+            <ContentCard
+              Icon={Clock3}
+              iconStyle={styles.recentIcon}
               key={feature.key}
               onPress={() => onOpenTab('belajar', { featureKey: feature.key })}
               style={styles.recentRow}
-            >
-              <View style={styles.recentIcon}>
-                <Clock3 color={colors.primary} size={16} strokeWidth={2.2} />
-              </View>
-              <View style={styles.recentText}>
-                <Text style={styles.recentRowTitle}>{feature.title}</Text>
-                <Text style={styles.recentRowSubtitle}>{feature.subtitle || feature.group || 'Belajar'}</Text>
-              </View>
-              <ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />
-            </Pressable>
+              subtitle={feature.subtitle || feature.group || 'Belajar'}
+              subtitleStyle={styles.recentRowSubtitle}
+              title={feature.title}
+              titleStyle={styles.recentRowTitle}
+              trailing={<ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />}
+            />
           ))}
         </View>
       ) : null}
 
-      <Pressable
-        android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+      <ContentCard
+        Icon={Smile}
+        iconStyle={styles.journalIcon}
         onPress={() => onOpenTab('belajar', { featureKey: 'muhasabah' })}
         style={styles.journalCard}
-      >
-        <View style={styles.journalIcon}>
-          <Smile color={colors.primary} size={19} strokeWidth={2.1} />
-        </View>
-        <View style={styles.journalText}>
-          <Text style={styles.journalTitle}>Jurnal Muhasabah</Text>
-          <Text style={styles.journalDesc}>Bagaimana imanmu hari ini?</Text>
-        </View>
-        <ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />
-      </Pressable>
+        subtitle="Bagaimana imanmu hari ini?"
+        subtitleStyle={styles.journalDesc}
+        title="Jurnal Muhasabah"
+        titleStyle={styles.journalTitle}
+        trailing={<ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />}
+      />
 
       <View style={styles.dailyCard}>
         <View style={styles.dailyHeader}>
@@ -696,35 +677,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     paddingTop: spacing.lg,
   },
-  directoryHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  directoryBackButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.faint,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    height: 34,
-    justifyContent: 'center',
-    width: 34,
-  },
-  directoryHeaderCopy: {
-    flex: 1,
-  },
-  directoryTitle: {
-    color: colors.ink,
-    fontFamily: 'serif',
-    fontSize: 19,
-    fontWeight: '900',
-  },
-  directoryMeta: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 2,
-  },
   directoryGroup: {
     backgroundColor: colors.surface,
     borderColor: colors.faint,
@@ -742,10 +694,12 @@ const styles = StyleSheet.create({
   },
   directoryRow: {
     alignItems: 'center',
+    backgroundColor: 'transparent',
     borderTopColor: colors.faint,
     borderTopWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
+    borderWidth: 0,
+    borderRadius: 0,
+    marginTop: 0,
     minHeight: 58,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -759,10 +713,6 @@ const styles = StyleSheet.create({
     height: 30,
     justifyContent: 'center',
     width: 30,
-  },
-  directoryRowCopy: {
-    flex: 1,
-    gap: 2,
   },
   directoryRowTitle: {
     color: colors.ink,
@@ -1049,9 +999,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 34,
   },
-  recentText: {
-    flex: 1,
-  },
   recentRowTitle: {
     color: colors.ink,
     fontSize: 13,
@@ -1082,9 +1029,6 @@ const styles = StyleSheet.create({
     height: 42,
     justifyContent: 'center',
     width: 42,
-  },
-  journalText: {
-    flex: 1,
   },
   journalTitle: {
     color: colors.ink,

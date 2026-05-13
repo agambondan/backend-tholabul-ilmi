@@ -12,14 +12,16 @@ type FiqhCategory struct {
 
 type FiqhItem struct {
 	BaseID
-	CategoryID    *int         `json:"category_id,omitempty" gorm:"not null;index"`
-	Title         string       `json:"title" gorm:"type:varchar(512);not null"`
-	Slug          string       `json:"slug" gorm:"type:varchar(512);uniqueIndex;not null"`
-	Content       string       `json:"content" gorm:"type:text;not null"`
-	Source        string       `json:"source" gorm:"type:varchar(256)"`
-	SortOrder     int          `json:"sort_order" gorm:"default:0"`
-	TranslationID *int         `json:"translation_id,omitempty" gorm:"index"`
-	Translation   *Translation `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
+	CategoryID    *int          `json:"category_id,omitempty" gorm:"not null;index"`
+	Category      *FiqhCategory `json:"category_ref,omitempty" gorm:"foreignKey:CategoryID;-:migration"`
+	Title         string        `json:"title" gorm:"type:varchar(512);not null"`
+	Slug          string        `json:"slug" gorm:"type:varchar(512);uniqueIndex;not null"`
+	Content       string        `json:"content" gorm:"type:text;not null"`
+	Source        string        `json:"source" gorm:"type:varchar(256)"`
+	Dalil         string        `json:"dalil" gorm:"type:text"`
+	SortOrder     int           `json:"sort_order" gorm:"default:0"`
+	TranslationID *int          `json:"translation_id,omitempty" gorm:"index"`
+	Translation   *Translation  `json:"translation,omitempty" gorm:"foreignKey:TranslationID;-:migration"`
 }
 
 type CreateFiqhCategoryRequest struct {
@@ -34,5 +36,6 @@ type CreateFiqhItemRequest struct {
 	Slug       string `json:"slug" validate:"required"`
 	Content    string `json:"content" validate:"required"`
 	Source     string `json:"source"`
+	Dalil      string `json:"dalil"`
 	SortOrder  int    `json:"sort_order"`
 }

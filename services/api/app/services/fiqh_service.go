@@ -7,6 +7,7 @@ import (
 
 type FiqhService interface {
 	FindAllCategories() ([]model.FiqhCategory, error)
+	FindAllItems() ([]model.FiqhItem, error)
 	FindCategoryBySlug(slug string) (*model.FiqhCategory, error)
 	FindItemBySlug(slug string) (*model.FiqhItem, error)
 	FindItemByCategoryAndID(slug string, id int) (*model.FiqhItem, error)
@@ -28,6 +29,10 @@ func NewFiqhService(repo repository.FiqhRepository) FiqhService {
 
 func (s *fiqhService) FindAllCategories() ([]model.FiqhCategory, error) {
 	return s.repo.FindAllCategories()
+}
+
+func (s *fiqhService) FindAllItems() ([]model.FiqhItem, error) {
+	return s.repo.FindAllItems()
 }
 
 func (s *fiqhService) FindCategoryBySlug(slug string) (*model.FiqhCategory, error) {
@@ -71,6 +76,7 @@ func (s *fiqhService) CreateItem(req *model.CreateFiqhItemRequest) (*model.FiqhI
 		Slug:       req.Slug,
 		Content:    req.Content,
 		Source:     req.Source,
+		Dalil:      req.Dalil,
 		SortOrder:  req.SortOrder,
 	}
 	return s.repo.CreateItem(item)
@@ -83,6 +89,7 @@ func (s *fiqhService) UpdateItem(id int, req *model.CreateFiqhItemRequest) (*mod
 		Slug:       req.Slug,
 		Content:    req.Content,
 		Source:     req.Source,
+		Dalil:      req.Dalil,
 		SortOrder:  req.SortOrder,
 	}
 	return s.repo.UpdateItem(id, item)

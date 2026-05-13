@@ -10,10 +10,12 @@ import (
 )
 
 type QuizService interface {
+	ListQuizzes(page, size int) ([]model.Quiz, error)
 	GetSession(quizType model.QuizType, count int) ([]model.Quiz, error)
 	SubmitAnswers(userID uuid.UUID, answers []model.QuizAnswer) error
 	GetStats(userID uuid.UUID) (*model.QuizStats, error)
 	CreateQuiz(q *model.Quiz) (*model.Quiz, error)
+	UpdateQuiz(id int, q *model.Quiz) (*model.Quiz, error)
 	DeleteQuiz(id int) error
 }
 
@@ -21,6 +23,10 @@ type quizService struct{ repo repository.QuizRepository }
 
 func NewQuizService(repo repository.QuizRepository) QuizService {
 	return &quizService{repo}
+}
+
+func (s *quizService) ListQuizzes(page, size int) ([]model.Quiz, error) {
+	return s.repo.FindAll(page, size)
 }
 
 func (s *quizService) GetSession(quizType model.QuizType, count int) ([]model.Quiz, error) {
@@ -52,6 +58,10 @@ func (s *quizService) GetStats(userID uuid.UUID) (*model.QuizStats, error) {
 
 func (s *quizService) CreateQuiz(q *model.Quiz) (*model.Quiz, error) {
 	return s.repo.Create(q)
+}
+
+func (s *quizService) UpdateQuiz(id int, q *model.Quiz) (*model.Quiz, error) {
+	return s.repo.Update(id, q)
 }
 
 func (s *quizService) DeleteQuiz(id int) error {

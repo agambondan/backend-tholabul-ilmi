@@ -10,6 +10,9 @@ type DzikirService interface {
 	FindByID(id int) (*model.Dzikir, error)
 	FindByCategory(category string) ([]model.Dzikir, error)
 	FindByOccasion(occasion string) ([]model.Dzikir, error)
+	Create(d *model.Dzikir) (*model.Dzikir, error)
+	Update(id int, d *model.Dzikir) (*model.Dzikir, error)
+	Delete(id int) error
 }
 
 type dzikirService struct {
@@ -34,4 +37,16 @@ func (s *dzikirService) FindByCategory(category string) ([]model.Dzikir, error) 
 
 func (s *dzikirService) FindByOccasion(occasion string) ([]model.Dzikir, error) {
 	return s.repo.FindByOccasion(occasion)
+}
+
+func (s *dzikirService) Create(d *model.Dzikir) (*model.Dzikir, error) {
+	return s.repo.Create(d)
+}
+
+func (s *dzikirService) Update(id int, d *model.Dzikir) (*model.Dzikir, error) {
+	return s.repo.Update(id, d)
+}
+
+func (s *dzikirService) Delete(id int) error {
+	return s.repo.Delete(id)
 }

@@ -13,6 +13,7 @@ type AyahController interface {
 	Create(ctx *fiber.Ctx) error
 	FindAll(ctx *fiber.Ctx) error
 	FindById(ctx *fiber.Ctx) error
+	FindDaily(ctx *fiber.Ctx) error
 	FindByNumber(ctx *fiber.Ctx) error
 	FindBySurahNumber(ctx *fiber.Ctx) error
 	FindByPage(ctx *fiber.Ctx) error
@@ -52,6 +53,14 @@ func (c *ayahController) FindById(ctx *fiber.Ctx) error {
 		return lib.ErrorBadRequest(ctx, err)
 	}
 	data, err := c.ayah.FindById(&id)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, data)
+}
+
+func (c *ayahController) FindDaily(ctx *fiber.Ctx) error {
+	data, err := c.ayah.FindDaily()
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}

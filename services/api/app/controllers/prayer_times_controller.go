@@ -58,7 +58,12 @@ func (c *prayerTimesController) GetWeekly(ctx *fiber.Ctx) error {
 func (c *prayerTimesController) GetImsakiyah(ctx *fiber.Ctx) error {
 	lat, lng, err := prayerParseLatLng(ctx)
 	if err != nil {
-		return lib.ErrorBadRequest(ctx, err.Error())
+		if ctx.Query("lat") == "" && ctx.Query("lng") == "" {
+			lat = -6.2088
+			lng = 106.8456
+		} else {
+			return lib.ErrorBadRequest(ctx, err.Error())
+		}
 	}
 	method := ctx.Query("method", "kemenag")
 	madhab := ctx.Query("madhab", "shafi")

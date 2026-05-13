@@ -16,13 +16,10 @@ import {
     SlidersHorizontal,
     StickyNote,
     Volume2,
-    X,
 } from 'lucide-react-native';
 import {
     ActivityIndicator,
     FlatList,
-    Modal,
-    PanResponder,
     Pressable,
     RefreshControl,
     ScrollView,
@@ -55,6 +52,8 @@ import {
     saveQuranProgress,
     updateHafalanStatus,
 } from '../api/personal';
+import { AppActionSheet, ActionSheetRow } from '../components/AppActionSheet';
+import { AppModalSheet } from '../components/AppModalSheet';
 import { Card, CardTitle } from '../components/Card';
 import { NotesPanel } from '../components/NotesPanel';
 import { EmptyState, IconActionButton } from '../components/Paper';
@@ -122,7 +121,6 @@ const QURAN_TABS = [
     { key: 'murojaah', label: 'Murojaah' },
 ];
 
-const SWIPE_ACTIVATION_DISTANCE = 10;
 const SWIPE_TRIGGER_DISTANCE = 34;
 const SWIPE_EDGE_GUARD = 24;
 const SURAH_PAGE_SIZE = 20;
@@ -191,6 +189,14 @@ const parseTajweedHtml = (html = '') => {
     }
 
     return segments.filter((segment) => segment.text);
+};
+
+const getTajweedTextColor = (className) => {
+    if (!className) return null;
+    return String(className)
+        .split(/\s+/)
+        .map((name) => TAJWEED_TEXT_COLORS[name])
+        .find(Boolean) ?? null;
 };
 
 const getAyahIdentity = (ayah) => `${ayah.surahNumber ?? 'surah'}:${ayah.number ?? ayah.id}`;
@@ -465,6 +471,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const { notifyTabActivity } = useTabActivity();
     const handledDeepLinkId = useRef(null);
     const readerListRef = useRef(null);
+    const targetScrollKeyRef = useRef(null);
     const mushafPageRequestRef = useRef(0);
     const swipeInFlightRef = useRef(false);
     const swipeTouchRef = useRef(null);
@@ -728,6 +735,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
 
     const resetReaderState = () => {
         stopAudio();
+        targetScrollKeyRef.current = null;
         surahPaginationRef.current = {
             hasMore: false,
             keys: new Set(),
@@ -871,7 +879,15 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                 surahNumber: surah.number,
             };
             setAyahs(initialAyahs);
-            const initialPage = getFirstPageNumber(initialAyahs, surah.page ?? MUSHAF_FIRST_PAGE);
+            const targetAyahInLoaded = nextTargetAyah
+                ? initialAyahs.find((ayah) =>
+                    (nextTargetAyah.id && Number(nextTargetAyah.id) === Number(ayah.id)) ||
+                    (nextTargetAyah.number && Number(nextTargetAyah.number) === Number(ayah.number)),
+                  )
+                : null;
+            const initialPage = targetAyahInLoaded?.pageNumber
+                ? Number(targetAyahInLoaded.pageNumber)
+                : getFirstPageNumber(initialAyahs, surah.page ?? MUSHAF_FIRST_PAGE);
             const pagePreviewAyahs = initialAyahs.filter(
                 (ayah) => Number(ayah.pageNumber) === Number(initialPage),
             );
@@ -1123,78 +1139,6 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         triggerAdjacentSurah,
     ]);
 
-    const readerSwipeResponder = useMemo(
-        () =>
-            PanResponder.create({
-                onMoveShouldSetPanResponder: (_, gestureState) => {
-                    const canSwipe =
-                        selectedSurah &&
-                        !readerLoading &&
-                        (displayMode === 'mushaf' || selectedSurah.type === 'surah');
-                    if (!canSwipe) return false;
-                    const horizontal = Math.abs(gestureState.dx);
-                    const vertical = Math.abs(gestureState.dy);
-                    return (
-                        horizontal >= SWIPE_ACTIVATION_DISTANCE && horizontal > vertical * 0.72
-                    );
-                },
-                onMoveShouldSetPanResponderCapture: (_, gestureState) => {
-                    const canSwipe =
-                        selectedSurah &&
-                        !readerLoading &&
-                        (displayMode === 'mushaf' || selectedSurah.type === 'surah');
-                    if (!canSwipe) return false;
-                    const horizontal = Math.abs(gestureState.dx);
-                    const vertical = Math.abs(gestureState.dy);
-                    const startedNearEdge =
-                        gestureState.x0 <= SWIPE_EDGE_GUARD ||
-                        gestureState.x0 >= viewportWidth - SWIPE_EDGE_GUARD;
-                    if (horizontal < SWIPE_ACTIVATION_DISTANCE || horizontal <= vertical * 0.72) {
-                        return false;
-                    }
-                    return !startedNearEdge || horizontal >= SWIPE_TRIGGER_DISTANCE;
-                },
-                onPanResponderTerminationRequest: () => false,
-                onPanResponderRelease: (_, gestureState) => {
-                    const canSwipe =
-                        selectedSurah &&
-                        !readerLoading &&
-                        (displayMode === 'mushaf' || selectedSurah.type === 'surah');
-                    if (
-                        !canSwipe ||
-                        swipeInFlightRef.current
-                    ) {
-                        return;
-                    }
-                    const horizontal = Math.abs(gestureState.dx);
-                    const vertical = Math.abs(gestureState.dy);
-                    const startedNearEdge =
-                        gestureState.x0 <= SWIPE_EDGE_GUARD ||
-                        gestureState.x0 >= viewportWidth - SWIPE_EDGE_GUARD;
-                    const velocityX = Math.abs(gestureState.vx);
-                    const hasDistance = horizontal >= SWIPE_TRIGGER_DISTANCE && horizontal > vertical * 0.82;
-                    const hasFlick =
-                        horizontal >= 20 && horizontal > vertical * 0.64 && velocityX >= 0.09;
-                    if (!hasDistance && !hasFlick) return;
-                    if (startedNearEdge && horizontal < 64) return;
-                    const delta = gestureState.dx < 0 ? 1 : -1;
-                    if (displayMode === 'mushaf') {
-                        triggerAdjacentMushafPage(delta);
-                        return;
-                    }
-                    triggerAdjacentSurah(delta);
-                },
-            }),
-        [
-            displayMode,
-            readerLoading,
-            selectedSurah,
-            triggerAdjacentMushafPage,
-            triggerAdjacentSurah,
-            viewportWidth,
-        ],
-    );
-
     const markStarted = async (surah) => {
         if (!user) {
             showInfo("Masuk dari Profil untuk menyimpan progres Al-Qur'an.");
@@ -1392,12 +1336,12 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
 
     const renderArabicSpans = (ayah, keyPrefix = 'arabic') => {
         const source = ayah.arabicHtml || ayah.arabic || '';
-        const segments = ayah.arabicHtml
+        const segments = /<tajweed/i.test(source)
             ? parseTajweedHtml(source)
-            : [{ text: source, className: null }];
+            : [{ text: stripHtmlTags(source), className: null }];
 
         return segments.map((segment, index) => {
-            const color = TAJWEED_TEXT_COLORS[segment.className];
+            const color = getTajweedTextColor(segment.className);
             return (
                 <Text
                     key={`${keyPrefix}-${ayah.id ?? ayah.number}-${index}`}
@@ -1548,7 +1492,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
 
     const renderMushafFragmentSpans = (fragment, keyPrefix) =>
         fragment.segments.map((segment, index) => {
-            const color = TAJWEED_TEXT_COLORS[segment.className];
+            const color = getTajweedTextColor(segment.className);
             return (
                 <Text
                     key={`${keyPrefix}-${index}`}
@@ -1876,7 +1820,10 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                     <Text style={styles.targetPreviewTitle}>
                         {selectedSurah.name} · Ayat {previewAyah.number}
                     </Text>
-                    {renderAyahText(previewAyah)}
+                    <Text style={styles.targetPreviewText}>
+                        Ayat sudah ditandai di daftar. Reader akan langsung mengarah ke posisi ayat
+                        setelah data siap.
+                    </Text>
                     {displayMode === 'mushaf' ? null : (
                         <Pressable
                             android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
@@ -1902,240 +1849,178 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const renderReaderMenuModal = () => {
         const isSeriousMode = displayMode === 'focus' || displayMode === 'mushaf';
         return (
-            <Modal
-                animationType="slide"
-                onRequestClose={() => setReaderMenuVisible(false)}
-                transparent
+            <AppActionSheet
+                onClose={() => setReaderMenuVisible(false)}
+                title="Menu Baca"
                 visible={readerMenuVisible}
             >
-                <Pressable onPress={() => setReaderMenuVisible(false)} style={styles.modalOverlay} />
-                <View style={styles.modalSheet}>
-                    <View style={styles.modalHandle} />
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Menu Baca</Text>
-                        <Pressable
-                            hitSlop={8}
-                            onPress={() => setReaderMenuVisible(false)}
-                            style={styles.modalClose}
-                        >
-                            <X color={colors.muted} size={18} strokeWidth={2.2} />
-                        </Pressable>
-                    </View>
-                    <ScrollView showsVerticalScrollIndicator={false}>
-                        <Pressable
-                            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-                            onPress={() => {
-                                setReaderMenuVisible(false);
-                                setSettingsVisible(true);
-                            }}
-                            style={styles.actionSheetRow}
-                        >
-                            <View style={styles.actionSheetIcon}>
-                                <SlidersHorizontal color={colors.primary} size={18} strokeWidth={2.3} />
-                            </View>
-                            <View style={styles.actionSheetCopy}>
-                                <Text style={styles.actionSheetTitle}>Pengaturan tampilan</Text>
-                                <Text style={styles.actionSheetSubtitle}>Ubah mode baca, font, dan ukuran arab</Text>
-                            </View>
-                        </Pressable>
-                        {isSeriousMode ? (
-                            <Pressable
-                                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-                                onPress={() => {
-                                    setReaderMenuVisible(false);
-                                    updateDisplayMode('card');
-                                }}
-                                style={styles.actionSheetRow}
-                            >
-                                <View style={styles.actionSheetIcon}>
-                                    <BookOpen color={colors.primary} size={18} strokeWidth={2.3} />
-                                </View>
-                                <View style={styles.actionSheetCopy}>
-                                    <Text style={styles.actionSheetTitle}>Keluar mode fokus</Text>
-                                    <Text style={styles.actionSheetSubtitle}>Kembali ke tampilan card lengkap</Text>
-                                </View>
-                            </Pressable>
-                        ) : null}
-                        <Pressable
-                            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-                            onPress={() => {
-                                setReaderMenuVisible(false);
-                                closeReader();
-                            }}
-                            style={styles.actionSheetRow}
-                        >
-                            <View style={styles.actionSheetIcon}>
-                                <ArrowLeft color={colors.primary} size={18} strokeWidth={2.3} />
-                            </View>
-                            <View style={styles.actionSheetCopy}>
-                                <Text style={styles.actionSheetTitle}>Kembali ke daftar surah</Text>
-                                <Text style={styles.actionSheetSubtitle}>Tutup reader dan kembali ke daftar</Text>
-                            </View>
-                        </Pressable>
-                        <View style={styles.modalBottomPad} />
-                    </ScrollView>
-                </View>
-            </Modal>
+                <ActionSheetRow
+                    Icon={SlidersHorizontal}
+                    onPress={() => {
+                        setReaderMenuVisible(false);
+                        setSettingsVisible(true);
+                    }}
+                    subtitle="Ubah mode baca, font, dan ukuran arab"
+                    title="Pengaturan tampilan"
+                />
+                {isSeriousMode ? (
+                    <ActionSheetRow
+                        Icon={BookOpen}
+                        onPress={() => {
+                            setReaderMenuVisible(false);
+                            updateDisplayMode('card');
+                        }}
+                        subtitle="Kembali ke tampilan card lengkap"
+                        title="Keluar mode fokus"
+                    />
+                ) : null}
+                <ActionSheetRow
+                    Icon={ArrowLeft}
+                    onPress={() => {
+                        setReaderMenuVisible(false);
+                        closeReader();
+                    }}
+                    subtitle="Tutup reader dan kembali ke daftar"
+                    title="Kembali ke daftar surah"
+                />
+            </AppActionSheet>
         );
     };
 
     const renderSettingsModal = () => (
-        <Modal
-            animationType="slide"
-            onRequestClose={() => setSettingsVisible(false)}
-            transparent
+        <AppModalSheet
+            maxHeight="65%"
+            onClose={() => setSettingsVisible(false)}
+            title="Pengaturan Tampilan"
             visible={settingsVisible}
         >
-            <Pressable onPress={() => setSettingsVisible(false)} style={styles.modalOverlay} />
-            <View style={styles.modalSheet}>
-                <View style={styles.modalHandle} />
-                <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Pengaturan Tampilan</Text>
-                    <Pressable
-                        hitSlop={8}
-                        onPress={() => setSettingsVisible(false)}
-                        style={styles.modalClose}
-                    >
-                        <X color={colors.muted} size={18} strokeWidth={2.2} />
-                    </Pressable>
-                </View>
-                <ScrollView showsVerticalScrollIndicator={false}>
-                    {/* Font size */}
-                    <Text style={styles.settingLabel}>Ukuran Teks Arab</Text>
-                    <View style={styles.fontSizeRow}>
-                        <Pressable
-                            disabled={fontSize <= MIN_ARABIC_FONT_SIZE}
-                            onPress={() => updateFontSize(fontSize - 2)}
-                            style={[
-                                styles.fontSizeButton,
-                                fontSize <= MIN_ARABIC_FONT_SIZE ? styles.disabled : null,
-                            ]}
-                        >
-                            <Minus color={colors.ink} size={16} strokeWidth={2.4} />
-                        </Pressable>
-                        <Text style={styles.fontSizeValue}>{fontSize}px</Text>
-                        <Pressable
-                            disabled={fontSize >= MAX_ARABIC_FONT_SIZE}
-                            onPress={() => updateFontSize(fontSize + 2)}
-                            style={[
-                                styles.fontSizeButton,
-                                fontSize >= MAX_ARABIC_FONT_SIZE ? styles.disabled : null,
-                            ]}
-                        >
-                            <Plus color={colors.ink} size={16} strokeWidth={2.4} />
-                        </Pressable>
-                    </View>
-
-                    {/* Arabic font */}
-                    <Text style={styles.settingLabel}>Font Arabic</Text>
-                    <View style={styles.settingChips}>
-                        {ARABIC_FONTS.map((font) => (
-                            <Pressable
-                                key={font.key}
-                                onPress={() => updateArabicFont(font.key)}
-                                style={[
-                                    styles.settingChip,
-                                    arabicFont === font.key ? styles.settingChipActive : null,
-                                ]}
-                            >
-                                <Text
-                                    style={[
-                                        styles.settingChipText,
-                                        font.fontFamily ? { fontFamily: font.fontFamily, fontWeight: '400' } : null,
-                                        arabicFont === font.key ? styles.settingChipTextActive : null,
-                                    ]}
-                                >
-                                    {font.label}
-                                </Text>
-                            </Pressable>
-                        ))}
-                    </View>
-
-                    {/* Display mode */}
-                    <Text style={styles.settingLabel}>Model Tampilan Baca</Text>
-                    <View style={styles.displayModeStack}>
-                        {DISPLAY_MODES.map((mode) => (
-                            <Pressable
-                                key={mode.key}
-                                onPress={() => updateDisplayMode(mode.key)}
-                                style={[
-                                    styles.displayModeCard,
-                                    displayMode === mode.key ? styles.displayModeCardActive : null,
-                                ]}
-                            >
-                                <View style={styles.displayModePreview}>
-                                    <View style={styles.displayModePreviewTop} />
-                                    <View
-                                        style={[
-                                            styles.displayModePreviewLine,
-                                            mode.key === 'mushaf' ? styles.displayModePreviewLineFull : null,
-                                        ]}
-                                    />
-                                    {mode.key === 'card' || mode.key === 'line' ? (
-                                        <View style={styles.displayModePreviewSmall} />
-                                    ) : null}
-                                </View>
-                                <View style={styles.displayModeCopy}>
-                                    <Text
-                                        style={[
-                                            styles.displayModeLabel,
-                                            displayMode === mode.key ? styles.displayModeLabelActive : null,
-                                        ]}
-                                    >
-                                        {mode.label}
-                                    </Text>
-                                    <Text style={styles.displayModeTitle}>{mode.title}</Text>
-                                    <Text style={styles.displayModeDescription}>{mode.description}</Text>
-                                </View>
-                            </Pressable>
-                        ))}
-                    </View>
-                    <Text style={styles.settingHint}>
-                        Mode Fokus menyembunyikan latin/terjemah. Mode Mushaf mengikuti pilihan Mode Hafalan.
-                    </Text>
-
-                    {/* Memorization mode */}
-                    <Text style={styles.settingLabel}>Mode Hafalan</Text>
-                    <View style={styles.settingChips}>
-                        {MEMORIZATION_MODES.map((mode) => (
-                            <Pressable
-                                key={mode.key}
-                                onPress={() => updateMemorizationMode(mode.key)}
-                                style={[
-                                    styles.settingChip,
-                                    memorizationMode === mode.key ? styles.settingChipActive : null,
-                                ]}
-                            >
-                                <Text
-                                    style={[
-                                        styles.settingChipText,
-                                        memorizationMode === mode.key
-                                            ? styles.settingChipTextActive
-                                            : null,
-                                    ]}
-                                >
-                                    {mode.label}
-                                </Text>
-                            </Pressable>
-                        ))}
-                    </View>
-
-                    {/* Tajweed legend button */}
-                    <Pressable
-                        onPress={() => {
-                            setSettingsVisible(false);
-                            setTajweedVisible(true);
-                        }}
-                        style={styles.tajweedButton}
-                    >
-                        <Info color={colors.primary} size={16} strokeWidth={2.2} />
-                        <Text style={styles.tajweedButtonText}>Panduan Warna Tajwid</Text>
-                    </Pressable>
-
-                    <View style={styles.modalBottomPad} />
-                </ScrollView>
+            <Text style={styles.settingLabel}>Ukuran Teks Arab</Text>
+            <View style={styles.fontSizeRow}>
+                <Pressable
+                    disabled={fontSize <= MIN_ARABIC_FONT_SIZE}
+                    onPress={() => updateFontSize(fontSize - 2)}
+                    style={[
+                        styles.fontSizeButton,
+                        fontSize <= MIN_ARABIC_FONT_SIZE ? styles.disabled : null,
+                    ]}
+                >
+                    <Minus color={colors.ink} size={16} strokeWidth={2.4} />
+                </Pressable>
+                <Text style={styles.fontSizeValue}>{fontSize}px</Text>
+                <Pressable
+                    disabled={fontSize >= MAX_ARABIC_FONT_SIZE}
+                    onPress={() => updateFontSize(fontSize + 2)}
+                    style={[
+                        styles.fontSizeButton,
+                        fontSize >= MAX_ARABIC_FONT_SIZE ? styles.disabled : null,
+                    ]}
+                >
+                    <Plus color={colors.ink} size={16} strokeWidth={2.4} />
+                </Pressable>
             </View>
-        </Modal>
+
+            <Text style={styles.settingLabel}>Font Arabic</Text>
+            <View style={styles.settingChips}>
+                {ARABIC_FONTS.map((font) => (
+                    <Pressable
+                        key={font.key}
+                        onPress={() => updateArabicFont(font.key)}
+                        style={[
+                            styles.settingChip,
+                            arabicFont === font.key ? styles.settingChipActive : null,
+                        ]}
+                    >
+                        <Text
+                            style={[
+                                styles.settingChipText,
+                                font.fontFamily ? { fontFamily: font.fontFamily, fontWeight: '400' } : null,
+                                arabicFont === font.key ? styles.settingChipTextActive : null,
+                            ]}
+                        >
+                            {font.label}
+                        </Text>
+                    </Pressable>
+                ))}
+            </View>
+
+            <Text style={styles.settingLabel}>Model Tampilan Baca</Text>
+            <View style={styles.displayModeStack}>
+                {DISPLAY_MODES.map((mode) => (
+                    <Pressable
+                        key={mode.key}
+                        onPress={() => updateDisplayMode(mode.key)}
+                        style={[
+                            styles.displayModeCard,
+                            displayMode === mode.key ? styles.displayModeCardActive : null,
+                        ]}
+                    >
+                        <View style={styles.displayModePreview}>
+                            <View style={styles.displayModePreviewTop} />
+                            <View
+                                style={[
+                                    styles.displayModePreviewLine,
+                                    mode.key === 'mushaf' ? styles.displayModePreviewLineFull : null,
+                                ]}
+                            />
+                            {mode.key === 'card' || mode.key === 'line' ? (
+                                <View style={styles.displayModePreviewSmall} />
+                            ) : null}
+                        </View>
+                        <View style={styles.displayModeCopy}>
+                            <Text
+                                style={[
+                                    styles.displayModeLabel,
+                                    displayMode === mode.key ? styles.displayModeLabelActive : null,
+                                ]}
+                            >
+                                {mode.label}
+                            </Text>
+                            <Text style={styles.displayModeTitle}>{mode.title}</Text>
+                            <Text style={styles.displayModeDescription}>{mode.description}</Text>
+                        </View>
+                    </Pressable>
+                ))}
+            </View>
+            <Text style={styles.settingHint}>
+                Mode Fokus menyembunyikan latin/terjemah. Mode Mushaf mengikuti pilihan Mode Hafalan.
+            </Text>
+
+            <Text style={styles.settingLabel}>Mode Hafalan</Text>
+            <View style={styles.settingChips}>
+                {MEMORIZATION_MODES.map((mode) => (
+                    <Pressable
+                        key={mode.key}
+                        onPress={() => updateMemorizationMode(mode.key)}
+                        style={[
+                            styles.settingChip,
+                            memorizationMode === mode.key ? styles.settingChipActive : null,
+                        ]}
+                    >
+                        <Text
+                            style={[
+                                styles.settingChipText,
+                                memorizationMode === mode.key
+                                    ? styles.settingChipTextActive
+                                    : null,
+                            ]}
+                        >
+                            {mode.label}
+                        </Text>
+                    </Pressable>
+                ))}
+            </View>
+
+            <Pressable
+                onPress={() => {
+                    setSettingsVisible(false);
+                    setTajweedVisible(true);
+                }}
+                style={styles.tajweedButton}
+            >
+                <Info color={colors.primary} size={16} strokeWidth={2.2} />
+                <Text style={styles.tajweedButtonText}>Panduan Warna Tajwid</Text>
+            </Pressable>
+        </AppModalSheet>
     );
 
     const renderReferenceModal = () => {
@@ -2145,88 +2030,33 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         const title = type === 'tafsir' ? 'Tafsir' : 'Asbabun Nuzul';
 
         return (
-            <Modal
-                animationType="slide"
-                onRequestClose={() => setReferenceModal((m) => ({ ...m, visible: false }))}
-                transparent
+            <AppModalSheet
+                onClose={() => setReferenceModal((m) => ({ ...m, visible: false }))}
+                subtitle={ayah ? `${selectedSurah?.name} · Ayat ${ayah.number}` : ''}
+                title={title}
                 visible={visible}
             >
-                <Pressable
-                    onPress={() => setReferenceModal((m) => ({ ...m, visible: false }))}
-                    style={styles.modalOverlay}
-                />
-                <View style={[styles.modalSheet, styles.modalSheetTall]}>
-                    <View style={styles.modalHandle} />
-                    <View style={styles.modalHeader}>
-                        <View>
-                            <Text style={styles.modalTitle}>{title}</Text>
-                            {ayah ? (
-                                <Text style={styles.modalMeta}>
-                                    {selectedSurah?.name} · Ayat {ayah.number}
-                                </Text>
-                            ) : null}
-                        </View>
-                        <Pressable
-                            hitSlop={8}
-                            onPress={() => setReferenceModal((m) => ({ ...m, visible: false }))}
-                            style={styles.modalClose}
-                        >
-                            <X color={colors.muted} size={18} strokeWidth={2.2} />
-                        </Pressable>
+                {state?.loading ? (
+                    <ActivityIndicator
+                        color={colors.primary}
+                        style={styles.modalLoader}
+                    />
+                ) : null}
+                {state?.error ? (
+                    <Text style={styles.referenceEmpty}>{state.error}</Text>
+                ) : null}
+                {state?.items?.map((item) => (
+                    <View key={item.id} style={styles.referenceItem}>
+                        <Text style={styles.referenceTitle}>{item.title}</Text>
+                        {item.meta ? (
+                            <Text style={styles.referenceMeta}>{item.meta}</Text>
+                        ) : null}
+                        <Text style={styles.referenceBody}>{item.body}</Text>
                     </View>
-                    <ScrollView showsVerticalScrollIndicator={false}>
-                        {state?.loading ? (
-                            <ActivityIndicator
-                                color={colors.primary}
-                                style={styles.modalLoader}
-                            />
-                        ) : null}
-                        {state?.error ? (
-                            <Text style={styles.referenceEmpty}>{state.error}</Text>
-                        ) : null}
-                        {state?.items?.map((item) => (
-                            <View key={item.id} style={styles.referenceItem}>
-                                <Text style={styles.referenceTitle}>{item.title}</Text>
-                                {item.meta ? (
-                                    <Text style={styles.referenceMeta}>{item.meta}</Text>
-                                ) : null}
-                                <Text style={styles.referenceBody}>{item.body}</Text>
-                            </View>
-                        ))}
-                        <View style={styles.modalBottomPad} />
-                    </ScrollView>
-                </View>
-            </Modal>
+                ))}
+            </AppModalSheet>
         );
     };
-
-    const renderActionSheetRow = ({ Icon, title, subtitle, onPress, active = false, disabled = false }) => (
-        <Pressable
-            accessibilityLabel={title}
-            accessibilityRole="button"
-            accessibilityState={{ disabled, selected: active }}
-            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-            disabled={disabled}
-            onPress={() => {
-                if (disabled) return;
-                setAyahActionSheet({ visible: false, ayah: null });
-                onPress?.();
-            }}
-            style={[styles.actionSheetRow, active ? styles.actionSheetRowActive : null, disabled ? styles.disabled : null]}
-        >
-            <View style={styles.actionSheetIcon}>
-                <Icon color={active ? colors.onPrimary : colors.primary} size={18} strokeWidth={2.3} />
-            </View>
-            <View style={styles.actionSheetCopy}>
-                <Text style={[styles.actionSheetTitle, active ? styles.actionSheetTitleActive : null]}>{title}</Text>
-                {subtitle ? (
-                    <Text style={[styles.actionSheetSubtitle, active ? styles.actionSheetSubtitleActive : null]}>
-                        {subtitle}
-                    </Text>
-                ) : null}
-            </View>
-        </Pressable>
-    );
 
     const renderAyahActionSheet = () => {
         const { visible, ayah } = ayahActionSheet;
@@ -2237,95 +2067,87 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         const isBookmarked = Boolean(bookmarks[ayah.id]);
 
         return (
-            <Modal
-                animationType="slide"
-                onRequestClose={() => setAyahActionSheet({ visible: false, ayah: null })}
-                transparent
+            <AppActionSheet
+                onClose={() => setAyahActionSheet({ visible: false, ayah: null })}
+                subtitle={`${selectedSurah?.name} · Ayat ${ayah.number}`}
+                title="Aksi Ayat"
                 visible={visible}
             >
-                <Pressable
-                    onPress={() => setAyahActionSheet({ visible: false, ayah: null })}
-                    style={styles.modalOverlay}
+                <ActionSheetRow
+                    Icon={isAudioPlaying ? Pause : Volume2}
+                    active={isAudioPlaying}
+                    disabled={isAudioLoading}
+                    onPress={() => {
+                        setAyahActionSheet({ visible: false, ayah: null });
+                        playAyahAudio(ayah);
+                    }}
+                    subtitle="Murottal ayat ini"
+                    title={isAudioLoading ? 'Memuat audio' : isAudioPlaying ? 'Jeda audio' : 'Putar audio'}
                 />
-                <View style={styles.modalSheet}>
-                    <View style={styles.modalHandle} />
-                    <View style={styles.modalHeader}>
-                        <View>
-                            <Text style={styles.modalTitle}>Aksi Ayat</Text>
-                            <Text style={styles.modalMeta}>
-                                {selectedSurah?.name} · Ayat {ayah.number}
-                            </Text>
-                        </View>
-                        <Pressable
-                            hitSlop={8}
-                            onPress={() => setAyahActionSheet({ visible: false, ayah: null })}
-                            style={styles.modalClose}
-                        >
-                            <X color={colors.muted} size={18} strokeWidth={2.2} />
-                        </Pressable>
-                    </View>
-                    <ScrollView showsVerticalScrollIndicator={false}>
-                        {renderActionSheetRow({
-                            Icon: isAudioPlaying ? Pause : Volume2,
-                            title: isAudioLoading ? 'Memuat audio' : isAudioPlaying ? 'Jeda audio' : 'Putar audio',
-                            subtitle: 'Murottal ayat ini',
-                            disabled: isAudioLoading,
-                            active: isAudioPlaying,
-                            onPress: () => playAyahAudio(ayah),
-                        })}
-                        {renderActionSheetRow({
-                            Icon: BookOpen,
-                            title: 'Tafsir',
-                            subtitle: 'Buka penjelasan ayat',
-                            onPress: () => openReferenceModal(ayah, 'tafsir'),
-                        })}
-                        {renderActionSheetRow({
-                            Icon: BookOpen,
-                            title: 'Asbabun Nuzul',
-                            subtitle: 'Riwayat sebab turun jika tersedia',
-                            onPress: () => openReferenceModal(ayah, 'asbab'),
-                        })}
-                        {user ? (
-                            <>
-                                {renderActionSheetRow({
-                                    Icon: Save,
-                                    title: savingAyah === `progress:${ayah.id}` ? 'Menyimpan progres' : 'Simpan progres',
-                                    subtitle: 'Jadikan ayat ini posisi terakhir baca',
-                                    disabled: savingAyah === `progress:${ayah.id}`,
-                                    onPress: () => markAyahProgress(ayah),
-                                })}
-                                {renderActionSheetRow({
-                                    Icon: isBookmarked ? BookmarkCheck : Bookmark,
-                                    title:
-                                        savingAyah === `bookmark:${ayah.id}`
-                                            ? 'Menyimpan bookmark'
-                                            : isBookmarked
-                                              ? 'Hapus bookmark'
-                                              : 'Bookmark',
-                                    subtitle: 'Simpan ayat ke koleksi pribadi',
-                                    disabled: savingAyah === `bookmark:${ayah.id}`,
-                                    active: isBookmarked,
-                                    onPress: () => toggleAyahBookmark(ayah),
-                                })}
-                                {renderActionSheetRow({
-                                    Icon: StickyNote,
-                                    title: 'Catatan',
-                                    subtitle: 'Tulis catatan pribadi untuk ayat ini',
-                                    active: activeNoteAyah === ayah.id,
-                                    onPress: () =>
-                                        setActiveNoteAyah(activeNoteAyah === ayah.id ? null : ayah.id),
-                                })}
-                            </>
-                        ) : null}
-                        {!user ? (
-                            <Text style={styles.actionSheetNotice}>
-                                Masuk dari Profil untuk menyimpan progres, bookmark, dan catatan.
-                            </Text>
-                        ) : null}
-                        <View style={styles.modalBottomPad} />
-                    </ScrollView>
-                </View>
-            </Modal>
+                <ActionSheetRow
+                    Icon={BookOpen}
+                    onPress={() => {
+                        setAyahActionSheet({ visible: false, ayah: null });
+                        openReferenceModal(ayah, 'tafsir');
+                    }}
+                    subtitle="Buka penjelasan ayat"
+                    title="Tafsir"
+                />
+                <ActionSheetRow
+                    Icon={BookOpen}
+                    onPress={() => {
+                        setAyahActionSheet({ visible: false, ayah: null });
+                        openReferenceModal(ayah, 'asbab');
+                    }}
+                    subtitle="Riwayat sebab turun jika tersedia"
+                    title="Asbabun Nuzul"
+                />
+                {user ? (
+                    <>
+                        <ActionSheetRow
+                            Icon={Save}
+                            disabled={savingAyah === `progress:${ayah.id}`}
+                            onPress={() => {
+                                setAyahActionSheet({ visible: false, ayah: null });
+                                markAyahProgress(ayah);
+                            }}
+                            subtitle="Jadikan ayat ini posisi terakhir baca"
+                            title={savingAyah === `progress:${ayah.id}` ? 'Menyimpan progres' : 'Simpan progres'}
+                        />
+                        <ActionSheetRow
+                            Icon={isBookmarked ? BookmarkCheck : Bookmark}
+                            active={isBookmarked}
+                            disabled={savingAyah === `bookmark:${ayah.id}`}
+                            onPress={() => {
+                                setAyahActionSheet({ visible: false, ayah: null });
+                                toggleAyahBookmark(ayah);
+                            }}
+                            subtitle="Simpan ayat ke koleksi pribadi"
+                            title={
+                                savingAyah === `bookmark:${ayah.id}`
+                                    ? 'Menyimpan bookmark'
+                                    : isBookmarked
+                                      ? 'Hapus bookmark'
+                                      : 'Bookmark'
+                            }
+                        />
+                        <ActionSheetRow
+                            Icon={StickyNote}
+                            active={activeNoteAyah === ayah.id}
+                            onPress={() => {
+                                setAyahActionSheet({ visible: false, ayah: null });
+                                setActiveNoteAyah(activeNoteAyah === ayah.id ? null : ayah.id);
+                            }}
+                            subtitle="Tulis catatan pribadi untuk ayat ini"
+                            title="Catatan"
+                        />
+                    </>
+                ) : (
+                    <Text style={styles.actionSheetNotice}>
+                        Masuk dari Profil untuk menyimpan progres, bookmark, dan catatan.
+                    </Text>
+                )}
+            </AppActionSheet>
         );
     };
 
@@ -2334,101 +2156,66 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             ? [...ayahs, ...mushafPageAyahs].find((item) => item.id === activeNoteAyah)
             : null;
         return (
-            <Modal
-                animationType="slide"
-                onRequestClose={() => setActiveNoteAyah(null)}
-                transparent
+            <AppModalSheet
+                onClose={() => setActiveNoteAyah(null)}
+                scroll={false}
+                subtitle={ayah ? `${selectedSurah?.name} · Ayat ${ayah.number}` : ''}
+                title="Catatan Ayat"
                 visible={Boolean(activeNoteAyah)}
             >
-                <Pressable onPress={() => setActiveNoteAyah(null)} style={styles.modalOverlay} />
-                <View style={[styles.modalSheet, styles.modalSheetTall]}>
-                    <View style={styles.modalHandle} />
-                    <View style={styles.modalHeader}>
-                        <View>
-                            <Text style={styles.modalTitle}>Catatan Ayat</Text>
-                            {ayah ? (
-                                <Text style={styles.modalMeta}>
-                                    {selectedSurah?.name} · Ayat {ayah.number}
-                                </Text>
-                            ) : null}
-                        </View>
-                        <Pressable hitSlop={8} onPress={() => setActiveNoteAyah(null)} style={styles.modalClose}>
-                            <X color={colors.muted} size={18} strokeWidth={2.2} />
-                        </Pressable>
-                    </View>
-                    {activeNoteAyah ? <NotesPanel refType="ayah" refId={activeNoteAyah} /> : null}
-                    <View style={styles.modalBottomPad} />
-                </View>
-            </Modal>
+                {activeNoteAyah ? <NotesPanel refType="ayah" refId={activeNoteAyah} /> : null}
+            </AppModalSheet>
         );
     };
 
     const renderTajweedModal = () => (
-        <Modal
-            animationType="slide"
-            onRequestClose={() => setTajweedVisible(false)}
-            transparent
+        <AppModalSheet
+            onClose={() => setTajweedVisible(false)}
+            title="Panduan Warna Tajwid"
             visible={tajweedVisible}
         >
-            <Pressable onPress={() => setTajweedVisible(false)} style={styles.modalOverlay} />
-            <View style={[styles.modalSheet, styles.modalSheetTall]}>
-                <View style={styles.modalHandle} />
-                <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>Panduan Warna Tajwid</Text>
-                    <Pressable
-                        hitSlop={8}
-                        onPress={() => setTajweedVisible(false)}
-                        style={styles.modalClose}
-                    >
-                        <X color={colors.muted} size={18} strokeWidth={2.2} />
-                    </Pressable>
-                </View>
-                <ScrollView showsVerticalScrollIndicator={false}>
-                    <Text style={styles.tajweedIntro}>
-                        Setiap hukum tajwid ditandai dengan warna berbeda. Ketuk grup untuk melihat
-                        sub-aturan dan contoh bacaannya.
-                    </Text>
-                    {TAJWEED_GROUPS.map((group) => (
-                        <View key={group.key} style={styles.tajweedGroup}>
-                            <View style={styles.tajweedGroupHeader}>
+            <Text style={styles.tajweedIntro}>
+                Setiap hukum tajwid ditandai dengan warna berbeda. Ketuk grup untuk melihat
+                sub-aturan dan contoh bacaannya.
+            </Text>
+            {TAJWEED_GROUPS.map((group) => (
+                <View key={group.key} style={styles.tajweedGroup}>
+                    <View style={styles.tajweedGroupHeader}>
+                        <View
+                            style={[
+                                styles.tajweedDot,
+                                { backgroundColor: group.color },
+                            ]}
+                        />
+                        <Text style={styles.tajweedGroupTitle}>{group.title}</Text>
+                    </View>
+                    <Text style={styles.tajweedGroupDesc}>{group.description}</Text>
+                    {group.rules.map((rule) => (
+                        <View key={rule.key} style={styles.tajweedRule}>
+                            <View style={styles.tajweedRuleLeft}>
                                 <View
                                     style={[
-                                        styles.tajweedDot,
-                                        { backgroundColor: group.color },
+                                        styles.tajweedRuleDot,
+                                        { backgroundColor: rule.color },
                                     ]}
                                 />
-                                <Text style={styles.tajweedGroupTitle}>{group.title}</Text>
-                            </View>
-                            <Text style={styles.tajweedGroupDesc}>{group.description}</Text>
-                            {group.rules.map((rule) => (
-                                <View key={rule.key} style={styles.tajweedRule}>
-                                    <View style={styles.tajweedRuleLeft}>
-                                        <View
-                                            style={[
-                                                styles.tajweedRuleDot,
-                                                { backgroundColor: rule.color },
-                                            ]}
-                                        />
-                                        <View style={styles.tajweedRuleInfo}>
-                                            <Text style={styles.tajweedRuleTitle}>{rule.title}</Text>
-                                            <Text style={styles.tajweedRuleDesc}>
-                                                {rule.description}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    {rule.example ? (
-                                        <Text style={styles.tajweedRuleExample}>
-                                            {rule.example}
-                                        </Text>
-                                    ) : null}
+                                <View style={styles.tajweedRuleInfo}>
+                                    <Text style={styles.tajweedRuleTitle}>{rule.title}</Text>
+                                    <Text style={styles.tajweedRuleDesc}>
+                                        {rule.description}
+                                    </Text>
                                 </View>
-                            ))}
+                            </View>
+                            {rule.example ? (
+                                <Text style={styles.tajweedRuleExample}>
+                                    {rule.example}
+                                </Text>
+                            ) : null}
                         </View>
                     ))}
-                    <View style={styles.modalBottomPad} />
-                </ScrollView>
-            </View>
-        </Modal>
+                </View>
+            ))}
+        </AppModalSheet>
     );
 
     useEffect(() => {
@@ -2478,27 +2265,6 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     }, [deepLinkTarget?.id, surahs]);
 
     useEffect(() => {
-        if (!selectedSurah || !targetAyah || readerLoading || !ayahs.length) return;
-
-        const index = ayahs.findIndex((ayah) =>
-            (targetAyah.id && Number(targetAyah.id) === Number(ayah.id)) ||
-            (targetAyah.number && Number(targetAyah.number) === Number(ayah.number)),
-        );
-
-        if (index < 0) return;
-
-        const timer = setTimeout(() => {
-            readerListRef.current?.scrollToIndex?.({
-                animated: true,
-                index,
-                viewPosition: 0.18,
-            });
-        }, 180);
-
-        return () => clearTimeout(timer);
-    }, [ayahs, readerLoading, selectedSurah, targetAyah]);
-
-    useEffect(() => {
         if (!selectedSurah || displayMode !== 'mushaf') return;
         if (selectedSurah.type !== 'page' && !ayahs.length) return;
 
@@ -2541,11 +2307,19 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             const normalizedValue = normalizeArabicFontKey(value);
             if (mounted && ARABIC_FONTS.some((f) => f.key === normalizedValue)) {
                 setArabicFont(normalizedValue);
+                if (normalizedValue !== value) {
+                    writePreference(preferenceKeys.quranArabicFont, normalizedValue).catch(() => {});
+                }
             }
         });
         readPreference(preferenceKeys.quranDisplayMode, 'card').then((value) => {
             const normalizedValue = value === 'normal' ? 'card' : value;
-            if (mounted && DISPLAY_MODES.some((m) => m.key === normalizedValue)) setDisplayMode(normalizedValue);
+            if (mounted && DISPLAY_MODES.some((m) => m.key === normalizedValue)) {
+                setDisplayMode(normalizedValue);
+                if (normalizedValue !== value) {
+                    writePreference(preferenceKeys.quranDisplayMode, normalizedValue).catch(() => {});
+                }
+            }
         });
         return () => {
             mounted = false;
@@ -2571,6 +2345,54 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
           )
         : -1;
     const estimatedAyahHeight = displayMode === 'line' ? 184 : displayMode === 'focus' ? 196 : 236;
+    const readerExtraData = useMemo(
+        () => ({
+            arabicFont,
+            audioState,
+            bookmarks,
+            displayMode,
+            fontSize,
+            memorizationMode,
+            revealedAyahs,
+            targetAyah,
+        }),
+        [arabicFont, audioState, bookmarks, displayMode, fontSize, memorizationMode, revealedAyahs, targetAyah],
+    );
+
+    useEffect(() => {
+        if (!selectedSurah || displayMode === 'mushaf' || readerLoading || targetAyahIndex < 0) {
+            return undefined;
+        }
+
+        const scrollKey = [
+            selectedSurah.key ?? selectedSurah.number,
+            targetAyah?.id ?? '',
+            targetAyah?.number ?? '',
+            targetAyahIndex,
+        ].join(':');
+
+        if (targetScrollKeyRef.current === scrollKey) return undefined;
+        targetScrollKeyRef.current = scrollKey;
+
+        const timer = setTimeout(() => {
+            readerListRef.current?.scrollToIndex?.({
+                animated: true,
+                index: targetAyahIndex,
+                viewPosition: 0.16,
+            });
+        }, 160);
+
+        return () => clearTimeout(timer);
+    }, [
+        displayMode,
+        readerLoading,
+        selectedSurah,
+        selectedSurah?.key,
+        selectedSurah?.number,
+        targetAyah?.id,
+        targetAyah?.number,
+        targetAyahIndex,
+    ]);
 
     const renderSurahRow = ({ item: surah }) => {
         const isProgressSurah = progressSurahNumber === Number(surah.number);
@@ -2984,7 +2806,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                         showsVerticalScrollIndicator={false}
                         style={styles.readerList}
                     >
-                        <View {...readerSwipeResponder.panHandlers} style={styles.mushafGestureSurface}>
+                        <View style={styles.mushafGestureSurface}>
                             {renderReaderHeader()}
                             {renderMushafPage()}
                         </View>
@@ -3002,24 +2824,18 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                 {renderAyahNotesModal()}
                 {renderTajweedModal()}
                 <FlatList
-                    {...readerSwipeResponder.panHandlers}
-                    key={`${selectedSurah.key ?? selectedSurah.number}:${targetAyah?.id ?? targetAyah?.number ?? 'top'}:${ayahs.length ? 'ready' : 'loading'}`}
+                    key={`${selectedSurah.key ?? selectedSurah.number}:${displayMode}:${targetAyah?.id ?? targetAyah?.number ?? 'top'}:${ayahs.length ? 'ready' : 'loading'}`}
                     ref={readerListRef}
                     contentContainerStyle={[
                         styles.readerListContent,
                         displayMode === 'mushaf' ? styles.mushafListContent : null,
                     ]}
                     data={ayahs}
+                    extraData={readerExtraData}
                     keyExtractor={(ayah) =>
                         `${selectedSurah.key ?? selectedSurah.number}-${ayah.number}-${ayah.id}`
                     }
                     keyboardShouldPersistTaps="handled"
-                    getItemLayout={(_, index) => ({
-                        index,
-                        length: estimatedAyahHeight,
-                        offset: estimatedAyahHeight * index,
-                    })}
-                    initialScrollIndex={targetAyahIndex > 0 ? targetAyahIndex : undefined}
                     ListEmptyComponent={
                         readerLoading ? (
                             <ActivityIndicator color={colors.primary} />
@@ -3393,7 +3209,13 @@ const styles = StyleSheet.create({
         fontFamily: 'serif',
         fontSize: 16,
         fontWeight: '900',
-        marginBottom: spacing.md,
+        marginBottom: spacing.xs,
+    },
+    targetPreviewText: {
+        color: colors.muted,
+        fontSize: 12,
+        fontWeight: '700',
+        lineHeight: 18,
     },
     targetPreviewButton: {
         alignItems: 'center',
@@ -4120,106 +3942,8 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '900',
     },
-    // Modal shared
-    modalOverlay: {
-        backgroundColor: 'rgba(0,0,0,0.38)',
-        flex: 1,
-    },
-    modalSheet: {
-        backgroundColor: colors.bg,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        maxHeight: '65%',
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.sm,
-    },
-    modalSheetTall: {
-        maxHeight: '80%',
-    },
-    modalHandle: {
-        alignSelf: 'center',
-        backgroundColor: colors.faint,
-        borderRadius: 3,
-        height: 4,
-        marginBottom: spacing.md,
-        width: 40,
-    },
-    modalHeader: {
-        alignItems: 'flex-start',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: spacing.md,
-    },
-    modalTitle: {
-        color: colors.ink,
-        fontFamily: 'serif',
-        fontSize: 17,
-        fontWeight: '900',
-    },
-    modalMeta: {
-        color: colors.muted,
-        fontSize: 12,
-        marginTop: 2,
-    },
-    modalClose: {
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: radius.sm,
-        height: 30,
-        justifyContent: 'center',
-        width: 30,
-    },
     modalLoader: {
         marginVertical: spacing.lg,
-    },
-    modalBottomPad: {
-        height: spacing.xl * 2,
-    },
-    actionSheetRow: {
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderColor: colors.faint,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        flexDirection: 'row',
-        gap: spacing.md,
-        marginBottom: spacing.sm,
-        minHeight: 58,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-    },
-    actionSheetRowActive: {
-        backgroundColor: colors.primary,
-        borderColor: colors.primary,
-    },
-    actionSheetIcon: {
-        alignItems: 'center',
-        backgroundColor: colors.bg,
-        borderRadius: radius.sm,
-        height: 34,
-        justifyContent: 'center',
-        width: 34,
-    },
-    actionSheetCopy: {
-        flex: 1,
-        minWidth: 0,
-    },
-    actionSheetTitle: {
-        color: colors.ink,
-        fontSize: 13,
-        fontWeight: '900',
-    },
-    actionSheetTitleActive: {
-        color: colors.onPrimary,
-    },
-    actionSheetSubtitle: {
-        color: colors.muted,
-        fontSize: 12,
-        lineHeight: 16,
-        marginTop: 2,
-    },
-    actionSheetSubtitleActive: {
-        color: 'rgba(255,255,255,0.82)',
     },
     actionSheetNotice: {
         color: colors.muted,

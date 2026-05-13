@@ -7,6 +7,7 @@ import (
 
 type FiqhRepository interface {
 	FindAllCategories() ([]model.FiqhCategory, error)
+	FindAllItems() ([]model.FiqhItem, error)
 	FindCategoryBySlug(slug string) (*model.FiqhCategory, error)
 	FindItemBySlug(slug string) (*model.FiqhItem, error)
 	FindItemByCategoryAndID(slug string, id int) (*model.FiqhItem, error)
@@ -29,6 +30,12 @@ func NewFiqhRepository(db *gorm.DB) FiqhRepository {
 func (r *fiqhRepository) FindAllCategories() ([]model.FiqhCategory, error) {
 	var list []model.FiqhCategory
 	err := r.db.Preload("Translation").Order("id").Find(&list).Error
+	return list, err
+}
+
+func (r *fiqhRepository) FindAllItems() ([]model.FiqhItem, error) {
+	var list []model.FiqhItem
+	err := r.db.Preload("Translation").Preload("Category").Order("category_id, sort_order, id").Find(&list).Error
 	return list, err
 }
 
@@ -66,7 +73,11 @@ func (r *fiqhRepository) UpdateCategory(id int, cat *model.FiqhCategory) (*model
 	if err := r.db.First(&existing, id).Error; err != nil {
 		return nil, err
 	}
-	err := r.db.Model(&existing).Updates(cat).Error
+	err := r.db.Model(&existing).Updates(map[string]interface{}{
+		"name":        cat.Name,
+		"slug":        cat.Slug,
+		"description": cat.Description,
+	}).Error
 	return &existing, err
 }
 
@@ -84,7 +95,15 @@ func (r *fiqhRepository) UpdateItem(id int, item *model.FiqhItem) (*model.FiqhIt
 	if err := r.db.First(&existing, id).Error; err != nil {
 		return nil, err
 	}
-	err := r.db.Model(&existing).Updates(item).Error
+	err := r.db.Model(&existing).Updates(map[string]interface{}{
+		"category_id": item.CategoryID,
+		"title":       item.Title,
+		"slug":        item.Slug,
+		"content":     item.Content,
+		"source":      item.Source,
+		"dalil":       item.Dalil,
+		"sort_order":  item.SortOrder,
+	}).Error
 	return &existing, err
 }
 

@@ -1,6 +1,12 @@
-import * as Location from 'expo-location';
-import { ArrowLeft, Compass, MapPin, MapPinOff, RefreshCw } from 'lucide-react-native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import * as Location from "expo-location";
+import {
+    ArrowLeft,
+    Compass,
+    MapPin,
+    MapPinOff,
+    RefreshCw,
+} from "lucide-react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Animated,
@@ -11,22 +17,27 @@ import {
     TextInput,
     useWindowDimensions,
     View,
-} from 'react-native';
-import { Card, CardTitle } from '../components/Card';
-import { ActionPill, EmptyState, IconActionButton } from '../components/Paper';
-import { Screen } from '../components/Screen';
-import { colors, radius, spacing } from '../theme';
+} from "react-native";
+import { Card, CardTitle } from "../components/Card";
+import { ActionPill, EmptyState, IconActionButton } from "../components/Paper";
+import { Screen } from "../components/Screen";
+import { colors, radius, spacing } from "../theme";
 import {
     compassSupported,
     qiblaOffset,
     signedOffset,
     watchCompassHeading,
-} from '../utils/compass';
-import { calculateKaabaDistance, calculateQiblaDirection, formatDegrees } from '../utils/qibla';
+} from "../utils/compass";
+import {
+    calculateKaabaDistance,
+    calculateQiblaDirection,
+    formatDegrees,
+} from "../utils/qibla";
 
 const compassTicks = Array.from({ length: 72 }, (_, index) => index * 5);
 const compassLabels = Array.from({ length: 12 }, (_, index) => index * 30);
 const rotationLimit = 1440;
+const ALIGNMENT_THRESHOLD = 8;
 
 // Normalize to [0, 360)
 const norm = (v) => ((v % 360) + 360) % 360;
@@ -39,19 +50,26 @@ const shortestDelta = (from, to) => {
 
 function KaabaIcon({ aligned = false }) {
     return (
-        <View style={[styles.kaabaIcon, aligned ? styles.kaabaIconAligned : null]}>
+        <View
+            style={[styles.kaabaIcon, aligned ? styles.kaabaIconAligned : null]}
+        >
             <View style={styles.kaabaBand} />
             <View style={styles.kaabaDoor} />
         </View>
     );
 }
 
-function StatusChip({ Icon, label, tone = 'neutral' }) {
+function StatusChip({ Icon, label, tone = "neutral" }) {
     return (
-        <View style={[styles.statusChip, tone === 'alert' ? styles.statusChipAlert : null]}>
+        <View
+            style={[
+                styles.statusChip,
+                tone === "alert" ? styles.statusChipAlert : null,
+            ]}
+        >
             {Icon ? (
                 <Icon
-                    color={tone === 'alert' ? colors.danger : colors.primary}
+                    color={tone === "alert" ? colors.danger : colors.primary}
                     size={14}
                     strokeWidth={2.2}
                 />
@@ -59,7 +77,7 @@ function StatusChip({ Icon, label, tone = 'neutral' }) {
             <Text
                 style={[
                     styles.statusChipText,
-                    tone === 'alert' ? styles.statusChipTextAlert : null,
+                    tone === "alert" ? styles.statusChipTextAlert : null,
                 ]}
                 numberOfLines={1}
             >
@@ -76,44 +94,55 @@ export function QiblaScreen({ onBack, onOpenTab }) {
     const [distance, setDistance] = useState(null);
     const [locationAccuracy, setLocationAccuracy] = useState(null);
     const [heading, setHeading] = useState(null);
-    const [compassMessage, setCompassMessage] = useState('');
-    const [message, setMessage] = useState('');
+    const [compassMessage, setCompassMessage] = useState("");
+    const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
-    const [locationMode, setLocationMode] = useState('gps');
-    const [manualLatInput, setManualLatInput] = useState('');
-    const [manualLngInput, setManualLngInput] = useState('');
+    const [locationMode, setLocationMode] = useState("gps");
+    const [manualLatInput, setManualLatInput] = useState("");
+    const [manualLngInput, setManualLngInput] = useState("");
 
     // Ring rotates opposite to heading so N always points to geographic North
     const ringRotation = useRef(new Animated.Value(0)).current;
     const ringDegrees = useRef(0);
-    // Pointer stays at the absolute qibla bearing from North (does not move with device)
+    // Ka'bah marker follows the absolute qibla bearing inside the rotating compass ring.
     const pointerRotation = useRef(new Animated.Value(0)).current;
     const pointerDegrees = useRef(0);
+    const headingDegrees = useRef(null);
 
     const offset = qiblaOffset(direction, heading);
     const signed = signedOffset(offset);
-    const aligned = typeof signed === 'number' && Math.abs(signed) <= 10;
-    const hasDirection = typeof direction === 'number';
+    const aligned =
+        typeof signed === "number" && Math.abs(signed) <= ALIGNMENT_THRESHOLD;
+    const hasDirection = typeof direction === "number";
     const hasCompass = compassSupported();
-    const correctionDegrees = typeof signed === 'number' ? Math.round(Math.abs(signed)) : null;
+    const correctionDegrees =
+        typeof signed === "number" ? Math.round(Math.abs(signed)) : null;
 
     const ringRotate = ringRotation.interpolate({
         inputRange: [-rotationLimit, rotationLimit],
         outputRange: [`-${rotationLimit}deg`, `${rotationLimit}deg`],
     });
+    const ringCounterRotate = ringRotation.interpolate({
+        inputRange: [-rotationLimit, rotationLimit],
+        outputRange: [`${rotationLimit}deg`, `-${rotationLimit}deg`],
+    });
     const pointerRotate = pointerRotation.interpolate({
         inputRange: [-rotationLimit, rotationLimit],
         outputRange: [`-${rotationLimit}deg`, `${rotationLimit}deg`],
+    });
+    const pointerCounterRotate = pointerRotation.interpolate({
+        inputRange: [-rotationLimit, rotationLimit],
+        outputRange: [`${rotationLimit}deg`, `-${rotationLimit}deg`],
     });
 
     const guidanceText =
         heading === null
             ? hasCompass
-                ? 'Panah menunjukkan bearing kiblat dari utara. Gerakkan perangkat untuk mengaktifkan kompas.'
-                : 'Panah menunjukkan bearing kiblat dari utara sebenarnya.'
+                ? "Gerakkan HP membentuk angka 8 untuk mengaktifkan kompas."
+                : "Kompas perangkat tidak tersedia. Arah memakai bearing utara sebenarnya."
             : aligned
-              ? 'Arah perangkat sudah sejajar dengan kiblat.'
-              : `Putar ${correctionDegrees} deg ke ${signed > 0 ? 'kanan' : 'kiri'} menuju kiblat.`;
+              ? "Marker Ka'bah sudah sejajar dengan panah HP."
+              : `Putar HP ${correctionDegrees} deg ke ${signed > 0 ? "kanan" : "kiri"} sampai marker Ka'bah sejajar dengan panah.`;
 
     const compassSize = Math.min(Math.max(width - 88, 276), 336);
     const markerSize = Math.round(compassSize * 0.15);
@@ -121,43 +150,70 @@ export function QiblaScreen({ onBack, onOpenTab }) {
     const pointerShaftHeight = Math.round(compassSize * 0.32);
 
     const locationLabel = coords
-        ? locationMode === 'manual'
-            ? 'Lokasi manual'
-            : 'Lokasi aktif'
-        : 'Lokasi belum aktif';
+        ? locationMode === "manual"
+            ? "Lokasi manual"
+            : "Lokasi aktif"
+        : "Lokasi belum aktif";
     const accuracyLabel =
-        locationAccuracy === null || locationMode === 'manual'
-            ? 'Akurasi tidak diketahui'
+        locationAccuracy === null || locationMode === "manual"
+            ? "Akurasi tidak diketahui"
             : `Akurasi ${Math.round(locationAccuracy)} m`;
-    const compassLabel = heading === null ? 'Kompas kalibrasi' : formatDegrees(heading);
+    const compassLabel =
+        heading === null ? "Kalibrasi kompas" : `HP ${formatDegrees(heading)}`;
+
+    const smoothHeading = useCallback((nextHeading) => {
+        const previous = headingDegrees.current;
+        if (typeof previous !== "number") {
+            headingDegrees.current = nextHeading;
+            return nextHeading;
+        }
+
+        const delta = shortestDelta(previous, nextHeading);
+        const factor = Math.abs(delta) > 45 ? 0.72 : 0.34;
+        const smoothed = norm(previous + delta * factor);
+        headingDegrees.current = smoothed;
+        return smoothed;
+    }, []);
 
     const applyManualLocation = useCallback(() => {
-        const lat = parseFloat(manualLatInput.replace(',', '.'));
-        const lng = parseFloat(manualLngInput.replace(',', '.'));
-        if (!isFinite(lat) || !isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-            setMessage('Masukkan koordinat yang valid. Contoh: -6.2088, 106.8456');
+        const lat = parseFloat(manualLatInput.replace(",", "."));
+        const lng = parseFloat(manualLngInput.replace(",", "."));
+        if (
+            !isFinite(lat) ||
+            !isFinite(lng) ||
+            lat < -90 ||
+            lat > 90 ||
+            lng < -180 ||
+            lng > 180
+        ) {
+            setMessage(
+                "Masukkan koordinat yang valid. Contoh: -6.2088, 106.8456",
+            );
             return;
         }
-        setMessage('');
+        setMessage("");
         setCoords({ lat, lng });
         setLocationAccuracy(null);
         setDirection(calculateQiblaDirection(lat, lng));
         setDistance(calculateKaabaDistance(lat, lng));
-        setLocationMode('manual');
-        setMessage('Lokasi manual dipakai untuk menghitung arah kiblat.');
+        setLocationMode("manual");
+        setMessage("Lokasi manual dipakai untuk menghitung arah kiblat.");
     }, [manualLatInput, manualLngInput]);
 
     const load = useCallback(async () => {
         setLoading(true);
-        setMessage('');
+        setMessage("");
         try {
-            const permission = await Location.requestForegroundPermissionsAsync();
-            if (permission.status !== 'granted') {
+            const permission =
+                await Location.requestForegroundPermissionsAsync();
+            if (permission.status !== "granted") {
                 setCoords(null);
                 setDirection(null);
                 setDistance(null);
                 setLocationAccuracy(null);
-                setMessage('Aktifkan lokasi untuk menghitung arah kiblat dari posisimu.');
+                setMessage(
+                    "Aktifkan lokasi untuk menghitung arah kiblat dari posisimu.",
+                );
                 return;
             }
             const position = await Location.getCurrentPositionAsync({});
@@ -167,7 +223,7 @@ export function QiblaScreen({ onBack, onOpenTab }) {
             };
             setCoords(current);
             setLocationAccuracy(position.coords.accuracy ?? null);
-            setLocationMode('gps');
+            setLocationMode("gps");
             setDirection(calculateQiblaDirection(current.lat, current.lng));
             setDistance(calculateKaabaDistance(current.lat, current.lng));
         } catch {
@@ -175,7 +231,9 @@ export function QiblaScreen({ onBack, onOpenTab }) {
             setDirection(null);
             setDistance(null);
             setLocationAccuracy(null);
-            setMessage('Lokasi belum terbaca. Aktifkan GPS lalu muat ulang arah kiblat.');
+            setMessage(
+                "Lokasi belum terbaca. Aktifkan GPS lalu muat ulang arah kiblat.",
+            );
         } finally {
             setLoading(false);
         }
@@ -191,8 +249,8 @@ export function QiblaScreen({ onBack, onOpenTab }) {
         watchCompassHeading(
             (nextHeading) => {
                 if (!mounted) return;
-                setHeading(nextHeading);
-                setCompassMessage('');
+                setHeading(smoothHeading(nextHeading));
+                setCompassMessage("");
             },
             (nextMessage) => {
                 if (mounted) setCompassMessage(nextMessage);
@@ -204,7 +262,7 @@ export function QiblaScreen({ onBack, onOpenTab }) {
             mounted = false;
             subscription?.remove?.();
         };
-    }, []);
+    }, [smoothHeading]);
 
     // Ring rotates by -heading: when device points East (heading=90), ring rotates -90deg so N stays at North
     useEffect(() => {
@@ -220,7 +278,7 @@ export function QiblaScreen({ onBack, onOpenTab }) {
         }).start();
     }, [heading, ringRotation]);
 
-    // Pointer stays at the absolute qibla bearing from North — independent of device heading
+    // The marker is part of the compass ring, so the ring rotation turns it into a relative bearing.
     useEffect(() => {
         if (!hasDirection) return;
         const targetVisual = norm(direction);
@@ -237,8 +295,8 @@ export function QiblaScreen({ onBack, onOpenTab }) {
 
     return (
         <Screen
-            title="Qibla"
-            subtitle="Arahkan perangkatmu untuk menemukan arah kiblat."
+            title='Qibla'
+            subtitle='Arahkan perangkatmu untuk menemukan arah kiblat.'
             refreshing={loading}
             onRefresh={load}
             actions={
@@ -246,13 +304,17 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                     {onBack || onOpenTab ? (
                         <IconActionButton
                             Icon={ArrowLeft}
-                            label={onBack ? 'Kembali ke Ibadah' : 'Kembali ke Beranda'}
-                            onPress={onBack ?? (() => onOpenTab('home'))}
+                            label={
+                                onBack
+                                    ? "Kembali ke Ibadah"
+                                    : "Kembali ke Beranda"
+                            }
+                            onPress={onBack ?? (() => onOpenTab("home"))}
                         />
                     ) : null}
                     <IconActionButton
                         Icon={RefreshCw}
-                        label="Muat ulang arah kiblat"
+                        label='Muat ulang arah kiblat'
                         onPress={load}
                         disabled={loading}
                     />
@@ -260,30 +322,33 @@ export function QiblaScreen({ onBack, onOpenTab }) {
             }
         >
             {message ? <Text style={styles.message}>{message}</Text> : null}
-            {compassMessage ? <Text style={styles.message}>{compassMessage}</Text> : null}
+            {compassMessage ? (
+                <Text style={styles.message}>{compassMessage}</Text>
+            ) : null}
 
             {!coords && !loading ? (
                 <Card>
-                    <CardTitle meta="Koordinat GPS">Lokasi Manual</CardTitle>
+                    <CardTitle meta='Koordinat GPS'>Lokasi Manual</CardTitle>
                     <Text style={styles.muted}>
-                        Aktifkan GPS atau masukkan koordinat untuk menghitung arah kiblat.
+                        Aktifkan GPS atau masukkan koordinat untuk menghitung
+                        arah kiblat.
                     </Text>
                     <View style={styles.manualLocRow}>
                         <TextInput
-                            keyboardType="decimal-pad"
+                            keyboardType='decimal-pad'
                             onChangeText={setManualLatInput}
-                            placeholder="-6.2088 (Lintang)"
+                            placeholder='-6.2088 (Lintang)'
                             placeholderTextColor={colors.muted}
-                            returnKeyType="next"
+                            returnKeyType='next'
                             style={styles.manualLocInput}
                             value={manualLatInput}
                         />
                         <TextInput
-                            keyboardType="decimal-pad"
+                            keyboardType='decimal-pad'
                             onChangeText={setManualLngInput}
-                            placeholder="106.8456 (Bujur)"
+                            placeholder='106.8456 (Bujur)'
                             placeholderTextColor={colors.muted}
-                            returnKeyType="done"
+                            returnKeyType='done'
                             style={styles.manualLocInput}
                             value={manualLngInput}
                         />
@@ -293,16 +358,24 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                         onPress={applyManualLocation}
                         style={[
                             styles.button,
-                            !manualLatInput || !manualLngInput ? styles.disabled : null,
+                            !manualLatInput || !manualLngInput
+                                ? styles.disabled
+                                : null,
                         ]}
                     >
-                        <Text style={styles.buttonText}>Hitung Arah Kiblat</Text>
+                        <Text style={styles.buttonText}>
+                            Hitung Arah Kiblat
+                        </Text>
                     </Pressable>
                 </Card>
             ) : null}
 
             <Card style={styles.compassCard}>
-                <CardTitle meta={heading === null ? 'Bearing dari utara' : 'Kompas aktif'}>
+                <CardTitle
+                    meta={
+                        heading === null ? "Bearing dari utara" : "Kompas aktif"
+                    }
+                >
                     Arah Kiblat
                 </CardTitle>
                 {loading ? (
@@ -310,22 +383,22 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                 ) : !hasDirection ? (
                     <EmptyState
                         Icon={MapPinOff}
-                        title="Arah kiblat belum tersedia"
-                        description="Izinkan akses lokasi, coba muat ulang, atau masukkan koordinat manual."
+                        title='Arah kiblat belum tersedia'
+                        description='Izinkan akses lokasi, coba muat ulang, atau masukkan koordinat manual.'
                         action={
                             <View style={styles.emptyActions}>
                                 <ActionPill
                                     Icon={RefreshCw}
-                                    label="Coba lagi"
+                                    label='Coba lagi'
                                     onPress={load}
                                     disabled={loading}
                                 />
                                 <ActionPill
                                     Icon={MapPin}
-                                    label="Lokasi manual"
+                                    label='Lokasi manual'
                                     onPress={() =>
                                         setMessage(
-                                            'Masukkan koordinat di kartu Lokasi Manual.',
+                                            "Masukkan koordinat di kartu Lokasi Manual.",
                                         )
                                     }
                                 />
@@ -338,7 +411,11 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                             <StatusChip Icon={MapPin} label={locationLabel} />
                             <StatusChip
                                 label={accuracyLabel}
-                                tone={locationAccuracy === null ? 'alert' : 'neutral'}
+                                tone={
+                                    locationAccuracy === null
+                                        ? "alert"
+                                        : "neutral"
+                                }
                             />
                             <StatusChip Icon={Compass} label={compassLabel} />
                         </View>
@@ -365,14 +442,22 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                                         key={angle}
                                         style={[
                                             styles.tickLayer,
-                                            { transform: [{ rotate: `${angle}deg` }] },
+                                            {
+                                                transform: [
+                                                    { rotate: `${angle}deg` },
+                                                ],
+                                            },
                                         ]}
                                     >
                                         <View
                                             style={[
                                                 styles.tick,
-                                                angle % 30 === 0 ? styles.tickMedium : null,
-                                                angle % 90 === 0 ? styles.tickMajor : null,
+                                                angle % 30 === 0
+                                                    ? styles.tickMedium
+                                                    : null,
+                                                angle % 90 === 0
+                                                    ? styles.tickMajor
+                                                    : null,
                                             ]}
                                         />
                                     </View>
@@ -382,68 +467,162 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                                         key={`label-${angle}`}
                                         style={[
                                             styles.degreeLayer,
-                                            { transform: [{ rotate: `${angle}deg` }] },
+                                            {
+                                                transform: [
+                                                    { rotate: `${angle}deg` },
+                                                ],
+                                            },
                                         ]}
                                     >
-                                        <Text
+                                        <Animated.Text
                                             style={[
                                                 styles.degreeMark,
                                                 {
-                                                    transform: [{ rotate: `${-angle}deg` }],
+                                                    transform: [
+                                                        {
+                                                            rotate: `${-angle}deg`,
+                                                        },
+                                                        {
+                                                            rotate: ringCounterRotate,
+                                                        },
+                                                    ],
                                                 },
                                             ]}
                                         >
                                             {angle}
-                                        </Text>
+                                        </Animated.Text>
                                     </View>
                                 ))}
-                                <Text style={[styles.cardinal, styles.north]}>N</Text>
-                                <Text style={[styles.cardinal, styles.east]}>E</Text>
-                                <Text style={[styles.cardinal, styles.south]}>S</Text>
-                                <Text style={[styles.cardinal, styles.west]}>W</Text>
-                            </Animated.View>
+                                <Animated.Text
+                                    style={[
+                                        styles.cardinal,
+                                        styles.north,
+                                        {
+                                            transform: [
+                                                { rotate: ringCounterRotate },
+                                            ],
+                                        },
+                                    ]}
+                                >
+                                    N
+                                </Animated.Text>
+                                <Animated.Text
+                                    style={[
+                                        styles.cardinal,
+                                        styles.east,
+                                        {
+                                            transform: [
+                                                { rotate: ringCounterRotate },
+                                            ],
+                                        },
+                                    ]}
+                                >
+                                    E
+                                </Animated.Text>
+                                <Animated.Text
+                                    style={[
+                                        styles.cardinal,
+                                        styles.south,
+                                        {
+                                            transform: [
+                                                { rotate: ringCounterRotate },
+                                            ],
+                                        },
+                                    ]}
+                                >
+                                    S
+                                </Animated.Text>
+                                <Animated.Text
+                                    style={[
+                                        styles.cardinal,
+                                        styles.west,
+                                        {
+                                            transform: [
+                                                { rotate: ringCounterRotate },
+                                            ],
+                                        },
+                                    ]}
+                                >
+                                    W
+                                </Animated.Text>
 
-                            {/* Ka'bah pointer — fixed at absolute qibla bearing from North */}
-                            <Animated.View
-                                style={[
-                                    styles.pointerLayer,
-                                    { transform: [{ rotate: pointerRotate }] },
-                                ]}
-                            >
-                                <View style={[styles.pointerVector, { top: compassSize * 0.025 }]}>
-                                    <View
+                                {/* Ka'bah marker belongs to the compass ring, not the guide line. */}
+                                <Animated.View
+                                    pointerEvents='none'
+                                    style={[
+                                        styles.qiblaMarkerLayer,
+                                        {
+                                            transform: [
+                                                { rotate: pointerRotate },
+                                            ],
+                                        },
+                                    ]}
+                                >
+                                    <Animated.View
                                         style={[
                                             styles.kaabaMarker,
-                                            aligned ? styles.kaabaMarkerAligned : null,
+                                            aligned
+                                                ? styles.kaabaMarkerAligned
+                                                : null,
                                             {
                                                 borderRadius: markerSize / 2,
                                                 height: markerSize,
+                                                top: compassSize * 0.045,
+                                                transform: [
+                                                    {
+                                                        rotate: pointerCounterRotate,
+                                                    },
+                                                    {
+                                                        rotate: ringCounterRotate,
+                                                    },
+                                                ],
                                                 width: markerSize,
                                             },
                                         ]}
                                     >
                                         <KaabaIcon aligned={aligned} />
-                                    </View>
+                                    </Animated.View>
+                                </Animated.View>
+                            </Animated.View>
+
+                            {/* Fixed guide line: align the ring marker with the phone's top edge. */}
+                            <View
+                                pointerEvents='none'
+                                style={styles.pointerLayer}
+                            >
+                                <View
+                                    style={[
+                                        styles.pointerVector,
+                                        { top: compassSize * 0.24 },
+                                    ]}
+                                >
                                     <View
                                         style={[
                                             styles.pointerHead,
-                                            aligned ? styles.pointerHeadAligned : null,
+                                            aligned
+                                                ? styles.pointerHeadAligned
+                                                : null,
                                             {
-                                                borderBottomWidth: pointerHeadSize,
-                                                borderLeftWidth: pointerHeadSize / 2,
-                                                borderRightWidth: pointerHeadSize / 2,
+                                                borderBottomWidth:
+                                                    pointerHeadSize,
+                                                borderLeftWidth:
+                                                    pointerHeadSize / 2,
+                                                borderRightWidth:
+                                                    pointerHeadSize / 2,
                                             },
                                         ]}
                                     />
                                     <View
                                         style={[
                                             styles.pointerShaft,
-                                            aligned ? styles.pointerShaftAligned : null,
+                                            aligned
+                                                ? styles.pointerShaftAligned
+                                                : null,
                                             { height: pointerShaftHeight },
                                         ]}
                                     />
                                 </View>
-                            </Animated.View>
+                            </View>
 
                             <View
                                 style={[
@@ -454,18 +633,22 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                                 <Text
                                     style={[
                                         styles.centerHubText,
-                                        aligned ? styles.centerHubTextAligned : null,
+                                        aligned
+                                            ? styles.centerHubTextAligned
+                                            : null,
                                     ]}
                                 >
-                                    Ka'bah
+                                    HP
                                 </Text>
                             </View>
                         </View>
 
                         <View style={styles.directionSummary}>
-                            <Text style={styles.degrees}>{formatDegrees(direction ?? 0)}</Text>
+                            <Text style={styles.degrees}>
+                                {formatDegrees(direction ?? 0)}
+                            </Text>
                             <Text style={styles.directionLabel}>
-                                {aligned ? 'sejajar kiblat' : 'bearing kiblat'}
+                                {aligned ? "sejajar kiblat" : "bearing kiblat"}
                             </Text>
                         </View>
                         <Text style={styles.muted}>{guidanceText}</Text>
@@ -477,14 +660,14 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                 <View style={styles.metric}>
                     <Text style={styles.metricLabel}>Jarak</Text>
                     <Text style={styles.metricValue}>
-                        {distance?.toLocaleString('en-US') ?? '-'}
+                        {distance?.toLocaleString("en-US") ?? "-"}
                     </Text>
                     <Text style={styles.metricLabel}>km</Text>
                 </View>
                 <View style={styles.metric}>
                     <Text style={styles.metricLabel}>Qibla</Text>
                     <Text style={styles.metricValueSmall}>
-                        {hasDirection ? formatDegrees(direction) : '-'}
+                        {hasDirection ? formatDegrees(direction) : "-"}
                     </Text>
                     <Text style={styles.metricLabel}>utara sebenarnya</Text>
                 </View>
@@ -496,8 +679,8 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                     <Text style={styles.metricValueSmall}>
                         {heading === null
                             ? hasCompass
-                                ? 'Kalibrasi'
-                                : 'Tidak tersedia'
+                                ? "Kalibrasi"
+                                : "Tidak tersedia"
                             : formatDegrees(heading)}
                     </Text>
                 </View>
@@ -505,8 +688,8 @@ export function QiblaScreen({ onBack, onOpenTab }) {
                     <Text style={styles.metricLabel}>Lokasi</Text>
                     <Text style={styles.metricValueSmall}>
                         {coords
-                            ? `${locationMode === 'manual' ? 'Manual ' : ''}${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}`
-                            : '-'}
+                            ? `${locationMode === "manual" ? "Manual " : ""}${coords.lat.toFixed(3)}, ${coords.lng.toFixed(3)}`
+                            : "-"}
                     </Text>
                 </View>
             </View>
@@ -516,8 +699,8 @@ export function QiblaScreen({ onBack, onOpenTab }) {
 
 const styles = StyleSheet.create({
     message: {
-        backgroundColor: '#fffbeb',
-        borderColor: '#fde68a',
+        backgroundColor: "#fffbeb",
+        borderColor: "#fde68a",
         borderRadius: radius.md,
         borderWidth: 1,
         color: colors.accent,
@@ -527,65 +710,65 @@ const styles = StyleSheet.create({
         padding: spacing.md,
     },
     compassCard: {
-        alignItems: 'stretch',
+        alignItems: "stretch",
     },
     emptyActions: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
+        flexDirection: "row",
+        flexWrap: "wrap",
         gap: spacing.sm,
-        justifyContent: 'center',
+        justifyContent: "center",
     },
     statusRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
+        flexDirection: "row",
+        flexWrap: "wrap",
         gap: spacing.sm,
-        justifyContent: 'center',
+        justifyContent: "center",
         marginBottom: spacing.md,
     },
     statusChip: {
-        alignItems: 'center',
+        alignItems: "center",
         backgroundColor: colors.bg,
         borderColor: colors.faint,
         borderRadius: 999,
         borderWidth: 1,
-        flexDirection: 'row',
+        flexDirection: "row",
         gap: spacing.xs,
         minHeight: 30,
         maxWidth: 178,
         paddingHorizontal: spacing.sm,
     },
     statusChipAlert: {
-        borderColor: '#f2cf8f',
+        borderColor: "#f2cf8f",
     },
     statusChipText: {
         color: colors.primary,
         flexShrink: 1,
         fontSize: 11,
-        fontWeight: '900',
+        fontWeight: "900",
     },
     statusChipTextAlert: {
         color: colors.accent,
     },
     compass: {
-        alignItems: 'center',
-        alignSelf: 'center',
+        alignItems: "center",
+        alignSelf: "center",
         backgroundColor: colors.bg,
         borderColor: colors.faint,
         borderRadius: 112,
         borderWidth: 2,
         height: 224,
-        justifyContent: 'center',
+        justifyContent: "center",
         marginVertical: spacing.lg,
         width: 224,
     },
     ringLayer: {
         ...StyleSheet.absoluteFillObject,
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: "center",
+        justifyContent: "center",
     },
     tickLayer: {
         ...StyleSheet.absoluteFillObject,
-        alignItems: 'center',
+        alignItems: "center",
     },
     tick: {
         backgroundColor: colors.faint,
@@ -595,7 +778,7 @@ const styles = StyleSheet.create({
         width: 2,
     },
     tickMedium: {
-        backgroundColor: '#d5d0c4',
+        backgroundColor: "#d5d0c4",
         height: 10,
     },
     tickMajor: {
@@ -605,19 +788,19 @@ const styles = StyleSheet.create({
     },
     degreeLayer: {
         ...StyleSheet.absoluteFillObject,
-        alignItems: 'center',
+        alignItems: "center",
     },
     degreeMark: {
         color: colors.muted,
         fontSize: 10,
-        fontWeight: '700',
+        fontWeight: "700",
         marginTop: 22,
     },
     cardinal: {
         color: colors.primary,
         fontSize: 15,
-        fontWeight: '900',
-        position: 'absolute',
+        fontWeight: "900",
+        position: "absolute",
     },
     north: {
         top: 44,
@@ -633,62 +816,67 @@ const styles = StyleSheet.create({
     },
     pointerLayer: {
         ...StyleSheet.absoluteFillObject,
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    qiblaMarkerLayer: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: "center",
     },
     pointerVector: {
-        alignItems: 'center',
-        position: 'absolute',
+        alignItems: "center",
+        position: "absolute",
         top: 17,
     },
     kaabaMarker: {
-        alignItems: 'center',
+        alignItems: "center",
         backgroundColor: colors.surface,
         borderColor: colors.faint,
         borderRadius: 8,
         borderWidth: 1,
         height: 34,
-        justifyContent: 'center',
+        justifyContent: "center",
         marginBottom: -2,
+        position: "absolute",
         width: 34,
     },
     kaabaMarkerAligned: {
         borderColor: colors.accent,
     },
     kaabaIcon: {
-        backgroundColor: '#26241f',
-        borderColor: '#17150f',
+        backgroundColor: "#26241f",
+        borderColor: "#17150f",
         borderRadius: 3,
         borderWidth: 1,
         height: 20,
-        overflow: 'hidden',
+        overflow: "hidden",
         width: 22,
     },
     kaabaIconAligned: {
         borderColor: colors.accent,
     },
     kaabaBand: {
-        backgroundColor: '#d0a85a',
+        backgroundColor: "#d0a85a",
         height: 4,
         marginTop: 5,
-        width: '100%',
+        width: "100%",
     },
     kaabaDoor: {
-        alignSelf: 'center',
-        backgroundColor: '#d0a85a',
+        alignSelf: "center",
+        backgroundColor: "#d0a85a",
         borderTopLeftRadius: 2,
         borderTopRightRadius: 2,
         bottom: 0,
         height: 7,
-        position: 'absolute',
+        position: "absolute",
         width: 5,
     },
     pointerHead: {
         borderBottomColor: colors.primary,
         borderBottomWidth: 34,
-        borderLeftColor: 'transparent',
+        borderLeftColor: "transparent",
         borderLeftWidth: 16,
-        borderRightColor: 'transparent',
+        borderRightColor: "transparent",
         borderRightWidth: 16,
         height: 0,
         width: 0,
@@ -708,13 +896,13 @@ const styles = StyleSheet.create({
         backgroundColor: colors.accent,
     },
     centerHub: {
-        alignItems: 'center',
+        alignItems: "center",
         backgroundColor: colors.surface,
         borderColor: colors.primary,
         borderRadius: 24,
         borderWidth: 2,
         height: 54,
-        justifyContent: 'center',
+        justifyContent: "center",
         width: 54,
     },
     centerHubAligned: {
@@ -722,38 +910,38 @@ const styles = StyleSheet.create({
     },
     centerHubText: {
         color: colors.primary,
-        fontFamily: 'serif',
+        fontFamily: "serif",
         fontSize: 10,
-        fontWeight: '900',
+        fontWeight: "900",
     },
     centerHubTextAligned: {
         color: colors.accent,
     },
     directionSummary: {
-        alignItems: 'center',
+        alignItems: "center",
         marginBottom: spacing.xs,
     },
     degrees: {
         color: colors.primary,
         fontSize: 34,
-        fontWeight: '900',
-        textAlign: 'center',
+        fontWeight: "900",
+        textAlign: "center",
     },
     directionLabel: {
         color: colors.muted,
         fontSize: 11,
-        fontWeight: '800',
+        fontWeight: "800",
         marginTop: 2,
-        textTransform: 'uppercase',
+        textTransform: "uppercase",
     },
     muted: {
         color: colors.muted,
         fontSize: 13,
         lineHeight: 18,
-        textAlign: 'center',
+        textAlign: "center",
     },
     metrics: {
-        flexDirection: 'row',
+        flexDirection: "row",
         gap: spacing.md,
         marginBottom: spacing.md,
     },
@@ -768,22 +956,22 @@ const styles = StyleSheet.create({
     metricLabel: {
         color: colors.muted,
         fontSize: 12,
-        fontWeight: '700',
+        fontWeight: "700",
     },
     metricValue: {
         color: colors.ink,
         fontSize: 24,
-        fontWeight: '900',
+        fontWeight: "900",
         marginTop: spacing.xs,
     },
     metricValueSmall: {
         color: colors.ink,
         fontSize: 14,
-        fontWeight: '800',
+        fontWeight: "800",
         marginTop: spacing.sm,
     },
     manualLocRow: {
-        flexDirection: 'row',
+        flexDirection: "row",
         gap: spacing.sm,
         marginTop: spacing.md,
         marginBottom: spacing.sm,
@@ -796,22 +984,22 @@ const styles = StyleSheet.create({
         color: colors.ink,
         flex: 1,
         fontSize: 13,
-        fontWeight: '700',
+        fontWeight: "700",
         minHeight: 44,
         paddingHorizontal: spacing.md,
     },
     button: {
-        alignItems: 'center',
+        alignItems: "center",
         backgroundColor: colors.primary,
         borderRadius: radius.lg,
         minHeight: 48,
-        justifyContent: 'center',
+        justifyContent: "center",
         marginTop: spacing.sm,
     },
     buttonText: {
-        color: '#ffffff',
+        color: "#ffffff",
         fontSize: 14,
-        fontWeight: '800',
+        fontWeight: "800",
     },
     disabled: {
         opacity: 0.55,

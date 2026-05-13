@@ -21,6 +21,47 @@ func TestHandle(t *testing.T) {
 	}
 }
 
+func TestP0ContractRoutes(t *testing.T) {
+	routes := getRoutes()
+	index := routeItems{}
+	for i := range routes {
+		index[routes[i].method+" "+routes[i].path] = routes[i]
+	}
+
+	expected := []string{
+		"GET /ayah/daily",
+		"GET /asbabun-nuzul",
+		"GET /asbabun-nuzul/list",
+		"GET /quiz/questions/all",
+		"POST /quiz/questions",
+		"PUT /quiz/questions/:id",
+		"DELETE /quiz/questions/:id",
+		"GET /wirid",
+		"GET /history",
+		"GET /hijri/convert",
+		"POST /wirid",
+		"PUT /wirid/:id",
+		"DELETE /wirid/:id",
+		"GET /tahlil/items",
+		"POST /tahlil/items",
+		"PUT /tahlil/items/:id",
+		"DELETE /tahlil/items/:id",
+		"GET /manasik/items",
+		"POST /manasik",
+		"PUT /manasik/:id",
+		"DELETE /manasik/:id",
+		"GET /fiqh/items",
+		"POST /fiqh/items",
+		"PUT /fiqh/items/:id",
+		"DELETE /fiqh/items/:id",
+	}
+	for _, key := range expected {
+		if _, ok := index[key]; !ok {
+			t.Fatalf("expected route %s to be registered", key)
+		}
+	}
+}
+
 type routeItem struct {
 	matches    string
 	method     string

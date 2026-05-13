@@ -31,9 +31,10 @@ Quran, Hadis, Doa, Kajian, dan feature tanpa pindah-pindah tab.
 
 ## Task List
 
-1. Pastikan hasil Quran dari search masuk ke detail ayah/surah tanpa glitch.
+1. `DONE_STRUCTURAL` Pastikan hasil Quran dari search masuk ke detail
+   ayah/surah tanpa glitch.
 2. Smoke hasil dari source lain: Hadis, Doa/Dzikir, Kajian, dan feature.
-3. Seragamkan empty state dan loading state.
+3. `DONE_STRUCTURAL` Seragamkan empty state dan loading state.
 4. Pastikan recent item terisi dari open detail yang valid.
 
 ## Acceptance Criteria
@@ -45,6 +46,19 @@ Quran, Hadis, Doa, Kajian, dan feature tanpa pindah-pindah tab.
 
 ## Evidence
 
+- Quran result dari Global Search membuka reader dengan target ayah dan reader
+  auto-scroll ke ayat target setelah data siap.
+- Global Search memakai `ContentCard` shared untuk hasil Quran, Hadis, Doa,
+  Kajian, Fitur, Kamus, dan Perawi agar spacing/metadata lebih seragam.
+- Empty state sekarang kontekstual per filter, misalnya Quran, Hadis, Doa,
+  Kamus, Fitur, dan Perawi punya wording berbeda.
+- Loading state memakai card skeleton pencarian, bukan teks loading polos.
+- Metadata hasil search difilter supaya istilah teknis seperti `backend`,
+  `server`, `storage`, `device`, dan `perangkat` tidak muncul ke user.
+- Partial failure search tetap menampilkan modul yang berhasil dimuat dan hanya
+  memberi pesan modul mana yang belum bisa dimuat.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-mobile-global-search-polish-export`
+  `PASS`.
 - Device smoke masih wajib sebelum status dinaikkan ke `DONE`.
 
 ## Source of Truth
@@ -52,4 +66,3 @@ Quran, Hadis, Doa, Kajian, dan feature tanpa pindah-pindah tab.
 - `docs/MOBILE_IA_FINAL_APPROACH.md`
 - `docs/MOBILE_FEATURE_REFERENCE.md`
 - `apps/mobile/src/screens/GlobalSearchScreen.js`
-

@@ -241,7 +241,11 @@ export const amalanApi = {
 
 export const hijriApi = {
     today: () => fetch(`${API_URL}/api/v1/hijri/today`),
-    convert: (date) => fetch(`${API_URL}/api/v1/hijri?date=${encodeURIComponent(date)}`),
+    convert: (date) => {
+        const [year, month, day] = String(date).split('-');
+        const params = new URLSearchParams({ year, month, day });
+        return fetch(`${API_URL}/api/v1/hijri/convert?${params.toString()}`);
+    },
     events: () => fetch(`${API_URL}/api/v1/hijri/events`),
     eventsByMonth: (month) => fetch(`${API_URL}/api/v1/hijri/events/${month}`),
 };
@@ -336,8 +340,30 @@ export const prayerApi = {
 
 export const sholatTrackerApi = {
     today: () => authFetch('/api/v1/sholat/today'),
-    update: (data) =>
-        authFetch('/api/v1/sholat/today', { method: 'PUT', body: JSON.stringify(data) }),
+    update: (data) => {
+        if (data?.prayer && data?.status) {
+            return authFetch('/api/v1/sholat/today', {
+                method: 'PUT',
+                body: JSON.stringify(data),
+            });
+        }
+
+        const date = data?.date ?? new Date().toISOString().slice(0, 10);
+        const updates = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya']
+            .filter((prayer) => typeof data?.[prayer] === 'boolean')
+            .map((prayer) =>
+                authFetch('/api/v1/sholat/today', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        date,
+                        prayer,
+                        status: data[prayer] ? 'munfarid' : 'missed',
+                    }),
+                }),
+            );
+
+        return Promise.all(updates);
+    },
     history: () => authFetch('/api/v1/sholat/history'),
 };
 
@@ -441,52 +467,52 @@ export const adminKamusApi = {
 };
 
 export const adminQuizApi = {
-    list: () => authFetch('/api/v1/quiz/questions/all'),
+    list: (page = 0, size = 100) => authFetch(`/api/v1/quiz/questions/all?page=${page}&size=${size}`),
     create: (data) => authFetch('/api/v1/quiz/questions', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => authFetch(`/api/v1/quiz/questions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => authFetch(`/api/v1/quiz/questions/${id}`, { method: 'DELETE' }),
 };
 
 export const adminSejarahApi = {
-    list: () => authFetch('/api/v1/sejarah'),
-    create: (data) => authFetch('/api/v1/sejarah', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => authFetch(`/api/v1/sejarah/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => authFetch(`/api/v1/sejarah/${id}`, { method: 'DELETE' }),
+    list: () => authFetch('/api/v1/history'),
+    create: (data) => authFetch('/api/v1/history', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/history/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/history/${id}`, { method: 'DELETE' }),
 };
 
 export const adminAsbabunNuzulApi = {
-    list: (page = 0, size = 100) => authFetch(`/api/v1/asbabun-nuzul/list?page=${page}&size=${size}`),
+    list: (page = 0, size = 100) => authFetch(`/api/v1/asbabun-nuzul?page=${page}&size=${size}`),
     create: (data) => authFetch('/api/v1/asbabun-nuzul', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => authFetch(`/api/v1/asbabun-nuzul/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => authFetch(`/api/v1/asbabun-nuzul/${id}`, { method: 'DELETE' }),
 };
 
 export const adminWiridApi = {
-    list: () => authFetch('/api/v1/wirid'),
+    list: (page = 0, size = 100) => authFetch(`/api/v1/wirid?page=${page}&size=${size}`),
     create: (data) => authFetch('/api/v1/wirid', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => authFetch(`/api/v1/wirid/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => authFetch(`/api/v1/wirid/${id}`, { method: 'DELETE' }),
 };
 
 export const adminTahlilApi = {
-    list: () => authFetch('/api/v1/tahlil'),
-    create: (data) => authFetch('/api/v1/tahlil', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => authFetch(`/api/v1/tahlil/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => authFetch(`/api/v1/tahlil/${id}`, { method: 'DELETE' }),
+    list: (page = 0, size = 100) => authFetch(`/api/v1/tahlil/items?page=${page}&size=${size}`),
+    create: (data) => authFetch('/api/v1/tahlil/items', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/tahlil/items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/tahlil/items/${id}`, { method: 'DELETE' }),
 };
 
 export const adminManasikApi = {
-    list: () => authFetch('/api/v1/manasik'),
+    list: (page = 0, size = 100) => authFetch(`/api/v1/manasik/items?page=${page}&size=${size}`),
     create: (data) => authFetch('/api/v1/manasik', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => authFetch(`/api/v1/manasik/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => authFetch(`/api/v1/manasik/${id}`, { method: 'DELETE' }),
 };
 
 export const adminFiqhApi = {
-    list: () => authFetch('/api/v1/fiqh'),
-    create: (data) => authFetch('/api/v1/fiqh', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id, data) => authFetch(`/api/v1/fiqh/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id) => authFetch(`/api/v1/fiqh/${id}`, { method: 'DELETE' }),
+    list: (page = 0, size = 100) => authFetch(`/api/v1/fiqh/items?page=${page}&size=${size}`),
+    create: (data) => authFetch('/api/v1/fiqh/items', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => authFetch(`/api/v1/fiqh/items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => authFetch(`/api/v1/fiqh/items/${id}`, { method: 'DELETE' }),
 };
 
 export const booksApi = {
