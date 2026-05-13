@@ -13,6 +13,7 @@ Panduan navigasi dokumen project. Baca ini sebelum mulai task supaya tidak salah
 | [api/FEATURE_ROADMAP.md](./api/FEATURE_ROADMAP.md) | Roadmap fitur backend, tier, dan status pengerjaan | ✅ Aktif |
 | [api/roadmap-status.md](./api/roadmap-status.md) | Status terkini tiap fitur backend | ✅ Aktif |
 | [web/web-status.md](./web/web-status.md) | Status halaman dan komponen web (Next.js) | ✅ Aktif |
+| [features/README.md](./features/README.md) | Status feature per slice: todo, progress, done, onhold | ✅ Aktif |
 
 ---
 
@@ -28,6 +29,19 @@ Panduan navigasi dokumen project. Baca ini sebelum mulai task supaya tidak salah
 | [MOBILE_IA_APPROACH_A.md](./MOBILE_IA_APPROACH_A.md) | Proposal pembanding (bukan acuan, sudah dilebur ke Final) |
 | [MOBILE_INFORMATION_ARCHITECTURE_APPROACH_CODEX.md](./MOBILE_INFORMATION_ARCHITECTURE_APPROACH_CODEX.md) | Proposal pembanding Codex (bukan acuan, sudah dilebur ke Final) |
 | [MOBILE_IA_FINAL.md](./MOBILE_IA_FINAL.md) | Alias → lihat MOBILE_IA_FINAL_APPROACH.md |
+
+---
+
+## Feature Docs
+
+| Dokumen | Isi |
+|---|---|
+| **[features/README.md](./features/README.md)** | **← Hub status feature per slice/milestone.** |
+| [features/TEMPLATE.md](./features/TEMPLATE.md) | Template feature doc baru |
+| [features/todo/](./features/todo/) | Feature yang siap ditarik, tetapi belum mulai |
+| [features/progress/](./features/progress/) | Feature yang sedang aktif dikerjakan |
+| [features/done/](./features/done/) | Feature yang sudah selesai dan ditutup |
+| [features/onhold/](./features/onhold/) | Feature yang ditunda karena blocker/dependency |
 
 ---
 
