@@ -25,6 +25,10 @@ import {
 import { ContentCard, MetaRail } from '../components/ContentCard';
 import { TabBar } from '../components/TabBar';
 import { Card, CardTitle } from '../components/Card';
+import { AppActionSheet, ActionSheetRow } from '../components/AppActionSheet';
+import { AppModalSheet } from '../components/AppModalSheet';
+import { DetailHeader } from '../components/DetailHeader';
+import { SectionHeader as SectionHeaderStandalone } from '../components/SectionHeader';
 import { TabActivityProvider } from '../context/TabActivityContext';
 
 // ---------------------------------------------------------------------------
@@ -590,5 +594,190 @@ describe('TabBar', () => {
     labels.forEach((label) => {
       expect(getByLabelText(label)).toBeTruthy();
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AppModalSheet
+// ---------------------------------------------------------------------------
+
+describe('AppModalSheet', () => {
+  test('renders when visible', () => {
+    const { getByText } = render(
+      <AppModalSheet visible title="Modal Title">
+        <Text>Child Content</Text>
+      </AppModalSheet>,
+    );
+    expect(getByText('Modal Title')).toBeTruthy();
+    expect(getByText('Child Content')).toBeTruthy();
+  });
+
+  test('calls onClose when close button pressed', () => {
+    const onClose = jest.fn();
+    const { getAllByLabelText } = render(
+      <AppModalSheet visible onClose={onClose} title="Title" closeLabel="Tutup" />,
+    );
+    fireEvent.press(getAllByLabelText('Tutup')[0]);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  test('renders subtitle when provided', () => {
+    const { getByText } = render(
+      <AppModalSheet visible title="Title" subtitle="Subtitle text" />,
+    );
+    expect(getByText('Subtitle text')).toBeTruthy();
+  });
+
+  test('renders footer', () => {
+    const { getByText } = render(
+      <AppModalSheet visible title="Title" footer={<Text>Footer content</Text>} />,
+    );
+    expect(getByText('Footer content')).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ActionSheetRow
+// ---------------------------------------------------------------------------
+
+describe('ActionSheetRow', () => {
+  test('renders title', () => {
+    const { getByText } = render(<ActionSheetRow title="Pilih" />);
+    expect(getByText('Pilih')).toBeTruthy();
+  });
+
+  test('renders subtitle when provided', () => {
+    const { getByText } = render(
+      <ActionSheetRow title="Pilih" subtitle="Deskripsi opsi" />,
+    );
+    expect(getByText('Deskripsi opsi')).toBeTruthy();
+  });
+
+  test('calls onPress when pressed', () => {
+    const onPress = jest.fn();
+    const { getByText } = render(<ActionSheetRow title="Tekan" onPress={onPress} />);
+    fireEvent.press(getByText('Tekan'));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not call onPress when disabled', () => {
+    const onPress = jest.fn();
+    const { getByText } = render(
+      <ActionSheetRow title="Disabled" onPress={onPress} disabled />,
+    );
+    fireEvent.press(getByText('Disabled'));
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  test('renders active state style', () => {
+    const { getByText } = render(<ActionSheetRow title="Active" active />);
+    expect(getByText('Active')).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// AppActionSheet
+// ---------------------------------------------------------------------------
+
+describe('AppActionSheet', () => {
+  test('renders children and title', () => {
+    const { getByText } = render(
+      <AppActionSheet visible title="Action Sheet">
+        <ActionSheetRow title="Opsi 1" />
+      </AppActionSheet>,
+    );
+    expect(getByText('Action Sheet')).toBeTruthy();
+    expect(getByText('Opsi 1')).toBeTruthy();
+  });
+
+  test('calls onClose when overlay pressed', () => {
+    const onClose = jest.fn();
+    const { getAllByLabelText } = render(
+      <AppActionSheet visible onClose={onClose} title="Sheet" />,
+    );
+    fireEvent.press(getAllByLabelText('Tutup')[0]);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DetailHeader
+// ---------------------------------------------------------------------------
+
+describe('DetailHeader', () => {
+  test('renders title', () => {
+    const { getByText } = render(<DetailHeader title="Detail Judul" />);
+    expect(getByText('Detail Judul')).toBeTruthy();
+  });
+
+  test('renders subtitle when provided', () => {
+    const { getByText } = render(
+      <DetailHeader title="Judul" subtitle="Subtitle here" />,
+    );
+    expect(getByText('Subtitle here')).toBeTruthy();
+  });
+
+  test('renders meta when provided', () => {
+    const { getByText } = render(<DetailHeader title="Judul" meta="Q.S. 1:1-7" />);
+    expect(getByText('Q.S. 1:1-7')).toBeTruthy();
+  });
+
+  test('renders back button and fires onBack', () => {
+    const onBack = jest.fn();
+    const { getByLabelText } = render(
+      <DetailHeader title="Judul" onBack={onBack} backLabel="Kembali" />,
+    );
+    expect(getByLabelText('Kembali')).toBeTruthy();
+    fireEvent.press(getByLabelText('Kembali'));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not render back button without onBack', () => {
+    const { queryByLabelText } = render(<DetailHeader title="Judul" />);
+    expect(queryByLabelText('Kembali')).toBeNull();
+  });
+
+  test('renders actions slot when provided', () => {
+    const { getByText } = render(
+      <DetailHeader title="Judul" actions={<Text>Action</Text>} />,
+    );
+    expect(getByText('Action')).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SectionHeader (standalone)
+// ---------------------------------------------------------------------------
+
+describe('SectionHeader (standalone)', () => {
+  test('renders title', () => {
+    const { getByText } = render(<SectionHeaderStandalone title="Bagian" />);
+    expect(getByText('Bagian')).toBeTruthy();
+  });
+
+  test('renders meta when provided', () => {
+    const { getByText } = render(
+      <SectionHeaderStandalone title="Bagian" meta="5 item" />,
+    );
+    expect(getByText('5 item')).toBeTruthy();
+  });
+
+  test('renders subtitle when provided', () => {
+    const { getByText } = render(
+      <SectionHeaderStandalone title="Bagian" subtitle="Sub bagian" />,
+    );
+    expect(getByText('Sub bagian')).toBeTruthy();
+  });
+
+  test('renders actions slot when provided', () => {
+    const { getByText } = render(
+      <SectionHeaderStandalone title="Bagian" actions={<Text>Action</Text>} />,
+    );
+    expect(getByText('Action')).toBeTruthy();
+  });
+
+  test('does not render meta when omitted', () => {
+    const { queryByText } = render(<SectionHeaderStandalone title="Bagian" />);
+    expect(queryByText('5 item')).toBeNull();
   });
 });
