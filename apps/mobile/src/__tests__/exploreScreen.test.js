@@ -1,0 +1,389 @@
+jest.mock('lucide-react-native', () => {
+  const icons = {};
+  const names = [
+    'ArrowLeft', 'BookOpen', 'Bookmark', 'BookmarkCheck', 'CheckCircle2',
+    'Circle', 'ExternalLink', 'Globe', 'Heart', 'HelpCircle',
+    'ListChecks', 'MessageCircle', 'Pencil', 'Scale', 'Star',
+    'StickyNote', 'Trash2', 'UserCircle', 'Users', 'Video',
+  ];
+  names.forEach((n) => { icons[n] = n; });
+  return icons;
+});
+
+jest.mock('../context/SessionContext', () => ({
+  useSession: jest.fn(),
+}));
+
+jest.mock('../context/FeedbackContext', () => ({
+  useFeedback: jest.fn(),
+}));
+
+jest.mock('../api/explore', () => ({
+  getAllNotes: jest.fn(),
+  getBookmarkItems: jest.fn(),
+  getFeatureItemPage: jest.fn(),
+  getHijriOverview: jest.fn(),
+  getQuizQuestions: jest.fn(),
+  searchDictionary: jest.fn(),
+}));
+
+jest.mock('../api/social', () => ({
+  createComment: jest.fn(),
+  getCommentsByRef: jest.fn(),
+  getFeedPostPage: jest.fn(),
+  likeFeedPost: jest.fn(),
+}));
+
+jest.mock('../api/personal', () => ({
+  addBookmark: jest.fn(),
+  createUserWird: jest.fn(),
+  deleteBookmark: jest.fn(),
+  deleteUserWird: jest.fn(),
+  getBookmarks: jest.fn(),
+  getTodayPrayerLog: jest.fn(),
+  getUserWirds: jest.fn(),
+  savePrayerLog: jest.fn(),
+  updateUserWird: jest.fn(),
+}));
+
+jest.mock('../api/client', () => ({
+  getAyahById: jest.fn(),
+  getSurahs: jest.fn(),
+}));
+
+jest.mock('../storage/recentFeatures', () => ({
+  readPinnedFeatures: jest.fn(),
+  readRecentFeatures: jest.fn(),
+  rememberFeatureOpen: jest.fn(),
+  togglePinnedFeature: jest.fn(),
+}));
+
+jest.mock('../components/Screen', () => {
+  const { View, Text, TextInput, FlatList } = require('react-native');
+  return {
+    Screen: ({
+      children, title, subtitle, actions, searchSlot, listData,
+      renderListItem, listKeyExtractor, listFooter, onEndReached,
+    }) => (
+      <View>
+        <View>
+          <Text testID="screen-title">{title}</Text>
+          {subtitle ? <Text testID="screen-subtitle">{subtitle}</Text> : null}
+          {actions}
+        </View>
+        {searchSlot}
+        {children}
+        {Array.isArray(listData) && renderListItem ? (
+          <FlatList
+            data={listData}
+            keyExtractor={listKeyExtractor}
+            renderItem={renderListItem}
+            ListFooterComponent={listFooter}
+            onEndReached={onEndReached}
+          />
+        ) : null}
+      </View>
+    ),
+  };
+});
+
+jest.mock('../components/Card', () => {
+  const { View, Text } = require('react-native');
+  return {
+    Card: ({ children, style }) => <View style={style}>{children}</View>,
+    CardTitle: ({ children, meta }) => (
+      <View>
+        <Text>{children}</Text>
+        {meta ? <Text>{meta}</Text> : null}
+      </View>
+    ),
+  };
+});
+
+jest.mock('../components/ContentCard', () => {
+  const { Pressable, Text } = require('react-native');
+  return {
+    ContentCard: ({ title, subtitle, onPress, onMenuPress, children, meta }) => (
+      <Pressable onPress={onPress} onLongPress={onMenuPress} testID="content-card">
+        <Text testID="card-title">{title}</Text>
+        {subtitle ? <Text testID="card-subtitle">{subtitle}</Text> : null}
+        {meta ? <Text testID="card-meta">{meta}</Text> : null}
+        {children}
+      </Pressable>
+    ),
+  };
+});
+
+jest.mock('../components/Paper', () => {
+  const { Pressable, Text, TextInput, View } = require('react-native');
+  return {
+    PaperSearchInput: ({ value, onChangeText, placeholder }) => (
+      <TextInput
+        testID="search-input"
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+      />
+    ),
+    CompactRow: ({ title, subtitle, onPress, Icon, right, badges, meta }) => (
+      <Pressable onPress={onPress} testID="compact-row">
+        <Text testID="row-title">{title}</Text>
+        {subtitle ? <Text testID="row-subtitle">{subtitle}</Text> : null}
+        {right}
+      </Pressable>
+    ),
+    SectionHeader: ({ title, meta }) => (
+      <View>
+        <Text testID="section-title">{title}</Text>
+        {meta ? <Text testID="section-meta">{meta}</Text> : null}
+      </View>
+    ),
+    IconActionButton: ({ label, onPress }) => (
+      <Pressable onPress={onPress} testID={`action-${label}`}>
+        <Text>{label}</Text>
+      </Pressable>
+    ),
+    ActionPill: ({ label, onPress }) => (
+      <Pressable onPress={onPress} testID={`pill-${label}`}>
+        <Text>{label}</Text>
+      </Pressable>
+    ),
+  };
+});
+
+jest.mock('../components/AppActionSheet', () => ({
+  AppActionSheet: ({ visible, children }) => (visible ? children : null),
+  ActionSheetRow: ({ title, onPress }) => {
+    const { Pressable, Text } = require('react-native');
+    return (
+      <Pressable onPress={onPress} testID={`sheet-row-${title}`}>
+        <Text>{title}</Text>
+      </Pressable>
+    );
+  },
+}));
+
+jest.mock('../components/NotesPanel', () => ({
+  NotesPanel: () => {
+    const { Text } = require('react-native');
+    return <Text testID="notes-panel">NotesPanel</Text>;
+  },
+}));
+
+jest.mock('../components/NotificationCenter', () => ({
+  NotificationCenter: () => {
+    const { Text } = require('react-native');
+    return <Text testID="notification-center">NotificationCenter</Text>;
+  },
+}));
+
+jest.mock('../data/mobileFeatures', () => {
+  const allFeatures = [
+    { key: 'tafsir', title: 'Tafsir', subtitle: 'Tafsir per surah', group: 'Ilmu', type: 'surah-content', contentType: 'tafsir' },
+    { key: 'kamus', title: 'Kamus Arab', subtitle: 'Cari kosakata Arab', group: 'Alat', type: 'kamus' },
+    { key: 'quiz', title: 'Quiz Islami', subtitle: 'Latihan soal', group: 'Alat', type: 'quiz' },
+    { key: 'hijri', title: 'Kalender Hijri', subtitle: 'Hari ini', group: 'Alat', type: 'hijri' },
+    { key: 'doa', title: 'Doa', subtitle: 'Doa harian', group: 'Bacaan', type: 'list', endpoint: '/api/v1/doa' },
+    { key: 'bookmarks', title: 'Bookmark', subtitle: 'Tersimpan', group: 'Personal', type: 'bookmarks' },
+    { key: 'notes', title: 'Catatan', subtitle: 'Catatan pribadi', group: 'Personal', type: 'notes' },
+    { key: 'community-feed', title: 'Komunitas', subtitle: 'Refleksi', group: 'Ilmu', type: 'feed' },
+    { key: 'kajian', title: 'Kajian', subtitle: 'Sesi belajar', group: 'Ilmu', type: 'list', endpoint: '/api/v1/kajian' },
+    { key: 'tasbih', title: 'Tasbih', subtitle: 'Penghitung', group: 'Alat', type: 'tasbih' },
+    { key: 'siroh', title: 'Siroh', subtitle: 'Biografi Nabi', group: 'Ilmu', type: 'list', endpoint: '/api/v1/siroh' },
+    { key: 'user-wird', title: 'Wirid Saya', subtitle: 'Wirid pribadi', group: 'Bacaan', type: 'user-wird' },
+  ];
+
+  const belajarFeatureGroups = [
+    {
+      key: 'kajian-artikel',
+      label: 'Kajian & Artikel',
+      meta: 'Belajar rutin',
+      features: allFeatures.filter((f) => ['community-feed', 'kajian'].includes(f.key)),
+    },
+    {
+      key: 'referensi',
+      label: 'Referensi',
+      meta: 'Kamus dan katalog',
+      features: allFeatures.filter((f) => ['kamus', 'tafsir'].includes(f.key)),
+    },
+    {
+      key: 'evaluasi',
+      label: 'Evaluasi',
+      meta: 'Latihan',
+      features: allFeatures.filter((f) => f.key === 'quiz'),
+    },
+  ];
+
+  return { allFeatures, belajarFeatureGroups };
+});
+
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { ExploreScreen } from '../screens/ExploreScreen';
+
+const { useSession } = require('../context/SessionContext');
+const { useFeedback } = require('../context/FeedbackContext');
+const exploreApi = require('../api/explore');
+const personalApi = require('../api/personal');
+const { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinnedFeature } = require('../storage/recentFeatures');
+
+const defaultNavigation = {
+  current: { view: undefined, params: {} },
+  open: jest.fn(),
+  close: jest.fn(),
+  setBack: jest.fn(),
+  clearBack: jest.fn(),
+};
+
+const mockUseSession = () => ({
+  error: '', loading: false, session: null, signIn: jest.fn(), signOut: jest.fn(), user: null,
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  useSession.mockReturnValue(mockUseSession());
+  useFeedback.mockReturnValue({
+    showError: jest.fn(), showInfo: jest.fn(), showSuccess: jest.fn(),
+  });
+  readPinnedFeatures.mockResolvedValue([]);
+  readRecentFeatures.mockResolvedValue([]);
+  rememberFeatureOpen.mockResolvedValue([]);
+  togglePinnedFeature.mockResolvedValue({ items: [], pinned: false });
+});
+
+describe('ExploreScreen', () => {
+  test('renders screen title and subtitle', () => {
+    const { getByTestId } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+    expect(getByTestId('screen-title')).toBeTruthy();
+    expect(getByTestId('screen-subtitle')).toBeTruthy();
+  });
+
+  test('renders search input for feature catalog', () => {
+    const { getByTestId } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+    expect(getByTestId('search-input')).toBeTruthy();
+  });
+
+  test('renders section headers in catalog', () => {
+    const { getAllByTestId } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+    expect(getAllByTestId('section-title').length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('renders feature rows in catalog sections', () => {
+    const { getByText } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+    expect(getByText('Kajian & Artikel')).toBeTruthy();
+    expect(getByText('Referensi')).toBeTruthy();
+    expect(getByText('Evaluasi')).toBeTruthy();
+  });
+
+  test('feature items are tappable and load feature content', async () => {
+    const { getByText, getByPlaceholderText } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+
+    fireEvent.press(getByText('Kamus Arab'));
+
+    await waitFor(() => {
+      expect(getByPlaceholderText('Cari kata Arab atau Indonesia')).toBeTruthy();
+    });
+  });
+
+  test('search/filter narrows down feature list', () => {
+    const { getByTestId, queryByText } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+
+    const searchInput = getByTestId('search-input');
+    fireEvent.changeText(searchInput, 'tafsir');
+
+    expect(queryByText('Kajian & Artikel')).toBeNull();
+    expect(queryByText('Referensi')).toBeTruthy();
+  });
+
+  test('shows empty results message when search has no matches', () => {
+    const { getByTestId, getByText } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+
+    const searchInput = getByTestId('search-input');
+    fireEvent.changeText(searchInput, 'zzzzznotexist');
+
+    expect(getByText('Tidak ada hasil')).toBeTruthy();
+  });
+
+  test('loads bookmarks when logged in', async () => {
+    useSession.mockReturnValue({
+      ...mockUseSession(),
+      session: { token: 'abc' },
+      user: { id: '1', name: 'Test', email: 'test@test.com' },
+    });
+    personalApi.getBookmarks.mockResolvedValue([
+      { id: '1', ref_type: 'ayah', ref_id: '1:1' },
+    ]);
+
+    render(<ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+
+    await waitFor(() => {
+      expect(personalApi.getBookmarks).toHaveBeenCalled();
+    });
+  });
+
+  test('loads quiz feature and shows quiz options', async () => {
+    exploreApi.getQuizQuestions.mockResolvedValue([
+      { id: 'q1', title: 'Quiz 1', raw: { question: 'What?', option_a: 'A', option_b: 'B', option_c: 'C', option_d: 'D', correct_answer: 'A' } },
+    ]);
+
+    const { getByText } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+
+    fireEvent.press(getByText('Quiz Islami'));
+
+    await waitFor(() => {
+      expect(exploreApi.getQuizQuestions).toHaveBeenCalled();
+    });
+  });
+
+  test('toggle pinned feature calls togglePinnedFeature', async () => {
+    const { getByText, getAllByLabelText } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText('Tafsir')).toBeTruthy();
+    });
+
+    const pinButtons = getAllByLabelText(/Sematkan/);
+    fireEvent.press(pinButtons[0]);
+
+    await waitFor(() => {
+      expect(togglePinnedFeature).toHaveBeenCalled();
+    });
+  });
+
+  test('shows profile action button when no feature is active', () => {
+    const { getByTestId } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+    expect(getByTestId('action-Buka Profil')).toBeTruthy();
+  });
+
+  test('shows back button when a feature is active', async () => {
+    const { getByText, getByTestId } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+
+    fireEvent.press(getByText('Kamus Arab'));
+
+    await waitFor(() => {
+      expect(getByTestId('action-Kembali ke Belajar')).toBeTruthy();
+    });
+  });
+});
