@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/morkid/paginate"
@@ -10,6 +11,7 @@ import (
 type AyahRepository interface {
 	Save(*model.Ayah) (*model.Ayah, error)
 	FindAll(*fiber.Ctx) *paginate.Page
+	FindAllKeyset(*fiber.Ctx) (*lib.KeysetPage, error)
 	FindById(*int) (*model.Ayah, error)
 	FindManyByIds(ids []int) ([]model.Ayah, error)
 	FindDaily(number int) (*model.Ayah, error)
@@ -44,6 +46,42 @@ func (c *ayahRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&ayahs)
 
 	return &page
+}
+
+func (c *ayahRepo) FindAllKeyset(ctx *fiber.Ctx) (*lib.KeysetPage, error) {
+	cursor, limit := lib.GetKeysetParams(ctx)
+
+	var total int64
+	c.db.Model(&model.Ayah{}).Count(&total)
+
+	var ayahs []model.Ayah
+	query := c.db.Model(&model.Ayah{}).
+		Joins("Translation").Joins("Surah").Joins("Surah.Translation").
+		Order(`"ayah".id`)
+	if cursor > 0 {
+		query = query.Where(`"ayah".id > ?`, cursor)
+	}
+	query = query.Limit(limit + 1)
+	if err := query.Find(&ayahs).Error; err != nil {
+		return nil, err
+	}
+
+	hasMore := len(ayahs) > limit
+	if hasMore {
+		ayahs = ayahs[:limit]
+	}
+
+	var nextCursor *int
+	if hasMore && len(ayahs) > 0 {
+		nextCursor = ayahs[len(ayahs)-1].ID
+	}
+
+	return &lib.KeysetPage{
+		Items:      ayahs,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+		Total:      total,
+	}, nil
 }
 
 func (c *ayahRepo) FindById(id *int) (*model.Ayah, error) {

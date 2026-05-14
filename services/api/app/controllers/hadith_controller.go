@@ -13,6 +13,7 @@ import (
 type HadithController interface {
 	Create(ctx *fiber.Ctx) error
 	FindAll(ctx *fiber.Ctx) error
+	FindAllKeyset(ctx *fiber.Ctx) error
 	FindDaily(ctx *fiber.Ctx) error
 	FindById(ctx *fiber.Ctx) error
 	FindByBookSlug(ctx *fiber.Ctx) error
@@ -45,6 +46,14 @@ func (c *hadithController) Create(ctx *fiber.Ctx) error {
 		return lib.ErrorConflict(ctx, err)
 	}
 	return lib.OK(ctx, data)
+}
+
+func (c *hadithController) FindAllKeyset(ctx *fiber.Ctx) error {
+	page, err := c.hadith.FindAllKeyset(ctx)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, page)
 }
 
 func (c *hadithController) FindDaily(ctx *fiber.Ctx) error {

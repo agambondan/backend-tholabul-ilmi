@@ -3,6 +3,7 @@ package repository
 import (
 	"time"
 
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/gofiber/fiber/v2"
 	"github.com/morkid/paginate"
@@ -24,6 +25,7 @@ type HadithRepository interface {
 	FindByOffset(int64) (*model.Hadith, error)
 	Save(*model.Hadith) (*model.Hadith, error)
 	FindAll(*fiber.Ctx) *paginate.Page
+	FindAllKeyset(*fiber.Ctx) (*lib.KeysetPage, error)
 	FindById(*int) (*model.Hadith, error)
 	FindManyByIds(ids []int) ([]model.Hadith, error)
 	FindByBookSlug(*fiber.Ctx, *string) (*paginate.Page, error)
@@ -69,6 +71,41 @@ func (c *hadithRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
 
 	return &page
+}
+
+func (c *hadithRepo) FindAllKeyset(ctx *fiber.Ctx) (*lib.KeysetPage, error) {
+	cursor, limit := lib.GetKeysetParams(ctx)
+
+	var total int64
+	c.db.Model(&model.Hadith{}).Count(&total)
+
+	var hadiths []model.Hadith
+	query := c.withRelations(c.db.Model(&model.Hadith{})).
+		Preload("Media").Order("id")
+	if cursor > 0 {
+		query = query.Where("hadith.id > ?", cursor)
+	}
+	query = query.Limit(limit + 1)
+	if err := query.Find(&hadiths).Error; err != nil {
+		return nil, err
+	}
+
+	hasMore := len(hadiths) > limit
+	if hasMore {
+		hadiths = hadiths[:limit]
+	}
+
+	var nextCursor *int
+	if hasMore && len(hadiths) > 0 {
+		nextCursor = hadiths[len(hadiths)-1].ID
+	}
+
+	return &lib.KeysetPage{
+		Items:      hadiths,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+		Total:      total,
+	}, nil
 }
 
 func (c *hadithRepo) FindById(id *int) (*model.Hadith, error) {

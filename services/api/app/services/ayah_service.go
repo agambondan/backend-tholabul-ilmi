@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -13,6 +14,7 @@ import (
 type AyahService interface {
 	Create(*model.Ayah) (*model.Ayah, error)
 	FindAll(*fiber.Ctx) *paginate.Page
+	FindAllKeyset(*fiber.Ctx) (*lib.KeysetPage, error)
 	FindById(*int) (*model.Ayah, error)
 	FindDaily() (*model.Ayah, error)
 	FindByNumber(*fiber.Ctx, *int) (*paginate.Page, error)
@@ -39,6 +41,10 @@ func (c *ayahService) Create(ayah *model.Ayah) (*model.Ayah, error) {
 
 func (c *ayahService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	return c.ayah.FindAll(ctx)
+}
+
+func (c *ayahService) FindAllKeyset(ctx *fiber.Ctx) (*lib.KeysetPage, error) {
+	return c.ayah.FindAllKeyset(ctx)
 }
 
 func (c *ayahService) FindById(id *int) (*model.Ayah, error) {

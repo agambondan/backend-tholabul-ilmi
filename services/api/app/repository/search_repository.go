@@ -99,7 +99,7 @@ func (r *searchRepo) SearchDoa(query string, limit, offset int) ([]model.Doa, in
 	var doas []model.Doa
 	var total int64
 
-	filter := `doas.title ILIKE ? OR doas.arabic ILIKE ? OR doas.translation ILIKE ? OR doas.source ILIKE ? OR doas.category::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".latin_idn ILIKE ? OR "Translation".latin_en ILIKE ? OR "Translation".ar ILIKE ?`
+	filter := `doa.title ILIKE ? OR doa.arabic ILIKE ? OR doa.translation ILIKE ? OR doa.source ILIKE ? OR doa.category::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".latin_idn ILIKE ? OR "Translation".latin_en ILIKE ? OR "Translation".ar ILIKE ?`
 	args := []interface{}{"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%",
 		"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%"}
 
@@ -107,7 +107,7 @@ func (r *searchRepo) SearchDoa(query string, limit, offset int) ([]model.Doa, in
 
 	err := r.db.Model(&model.Doa{}).Joins("Translation").
 		Where(filter, args...).
-		Order("doas.category, doas.id").
+		Order("doa.category, doa.id").
 		Limit(limit).Offset(offset).
 		Find(&doas).Error
 	return doas, total, err
@@ -117,7 +117,7 @@ func (r *searchRepo) SearchKajian(query string, limit, offset int) ([]model.Kaji
 	var kajians []model.Kajian
 	var total int64
 
-	filter := `kajians.title ILIKE ? OR kajians.description ILIKE ? OR kajians.speaker ILIKE ? OR kajians.topic ILIKE ? OR kajians.type::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".description_idn ILIKE ? OR "Translation".description_en ILIKE ?`
+	filter := `kajian.title ILIKE ? OR kajian.description ILIKE ? OR kajian.speaker ILIKE ? OR kajian.topic ILIKE ? OR kajian.type::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".description_idn ILIKE ? OR "Translation".description_en ILIKE ?`
 	args := []interface{}{"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%",
 		"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%"}
 
@@ -125,7 +125,7 @@ func (r *searchRepo) SearchKajian(query string, limit, offset int) ([]model.Kaji
 
 	err := r.db.Model(&model.Kajian{}).Joins("Translation").
 		Where(filter, args...).
-		Order("kajians.published_at DESC, kajians.id DESC").
+		Order("kajian.published_at DESC, kajian.id DESC").
 		Limit(limit).Offset(offset).
 		Find(&kajians).Error
 	return kajians, total, err

@@ -3,6 +3,7 @@ package service
 import (
 	"time"
 
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -12,6 +13,7 @@ import (
 type HadithService interface {
 	Create(*model.Hadith) (*model.Hadith, error)
 	FindAll(*fiber.Ctx) *paginate.Page
+	FindAllKeyset(*fiber.Ctx) (*lib.KeysetPage, error)
 	FindById(*int) (*model.Hadith, error)
 	FindDaily() (*model.Hadith, error)
 	FindByBookSlug(*fiber.Ctx, *string) (*paginate.Page, error)
@@ -42,6 +44,10 @@ func (b *hadithService) Create(hadith *model.Hadith) (*model.Hadith, error) {
 
 func (b *hadithService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	return b.hadith.FindAll(ctx)
+}
+
+func (b *hadithService) FindAllKeyset(ctx *fiber.Ctx) (*lib.KeysetPage, error) {
+	return b.hadith.FindAllKeyset(ctx)
 }
 
 func (b *hadithService) FindById(id *int) (*model.Hadith, error) {

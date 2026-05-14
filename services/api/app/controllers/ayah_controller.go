@@ -12,6 +12,7 @@ import (
 type AyahController interface {
 	Create(ctx *fiber.Ctx) error
 	FindAll(ctx *fiber.Ctx) error
+	FindAllKeyset(ctx *fiber.Ctx) error
 	FindById(ctx *fiber.Ctx) error
 	FindDaily(ctx *fiber.Ctx) error
 	FindByNumber(ctx *fiber.Ctx) error
@@ -44,6 +45,14 @@ func (c *ayahController) Create(ctx *fiber.Ctx) error {
 
 func (c *ayahController) FindAll(ctx *fiber.Ctx) error {
 	page := c.ayah.FindAll(ctx)
+	return lib.OK(ctx, page)
+}
+
+func (c *ayahController) FindAllKeyset(ctx *fiber.Ctx) error {
+	page, err := c.ayah.FindAllKeyset(ctx)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
 	return lib.OK(ctx, page)
 }
 
