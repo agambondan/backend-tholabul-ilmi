@@ -21,6 +21,16 @@ func NewAsmaUlHusnaController(services *service.Services) AsmaUlHusnaController 
 	return &asmaUlHusnaController{services.AsmaUlHusna}
 }
 
+// FindAll Asmaul Husna
+// @Summary Get all Asmaul Husna
+// @Tags Ibadah, Asmaul Husna
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /asmaul-husna [get]
 func (c *asmaUlHusnaController) FindAll(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
 	if limit > 99 {
@@ -38,6 +48,16 @@ func (c *asmaUlHusnaController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
+// FindByNumber Asmaul Husna
+// @Summary Get Asmaul Husna by number
+// @Tags Ibadah, Asmaul Husna
+// @Accept json
+// @Produce json
+// @Param number path int true "Asma number (1-99)"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /asmaul-husna/{number} [get]
 func (c *asmaUlHusnaController) FindByNumber(ctx *fiber.Ctx) error {
 	number, err := strconv.Atoi(ctx.Params("number"))
 	if err != nil || number < 1 || number > 99 {

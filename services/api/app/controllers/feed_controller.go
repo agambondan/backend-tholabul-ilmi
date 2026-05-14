@@ -23,11 +23,25 @@ func NewFeedController(services *service.Services) FeedController {
 	return &feedController{services.Feed}
 }
 
+// @Summary Get feed posts
+// @Tags Sosial
+// @Produce json
+// @Param ref_type query string false "Filter by reference type"
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/feed [get]
 func (c *feedController) FindAll(ctx *fiber.Ctx) error {
 	refType := model.FeedRefType(ctx.Query("ref_type"))
 	return lib.OK(ctx, c.svc.FindAll(ctx, refType))
 }
 
+// @Summary Get feed post by ID
+// @Tags Sosial
+// @Produce json
+// @Param id path string true "Post ID"
+// @Success 200 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/feed/{id} [get]
 func (c *feedController) FindByID(ctx *fiber.Ctx) error {
 	post, err := c.svc.FindByID(ctx.Params("id"))
 	if err != nil {
@@ -36,6 +50,15 @@ func (c *feedController) FindByID(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, post)
 }
 
+// @Summary Create feed post
+// @Tags Sosial
+// @Accept json
+// @Produce json
+// @Param body body model.CreateFeedPostRequest true "Post data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /api/v1/feed [post]
 func (c *feedController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -52,6 +75,14 @@ func (c *feedController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, post)
 }
 
+// @Summary Like feed post
+// @Tags Sosial
+// @Produce json
+// @Param id path string true "Post ID"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/feed/{id}/like [post]
 func (c *feedController) Like(ctx *fiber.Ctx) error {
 	if _, err := extractUserID(ctx); err != nil {
 		return lib.ErrorUnauthorized(ctx)
@@ -63,6 +94,15 @@ func (c *feedController) Like(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, post)
 }
 
+// @Summary Delete feed post
+// @Tags Sosial
+// @Produce json
+// @Param id path string true "Post ID"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/feed/{id} [delete]
 func (c *feedController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

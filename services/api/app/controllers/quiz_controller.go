@@ -70,6 +70,15 @@ func (c *quizController) ListQuestions(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, fiber.Map{"items": result, "page": page, "size": size})
 }
 
+// @Summary Get quiz session
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param type query string false "Quiz type"
+// @Param count query int false "Number of questions (default 10)"
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /quiz/session [get]
 func (c *quizController) GetSession(ctx *fiber.Ctx) error {
 	quizType := model.QuizType(ctx.Query("type"))
 	count, _ := strconv.Atoi(ctx.Query("count", "10"))

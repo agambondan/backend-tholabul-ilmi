@@ -23,6 +23,16 @@ func NewReadingProgressController(services *service.Services) ReadingProgressCon
 	return &readingProgressController{services.ReadingProgress}
 }
 
+// @Summary Save Quran reading progress
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param body body model.UpdateQuranProgressRequest true "Quran progress data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/progress/quran [put]
 func (c *readingProgressController) UpdateQuran(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -39,6 +49,16 @@ func (c *readingProgressController) UpdateQuran(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, progress)
 }
 
+// @Summary Save Hadith reading progress
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param body body model.UpdateHadithProgressRequest true "Hadith progress data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/progress/hadith [put]
 func (c *readingProgressController) UpdateHadith(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -55,6 +75,12 @@ func (c *readingProgressController) UpdateHadith(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, progress)
 }
 
+// @Summary Get Quran reading progress
+// @Tags Belajar
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /api/v1/progress/quran [get]
 func (c *readingProgressController) GetQuran(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -67,6 +93,12 @@ func (c *readingProgressController) GetQuran(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, progress)
 }
 
+// @Summary Get Hadith reading progress
+// @Tags Belajar
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /api/v1/progress/hadith [get]
 func (c *readingProgressController) GetHadith(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -79,6 +111,13 @@ func (c *readingProgressController) GetHadith(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, progress)
 }
 
+// @Summary Get all reading progress
+// @Tags Belajar
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/progress [get]
 func (c *readingProgressController) GetAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

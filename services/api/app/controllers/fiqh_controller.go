@@ -55,6 +55,16 @@ func NewFiqhController(services *service.Services) FiqhController {
 	return &fiqhController{services.Fiqh}
 }
 
+// FindAll get all fiqh categories
+// @Summary Get all fiqh categories
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /fiqh [get]
 func (c *fiqhController) FindAllCategories(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
 	if limit > 100 {
@@ -74,6 +84,16 @@ func (c *fiqhController) FindAllCategories(ctx *fiber.Ctx) error {
 	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
+// FindItems get all fiqh items (admin)
+// @Summary Get all fiqh items (admin)
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /fiqh/items [get]
 func (c *fiqhController) FindAllItems(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
 	if limit > 500 {
@@ -90,6 +110,18 @@ func (c *fiqhController) FindAllItems(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, fiber.Map{"items": result})
 }
 
+// FindCategoryBySlug get fiqh category by slug
+// @Summary Get fiqh category by slug
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param slug path string true "Category slug"
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /fiqh/categories/{slug} [get]
 func (c *fiqhController) FindCategoryBySlug(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
 	if limit > 100 {
@@ -125,6 +157,16 @@ func (c *fiqhController) FindCategoryBySlug(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, cat)
 }
 
+// FindItemBySlug get fiqh item by slug
+// @Summary Get fiqh item by slug
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param slug path string true "Item slug"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /fiqh/item/{slug} [get]
 func (c *fiqhController) FindItemBySlug(ctx *fiber.Ctx) error {
 	item, err := c.svc.FindItemBySlug(ctx.Params("slug"))
 	if err != nil {
@@ -136,6 +178,17 @@ func (c *fiqhController) FindItemBySlug(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, item)
 }
 
+// FindBySlugId get fiqh item by category slug and ID
+// @Summary Get fiqh item by category slug and ID
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param slug path string true "Category slug"
+// @Param id path int true "Item ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /fiqh/{slug}/{id} [get]
 func (c *fiqhController) FindItemByCategoryAndID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -151,6 +204,16 @@ func (c *fiqhController) FindItemByCategoryAndID(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, item)
 }
 
+// CreateCategory create fiqh category
+// @Summary Create a fiqh category (admin)
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param request body model.CreateFiqhCategoryRequest true "Category request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /fiqh/categories [post]
 func (c *fiqhController) CreateCategory(ctx *fiber.Ctx) error {
 	req := new(model.CreateFiqhCategoryRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -163,6 +226,17 @@ func (c *fiqhController) CreateCategory(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, cat)
 }
 
+// UpdateCategory update fiqh category
+// @Summary Update a fiqh category (admin)
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param id path int true "Category ID"
+// @Param request body model.CreateFiqhCategoryRequest true "Category request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /fiqh/categories/{id} [put]
 func (c *fiqhController) UpdateCategory(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -179,6 +253,16 @@ func (c *fiqhController) UpdateCategory(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, cat)
 }
 
+// DeleteCategory delete fiqh category
+// @Summary Delete a fiqh category (admin)
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param id path int true "Category ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /fiqh/categories/{id} [delete]
 func (c *fiqhController) DeleteCategory(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -190,6 +274,16 @@ func (c *fiqhController) DeleteCategory(ctx *fiber.Ctx) error {
 	return lib.OK(ctx)
 }
 
+// CreateItem create fiqh item
+// @Summary Create a fiqh item (admin)
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param request body fiqhAdminItemRequest true "Fiqh item request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /fiqh/items [post]
 func (c *fiqhController) CreateItem(ctx *fiber.Ctx) error {
 	req := new(fiqhAdminItemRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -206,6 +300,17 @@ func (c *fiqhController) CreateItem(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, fiqhItemToAdminResponse(item))
 }
 
+// UpdateItem update fiqh item
+// @Summary Update a fiqh item (admin)
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param id path int true "Item ID"
+// @Param request body fiqhAdminItemRequest true "Fiqh item request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /fiqh/items/{id} [put]
 func (c *fiqhController) UpdateItem(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -226,6 +331,16 @@ func (c *fiqhController) UpdateItem(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, fiqhItemToAdminResponse(item))
 }
 
+// DeleteItem delete fiqh item
+// @Summary Delete a fiqh item (admin)
+// @Tags Ibadah, Fiqh
+// @Accept json
+// @Produce json
+// @Param id path int true "Item ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /fiqh/items/{id} [delete]
 func (c *fiqhController) DeleteItem(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

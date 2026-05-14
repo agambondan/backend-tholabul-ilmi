@@ -24,6 +24,14 @@ func NewMurojaahController(services *service.Services) MurojaahController {
 	return &murojaahController{services.Murojaah}
 }
 
+// @Summary Get murojaah session (random ayahs)
+// @Tags Belajar
+// @Produce json
+// @Param count query int false "Number of ayahs (default 10)"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/murojaah/session [get]
 func (c *murojaahController) GetSession(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -37,6 +45,16 @@ func (c *murojaahController) GetSession(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, ayahs)
 }
 
+// @Summary Submit murojaah result
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param body body model.RecordMurojaahRequest true "Murojaah result"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/murojaah/result [post]
 func (c *murojaahController) RecordSession(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -53,6 +71,14 @@ func (c *murojaahController) RecordSession(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, session)
 }
 
+// @Summary Get murojaah history
+// @Tags Belajar
+// @Produce json
+// @Param limit query int false "Limit (default 20)"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/murojaah/history [get]
 func (c *murojaahController) GetHistory(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -66,6 +92,13 @@ func (c *murojaahController) GetHistory(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, sessions)
 }
 
+// @Summary Get murojaah stats
+// @Tags Belajar
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/murojaah/stats [get]
 func (c *murojaahController) GetStats(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

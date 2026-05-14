@@ -64,6 +64,16 @@ func clearAuthCookies(ctx *fiber.Ctx) {
 	ctx.Cookie(&fiber.Cookie{Name: "refresh_token", Value: "", Path: "/", Expires: time.Unix(0, 0)})
 }
 
+// Register User
+// @Summary Register a new user
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body model.RegisterRequest true "Register request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /auth/register [post]
 func (c *userController) Register(ctx *fiber.Ctx) error {
 	req := new(model.RegisterRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -77,6 +87,16 @@ func (c *userController) Register(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, user)
 }
 
+// Login User
+// @Summary Login user
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body model.LoginRequest true "Login request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /auth/login [post]
 func (c *userController) Login(ctx *fiber.Ctx) error {
 	req := new(model.LoginRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -90,6 +110,15 @@ func (c *userController) Login(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, resp)
 }
 
+// Me Get current user profile
+// @Summary Get current user profile
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /auth/me [get]
 func (c *userController) Me(ctx *fiber.Ctx) error {
 	claims, err := lib.ExtractToken(ctx)
 	if err != nil {
@@ -107,11 +136,35 @@ func (c *userController) Me(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, user)
 }
 
+// FindAll Users
+// @Summary List all users (admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param page query int false "Page number"
+// @Param limit query int false "Items per page"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Router /users [get]
 func (c *userController) FindAll(ctx *fiber.Ctx) error {
 	page := c.user.FindAll(ctx)
 	return lib.OK(ctx, page)
 }
 
+// FindById User
+// @Summary Get user by ID
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "User ID"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /users/{id} [get]
 func (c *userController) FindById(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 	claims, err := lib.ExtractToken(ctx)
@@ -130,6 +183,16 @@ func (c *userController) FindById(ctx *fiber.Ctx) error {
 }
 
 // UpdateProfile lets the authenticated user update their own name/avatar.
+// @Summary Update current user profile
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param body body model.UpdateProfileRequest true "Update profile request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /auth/me [put]
 func (c *userController) UpdateProfile(ctx *fiber.Ctx) error {
 	claims, err := lib.ExtractToken(ctx)
 	if err != nil {
@@ -153,6 +216,19 @@ func (c *userController) UpdateProfile(ctx *fiber.Ctx) error {
 }
 
 // UpdateById is admin-only: can update any user's fields except password.
+// @Summary Update user by ID (admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "User ID"
+// @Param body body model.User true "Update user request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /users/{id} [put]
 func (c *userController) UpdateById(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 	data := new(model.User)
@@ -169,6 +245,19 @@ func (c *userController) UpdateById(ctx *fiber.Ctx) error {
 }
 
 // UpdateRole is admin-only: change a user's role.
+// @Summary Update user role (admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "User ID"
+// @Param body body model.UpdateRoleRequest true "Update role request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /users/{id}/role [put]
 func (c *userController) UpdateRole(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 	req := new(model.UpdateRoleRequest)
@@ -183,6 +272,17 @@ func (c *userController) UpdateRole(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, user)
 }
 
+// UpdatePassword Change current user password
+// @Summary Change current user password
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param body body model.UpdatePasswordRequest true "Update password request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /auth/password [put]
 func (c *userController) UpdatePassword(ctx *fiber.Ctx) error {
 	claims, err := lib.ExtractToken(ctx)
 	if err != nil {
@@ -202,6 +302,16 @@ func (c *userController) UpdatePassword(ctx *fiber.Ctx) error {
 	return lib.OK(ctx)
 }
 
+// Refresh Access Token
+// @Summary Refresh access token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body object{refresh_token=string} false "Refresh token in body (optional, falls back to cookie)"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /auth/refresh [post]
 func (c *userController) Refresh(ctx *fiber.Ctx) error {
 	refreshToken := ctx.Cookies("refresh_token")
 	if refreshToken == "" {
@@ -224,6 +334,14 @@ func (c *userController) Refresh(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, resp)
 }
 
+// Logout User
+// @Summary Logout user
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body object{refresh_token=string} false "Refresh token in body"
+// @Success 200 {object} lib.Response
+// @Router /auth/logout [post]
 func (c *userController) Logout(ctx *fiber.Ctx) error {
 	refreshToken := ctx.Cookies("refresh_token")
 	if refreshToken == "" {
@@ -240,6 +358,15 @@ func (c *userController) Logout(ctx *fiber.Ctx) error {
 	return lib.OK(ctx)
 }
 
+// ForgotPassword Send forgot password email
+// @Summary Send forgot password email
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body model.ForgotPasswordRequest true "Forgot password request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /auth/forgot-password [post]
 func (c *userController) ForgotPassword(ctx *fiber.Ctx) error {
 	req := new(model.ForgotPasswordRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -250,6 +377,15 @@ func (c *userController) ForgotPassword(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, "If that email is registered, a reset link has been sent.")
 }
 
+// ResetPassword Reset user password
+// @Summary Reset user password
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body model.ResetPasswordRequest true "Reset password request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /auth/reset-password [post]
 func (c *userController) ResetPassword(ctx *fiber.Ctx) error {
 	req := new(model.ResetPasswordRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -261,6 +397,18 @@ func (c *userController) ResetPassword(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, "Password has been reset successfully.")
 }
 
+// DeleteById Delete user by ID (admin only)
+// @Summary Delete user by ID (admin only)
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "User ID"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /users/{id} [delete]
 func (c *userController) DeleteById(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 	if err := c.user.DeleteById(id); err != nil {

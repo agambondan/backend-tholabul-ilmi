@@ -22,6 +22,19 @@ func NewPrayerTimesController(services *service.Services) PrayerTimesController 
 	return &prayerTimesController{services.PrayerTimes}
 }
 
+// GetTimes prayer times by date
+// @Summary Get prayer times by date
+// @Tags Ibadah, Jadwal Sholat
+// @Accept json
+// @Produce json
+// @Param lat query number true "Latitude"
+// @Param lng query number true "Longitude"
+// @Param method query string false "Calculation method (kemenag)" default(kemenag)
+// @Param madhab query string false "Madhab (shafi)" default(shafi)
+// @Param date query string false "Date YYYY-MM-DD" default(2024-01-01)
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /sholat-times [get]
 func (c *prayerTimesController) GetByDate(ctx *fiber.Ctx) error {
 	lat, lng, err := prayerParseLatLng(ctx)
 	if err != nil {
@@ -41,6 +54,18 @@ func (c *prayerTimesController) GetByDate(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, result)
 }
 
+// GetWeek weekly prayer times
+// @Summary Get weekly prayer times
+// @Tags Ibadah, Jadwal Sholat
+// @Accept json
+// @Produce json
+// @Param lat query number true "Latitude"
+// @Param lng query number true "Longitude"
+// @Param method query string false "Calculation method (kemenag)" default(kemenag)
+// @Param madhab query string false "Madhab (shafi)" default(shafi)
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /sholat-times/week [get]
 func (c *prayerTimesController) GetWeekly(ctx *fiber.Ctx) error {
 	lat, lng, err := prayerParseLatLng(ctx)
 	if err != nil {
@@ -55,6 +80,20 @@ func (c *prayerTimesController) GetWeekly(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, result)
 }
 
+// GetImsakiyah get imsakiyah schedule
+// @Summary Get imsakiyah schedule for a month
+// @Tags Ibadah, Jadwal Sholat
+// @Accept json
+// @Produce json
+// @Param lat query number false "Latitude" default(-6.2088)
+// @Param lng query number false "Longitude" default(106.8456)
+// @Param method query string false "Calculation method (kemenag)" default(kemenag)
+// @Param madhab query string false "Madhab (shafi)" default(shafi)
+// @Param year query int false "Year"
+// @Param month query int false "Month (1-12)"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /imsakiyah [get]
 func (c *prayerTimesController) GetImsakiyah(ctx *fiber.Ctx) error {
 	lat, lng, err := prayerParseLatLng(ctx)
 	if err != nil {

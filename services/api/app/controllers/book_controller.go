@@ -27,6 +27,17 @@ func NewBookController(services *service.Services) BookController {
 	return &bookController{services.Book}
 }
 
+// Create book
+// @Summary Create book
+// @Description Create a new book entry
+// @Accept json
+// @Produce json
+// @Param body body model.Book true "Book data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /api/v1/books [post]
+// @Tags Books
 func (c *bookController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Book)
 	if err := lib.BodyParser(ctx, data); nil != err {
@@ -38,11 +49,31 @@ func (c *bookController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// FindAll book
+// @Summary List all books
+// @Description Get paginated list of all books
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /api/v1/books [get]
+// @Tags Books
 func (c *bookController) FindAll(ctx *fiber.Ctx) error {
 	page := c.book.FindAll(ctx)
 	return lib.OK(ctx, page)
 }
 
+// FindById book
+// @Summary Get book by ID
+// @Description Get a single book by its ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Book ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/books/{id} [get]
+// @Tags Books
 func (c *bookController) FindById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -55,6 +86,17 @@ func (c *bookController) FindById(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// FindBySlug book
+// @Summary Get book by slug
+// @Description Get a single book by its slug
+// @Accept json
+// @Produce json
+// @Param slug path string true "Book slug"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/books/slug/{slug} [get]
+// @Tags Books
 func (c *bookController) FindBySlug(ctx *fiber.Ctx) error {
 	slug := ctx.Params("slug")
 	data, err := c.book.FindBySlug(ctx, lib.Strptr(slug))
@@ -64,6 +106,18 @@ func (c *bookController) FindBySlug(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// UpdateById book
+// @Summary Update book
+// @Description Update book by ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Book ID"
+// @Param body body model.Book true "Book data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/books/{id} [put]
+// @Tags Books
 func (c *bookController) UpdateById(ctx *fiber.Ctx) error {
 	data := new(model.Book)
 	if err := lib.BodyParser(ctx, data); nil != err {
@@ -79,6 +133,17 @@ func (c *bookController) UpdateById(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// DeleteById book
+// @Summary Delete book
+// @Description Delete book by ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Book ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/books/{id} [delete]
+// @Tags Books
 func (c *bookController) DeleteById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

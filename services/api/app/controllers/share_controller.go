@@ -22,6 +22,16 @@ func NewShareController(services *service.Services) ShareController {
 	return &shareController{services.Ayah, services.Hadith}
 }
 
+// ShareAyah Get ayah sharing metadata
+// @Summary Get ayah sharing metadata
+// @Tags Share
+// @Accept json
+// @Produce json
+// @Param id path int true "Ayah ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /share/ayah/{id} [get]
 func (c *shareController) ShareAyah(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -34,6 +44,16 @@ func (c *shareController) ShareAyah(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, ayah)
 }
 
+// ShareHadith Get hadith sharing metadata
+// @Summary Get hadith sharing metadata
+// @Tags Share
+// @Accept json
+// @Produce json
+// @Param id path int true "Hadith ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /share/hadith/{id} [get]
 func (c *shareController) ShareHadith(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

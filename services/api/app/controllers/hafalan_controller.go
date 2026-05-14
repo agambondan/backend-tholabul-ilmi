@@ -23,6 +23,17 @@ func NewHafalanController(services *service.Services) HafalanController {
 	return &hafalanController{services.Hafalan}
 }
 
+// @Summary Update hafalan progress for a surah
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param surahId path int true "Surah ID"
+// @Param body body model.UpdateHafalanRequest true "Hafalan data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/hafalan/surah/{surahId} [put]
 func (c *hafalanController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -43,6 +54,13 @@ func (c *hafalanController) Update(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, result)
 }
 
+// @Summary Get all hafalan progress
+// @Tags Belajar
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/hafalan [get]
 func (c *hafalanController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -55,6 +73,13 @@ func (c *hafalanController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, list)
 }
 
+// @Summary Get hafalan summary
+// @Tags Belajar
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/hafalan/summary [get]
 func (c *hafalanController) Summary(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

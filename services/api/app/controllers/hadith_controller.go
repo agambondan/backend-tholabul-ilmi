@@ -37,6 +37,15 @@ func NewHadithController(services *service.Services) HadithController {
 	return &hadithController{services.Hadith}
 }
 
+// @Summary Create a new hadith
+// @Tags Hadith
+// @Accept json
+// @Produce json
+// @Param body body model.Hadith true "Hadith data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /hadiths [post]
 func (c *hadithController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Hadith)
 	if err := lib.BodyParser(ctx, data); nil != err {
@@ -48,6 +57,13 @@ func (c *hadithController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// @Summary Find all hadiths with keyset pagination
+// @Tags Hadith
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /hadiths/keyset [get]
 func (c *hadithController) FindAllKeyset(ctx *fiber.Ctx) error {
 	page, err := c.hadith.FindAllKeyset(ctx)
 	if err != nil {
@@ -56,6 +72,13 @@ func (c *hadithController) FindAllKeyset(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, page)
 }
 
+// @Summary Find daily hadith
+// @Tags Hadith
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /hadiths/daily [get]
 func (c *hadithController) FindDaily(ctx *fiber.Ctx) error {
 	hadith, err := c.hadith.FindDaily()
 	if err != nil || hadith == nil {
@@ -64,11 +87,26 @@ func (c *hadithController) FindDaily(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, hadith)
 }
 
+// @Summary Find all hadiths
+// @Tags Hadith
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Router /hadiths [get]
 func (c *hadithController) FindAll(ctx *fiber.Ctx) error {
 	page := c.hadith.FindAll(ctx)
 	return lib.OK(ctx, page)
 }
 
+// @Summary Find hadith by ID
+// @Tags Hadith
+// @Accept json
+// @Produce json
+// @Param id path int true "Hadith ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /hadiths/{id} [get]
 func (c *hadithController) FindById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -81,6 +119,14 @@ func (c *hadithController) FindById(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// @Summary Find hadiths by book slug
+// @Tags Hadith
+// @Accept json
+// @Produce json
+// @Param slug path string true "Book slug"
+// @Success 200 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /hadiths/book/{slug} [get]
 func (c *hadithController) FindByBookSlug(ctx *fiber.Ctx) error {
 	bookSlug := ctx.Params("slug")
 	data, err := c.hadith.FindByBookSlug(ctx, &bookSlug)
@@ -90,6 +136,15 @@ func (c *hadithController) FindByBookSlug(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// @Summary Find hadiths by theme ID
+// @Tags Hadith
+// @Accept json
+// @Produce json
+// @Param themeId path int true "Theme ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /hadiths/theme/{themeId} [get]
 func (c *hadithController) FindByThemeId(ctx *fiber.Ctx) error {
 	themeId, err := strconv.Atoi(ctx.Params("themeId"))
 	if err != nil {
@@ -102,6 +157,15 @@ func (c *hadithController) FindByThemeId(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// @Summary Find hadiths by theme slug
+// @Tags Hadith
+// @Accept json
+// @Produce json
+// @Param slug path string true "Theme slug"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /hadiths/theme/slug/{slug} [get]
 func (c *hadithController) FindByThemeName(ctx *fiber.Ctx) error {
 	name, err := url.QueryUnescape(ctx.Params("slug"))
 	if err != nil {

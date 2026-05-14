@@ -25,6 +25,16 @@ func NewMuhasabahController(services *service.Services) MuhasabahController {
 	return &muhasabahController{services.Muhasabah}
 }
 
+// @Summary Create muhasabah entry
+// @Tags Personal
+// @Accept json
+// @Produce json
+// @Param body body model.CreateMuhasabahRequest true "Muhasabah data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/muhasabah [post]
 func (c *muhasabahController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -41,6 +51,15 @@ func (c *muhasabahController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, m)
 }
 
+// @Summary Get all muhasabah entries
+// @Tags Personal
+// @Produce json
+// @Param limit query int false "Limit (default 20)"
+// @Param offset query int false "Offset (default 0)"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/muhasabah [get]
 func (c *muhasabahController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -55,6 +74,15 @@ func (c *muhasabahController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, list)
 }
 
+// @Summary Get muhasabah entry by ID
+// @Tags Personal
+// @Produce json
+// @Param id path int true "Muhasabah ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/muhasabah/{id} [get]
 func (c *muhasabahController) FindByID(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -71,6 +99,17 @@ func (c *muhasabahController) FindByID(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, m)
 }
 
+// @Summary Update muhasabah entry
+// @Tags Personal
+// @Accept json
+// @Produce json
+// @Param id path int true "Muhasabah ID"
+// @Param body body model.UpdateMuhasabahRequest true "Update data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/muhasabah/{id} [put]
 func (c *muhasabahController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -91,6 +130,15 @@ func (c *muhasabahController) Update(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, m)
 }
 
+// @Summary Delete muhasabah entry
+// @Tags Personal
+// @Produce json
+// @Param id path int true "Muhasabah ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/muhasabah/{id} [delete]
 func (c *muhasabahController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

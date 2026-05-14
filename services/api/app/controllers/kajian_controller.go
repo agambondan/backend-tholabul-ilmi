@@ -25,6 +25,17 @@ func NewKajianController(services *service.Services) KajianController {
 	return &kajianController{services.Kajian}
 }
 
+// @Summary Get all kajian with pagination
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param topic query string false "Filter by topic"
+// @Param type query string false "Filter by type"
+// @Param page query int false "Page number"
+// @Param size query int false "Page size"
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /kajian [get]
 func (c *kajianController) FindAll(ctx *fiber.Ctx) error {
 	topic := ctx.Query("topic")
 	kajianType := ctx.Query("type")
@@ -36,6 +47,15 @@ func (c *kajianController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, page)
 }
 
+// @Summary Get kajian by ID
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Kajian ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /kajian/{id} [get]
 func (c *kajianController) FindByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -50,6 +70,15 @@ func (c *kajianController) FindByID(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, k)
 }
 
+// @Summary Create a kajian
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param kajian body model.CreateKajianRequest true "Kajian data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /kajian [post]
 func (c *kajianController) Create(ctx *fiber.Ctx) error {
 	req := new(model.CreateKajianRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -62,6 +91,16 @@ func (c *kajianController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, k)
 }
 
+// @Summary Update a kajian
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Kajian ID"
+// @Param kajian body model.CreateKajianRequest true "Kajian data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /kajian/{id} [put]
 func (c *kajianController) Update(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -78,6 +117,15 @@ func (c *kajianController) Update(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, k)
 }
 
+// @Summary Delete a kajian
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Kajian ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /kajian/{id} [delete]
 func (c *kajianController) Delete(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

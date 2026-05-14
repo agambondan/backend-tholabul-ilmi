@@ -20,6 +20,15 @@ func NewZakatController(services *service.Services) ZakatController {
 	return &zakatController{services.Zakat}
 }
 
+// CalculateMaal calculate zakat maal
+// @Summary Calculate zakat maal (wealth)
+// @Tags Ibadah, Zakat
+// @Accept json
+// @Produce json
+// @Param request body service.ZakatMaalRequest true "Zakat maal request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /zakat/maal [post]
 func (c *zakatController) CalculateMaal(ctx *fiber.Ctx) error {
 	req := new(service.ZakatMaalRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -28,6 +37,15 @@ func (c *zakatController) CalculateMaal(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, c.svc.CalculateMaal(req))
 }
 
+// CalculateFitrah calculate zakat fitrah
+// @Summary Calculate zakat fitrah
+// @Tags Ibadah, Zakat
+// @Accept json
+// @Produce json
+// @Param request body service.ZakatFitrahRequest true "Zakat fitrah request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /zakat/fitrah [post]
 func (c *zakatController) CalculateFitrah(ctx *fiber.Ctx) error {
 	req := new(service.ZakatFitrahRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -36,6 +54,14 @@ func (c *zakatController) CalculateFitrah(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, c.svc.CalculateFitrah(req))
 }
 
+// GetNishab get nishab threshold
+// @Summary Get nishab threshold
+// @Tags Ibadah, Zakat
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /zakat/nishab [get]
 func (c *zakatController) GetNishab(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, c.svc.GetNishab())
 }

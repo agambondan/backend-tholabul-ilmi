@@ -14,6 +14,13 @@ func NewNotificationInboxController(svc *service.Services) *notificationInboxCon
 	return &notificationInboxController{svc.NotificationInbox}
 }
 
+// @Summary List notification inbox
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/notifications/inbox [get]
 func (c *notificationInboxController) List(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -27,6 +34,15 @@ func (c *notificationInboxController) List(ctx *fiber.Ctx) error {
 	return ctx.JSON(fiber.Map{"items": items, "unread_count": unread})
 }
 
+// @Summary Mark notification as read
+// @Tags Personal
+// @Produce json
+// @Param id path string true "Notification ID (UUID)"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/notifications/inbox/{id}/read [put]
 func (c *notificationInboxController) MarkRead(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -42,6 +58,13 @@ func (c *notificationInboxController) MarkRead(ctx *fiber.Ctx) error {
 	return ctx.JSON(fiber.Map{"ok": true})
 }
 
+// @Summary Mark all notifications as read
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/notifications/inbox/read-all [put]
 func (c *notificationInboxController) MarkAllRead(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

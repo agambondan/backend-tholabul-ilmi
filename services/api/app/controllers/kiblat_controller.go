@@ -18,6 +18,16 @@ func NewKiblatController(services *service.Services) KiblatController {
 	return &kiblatController{services.Kiblat}
 }
 
+// GetDirection calculate kiblat direction
+// @Summary Calculate kiblat direction
+// @Tags Ibadah, Kiblat
+// @Accept json
+// @Produce json
+// @Param lat query number true "Latitude"
+// @Param lng query number true "Longitude"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /kiblat [get]
 func (c *kiblatController) Calculate(ctx *fiber.Ctx) error {
 	lat, err := strconv.ParseFloat(ctx.Query("lat"), 64)
 	if err != nil || lat < -90 || lat > 90 {

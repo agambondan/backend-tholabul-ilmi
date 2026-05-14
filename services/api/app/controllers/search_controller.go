@@ -20,6 +20,19 @@ func NewSearchController(services *service.Services) SearchController {
 	return &searchController{services.Search}
 }
 
+// Search Global search across Quran, Hadith, Doa, and Kajian
+// @Summary Global search across Quran, Hadith, Doa, and Kajian
+// @Tags Search
+// @Accept json
+// @Produce json
+// @Param q query string true "Search query"
+// @Param type query string false "Search type filter (all, ayah, hadith, doa, kajian)" default(all)
+// @Param limit query int false "Results per page" default(20)
+// @Param page query int false "Page number" default(0)
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /search [get]
 func (c *searchController) Search(ctx *fiber.Ctx) error {
 	q := ctx.Query("q")
 	if q == "" {

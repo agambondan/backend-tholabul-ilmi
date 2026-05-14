@@ -20,6 +20,12 @@ func NewAchievementController(services *service.Services) AchievementController 
 	return &achievementController{services.Achievement}
 }
 
+// @Summary Get all achievements
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/achievements [get]
 func (c *achievementController) GetAll(ctx *fiber.Ctx) error {
 	list, err := c.svc.GetAll()
 	if err != nil {
@@ -28,6 +34,13 @@ func (c *achievementController) GetAll(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, list)
 }
 
+// @Summary Get my earned achievements
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/achievements/mine [get]
 func (c *achievementController) GetMine(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -40,6 +53,13 @@ func (c *achievementController) GetMine(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, list)
 }
 
+// @Summary Get my achievement points
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/achievements/points [get]
 func (c *achievementController) GetMyPoints(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

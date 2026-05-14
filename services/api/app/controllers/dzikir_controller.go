@@ -40,6 +40,16 @@ func NewDzikirController(services *service.Services) DzikirController {
 	return &dzikirController{services.Dzikir}
 }
 
+// FindAll Dzikir
+// @Summary Get all dzikir
+// @Tags Dzikir
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /dzikir [get]
 func (c *dzikirController) FindAll(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
 	if limit > 100 {
@@ -59,6 +69,16 @@ func (c *dzikirController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
+// FindByID Dzikir
+// @Summary Get dzikir by ID
+// @Tags Dzikir
+// @Accept json
+// @Produce json
+// @Param id path int true "Dzikir ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /dzikir/{id} [get]
 func (c *dzikirController) FindByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

@@ -157,6 +157,9 @@ seed-tajweed-docker:
 build-api:
 	cd services/api && go build main.go -o weddinggo
 
+swagger:
+	cd services/api && swag init -g app/http/routes.go --parseDependency --parseInternal -o docs/
+
 build-web:
 	cd apps/web && npm run build
 

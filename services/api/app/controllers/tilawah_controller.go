@@ -24,6 +24,16 @@ func NewTilawahController(services *service.Services) TilawahController {
 	return &tilawahController{services.Tilawah}
 }
 
+// @Summary Add tilawah (recitation) log
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param body body model.CreateTilawahRequest true "Tilawah data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/tilawah [post]
 func (c *tilawahController) Add(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -40,6 +50,15 @@ func (c *tilawahController) Add(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, log)
 }
 
+// @Summary Get tilawah logs
+// @Tags Belajar
+// @Produce json
+// @Param from query string false "Start date (YYYY-MM-DD)"
+// @Param to query string false "End date (YYYY-MM-DD)"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/tilawah [get]
 func (c *tilawahController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -54,6 +73,13 @@ func (c *tilawahController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, logs)
 }
 
+// @Summary Get tilawah summary
+// @Tags Belajar
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/tilawah/summary [get]
 func (c *tilawahController) Summary(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -66,6 +92,15 @@ func (c *tilawahController) Summary(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, summary)
 }
 
+// @Summary Delete tilawah log
+// @Tags Belajar
+// @Produce json
+// @Param id path int true "Tilawah log ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/tilawah/{id} [delete]
 func (c *tilawahController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

@@ -21,6 +21,15 @@ func NewCommentController(services *service.Services) CommentController {
 	return &commentController{services.Comment}
 }
 
+// @Summary Get comments by reference
+// @Tags Sosial
+// @Produce json
+// @Param ref_type query string true "Reference type"
+// @Param ref_id query int true "Reference ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/comments [get]
 func (c *commentController) FindByRef(ctx *fiber.Ctx) error {
 	refType := model.CommentRefType(ctx.Query("ref_type"))
 	refID, err := strconv.Atoi(ctx.Query("ref_id"))
@@ -34,6 +43,16 @@ func (c *commentController) FindByRef(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, items)
 }
 
+// @Summary Create comment
+// @Tags Sosial
+// @Accept json
+// @Produce json
+// @Param body body model.CreateCommentRequest true "Comment data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/comments [post]
 func (c *commentController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -50,6 +69,15 @@ func (c *commentController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, item)
 }
 
+// @Summary Delete comment
+// @Tags Sosial
+// @Produce json
+// @Param id path int true "Comment ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/comments/{id} [delete]
 func (c *commentController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

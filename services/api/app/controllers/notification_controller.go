@@ -23,6 +23,13 @@ func NewNotificationController(services *service.Services) NotificationControlle
 	return &notificationController{services.Notification}
 }
 
+// @Summary Get notification settings
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/notifications/settings [get]
 func (c *notificationController) FindSettings(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -35,6 +42,13 @@ func (c *notificationController) FindSettings(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, items)
 }
 
+// @Summary Get registered push tokens
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/notifications/push-tokens [get]
 func (c *notificationController) FindPushTokens(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -47,6 +61,15 @@ func (c *notificationController) FindPushTokens(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, status)
 }
 
+// @Summary Register push notification token
+// @Tags Personal
+// @Accept json
+// @Produce json
+// @Param body body model.PushTokenRegisterRequest true "Push token data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /api/v1/notifications/push-token [put]
 func (c *notificationController) RegisterPushToken(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -63,6 +86,13 @@ func (c *notificationController) RegisterPushToken(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, item)
 }
 
+// @Summary Send test push notification
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /api/v1/notifications/push-test [post]
 func (c *notificationController) SendTestPush(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -75,6 +105,15 @@ func (c *notificationController) SendTestPush(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, result)
 }
 
+// @Summary Update notification settings
+// @Tags Personal
+// @Accept json
+// @Produce json
+// @Param body body model.NotificationSettingsUpsertRequest true "Settings data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /api/v1/notifications/settings [put]
 func (c *notificationController) UpsertSettings(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

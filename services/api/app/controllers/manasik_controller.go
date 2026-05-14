@@ -54,6 +54,16 @@ func NewManasikController(services *service.Services) ManasikController {
 	return &manasikController{services.Manasik}
 }
 
+// FindAll get all manasik steps
+// @Summary Get all manasik steps
+// @Tags Ibadah, Manasik
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /manasik [get]
 func (c *manasikController) FindAll(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
 	if limit > 100 {
@@ -73,6 +83,14 @@ func (c *manasikController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OKPaginated(ctx, steps, limit, offset, hasMore)
 }
 
+// FindItems get all manasik items (admin)
+// @Summary Get all manasik items (admin)
+// @Tags Ibadah, Manasik
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /manasik/items [get]
 func (c *manasikController) FindAllAdmin(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
 	if limit > 500 {
@@ -89,6 +107,17 @@ func (c *manasikController) FindAllAdmin(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, fiber.Map{"items": result})
 }
 
+// FindByType get manasik steps by type
+// @Summary Get manasik steps by type (haji/umrah)
+// @Tags Ibadah, Manasik
+// @Accept json
+// @Produce json
+// @Param type path string true "Manasik type (haji/umrah)"
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /manasik/{type} [get]
 func (c *manasikController) FindByType(ctx *fiber.Ctx) error {
 	t := model.ManasikType(ctx.Params("type"))
 	if t != model.ManasikTypeHaji && t != model.ManasikTypeUmrah {
@@ -112,6 +141,17 @@ func (c *manasikController) FindByType(ctx *fiber.Ctx) error {
 	return lib.OKPaginated(ctx, steps, limit, offset, hasMore)
 }
 
+// FindByTypeStep get manasik step by type and step number
+// @Summary Get manasik step by type and step
+// @Tags Ibadah, Manasik
+// @Accept json
+// @Produce json
+// @Param type path string true "Manasik type (haji/umrah)"
+// @Param step path int true "Step number"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /manasik/{type}/{step} [get]
 func (c *manasikController) FindByStep(ctx *fiber.Ctx) error {
 	t := model.ManasikType(ctx.Params("type"))
 	if t != model.ManasikTypeHaji && t != model.ManasikTypeUmrah {
@@ -131,6 +171,16 @@ func (c *manasikController) FindByStep(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, s)
 }
 
+// Create a manasik step
+// @Summary Create a manasik step (admin)
+// @Tags Ibadah, Manasik
+// @Accept json
+// @Produce json
+// @Param request body manasikAdminRequest true "Manasik step request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /manasik [post]
 func (c *manasikController) Create(ctx *fiber.Ctx) error {
 	req := new(manasikAdminRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -143,6 +193,17 @@ func (c *manasikController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, manasikToAdminResponse(step))
 }
 
+// UpdateById update a manasik step
+// @Summary Update a manasik step by ID (admin)
+// @Tags Ibadah, Manasik
+// @Accept json
+// @Produce json
+// @Param id path int true "Manasik step ID"
+// @Param request body manasikAdminRequest true "Manasik step request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /manasik/{id} [put]
 func (c *manasikController) Update(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -159,6 +220,16 @@ func (c *manasikController) Update(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, manasikToAdminResponse(step))
 }
 
+// DeleteById delete a manasik step
+// @Summary Delete a manasik step by ID (admin)
+// @Tags Ibadah, Manasik
+// @Accept json
+// @Produce json
+// @Param id path int true "Manasik step ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /manasik/{id} [delete]
 func (c *manasikController) Delete(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

@@ -22,6 +22,16 @@ func NewDzikirLogController(services *service.Services) DzikirLogController {
 	return &dzikirLogController{services.DzikirLog}
 }
 
+// LogDzikir log a dzikir completion
+// @Summary Log dzikir completion
+// @Tags Ibadah, Dzikir Log
+// @Accept json
+// @Produce json
+// @Param request body model.LogDzikirRequest true "Dzikir log request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /dzikir/log [post]
 func (c *dzikirLogController) Log(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -41,6 +51,14 @@ func (c *dzikirLogController) Log(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, log)
 }
 
+// GetToday get today's dzikir log
+// @Summary Get today's dzikir log
+// @Tags Ibadah, Dzikir Log
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /dzikir/log/today [get]
 func (c *dzikirLogController) GetToday(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -53,6 +71,16 @@ func (c *dzikirLogController) GetToday(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, logs)
 }
 
+// DeleteById delete a dzikir log entry
+// @Summary Delete dzikir log by ID
+// @Tags Ibadah, Dzikir Log
+// @Accept json
+// @Produce json
+// @Param id path string true "Dzikir log ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /dzikir/log/{id} [delete]
 func (c *dzikirLogController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

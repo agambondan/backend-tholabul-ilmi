@@ -38,6 +38,18 @@ func NewBlogController(services *service.Services) BlogController {
 	return &blogController{services.Blog}
 }
 
+// @Summary Get all blog posts with pagination
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param category_id query int false "Filter by category ID"
+// @Param tag_id query int false "Filter by tag ID"
+// @Param search query string false "Search keyword"
+// @Param page query int false "Page number"
+// @Param size query int false "Page size"
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /blog/posts [get]
 func (c *blogController) FindAllPosts(ctx *fiber.Ctx) error {
 	var categoryID *int
 	var tagID *int
@@ -52,6 +64,14 @@ func (c *blogController) FindAllPosts(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, page)
 }
 
+// @Summary Get blog post by slug
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param slug path string true "Post slug"
+// @Success 200 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /blog/posts/{slug} [get]
 func (c *blogController) FindPostBySlug(ctx *fiber.Ctx) error {
 	post, err := c.svc.FindPostBySlug(ctx.Params("slug"))
 	if err != nil {
@@ -61,6 +81,14 @@ func (c *blogController) FindPostBySlug(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, post)
 }
 
+// @Summary Get related blog posts
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param slug path string true "Post slug"
+// @Success 200 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /blog/posts/{slug}/related [get]
 func (c *blogController) FindRelatedPosts(ctx *fiber.Ctx) error {
 	posts, err := c.svc.FindRelatedPosts(ctx.Params("slug"))
 	if err != nil {
@@ -73,6 +101,14 @@ func (c *blogController) FindRelatedPosts(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, posts)
 }
 
+// @Summary Get popular blog posts
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param limit query int false "Number of posts (default 10)"
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /blog/posts/popular [get]
 func (c *blogController) FindPopularPosts(ctx *fiber.Ctx) error {
 	posts, err := c.svc.FindPopularPosts(ctx.QueryInt("limit", 10))
 	if err != nil {
@@ -105,6 +141,16 @@ func filterBlogPostsPage(ctx *fiber.Ctx, page *paginate.Page) {
 	})
 }
 
+// @Summary Preview blog post by ID
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Post ID"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /blog/posts/{id}/preview [get]
 func (c *blogController) PreviewPost(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -122,6 +168,16 @@ func (c *blogController) PreviewPost(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, post)
 }
 
+// @Summary Create a blog post
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param post body model.CreateBlogPostRequest true "Post data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /blog/posts [post]
 func (c *blogController) CreatePost(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -138,6 +194,18 @@ func (c *blogController) CreatePost(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, post)
 }
 
+// @Summary Update a blog post
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Post ID"
+// @Param post body model.UpdateBlogPostRequest true "Post data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /blog/posts/{id} [put]
 func (c *blogController) UpdatePost(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -160,6 +228,16 @@ func (c *blogController) UpdatePost(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, post)
 }
 
+// @Summary Delete a blog post
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Post ID"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /blog/posts/{id} [delete]
 func (c *blogController) DeletePost(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -177,6 +255,16 @@ func (c *blogController) DeletePost(ctx *fiber.Ctx) error {
 	return lib.OK(ctx)
 }
 
+// @Summary Get blog posts by category slug
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param slug path string true "Category slug"
+// @Param page query int false "Page number"
+// @Param size query int false "Page size"
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /blog/categories/{slug}/posts [get]
 func (c *blogController) FindPostsByCategorySlug(ctx *fiber.Ctx) error {
 	slug := ctx.Params("slug")
 	page := c.svc.FindPostsByCategorySlug(ctx, slug)
@@ -184,6 +272,16 @@ func (c *blogController) FindPostsByCategorySlug(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, page)
 }
 
+// @Summary Get blog posts by tag slug
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param slug path string true "Tag slug"
+// @Param page query int false "Page number"
+// @Param size query int false "Page size"
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /blog/tags/{slug}/posts [get]
 func (c *blogController) FindPostsByTagSlug(ctx *fiber.Ctx) error {
 	slug := ctx.Params("slug")
 	page := c.svc.FindPostsByTagSlug(ctx, slug)
@@ -191,6 +289,13 @@ func (c *blogController) FindPostsByTagSlug(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, page)
 }
 
+// @Summary Get all blog categories
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /blog/categories [get]
 func (c *blogController) FindAllCategories(ctx *fiber.Ctx) error {
 	list, err := c.svc.FindAllCategories()
 	if err != nil {
@@ -203,6 +308,15 @@ func (c *blogController) FindAllCategories(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, list)
 }
 
+// @Summary Create a blog category
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param category body model.CreateBlogCategoryRequest true "Category data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /blog/categories [post]
 func (c *blogController) CreateCategory(ctx *fiber.Ctx) error {
 	req := new(model.CreateBlogCategoryRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -215,6 +329,16 @@ func (c *blogController) CreateCategory(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, cat)
 }
 
+// @Summary Update a blog category
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Category ID"
+// @Param category body model.CreateBlogCategoryRequest true "Category data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /blog/categories/{id} [put]
 func (c *blogController) UpdateCategory(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -231,6 +355,15 @@ func (c *blogController) UpdateCategory(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, cat)
 }
 
+// @Summary Delete a blog category
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Category ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /blog/categories/{id} [delete]
 func (c *blogController) DeleteCategory(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -242,6 +375,13 @@ func (c *blogController) DeleteCategory(ctx *fiber.Ctx) error {
 	return lib.OK(ctx)
 }
 
+// @Summary Get all blog tags
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /blog/tags [get]
 func (c *blogController) FindAllTags(ctx *fiber.Ctx) error {
 	list, err := c.svc.FindAllTags()
 	if err != nil {
@@ -254,6 +394,15 @@ func (c *blogController) FindAllTags(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, list)
 }
 
+// @Summary Create a blog tag
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param tag body model.CreateBlogTagRequest true "Tag data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /blog/tags [post]
 func (c *blogController) CreateTag(ctx *fiber.Ctx) error {
 	req := new(model.CreateBlogTagRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -266,6 +415,15 @@ func (c *blogController) CreateTag(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, tag)
 }
 
+// @Summary Delete a blog tag
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Tag ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /blog/tags/{id} [delete]
 func (c *blogController) DeleteTag(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

@@ -50,6 +50,16 @@ func NewTahlilController(services *service.Services) TahlilController {
 	return &tahlilController{services.Tahlil}
 }
 
+// FindAll Tahlil collections
+// @Summary Get all tahlil collections
+// @Tags Ibadah, Tahlil
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /tahlil [get]
 func (c *tahlilController) FindAll(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
 	if limit > 100 {
@@ -63,6 +73,16 @@ func (c *tahlilController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
+// FindById get tahlil collection by ID
+// @Summary Get tahlil collection by ID
+// @Tags Ibadah, Tahlil
+// @Accept json
+// @Produce json
+// @Param id path int true "Tahlil collection ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /tahlil/{id} [get]
 func (c *tahlilController) FindByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -75,6 +95,16 @@ func (c *tahlilController) FindByID(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, col)
 }
 
+// FindItems get all tahlil items
+// @Summary Get all tahlil items (admin)
+// @Tags Ibadah, Tahlil
+// @Accept json
+// @Produce json
+// @Param limit query int false "Limit"
+// @Param offset query int false "Offset"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /tahlil/items [get]
 func (c *tahlilController) FindAllItems(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
 	if limit > 500 {
@@ -91,6 +121,16 @@ func (c *tahlilController) FindAllItems(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, fiber.Map{"items": result})
 }
 
+// CreateItem create a tahlil item
+// @Summary Create a tahlil item (admin)
+// @Tags Ibadah, Tahlil
+// @Accept json
+// @Produce json
+// @Param request body tahlilAdminRequest true "Tahlil item request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /tahlil/items [post]
 func (c *tahlilController) CreateItem(ctx *fiber.Ctx) error {
 	req := new(tahlilAdminRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -107,6 +147,17 @@ func (c *tahlilController) CreateItem(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, tahlilItemToAdminResponse(saved))
 }
 
+// UpdateItem update a tahlil item
+// @Summary Update a tahlil item (admin)
+// @Tags Ibadah, Tahlil
+// @Accept json
+// @Produce json
+// @Param id path int true "Tahlil item ID"
+// @Param request body tahlilAdminRequest true "Tahlil item request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /tahlil/items/{id} [put]
 func (c *tahlilController) UpdateItem(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -127,6 +178,16 @@ func (c *tahlilController) UpdateItem(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, tahlilItemToAdminResponse(saved))
 }
 
+// DeleteItem delete a tahlil item
+// @Summary Delete a tahlil item (admin)
+// @Tags Ibadah, Tahlil
+// @Accept json
+// @Produce json
+// @Param id path int true "Tahlil item ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /tahlil/items/{id} [delete]
 func (c *tahlilController) DeleteItem(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

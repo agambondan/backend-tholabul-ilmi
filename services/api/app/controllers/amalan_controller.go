@@ -23,6 +23,12 @@ func NewAmalanController(services *service.Services) AmalanController {
 	return &amalanController{services.Amalan}
 }
 
+// @Summary List all amalan items
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/amalan [get]
 func (c *amalanController) FindAllItems(ctx *fiber.Ctx) error {
 	items, err := c.svc.FindAllItems()
 	if err != nil {
@@ -31,6 +37,13 @@ func (c *amalanController) FindAllItems(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, items)
 }
 
+// @Summary Get today's amalan status
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/amalan/today [get]
 func (c *amalanController) GetToday(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -43,6 +56,17 @@ func (c *amalanController) GetToday(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, result)
 }
 
+// @Summary Check/uncheck amalan item
+// @Tags Personal
+// @Accept json
+// @Produce json
+// @Param id path int true "Amalan item ID"
+// @Param body body object{is_done=bool} true "Check status"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/amalan/{id}/check [put]
 func (c *amalanController) Toggle(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -64,6 +88,15 @@ func (c *amalanController) Toggle(ctx *fiber.Ctx) error {
 	return lib.OK(ctx)
 }
 
+// @Summary Get amalan history
+// @Tags Personal
+// @Produce json
+// @Param from query string false "Start date (YYYY-MM-DD)"
+// @Param to query string false "End date (YYYY-MM-DD)"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/amalan/history [get]
 func (c *amalanController) GetHistory(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

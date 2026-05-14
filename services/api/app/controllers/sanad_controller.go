@@ -29,6 +29,17 @@ func NewSanadController(services *service.Services) SanadController {
 	return &sanadController{services.Sanad}
 }
 
+// Create sanad
+// @Summary Create sanad
+// @Description Create a new sanad entry
+// @Accept json
+// @Produce json
+// @Param body body model.Sanad true "Sanad data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /api/v1/sanad [post]
+// @Tags Sanad
 func (c *sanadController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Sanad)
 	if err := lib.BodyParser(ctx, data); err != nil {
@@ -53,6 +64,17 @@ func (c *sanadController) FindByHadithID(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, list)
 }
 
+// FindByID sanad
+// @Summary Get sanad by ID
+// @Description Get a single sanad by its ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Sanad ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/sanad/{id} [get]
+// @Tags Sanad
 func (c *sanadController) FindByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -65,6 +87,18 @@ func (c *sanadController) FindByID(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// UpdateByID sanad
+// @Summary Update sanad
+// @Description Update sanad by ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Sanad ID"
+// @Param body body model.Sanad true "Sanad data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/sanad/{id} [put]
+// @Tags Sanad
 func (c *sanadController) UpdateByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -81,6 +115,17 @@ func (c *sanadController) UpdateByID(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, result)
 }
 
+// DeleteByID sanad
+// @Summary Delete sanad
+// @Description Delete sanad by ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Sanad ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/sanad/{id} [delete]
+// @Tags Sanad
 func (c *sanadController) DeleteByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

@@ -27,6 +27,17 @@ func NewThemeController(services *service.Services) ThemeController {
 	return &themeController{services.Theme}
 }
 
+// Create theme
+// @Summary Create theme
+// @Description Create a new theme entry
+// @Accept json
+// @Produce json
+// @Param body body model.Theme true "Theme data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /api/v1/themes [post]
+// @Tags Themes
 func (c *themeController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Theme)
 	if err := lib.BodyParser(ctx, data); nil != err {
@@ -38,11 +49,31 @@ func (c *themeController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// FindAll theme
+// @Summary List all themes
+// @Description Get paginated list of all themes
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /api/v1/themes [get]
+// @Tags Themes
 func (c *themeController) FindAll(ctx *fiber.Ctx) error {
 	page := c.theme.FindAll(ctx)
 	return lib.OK(ctx, page)
 }
 
+// FindById theme
+// @Summary Get theme by ID
+// @Description Get a single theme by its ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Theme ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/themes/{id} [get]
+// @Tags Themes
 func (c *themeController) FindById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -55,6 +86,17 @@ func (c *themeController) FindById(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// FindByBookSlug theme
+// @Summary Get themes by book slug
+// @Description Get themes filtered by book slug
+// @Accept json
+// @Produce json
+// @Param slug path string true "Book slug"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/themes/book/{slug} [get]
+// @Tags Themes
 func (c *themeController) FindByBookSlug(ctx *fiber.Ctx) error {
 	slug := ctx.Params("slug")
 	data, err := c.theme.FindByBookSlug(ctx, &slug)
@@ -64,6 +106,18 @@ func (c *themeController) FindByBookSlug(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// UpdateById theme
+// @Summary Update theme
+// @Description Update theme by ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Theme ID"
+// @Param body body model.Theme true "Theme data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/themes/{id} [put]
+// @Tags Themes
 func (c *themeController) UpdateById(ctx *fiber.Ctx) error {
 	data := new(model.Theme)
 	if err := lib.BodyParser(ctx, data); nil != err {
@@ -79,6 +133,17 @@ func (c *themeController) UpdateById(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, data)
 }
 
+// DeleteById theme
+// @Summary Delete theme
+// @Description Delete theme by ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Theme ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/themes/{id} [delete]
+// @Tags Themes
 func (c *themeController) DeleteById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {

@@ -23,6 +23,16 @@ func NewUserWirdController(services *service.Services) UserWirdController {
 	return &userWirdController{services.UserWird}
 }
 
+// Create a new user wird
+// @Summary Create a user wird
+// @Tags Ibadah, User Wird
+// @Accept json
+// @Produce json
+// @Param request body model.CreateUserWirdRequest true "User wird request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /user-wird [post]
 func (c *userWirdController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -42,6 +52,14 @@ func (c *userWirdController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, w)
 }
 
+// FindAll get all user wirds
+// @Summary Get all user wirds
+// @Tags Ibadah, User Wird
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /user-wird [get]
 func (c *userWirdController) List(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -54,6 +72,18 @@ func (c *userWirdController) List(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, list)
 }
 
+// UpdateById update a user wird
+// @Summary Update a user wird by ID
+// @Tags Ibadah, User Wird
+// @Accept json
+// @Produce json
+// @Param id path string true "User wird ID (uuid)"
+// @Param request body model.UpdateUserWirdRequest true "User wird update request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /user-wird/{id} [put]
 func (c *userWirdController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -80,6 +110,17 @@ func (c *userWirdController) Update(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, w)
 }
 
+// DeleteById delete a user wird
+// @Summary Delete a user wird by ID
+// @Tags Ibadah, User Wird
+// @Accept json
+// @Produce json
+// @Param id path string true "User wird ID (uuid)"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /user-wird/{id} [delete]
 func (c *userWirdController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

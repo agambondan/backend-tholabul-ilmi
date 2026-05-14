@@ -23,6 +23,16 @@ func NewBookmarkController(services *service.Services) BookmarkController {
 	return &bookmarkController{services.Bookmark}
 }
 
+// @Summary Create bookmark
+// @Tags Personal
+// @Accept json
+// @Produce json
+// @Param body body object{ref_type=string,ref_id=int,ref_slug=string,color=string,label=string} true "Bookmark data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 409 {object} lib.Response
+// @Router /api/v1/bookmarks [post]
 func (c *bookmarkController) Add(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -67,6 +77,17 @@ func (c *bookmarkController) Add(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, bookmark)
 }
 
+// @Summary Update bookmark
+// @Tags Personal
+// @Accept json
+// @Produce json
+// @Param id path string true "Bookmark ID (UUID)"
+// @Param body body model.UpdateBookmarkRequest true "Update data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/bookmarks/{id} [put]
 func (c *bookmarkController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -97,6 +118,13 @@ func (c *bookmarkController) Update(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, bookmark)
 }
 
+// @Summary Get all bookmarks
+// @Tags Personal
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/bookmarks [get]
 func (c *bookmarkController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -110,6 +138,15 @@ func (c *bookmarkController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, bookmarks)
 }
 
+// @Summary Delete bookmark
+// @Tags Personal
+// @Produce json
+// @Param id path string true "Bookmark ID (UUID)"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/bookmarks/{id} [delete]
 func (c *bookmarkController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

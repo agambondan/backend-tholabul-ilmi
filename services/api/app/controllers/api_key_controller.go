@@ -22,10 +22,28 @@ func NewAPIKeyController(services *service.Services) APIKeyController {
 	return &apiKeyController{services.APIKey}
 }
 
+// Register Register for developer API access
+// @Summary Register for developer API access
+// @Tags Developer
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /developer/register [post]
 func (c *apiKeyController) Register(ctx *fiber.Ctx) error {
 	return c.Create(ctx)
 }
 
+// List List developer API keys
+// @Summary List developer API keys
+// @Tags Developer
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /developer/keys [get]
 func (c *apiKeyController) List(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -38,6 +56,17 @@ func (c *apiKeyController) List(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, keys)
 }
 
+// Create Create a new developer API key
+// @Summary Create a new developer API key
+// @Tags Developer
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param body body model.CreateAPIKeyRequest true "Create API key request"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /developer/keys [post]
 func (c *apiKeyController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -54,6 +83,17 @@ func (c *apiKeyController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, key)
 }
 
+// Revoke Revoke a developer API key
+// @Summary Revoke a developer API key
+// @Tags Developer
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "API Key ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Router /developer/keys/{id} [delete]
 func (c *apiKeyController) Revoke(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

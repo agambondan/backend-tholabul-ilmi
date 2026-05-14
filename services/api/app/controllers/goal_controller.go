@@ -24,6 +24,16 @@ func NewGoalController(services *service.Services) GoalController {
 	return &goalController{services.Goal}
 }
 
+// @Summary Create study goal
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param body body model.CreateGoalRequest true "Goal data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/goals [post]
 func (c *goalController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -40,6 +50,13 @@ func (c *goalController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, g)
 }
 
+// @Summary Get all study goals
+// @Tags Belajar
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/goals [get]
 func (c *goalController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -52,6 +69,17 @@ func (c *goalController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, list)
 }
 
+// @Summary Update study goal
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Goal ID"
+// @Param body body model.UpdateGoalRequest true "Update data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/goals/{id} [put]
 func (c *goalController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -72,6 +100,15 @@ func (c *goalController) Update(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, g)
 }
 
+// @Summary Delete study goal
+// @Tags Belajar
+// @Produce json
+// @Param id path int true "Goal ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /api/v1/goals/{id} [delete]
 func (c *goalController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

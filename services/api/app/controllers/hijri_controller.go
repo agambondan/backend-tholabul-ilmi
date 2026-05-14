@@ -23,10 +23,24 @@ func NewHijriController(services *service.Services) HijriController {
 	return &hijriController{services.Hijri}
 }
 
+// @Summary Get today's Hijri date
+// @Tags Belajar
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Router /api/v1/hijri/today [get]
 func (c *hijriController) Today(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, c.svc.Today())
 }
 
+// @Summary Convert Gregorian to Hijri date
+// @Tags Belajar
+// @Produce json
+// @Param year query int true "Gregorian year"
+// @Param month query int true "Gregorian month"
+// @Param day query int true "Gregorian day"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Router /api/v1/hijri/convert [get]
 func (c *hijriController) Convert(ctx *fiber.Ctx) error {
 	year, err1 := strconv.Atoi(ctx.Query("year"))
 	month, err2 := strconv.Atoi(ctx.Query("month"))
@@ -37,6 +51,13 @@ func (c *hijriController) Convert(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, c.svc.ConvertToHijri(year, month, day))
 }
 
+// @Summary Get Hijri events
+// @Tags Belajar
+// @Produce json
+// @Param category query string false "Event category filter"
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/hijri/events [get]
 func (c *hijriController) GetEvents(ctx *fiber.Ctx) error {
 	category := ctx.Query("category")
 	events, err := c.svc.GetEvents(category)
@@ -50,6 +71,14 @@ func (c *hijriController) GetEvents(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, events)
 }
 
+// @Summary Get Hijri events by month
+// @Tags Belajar
+// @Produce json
+// @Param month path int true "Hijri month (1-12)"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/hijri/events/{month} [get]
 func (c *hijriController) GetEventsByMonth(ctx *fiber.Ctx) error {
 	month, err := strconv.Atoi(ctx.Params("month"))
 	if err != nil || month < 1 || month > 12 {

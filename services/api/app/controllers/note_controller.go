@@ -22,6 +22,15 @@ func NewNoteController(services *service.Services) NoteController {
 	return &noteController{services.Note}
 }
 
+// @Summary Get all notes
+// @Tags Belajar
+// @Produce json
+// @Param ref_type query string false "Filter by reference type"
+// @Param ref_id query int false "Filter by reference ID"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/notes [get]
 func (c *noteController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -36,6 +45,16 @@ func (c *noteController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, items)
 }
 
+// @Summary Create note
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param body body model.CreateNoteRequest true "Note data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/notes [post]
 func (c *noteController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -52,6 +71,17 @@ func (c *noteController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, item)
 }
 
+// @Summary Update note
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Note ID"
+// @Param body body model.UpdateNoteRequest true "Update data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 403 {object} lib.Response
+// @Router /api/v1/notes/{id} [put]
 func (c *noteController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -72,6 +102,15 @@ func (c *noteController) Update(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, item)
 }
 
+// @Summary Delete note
+// @Tags Belajar
+// @Produce json
+// @Param id path int true "Note ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/notes/{id} [delete]
 func (c *noteController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

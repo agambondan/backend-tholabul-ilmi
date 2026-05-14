@@ -60,6 +60,15 @@ func NewAsbabunNuzulController(services *service.Services) AsbabunNuzulControlle
 	return &asbabunNuzulController{services.AsbabunNuzul}
 }
 
+// FindAll asbabun nuzul
+// @Summary List all asbabun nuzul
+// @Description Get paginated list of all asbabun nuzul (reasons for revelation)
+// @Accept json
+// @Produce json
+// @Success 200 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/asbabun-nuzul [get]
+// @Tags AsbabunNuzul
 func (c *asbabunNuzulController) FindAll(ctx *fiber.Ctx) error {
 	page := ctx.QueryInt("page", 0)
 	size := ctx.QueryInt("size", 100)
@@ -80,6 +89,17 @@ func (c *asbabunNuzulController) FindAll(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, fiber.Map{"items": asbabunNuzulResponses(items), "page": page, "size": size})
 }
 
+// FindByAyahID asbabun nuzul
+// @Summary Get asbabun nuzul by ayah ID
+// @Description Get reasons for revelation for a specific ayah
+// @Accept json
+// @Produce json
+// @Param id path int true "Ayah ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/asbabun-nuzul/ayah/{id} [get]
+// @Tags AsbabunNuzul
 func (c *asbabunNuzulController) FindByAyahID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -98,6 +118,17 @@ func (c *asbabunNuzulController) FindByAyahID(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, asbabunNuzulResponses(items))
 }
 
+// FindBySurahNumber asbabun nuzul
+// @Summary Get asbabun nuzul by surah number
+// @Description Get reasons for revelation for a surah
+// @Accept json
+// @Produce json
+// @Param number path int true "Surah number"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/asbabun-nuzul/surah/{number} [get]
+// @Tags AsbabunNuzul
 func (c *asbabunNuzulController) FindBySurahNumber(ctx *fiber.Ctx) error {
 	number, err := strconv.Atoi(ctx.Params("number"))
 	if err != nil {
@@ -121,6 +152,17 @@ func (c *asbabunNuzulController) FindBySurahNumber(ctx *fiber.Ctx) error {
 	return lib.OKPaginated(ctx, asbabunNuzulResponses(items), limit, offset, hasMore)
 }
 
+// Create asbabun nuzul
+// @Summary Create asbabun nuzul
+// @Description Create a new asbabun nuzul entry
+// @Accept json
+// @Produce json
+// @Param body body asbabunNuzulRequest true "Asbabun nuzul data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/asbabun-nuzul [post]
+// @Tags AsbabunNuzul
 func (c *asbabunNuzulController) Create(ctx *fiber.Ctx) error {
 	req := new(asbabunNuzulRequest)
 	if err := lib.BodyParser(ctx, req); err != nil {
@@ -137,6 +179,18 @@ func (c *asbabunNuzulController) Create(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, asbabunNuzulToResponse(result))
 }
 
+// Update asbabun nuzul
+// @Summary Update asbabun nuzul
+// @Description Update asbabun nuzul by ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Asbabun nuzul ID"
+// @Param body body asbabunNuzulRequest true "Asbabun nuzul data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/asbabun-nuzul/{id} [put]
+// @Tags AsbabunNuzul
 func (c *asbabunNuzulController) Update(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
@@ -157,6 +211,17 @@ func (c *asbabunNuzulController) Update(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, asbabunNuzulToResponse(result))
 }
 
+// Delete asbabun nuzul
+// @Summary Delete asbabun nuzul
+// @Description Delete asbabun nuzul by ID
+// @Accept json
+// @Produce json
+// @Param id path int true "Asbabun nuzul ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /api/v1/asbabun-nuzul/{id} [delete]
+// @Tags AsbabunNuzul
 func (c *asbabunNuzulController) Delete(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
 	if err != nil {
