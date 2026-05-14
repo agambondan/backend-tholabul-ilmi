@@ -1,20 +1,24 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
+	"net/http/pprof"
 	"os"
 	"time"
 
 	"github.com/agambondan/islamic-explorer/app/controllers"
+	"github.com/agambondan/islamic-explorer/app/db"
 	"github.com/agambondan/islamic-explorer/app/http/middlewares"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	service "github.com/agambondan/islamic-explorer/app/services"
 	_ "github.com/agambondan/islamic-explorer/docs"
+	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/gofiber/fiber/v2/middleware/timeout"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/timeout"
 	"github.com/gofiber/swagger"
 	"github.com/spf13/viper"
 )
@@ -118,12 +122,46 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 
 	app.Use(middlewares.MetricsMiddleware())
 	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"status": "ok"})
+		health := fiber.Map{
+			"status":    "ok",
+			"timestamp": time.Now().UTC(),
+		}
+
+		sqlDB, err := repo.GetDB().DB()
+		if err != nil {
+			health["database"] = "error: " + err.Error()
+			health["status"] = "degraded"
+		} else if err := sqlDB.Ping(); err != nil {
+			health["database"] = "error: " + err.Error()
+			health["status"] = "degraded"
+		} else {
+			health["database"] = "connected"
+		}
+
+		if client := repo.GetRedis(); client != nil {
+			if _, err := client.Ping(context.Background()).Result(); err != nil {
+				health["redis"] = "error: " + err.Error()
+			} else {
+				health["redis"] = "connected"
+			}
+		} else {
+			health["redis"] = "disabled"
+		}
+
+		health["pool"] = db.PoolStats(repo.GetDB())
+
+		statusCode := 200
+		if health["status"] == "degraded" {
+			statusCode = 503
+		}
+		return c.Status(statusCode).JSON(health)
 	})
 	app.Get("/metrics", middlewares.MetricsHandler())
 
 	cacheMw := middlewares.CacheByType(300, 30)
 	app.Use(cacheMw)
+
+	app.Use(middlewares.PoolProtection(repo.GetDB()))
 
 	master := app.Group(viper.GetString("ENDPOINT"))
 	master.Use(timeout.NewWithContext(func(c *fiber.Ctx) error {
@@ -630,4 +668,14 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Post("/takhrij", middlewares.EditorOrAdminMiddleware(), newTakhrijController.Create)
 	master.Put("/takhrij/:id", middlewares.EditorOrAdminMiddleware(), newTakhrijController.UpdateByID)
 	master.Delete("/takhrij/:id", middlewares.EditorOrAdminMiddleware(), newTakhrijController.DeleteByID)
+
+	if viper.GetString("ENVIRONMENT") != "production" {
+		pprofGroup := app.Group("/debug/pprof")
+		pprofGroup.Get("/", adaptor.HTTPHandlerFunc(pprof.Index))
+		pprofGroup.Get("/cmdline", adaptor.HTTPHandlerFunc(pprof.Cmdline))
+		pprofGroup.Get("/profile", adaptor.HTTPHandlerFunc(pprof.Profile))
+		pprofGroup.Get("/symbol", adaptor.HTTPHandlerFunc(pprof.Symbol))
+		pprofGroup.Get("/trace", adaptor.HTTPHandlerFunc(pprof.Trace))
+		pprofGroup.Get("/*", adaptor.HTTPHandlerFunc(pprof.Index))
+	}
 }

@@ -54,25 +54,60 @@ func NewPostgresql(env *config.Environment) *gorm.DB {
 		)
 	}
 
-	sqlDB, err := sql.Open("pgx", dsn)
-	if err != nil {
-		panic(err)
+	var sqlDB *sql.DB
+	var db *gorm.DB
+	var err error
+
+	for i := 0; i < 5; i++ {
+		sqlDB, err = sql.Open("pgx", dsn)
+		if err != nil {
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		// https://aws.amazon.com/blogs/database/performance-impact-of-idle-postgresql-connections
+		// Increased from 10 → 50 to handle concurrent mobile/web user load.
+		// 50 is safe for a typical Postgres instance (max_connections default = 100).
+		sqlDB.SetMaxOpenConns(50)
+		sqlDB.SetMaxIdleConns(25)
+		sqlDB.SetConnMaxLifetime(30 * time.Minute)
+		sqlDB.SetConnMaxIdleTime(5 * time.Minute)
+
+		db, err = gorm.Open(postgres.New(postgres.Config{
+			Conn: sqlDB,
+		}), &config)
+
+		if err == nil {
+			break
+		}
+		time.Sleep(2 * time.Second)
 	}
-	// https://aws.amazon.com/blogs/database/performance-impact-of-idle-postgresql-connections
-	// Increased from 10 → 50 to handle concurrent mobile/web user load.
-	// 50 is safe for a typical Postgres instance (max_connections default = 100).
-	sqlDB.SetMaxOpenConns(50)
-	sqlDB.SetMaxIdleConns(25)
-	sqlDB.SetConnMaxLifetime(30 * time.Minute)
-	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
-
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: sqlDB,
-	}), &config)
-
-	if nil != err {
+	if err != nil {
 		panic(err)
 	}
 
 	return db
+}
+
+func PingDB(db *gorm.DB) error {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Ping()
+}
+
+func PoolStats(db *gorm.DB) map[string]interface{} {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return map[string]interface{}{"error": err.Error()}
+	}
+	stats := sqlDB.Stats()
+	return map[string]interface{}{
+		"open":          stats.OpenConnections,
+		"in_use":        stats.InUse,
+		"idle":          stats.Idle,
+		"wait_count":    stats.WaitCount,
+		"wait_duration": stats.WaitDuration.String(),
+		"max_open":      stats.MaxOpenConnections,
+	}
 }
