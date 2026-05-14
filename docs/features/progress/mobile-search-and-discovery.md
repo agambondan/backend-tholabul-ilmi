@@ -69,6 +69,15 @@ Quran, Hadis, Doa, Kajian, dan feature tanpa pindah-pindah tab.
   - Screenshot evidence: `/tmp/thollabul-smoke/search-2026-05-14.png`.
 - Smoke klik hasil source selain Quran masih perlu sentuhan manual di device
   karena ADB input otomatis diblokir MIUI.
+- Fix count mismatch `sabar` 2026-05-14:
+  - Runtime API terbukti berbeda karena `type=all` mengembalikan Quran `6`,
+    sedangkan `type=ayah` mengembalikan Quran `24` untuk query `sabar`.
+  - `GlobalSearchScreen` sekarang saat filter `Semua` tetap mengambil hasil
+    global, tetapi menghidrasi hasil Quran dengan request `type=ayah` sehingga
+    angka `Quran` tidak berubah dari 6 ke 24 saat user pindah tab.
+  - `node --check apps/mobile/src/screens/GlobalSearchScreen.js` `PASS`.
+  - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-mobile-search-sabar-count-export`
+    `PASS`.
 
 ## Source of Truth
 

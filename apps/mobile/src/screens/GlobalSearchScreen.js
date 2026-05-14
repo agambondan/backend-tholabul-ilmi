@@ -214,6 +214,7 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
 
     const timer = setTimeout(async () => {
       const shouldSearchGlobal = activeFilter !== 'feature';
+      const shouldHydrateAllCounts = activeFilter === 'all';
 
       const globalResult = await Promise.resolve(
         shouldSearchGlobal
@@ -224,11 +225,22 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
         (reason) => ({ status: 'rejected', reason }),
       );
 
+      const quranResult = shouldHydrateAllCounts
+        ? await Promise.resolve(searchGlobal(trimmedQuery, { limit: 24, type: 'ayah' })).then(
+            (value) => ({ status: 'fulfilled', value }),
+            (reason) => ({ status: 'rejected', reason }),
+          )
+        : null;
+
       if (cancelled) return;
 
-      const nextGlobal = globalResult.status === 'fulfilled' ? globalResult.value : emptyGlobalResult;
+      const nextGlobal = {
+        ...(globalResult.status === 'fulfilled' ? globalResult.value : emptyGlobalResult),
+        ...(quranResult?.status === 'fulfilled' ? { ayahs: quranResult.value.ayahs } : {}),
+      };
       const failedModules = [
         globalResult.status === 'rejected' && shouldSearchGlobal ? selectedFilter.label : null,
+        quranResult?.status === 'rejected' ? 'Quran' : null,
       ].filter(Boolean);
 
       setRemoteResults({
