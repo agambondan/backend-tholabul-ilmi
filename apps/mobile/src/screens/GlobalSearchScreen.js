@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArrowLeft, Book, BookOpen, Languages, Layers, Search, UserRound } from 'lucide-react-native';
-import { searchDoa, searchGlobal, searchKajian } from '../api/client';
+import { searchGlobal } from '../api/client';
 import { ContentCard } from '../components/ContentCard';
 import { IconActionButton, PaperSearchInput } from '../components/Paper';
 import { Screen } from '../components/Screen';
@@ -16,15 +16,15 @@ const searchFilters = [
   { key: 'all', label: 'Semua', remoteType: 'all' },
   { key: 'quran', label: 'Quran', remoteType: 'ayah' },
   { key: 'hadith', label: 'Hadis', remoteType: 'hadith' },
-  { key: 'doa', label: 'Doa', remoteType: 'all' },
-  { key: 'kajian', label: 'Kajian', remoteType: 'all' },
+  { key: 'doa', label: 'Doa', remoteType: 'doa' },
+  { key: 'kajian', label: 'Kajian', remoteType: 'kajian' },
   { key: 'dictionary', label: 'Kamus', remoteType: 'dictionary' },
   { key: 'perawi', label: 'Perawi', remoteType: 'perawi' },
   { key: 'feature', label: 'Fitur', remoteType: 'all' },
 ];
 
 const normalizeQuery = (value = '') => value.trim().toLowerCase();
-const emptyGlobalResult = { ayahs: [], dictionaries: [], hadiths: [], perawis: [], total: 0 };
+const emptyGlobalResult = { ayahs: [], dictionaries: [], doas: [], hadiths: [], kajians: [], perawis: [], total: 0 };
 const emptyRemoteResults = { ...emptyGlobalResult, doas: [], kajians: [] };
 const emptyStateByFilter = {
   all: {
@@ -213,51 +213,31 @@ export function GlobalSearchScreen({ initialQuery = '', onBack, onOpenTab }) {
     setMessage('');
 
     const timer = setTimeout(async () => {
-      const shouldSearchGlobal = ['all', 'quran', 'hadith', 'dictionary', 'perawi'].includes(activeFilter);
-      const shouldSearchDoa = activeFilter === 'all' || activeFilter === 'doa';
-      const shouldSearchKajian = activeFilter === 'all' || activeFilter === 'kajian';
+      const shouldSearchGlobal = activeFilter !== 'feature';
 
-      const [globalResult, doaResult, kajianResult] = await Promise.all([
+      const globalResult = await Promise.resolve(
         shouldSearchGlobal
-          ? Promise.resolve(searchGlobal(trimmedQuery, { limit: 16, type: selectedFilter.remoteType })).then(
-              (value) => ({ status: 'fulfilled', value }),
-              (reason) => ({ status: 'rejected', reason }),
-            )
-          : Promise.resolve({ status: 'fulfilled', value: emptyGlobalResult }),
-        shouldSearchDoa
-          ? Promise.resolve(searchDoa(trimmedQuery, { limit: 10 })).then(
-              (value) => ({ status: 'fulfilled', value }),
-              (reason) => ({ status: 'rejected', reason }),
-            )
-          : Promise.resolve({ status: 'fulfilled', value: [] }),
-        shouldSearchKajian
-          ? Promise.resolve(searchKajian(trimmedQuery, { limit: 10 })).then(
-              (value) => ({ status: 'fulfilled', value }),
-              (reason) => ({ status: 'rejected', reason }),
-            )
-          : Promise.resolve({ status: 'fulfilled', value: [] }),
-      ]);
+          ? searchGlobal(trimmedQuery, { limit: 24, type: selectedFilter.remoteType })
+          : emptyGlobalResult,
+      ).then(
+        (value) => ({ status: 'fulfilled', value }),
+        (reason) => ({ status: 'rejected', reason }),
+      );
 
       if (cancelled) return;
 
       const nextGlobal = globalResult.status === 'fulfilled' ? globalResult.value : emptyGlobalResult;
-      const nextDoas = doaResult.status === 'fulfilled' ? doaResult.value : [];
-      const nextKajians = kajianResult.status === 'fulfilled' ? kajianResult.value : [];
       const failedModules = [
-        globalResult.status === 'rejected' && shouldSearchGlobal ? 'Quran/Hadis' : null,
-        doaResult.status === 'rejected' && shouldSearchDoa ? 'Doa' : null,
-        kajianResult.status === 'rejected' && shouldSearchKajian ? 'Kajian' : null,
+        globalResult.status === 'rejected' && shouldSearchGlobal ? selectedFilter.label : null,
       ].filter(Boolean);
 
       setRemoteResults({
         ...nextGlobal,
-        doas: nextDoas,
-        kajians: nextKajians,
       });
 
       if (failedModules.length) {
         setMessage(`Sebagian hasil belum bisa dimuat: ${failedModules.join(', ')}.`);
-        if (nextGlobal.ayahs.length || nextGlobal.hadiths.length || nextDoas.length || nextKajians.length || featureResults.length) {
+        if (nextGlobal.ayahs.length || nextGlobal.hadiths.length || nextGlobal.doas.length || nextGlobal.kajians.length || featureResults.length) {
           rememberRecentSearch(trimmedQuery).then((items) => {
             if (!cancelled) setRecentSearches(items);
           });

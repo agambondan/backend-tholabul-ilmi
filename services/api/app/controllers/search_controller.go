@@ -52,6 +52,12 @@ func (c *searchController) Search(ctx *fiber.Ctx) error {
 			result.Hadiths[i].Chapter.Translation.FilterByLang(lang)
 		}
 	}
+	for i := range result.Doas {
+		result.Doas[i].Translation.FilterByLang(lang)
+	}
+	for i := range result.Kajians {
+		result.Kajians[i].Translation.FilterByLang(lang)
+	}
 
 	return lib.OK(ctx, result)
 }

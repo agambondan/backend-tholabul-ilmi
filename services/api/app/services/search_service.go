@@ -9,6 +9,8 @@ type SearchResult struct {
 	Ayahs        []model.Ayah        `json:"ayahs"`
 	Hadiths      []model.Hadith      `json:"hadiths"`
 	Dictionaries []model.IslamicTerm `json:"dictionaries"`
+	Doas         []model.Doa         `json:"doas"`
+	Kajians      []model.Kajian      `json:"kajians"`
 	Perawis      []model.Perawi      `json:"perawis"`
 	Total        int                 `json:"total"`
 }
@@ -34,6 +36,8 @@ func (s *searchService) Search(query, searchType string, limit int) (*SearchResu
 		Ayahs:        []model.Ayah{},
 		Hadiths:      []model.Hadith{},
 		Dictionaries: []model.IslamicTerm{},
+		Doas:         []model.Doa{},
+		Kajians:      []model.Kajian{},
 		Perawis:      []model.Perawi{},
 	}
 
@@ -56,6 +60,18 @@ func (s *searchService) Search(query, searchType string, limit int) (*SearchResu
 			return nil, err
 		}
 		result.Dictionaries = terms
+	case "doa", "dua", "prayer":
+		doas, err := s.repo.SearchDoa(query, limit)
+		if err != nil {
+			return nil, err
+		}
+		result.Doas = doas
+	case "kajian", "study", "lesson":
+		kajians, err := s.repo.SearchKajian(query, limit)
+		if err != nil {
+			return nil, err
+		}
+		result.Kajians = kajians
 	case "perawi", "rawi", "rijal":
 		perawis, err := s.repo.SearchPerawi(query, limit)
 		if err != nil {
@@ -63,7 +79,7 @@ func (s *searchService) Search(query, searchType string, limit int) (*SearchResu
 		}
 		result.Perawis = perawis
 	default:
-		each := limit / 4
+		each := limit / 6
 		if each < 2 {
 			each = 2
 		}
@@ -79,6 +95,14 @@ func (s *searchService) Search(query, searchType string, limit int) (*SearchResu
 		if err != nil {
 			return nil, err
 		}
+		doas, err := s.repo.SearchDoa(query, each)
+		if err != nil {
+			return nil, err
+		}
+		kajians, err := s.repo.SearchKajian(query, each)
+		if err != nil {
+			return nil, err
+		}
 		perawis, err := s.repo.SearchPerawi(query, each)
 		if err != nil {
 			return nil, err
@@ -86,9 +110,11 @@ func (s *searchService) Search(query, searchType string, limit int) (*SearchResu
 		result.Ayahs = ayahs
 		result.Hadiths = hadiths
 		result.Dictionaries = terms
+		result.Doas = doas
+		result.Kajians = kajians
 		result.Perawis = perawis
 	}
 
-	result.Total = len(result.Ayahs) + len(result.Hadiths) + len(result.Dictionaries) + len(result.Perawis)
+	result.Total = len(result.Ayahs) + len(result.Hadiths) + len(result.Dictionaries) + len(result.Doas) + len(result.Kajians) + len(result.Perawis)
 	return result, nil
 }

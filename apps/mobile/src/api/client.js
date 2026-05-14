@@ -268,6 +268,8 @@ export const searchGlobal = async (query, { limit = 12, type = 'all' } = {}) => 
     ayahs: pickItems(data?.ayahs ?? data?.data?.ayahs ?? []).map(normalizeAyah),
     hadiths: pickItems(data?.hadiths ?? data?.data?.hadiths ?? []).map(normalizeHadith),
     dictionaries: pickItems(data?.dictionaries ?? data?.dictionary ?? []).map(normalizeDictionary),
+    doas: pickItems(data?.doas ?? data?.doa ?? []).map(normalizeDoa),
+    kajians: pickItems(data?.kajians ?? data?.kajian ?? []).map(normalizeKajian),
     perawis: pickItems(data?.perawis ?? data?.perawi ?? []).map(normalizePerawi),
     total: Number(data?.total ?? data?.data?.total ?? 0),
   };

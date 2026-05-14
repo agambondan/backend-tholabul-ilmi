@@ -9,6 +9,8 @@ type SearchRepository interface {
 	SearchAyah(query string, limit int) ([]model.Ayah, error)
 	SearchHadith(query string, limit int) ([]model.Hadith, error)
 	SearchDictionary(query string, limit int) ([]model.IslamicTerm, error)
+	SearchDoa(query string, limit int) ([]model.Doa, error)
+	SearchKajian(query string, limit int) ([]model.Kajian, error)
 	SearchPerawi(query string, limit int) ([]model.Perawi, error)
 }
 
@@ -64,6 +66,32 @@ func (r *searchRepo) SearchDictionary(query string, limit int) ([]model.IslamicT
 		Limit(limit).
 		Find(&terms).Error
 	return terms, err
+}
+
+func (r *searchRepo) SearchDoa(query string, limit int) ([]model.Doa, error) {
+	var doas []model.Doa
+	err := r.db.
+		Joins("Translation").
+		Where(`doas.title ILIKE ? OR doas.arabic ILIKE ? OR doas.translation ILIKE ? OR doas.source ILIKE ? OR doas.category::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".latin_idn ILIKE ? OR "Translation".latin_en ILIKE ? OR "Translation".ar ILIKE ?`,
+			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%",
+			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%").
+		Order("doas.category, doas.id").
+		Limit(limit).
+		Find(&doas).Error
+	return doas, err
+}
+
+func (r *searchRepo) SearchKajian(query string, limit int) ([]model.Kajian, error) {
+	var kajians []model.Kajian
+	err := r.db.
+		Joins("Translation").
+		Where(`kajians.title ILIKE ? OR kajians.description ILIKE ? OR kajians.speaker ILIKE ? OR kajians.topic ILIKE ? OR kajians.type::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".description_idn ILIKE ? OR "Translation".description_en ILIKE ?`,
+			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%",
+			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%").
+		Order("kajians.published_at DESC, kajians.id DESC").
+		Limit(limit).
+		Find(&kajians).Error
+	return kajians, err
 }
 
 func (r *searchRepo) SearchPerawi(query string, limit int) ([]model.Perawi, error) {
