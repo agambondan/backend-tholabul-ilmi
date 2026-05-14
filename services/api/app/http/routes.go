@@ -27,9 +27,10 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	app.Use(middlewares.StructuredLog())
 	app.Use(middlewares.SecurityHeaders())
 	app.Use(middlewares.Cors())
+	app.Use(middlewares.SentryMiddleware())
 
 	globalLimiter := limiter.New(limiter.Config{
-		Max:        180,
+		Max:        viper.GetInt("RATE_LIMIT_GLOBAL"),
 		Expiration: 1 * time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
 			if uid := c.Locals("userId"); uid != nil {
@@ -51,7 +52,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	app.Use(globalLimiter)
 
 	searchLimiter := limiter.New(limiter.Config{
-		Max:        60,
+		Max:        viper.GetInt("RATE_LIMIT_SEARCH"),
 		Expiration: 1 * time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
 			if uid := c.Locals("userId"); uid != nil {
@@ -151,7 +152,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	}
 
 	// Rate limiter for auth endpoints (10 req/min)
-	authLimiter := limiter.New(limiter.Config{Max: 10, Expiration: 1 * time.Minute})
+	authLimiter := limiter.New(limiter.Config{Max: viper.GetInt("RATE_LIMIT_AUTH"), Expiration: 1 * time.Minute})
 
 	// Auth (public)
 	master.Post("/auth/register", authLimiter, newUserController.Register)
@@ -550,7 +551,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 		return c.Next()
 	}
 	apiKeyLimiter := limiter.New(limiter.Config{
-		Max:        120,
+		Max:        viper.GetInt("RATE_LIMIT_DEV"),
 		Expiration: 1 * time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
 			if key := c.Get("X-API-Key"); key != "" {

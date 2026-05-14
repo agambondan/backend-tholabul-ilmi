@@ -13,6 +13,7 @@ import (
 	"github.com/agambondan/islamic-explorer/app/config"
 	"github.com/agambondan/islamic-explorer/app/db"
 	"github.com/agambondan/islamic-explorer/app/http"
+	"github.com/agambondan/islamic-explorer/app/http/middlewares"
 	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	service "github.com/agambondan/islamic-explorer/app/services"
@@ -46,6 +47,10 @@ func main() {
 	redisDB, err := db.NewRedisDB(env)
 	if err != nil {
 		slog.Warn("redis unavailable, running without cache layer", "err", err)
+	}
+
+	if err := middlewares.SetupSentry(); err != nil {
+		slog.Warn("sentry init failed", "err", err)
 	}
 	var redisClient *redis.Client
 	if redisDB != nil {
@@ -112,6 +117,7 @@ func main() {
 	if err := app.ShutdownWithContext(shutdownCtx); err != nil {
 		slog.Error("server shutdown error", "err", err)
 	}
+	middlewares.FlushSentry()
 	slog.Info("server stopped gracefully")
 }
 
