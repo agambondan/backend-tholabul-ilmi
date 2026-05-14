@@ -94,6 +94,11 @@ const resultCountForFilter = (result, filterKey) => {
   return field ? result?.[field]?.length ?? 0 : 0;
 };
 
+const runRemoteFilterSearch = async (filter, query, limit, page = 0) => {
+  const result = await searchGlobal(query, { limit, page, type: filter.remoteType });
+  return sanitizeRemoteResult(filter.key, result);
+};
+
 const sanitizeRemoteResult = (filterKey, result = emptyGlobalResult) => {
   const field = resultFieldByFilter[filterKey];
   const totalField = totalFieldByFilter[filterKey];
@@ -306,16 +311,14 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
     setMessage('');
 
     const timer = setTimeout(async () => {
-      const searchSettled = await Promise.all(
-        remoteSearchFilters.map(async (filter) => {
-          const limit = activeFilter === filter.key ? PAGE_SIZE : PREVIEW_SIZE;
-          const result = await Promise.resolve(searchGlobal(trimmedQuery, { limit, page: 0, type: filter.remoteType })).then(
-            (value) => ({ status: 'fulfilled', value }),
-            (reason) => ({ status: 'rejected', reason }),
-          );
-          return { filter, result };
-        }),
-      );
+      const searchSettled = [];
+      for (const filter of remoteSearchFilters) {
+        const result = await Promise.resolve(runRemoteFilterSearch(filter, trimmedQuery, PREVIEW_SIZE)).then(
+          (value) => ({ status: 'fulfilled', value }),
+          (reason) => ({ status: 'rejected', reason }),
+        );
+        searchSettled.push({ filter, result });
+      }
 
       if (cancelled) return;
 
@@ -356,7 +359,45 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [activeFilter, featureResults.length, hasQuery, trimmedQuery]);
+  }, [featureResults.length, hasQuery, trimmedQuery]);
+
+  useEffect(() => {
+    if (!hasQuery || activeFilter === 'all' || activeFilter === 'feature') return undefined;
+
+    const filter = searchFilters.find((item) => item.key === activeFilter);
+    const field = resultFieldByFilter[activeFilter];
+    if (!filter || !field || filter.remoteType === 'all') return undefined;
+
+    const currentResult = remoteResultsByFilter[activeFilter] ?? emptyGlobalResult;
+    const loaded = currentResult[field]?.length ?? 0;
+    const total = resultCountForFilter(currentResult, activeFilter);
+    if (loaded >= PAGE_SIZE || (total > 0 && loaded >= total)) return undefined;
+
+    let cancelled = false;
+    setLoadingMore(true);
+
+    runRemoteFilterSearch(filter, trimmedQuery, PAGE_SIZE)
+      .then((result) => {
+        if (cancelled) return;
+        setRemoteResultsByFilter((prev) => ({
+          ...prev,
+          [activeFilter]: result,
+        }));
+        setMessage('');
+      })
+      .catch(() => {
+        if (!cancelled && loaded === 0) {
+          setMessage(`${filter.label} belum bisa dimuat penuh. Preview yang tersedia tetap ditampilkan.`);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingMore(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeFilter, hasQuery, remoteResultsByFilter, trimmedQuery]);
 
   const handleLoadMore = async () => {
     if (loadingMore || activeFilter === 'all' || activeFilter === 'feature') return;
@@ -390,6 +431,7 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
         };
         return next;
       });
+      setMessage('');
     } else {
       setMessage(`${selectedFilter.label} belum bisa dimuat. Coba lagi beberapa saat.`);
     }

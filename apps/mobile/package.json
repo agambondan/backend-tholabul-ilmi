@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test:navigation": "node --test src/navigation/*.test.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:navigation": "jest --testPathPattern='navigation/appNavigation'",
+    "test:utils": "jest --testPathPattern='__tests__'",
     "start": "expo start",
     "start:tunnel": "expo start --tunnel",
     "android": "expo start --android",
@@ -35,6 +39,14 @@
   },
   "private": true,
   "devDependencies": {
-    "@expo/ngrok": "^4.1.0"
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.5",
+    "@expo/ngrok": "^4.1.0",
+    "@types/jest": "^29.5.14",
+    "babel-jest": "^30.4.1",
+    "babel-preset-expo": "^55.0.21",
+    "jest": "^29.7.0",
+    "jest-expo": "^55.0.17",
+    "react-test-renderer": "^19.2.6"
   }
 }

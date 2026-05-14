@@ -8,10 +8,10 @@ const resolveApiUrl = () => {
   const scriptUrl = NativeModules.SourceCode?.scriptURL ?? '';
   const host = /^[a-z][a-z0-9+.-]*:\/\/([^/:]+)/i.exec(scriptUrl)?.[1];
   if (host && host !== 'localhost' && host !== '127.0.0.1') {
-    return `http://${host}:29900`;
+    return `http://${host}:9900`;
   }
 
-  return 'http://localhost:29900';
+  return 'http://localhost:9900';
 };
 
 export const API_URL = resolveApiUrl();
@@ -291,7 +291,7 @@ const filterQueryItems = (items, query, pickSearchText) => {
   return items.filter((item) => includesQuery(pickSearchText(item), query));
 };
 
-const appendQuery = (path, key, value) => {
+export const appendQuery = (path, key, value) => {
   const [base, query = ''] = path.split('?');
   const params = new URLSearchParams(query);
   params.set(key, value);
