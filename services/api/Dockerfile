@@ -7,10 +7,12 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -o ./build/main main.go
 
-FROM scratch
+FROM gcr.io/distroless/base:nonroot
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /app/build/main /app/main
 ENV TZ=Asia/Jakarta
 EXPOSE 9900
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=15s \
+  CMD ["/app/main", "-environment", "container", "-healthcheck"]
 CMD ["/app/main", "-environment", "container"]

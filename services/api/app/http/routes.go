@@ -107,9 +107,11 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newHijriController := controllers.NewHijriController(newServices)
 	newAsbabunNuzulController := controllers.NewAsbabunNuzulController(newServices)
 
+	app.Use(middlewares.MetricsMiddleware())
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
+	app.Get("/metrics", middlewares.MetricsHandler())
 
 	cacheMw := middlewares.CacheByType(300, 30)
 	app.Use(cacheMw)

@@ -1,0 +1,114 @@
+name: Test
+
+on:
+  push:
+    branches: [master, main, develop]
+    paths:
+      - 'services/api/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    paths:
+      - 'services/api/**'
+
+jobs:
+  test:
+    name: Go Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: tholabul_ilmi_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:8-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Go mod cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            services/api/go.sum
+          key: ${{ runner.os }}-go-${{ hashFiles('services/api/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test (lib + middleware + services)
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: test
+          DB_PASS: test
+          DB_NAME: tholabul_ilmi_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_PASSWORD: ""
+          REDIS_INDEX: 0
+          CACHE_TTL_SECONDS: 60
+          ENVIRONMENT: test
+        run: go test -v -count=1 ./app/... ./tests/lib/... 2>&1 | tee /tmp/test-output.txt
+
+      - name: Check test results
+        run: |
+          if grep -q "^--- FAIL" /tmp/test-output.txt; then
+            echo "Some tests failed"
+            exit 1
+          fi
+          echo "All tests passed"
+
+  lint:
+    name: Go Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: services/api

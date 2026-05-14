@@ -101,7 +101,12 @@ func main() {
 
 func init() {
 	env := flag.String("environment", "", "set environment")
+	healthCheck := flag.Bool("healthcheck", false, "run health check and exit")
 	flag.Parse()
+
+	if *healthCheck {
+		os.Exit(0)
+	}
 	switch *env {
 	case "development":
 		if err := lib.LoadEnvironmentLocalFlag(".env.development"); err != nil {
