@@ -62,16 +62,44 @@ func (s *sirohService) FindAllContents(ctx *fiber.Ctx) *paginate.Page {
 	return s.repo.FindAllContents(ctx)
 }
 func (s *sirohService) SaveCategory(c *model.SirohCategory) (*model.SirohCategory, error) {
-	return s.repo.SaveCategory(c)
+	result, err := s.repo.SaveCategory(c)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("siroh:*")
+	}
+	return result, err
 }
 func (s *sirohService) SaveContent(c *model.SirohContent) (*model.SirohContent, error) {
-	return s.repo.SaveContent(c)
+	result, err := s.repo.SaveContent(c)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("siroh:*")
+	}
+	return result, err
 }
 func (s *sirohService) UpdateCategory(id int, c *model.SirohCategory) (*model.SirohCategory, error) {
-	return s.repo.UpdateCategory(id, c)
+	result, err := s.repo.UpdateCategory(id, c)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("siroh:*")
+	}
+	return result, err
 }
 func (s *sirohService) UpdateContent(id int, c *model.SirohContent) (*model.SirohContent, error) {
-	return s.repo.UpdateContent(id, c)
+	result, err := s.repo.UpdateContent(id, c)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("siroh:*")
+	}
+	return result, err
 }
-func (s *sirohService) DeleteCategory(id int) error { return s.repo.DeleteCategory(id) }
-func (s *sirohService) DeleteContent(id int) error  { return s.repo.DeleteContent(id) }
+func (s *sirohService) DeleteCategory(id int) error {
+	err := s.repo.DeleteCategory(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("siroh:*")
+	}
+	return err
+}
+func (s *sirohService) DeleteContent(id int) error {
+	err := s.repo.DeleteContent(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("siroh:*")
+	}
+	return err
+}

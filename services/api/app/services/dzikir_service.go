@@ -54,13 +54,25 @@ func (s *dzikirService) FindByOccasion(occasion string, limit, offset int) ([]mo
 }
 
 func (s *dzikirService) Create(d *model.Dzikir) (*model.Dzikir, error) {
-	return s.repo.Create(d)
+	result, err := s.repo.Create(d)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("dzikir:*")
+	}
+	return result, err
 }
 
 func (s *dzikirService) Update(id int, d *model.Dzikir) (*model.Dzikir, error) {
-	return s.repo.Update(id, d)
+	result, err := s.repo.Update(id, d)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("dzikir:*")
+	}
+	return result, err
 }
 
 func (s *dzikirService) Delete(id int) error {
-	return s.repo.Delete(id)
+	err := s.repo.Delete(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("dzikir:*")
+	}
+	return err
 }

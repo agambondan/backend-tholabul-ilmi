@@ -46,9 +46,17 @@ func (s *tafsirService) FindBySurahNumber(surahNumber, limit, offset int) ([]mod
 }
 
 func (s *tafsirService) Save(t *model.Tafsir) (*model.Tafsir, error) {
-	return s.repo.Save(t)
+	result, err := s.repo.Save(t)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("tafsir:*")
+	}
+	return result, err
 }
 
 func (s *tafsirService) UpdateByAyahID(ayahID int, t *model.Tafsir) (*model.Tafsir, error) {
-	return s.repo.UpdateByAyahID(ayahID, t)
+	result, err := s.repo.UpdateByAyahID(ayahID, t)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("tafsir:*")
+	}
+	return result, err
 }

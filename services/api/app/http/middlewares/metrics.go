@@ -33,18 +33,7 @@ var (
 		Help:    "Duration of database queries in seconds",
 		Buckets: []float64{.001, .005, .01, .025, .05, .1, .25, .5, 1},
 	})
-
-	cacheHits = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "api_cache_hits_total",
-		Help: "Total number of cache hits",
-	})
-
-	cacheMisses = promauto.NewCounter(prometheus.CounterOpts{
-		Name: "api_cache_misses_total",
-		Help: "Total number of cache misses",
-	})
 )
-
 func MetricsMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		start := time.Now()
@@ -81,25 +70,5 @@ func MetricsHandler() fiber.Handler {
 
 func ObserveDBQuery(duration time.Duration) {
 	dbQueryDuration.Observe(duration.Seconds())
-}
-
-func ObserveCacheHit() {
-	cacheHits.Inc()
-}
-
-func ObserveCacheMiss() {
-	cacheMisses.Inc()
-}
-
-func DBQueryDurationHistogram() prometheus.Histogram {
-	return dbQueryDuration
-}
-
-func GatherMetrics() ([]byte, error) {
-	handler := promhttp.Handler()
-	req := httptest.NewRequest("GET", "/", nil)
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
-	return w.Body.Bytes(), nil
 }
 

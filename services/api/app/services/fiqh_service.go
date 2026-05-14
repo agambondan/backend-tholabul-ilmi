@@ -67,7 +67,11 @@ func (s *fiqhService) CreateCategory(req *model.CreateFiqhCategoryRequest) (*mod
 		Slug:        req.Slug,
 		Description: req.Description,
 	}
-	return s.repo.CreateCategory(cat)
+	result, err := s.repo.CreateCategory(cat)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("fiqh:*")
+	}
+	return result, err
 }
 
 func (s *fiqhService) UpdateCategory(id int, req *model.CreateFiqhCategoryRequest) (*model.FiqhCategory, error) {
@@ -76,11 +80,19 @@ func (s *fiqhService) UpdateCategory(id int, req *model.CreateFiqhCategoryReques
 		Slug:        req.Slug,
 		Description: req.Description,
 	}
-	return s.repo.UpdateCategory(id, cat)
+	result, err := s.repo.UpdateCategory(id, cat)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("fiqh:*")
+	}
+	return result, err
 }
 
 func (s *fiqhService) DeleteCategory(id int) error {
-	return s.repo.DeleteCategory(id)
+	err := s.repo.DeleteCategory(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("fiqh:*")
+	}
+	return err
 }
 
 func (s *fiqhService) CreateItem(req *model.CreateFiqhItemRequest) (*model.FiqhItem, error) {
@@ -93,7 +105,11 @@ func (s *fiqhService) CreateItem(req *model.CreateFiqhItemRequest) (*model.FiqhI
 		Dalil:      req.Dalil,
 		SortOrder:  req.SortOrder,
 	}
-	return s.repo.CreateItem(item)
+	result, err := s.repo.CreateItem(item)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("fiqh:*")
+	}
+	return result, err
 }
 
 func (s *fiqhService) UpdateItem(id int, req *model.CreateFiqhItemRequest) (*model.FiqhItem, error) {
@@ -106,9 +122,17 @@ func (s *fiqhService) UpdateItem(id int, req *model.CreateFiqhItemRequest) (*mod
 		Dalil:      req.Dalil,
 		SortOrder:  req.SortOrder,
 	}
-	return s.repo.UpdateItem(id, item)
+	result, err := s.repo.UpdateItem(id, item)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("fiqh:*")
+	}
+	return result, err
 }
 
 func (s *fiqhService) DeleteItem(id int) error {
-	return s.repo.DeleteItem(id)
+	err := s.repo.DeleteItem(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("fiqh:*")
+	}
+	return err
 }

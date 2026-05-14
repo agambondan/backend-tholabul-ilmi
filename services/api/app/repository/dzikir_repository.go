@@ -31,13 +31,13 @@ func (r *dzikirRepository) FindAll(limit, offset int) ([]model.Dzikir, error) {
 		offset = 0
 	}
 	var list []model.Dzikir
-	err := r.db.Preload("Translation").Order("category, id").Limit(limit).Offset(offset).Find(&list).Error
+	err := r.db.Joins("Translation").Order("category, id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 
 func (r *dzikirRepository) FindByID(id int) (*model.Dzikir, error) {
 	var d model.Dzikir
-	err := r.db.Preload("Translation").First(&d, id).Error
+	err := r.db.Joins("Translation").First(&d, id).Error
 	return &d, err
 }
 
@@ -49,7 +49,7 @@ func (r *dzikirRepository) FindByCategory(category model.DzikirCategory, limit, 
 		offset = 0
 	}
 	var list []model.Dzikir
-	err := r.db.Preload("Translation").Where("category = ?", category).Order("id").Limit(limit).Offset(offset).Find(&list).Error
+	err := r.db.Joins("Translation").Where("category = ?", category).Order("id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 
@@ -61,7 +61,7 @@ func (r *dzikirRepository) FindByOccasion(occasion string, limit, offset int) ([
 		offset = 0
 	}
 	var list []model.Dzikir
-	err := r.db.Preload("Translation").Where("occasion = ?", occasion).Order("id").Limit(limit).Offset(offset).Find(&list).Error
+	err := r.db.Joins("Translation").Where("occasion = ?", occasion).Order("id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 

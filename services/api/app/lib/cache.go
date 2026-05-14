@@ -3,10 +3,48 @@ package lib
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
+
+var (
+	cacheHits = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "api_cache_hits_total",
+		Help: "Total number of cache hits",
+	})
+	cacheMisses = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "api_cache_misses_total",
+		Help: "Total number of cache misses",
+	})
+)
+
+const (
+	CacheTTLDefault = 60
+	CacheTTLStatic  = 300
+	CacheTTLDynamic = 30
+)
+
+var cacheTTLByPrefix = map[string]int{
+	"surah:":    CacheTTLStatic,
+	"asmaul:":   CacheTTLStatic,
+	"doa:":      CacheTTLStatic,
+	"dzikir:":   CacheTTLStatic,
+	"fiqh:":     CacheTTLStatic,
+	"tahlil:":   CacheTTLStatic,
+	"manasik:":  CacheTTLStatic,
+	"books:":    CacheTTLStatic,
+	"themes:":   CacheTTLStatic,
+	"chapters:": CacheTTLStatic,
+	"perawi:":   CacheTTLStatic,
+	"tafsir:":   CacheTTLStatic,
+	"siroh:":    CacheTTLStatic,
+	"kajian:":   CacheTTLStatic,
+	"hijri:":    CacheTTLStatic,
+}
 
 type CacheService struct {
 	client *redis.Client
@@ -29,14 +67,27 @@ func NewCacheService(client *redis.Client, ttlSeconds int64) *CacheService {
 	}
 }
 
+func (c *CacheService) ttlForKey(key string) time.Duration {
+	for prefix, ttl := range cacheTTLByPrefix {
+		if strings.HasPrefix(key, prefix) {
+			return time.Duration(ttl) * time.Second
+		}
+	}
+	return time.Duration(CacheTTLDefault) * time.Second
+}
+
 func (c *CacheService) Get(key string, dest interface{}) error {
 	if c == nil {
 		return redis.Nil
 	}
 	val, err := c.client.Get(c.ctx, key).Bytes()
 	if err != nil {
+		if err == redis.Nil {
+			cacheMisses.Inc()
+		}
 		return err
 	}
+	cacheHits.Inc()
 	return json.Unmarshal(val, dest)
 }
 
@@ -89,7 +140,7 @@ func (c *CacheService) Remember(key string, dest interface{}, fn func() (interfa
 	}
 
 	b, _ := json.Marshal(data)
-	if err := c.Set(key, data); err != nil {
+	if err := c.SetTTL(key, data, c.ttlForKey(key)); err != nil {
 		return err
 	}
 

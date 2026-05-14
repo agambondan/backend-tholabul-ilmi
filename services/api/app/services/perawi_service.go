@@ -35,7 +35,11 @@ func NewPerawiServiceWithCache(repo repository.PerawiRepository, cache *lib.Cach
 }
 
 func (s *perawiService) Create(p *model.Perawi) (*model.Perawi, error) {
-	return s.repo.Save(p)
+	result, err := s.repo.Save(p)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("perawi:*")
+	}
+	return result, err
 }
 
 func (s *perawiService) FindAll(ctx *fiber.Ctx) *paginate.Page {
@@ -74,11 +78,19 @@ func (s *perawiService) FindMurid(id *int) ([]model.Perawi, error) {
 }
 
 func (s *perawiService) UpdateByID(id *int, p *model.Perawi) (*model.Perawi, error) {
-	return s.repo.UpdateByID(id, p)
+	result, err := s.repo.UpdateByID(id, p)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("perawi:*")
+	}
+	return result, err
 }
 
 func (s *perawiService) DeleteByID(id *int) error {
-	return s.repo.DeleteByID(id)
+	err := s.repo.DeleteByID(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("perawi:*")
+	}
+	return err
 }
 
 func (s *perawiService) Count() (*int64, error) {

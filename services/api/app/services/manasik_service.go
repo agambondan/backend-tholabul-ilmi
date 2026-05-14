@@ -49,13 +49,25 @@ func (s *manasikService) FindByTypeAndStep(t model.ManasikType, step int) (*mode
 }
 
 func (s *manasikService) Create(step *model.ManasikStep) (*model.ManasikStep, error) {
-	return s.repo.Create(step)
+	result, err := s.repo.Create(step)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("manasik:*")
+	}
+	return result, err
 }
 
 func (s *manasikService) Update(id int, step *model.ManasikStep) (*model.ManasikStep, error) {
-	return s.repo.Update(id, step)
+	result, err := s.repo.Update(id, step)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("manasik:*")
+	}
+	return result, err
 }
 
 func (s *manasikService) Delete(id int) error {
-	return s.repo.Delete(id)
+	err := s.repo.Delete(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("manasik:*")
+	}
+	return err
 }

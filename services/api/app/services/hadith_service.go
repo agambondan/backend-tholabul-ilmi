@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/agambondan/islamic-explorer/app/lib"
@@ -31,11 +32,46 @@ type HadithService interface {
 
 type hadithService struct {
 	hadith repository.HadithRepository
+	cache  *lib.CacheService
 }
 
 // NewHadithService implements the HadithService Interface
 func NewHadithService(repo repository.HadithRepository) HadithService {
-	return &hadithService{repo}
+	return &hadithService{hadith: repo}
+}
+
+func NewHadithServiceWithCache(repo repository.HadithRepository, cache *lib.CacheService) HadithService {
+	return &hadithService{hadith: repo, cache: cache}
+}
+
+func (b *hadithService) FindById(id *int) (*model.Hadith, error) {
+	if b.cache == nil {
+		return b.hadith.FindById(id)
+	}
+	var result *model.Hadith
+	key := fmt.Sprintf("hadith:id:%d", *id)
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.hadith.FindById(id)
+	})
+	if err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func (b *hadithService) FindByBookSlug(ctx *fiber.Ctx, bookSlug *string) (*paginate.Page, error) {
+	if b.cache == nil {
+		return b.hadith.FindByBookSlug(ctx, bookSlug)
+	}
+	var result *paginate.Page
+	key := fmt.Sprintf("hadith:search:%s", *bookSlug)
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.hadith.FindByBookSlug(ctx, bookSlug)
+	})
+	if err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 func (b *hadithService) Create(hadith *model.Hadith) (*model.Hadith, error) {
@@ -50,24 +86,15 @@ func (b *hadithService) FindAllKeyset(ctx *fiber.Ctx) (*lib.KeysetPage, error) {
 	return b.hadith.FindAllKeyset(ctx)
 }
 
-func (b *hadithService) FindById(id *int) (*model.Hadith, error) {
-	return b.hadith.FindById(id)
-}
-
 func (b *hadithService) FindDaily() (*model.Hadith, error) {
 	count, err := b.hadith.Count()
 	if err != nil || count == nil || *count == 0 {
 		return nil, err
 	}
-	// Deterministic offset by day-of-year so all users get the same hadith on the same day.
 	now := time.Now().UTC()
 	dayOfYear := int64(now.YearDay()) + int64(now.Year())*1000
 	offset := dayOfYear % *count
 	return b.hadith.FindByOffset(offset)
-}
-
-func (b *hadithService) FindByBookSlug(ctx *fiber.Ctx, bookSlug *string) (*paginate.Page, error) {
-	return b.hadith.FindByBookSlug(ctx, bookSlug)
 }
 
 func (b *hadithService) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, error) {

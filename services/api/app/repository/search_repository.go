@@ -28,6 +28,9 @@ const tsvAyah = `to_tsvector('simple', coalesce("Translation".idn,'') || ' ' || 
 // tsvHadith builds the tsvector expression over the hadith translation columns.
 const tsvHadith = `to_tsvector('simple', coalesce("Translation".idn,'') || ' ' || coalesce("Translation".en,''))`
 
+// tsvTranslation builds the same expression without a join alias for subqueries.
+const tsvTranslation = `to_tsvector('simple', coalesce(idn,'') || ' ' || coalesce(en,''))`
+
 func (r *searchRepo) SearchAyah(query string, limit, offset int) ([]model.Ayah, int64, error) {
 	var ayahs []model.Ayah
 	var total int64
@@ -56,21 +59,21 @@ func (r *searchRepo) SearchHadith(query string, limit, offset int) ([]model.Hadi
 	var total int64
 
 	filter := tsvHadith + ` @@ websearch_to_tsquery('simple', ?) OR "Translation".ar ILIKE ?`
+	translationFilter := tsvTranslation + ` @@ websearch_to_tsquery('simple', ?) OR ar ILIKE ?`
 	args := []interface{}{query, "%" + query + "%"}
+	matchingTranslations := r.db.Model(&model.Translation{}).
+		Select("id").
+		Where(translationFilter, args...)
 
 	r.db.Model(&model.Hadith{}).
-		Joins("Translation").
-		Joins("Book").Joins("Book.Translation").
-		Joins("Theme").Joins("Theme.Translation").
-		Joins("Chapter").Joins("Chapter.Translation").
-		Where(filter, args...).
+		Where("translation_id IN (?)", matchingTranslations).
 		Count(&total)
 
 	err := r.db.Model(&model.Hadith{}).
 		Joins("Translation").
-		Joins("Book").Joins("Book.Translation").
-		Joins("Theme").Joins("Theme.Translation").
-		Joins("Chapter").Joins("Chapter.Translation").
+		Preload("Book.Translation").
+		Preload("Theme.Translation").
+		Preload("Chapter.Translation").
 		Where(filter, args...).
 		Order(gorm.Expr(`ts_rank(`+tsvHadith+`, websearch_to_tsquery('simple', ?)) DESC`, query)).
 		Limit(limit).Offset(offset).

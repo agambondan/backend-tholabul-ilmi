@@ -27,12 +27,47 @@ type AyahService interface {
 }
 
 type ayahService struct {
-	ayah repository.AyahRepository
+	ayah  repository.AyahRepository
+	cache *lib.CacheService
 }
 
 // NewAyahService implements the AyahService Interface
 func NewAyahService(repo repository.AyahRepository) AyahService {
-	return &ayahService{repo}
+	return &ayahService{ayah: repo}
+}
+
+func NewAyahServiceWithCache(repo repository.AyahRepository, cache *lib.CacheService) AyahService {
+	return &ayahService{ayah: repo, cache: cache}
+}
+
+func (c *ayahService) FindDaily() (*model.Ayah, error) {
+	if c.cache == nil {
+		return c.findDailyFromRepo()
+	}
+	var result *model.Ayah
+	key := "ayah:daily"
+	err := c.cache.Remember(key, &result, func() (interface{}, error) {
+		return c.findDailyFromRepo()
+	})
+	if err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func (c *ayahService) findDailyFromRepo() (*model.Ayah, error) {
+	count, err := c.ayah.Count()
+	if err != nil {
+		return nil, err
+	}
+	if count == nil || *count == 0 {
+		return nil, errors.New("ayah count is empty")
+	}
+
+	now := time.Now().UTC()
+	seed := int64(now.YearDay()) + int64(now.Year())*1000
+	number := int(seed%*count) + 1
+	return c.ayah.FindDaily(number)
 }
 
 func (c *ayahService) Create(ayah *model.Ayah) (*model.Ayah, error) {
@@ -49,21 +84,6 @@ func (c *ayahService) FindAllKeyset(ctx *fiber.Ctx) (*lib.KeysetPage, error) {
 
 func (c *ayahService) FindById(id *int) (*model.Ayah, error) {
 	return c.ayah.FindById(id)
-}
-
-func (c *ayahService) FindDaily() (*model.Ayah, error) {
-	count, err := c.ayah.Count()
-	if err != nil {
-		return nil, err
-	}
-	if count == nil || *count == 0 {
-		return nil, errors.New("ayah count is empty")
-	}
-
-	now := time.Now().UTC()
-	seed := int64(now.YearDay()) + int64(now.Year())*1000
-	number := int(seed%*count) + 1
-	return c.ayah.FindDaily(number)
 }
 
 func (c *ayahService) FindByNumber(ctx *fiber.Ctx, number *int) (*paginate.Page, error) {

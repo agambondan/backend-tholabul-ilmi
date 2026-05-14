@@ -34,7 +34,11 @@ func NewSurahServiceWithCache(repo repository.SurahRepository, cache *lib.CacheS
 }
 
 func (c *surahService) Create(surah *model.Surah) (*model.Surah, error) {
-	return c.surah.Save(surah)
+	result, err := c.surah.Save(surah)
+	if err == nil && c.cache != nil {
+		c.cache.Invalidate("surah:*")
+	}
+	return result, err
 }
 
 func (c *surahService) FindAll(ctx *fiber.Ctx) *paginate.Page {
@@ -65,11 +69,19 @@ func (c *surahService) FindByName(ctx *fiber.Ctx, name *string) (*model.Surah, e
 }
 
 func (c *surahService) UpdateById(id *int, surah *model.Surah) (*model.Surah, error) {
-	return c.surah.UpdateById(id, surah)
+	result, err := c.surah.UpdateById(id, surah)
+	if err == nil && c.cache != nil {
+		c.cache.Invalidate("surah:*")
+	}
+	return result, err
 }
 
 func (c *surahService) DeleteById(id *int, scoped *string) error {
-	return c.surah.DeleteById(id, scoped)
+	err := c.surah.DeleteById(id, scoped)
+	if err == nil && c.cache != nil {
+		c.cache.Invalidate("surah:*")
+	}
+	return err
 }
 
 func (c *surahService) Count() (*int64, error) {

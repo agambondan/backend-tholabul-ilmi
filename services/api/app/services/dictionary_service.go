@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 )
@@ -15,14 +16,29 @@ type DictionaryService interface {
 	Delete(id int) error
 }
 
-type dictionaryService struct{ repo repository.DictionaryRepository }
+type dictionaryService struct {
+	repo  repository.DictionaryRepository
+	cache *lib.CacheService
+}
 
 func NewDictionaryService(repo repository.DictionaryRepository) DictionaryService {
-	return &dictionaryService{repo}
+	return &dictionaryService{repo: repo}
+}
+
+func NewDictionaryServiceWithCache(repo repository.DictionaryRepository, cache *lib.CacheService) DictionaryService {
+	return &dictionaryService{repo: repo, cache: cache}
 }
 
 func (s *dictionaryService) FindAll(category string, search string) ([]model.IslamicTerm, error) {
-	return s.repo.FindAll(category, search)
+	if s.cache == nil {
+		return s.repo.FindAll(category, search)
+	}
+	var result []model.IslamicTerm
+	key := "dictionary:all"
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAll(category, search)
+	})
+	return result, err
 }
 
 func (s *dictionaryService) FindByTerm(term string) (*model.IslamicTerm, error) {
