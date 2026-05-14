@@ -4,7 +4,7 @@ const S = ({ className = '' }) => (
     <div className={`animate-pulse rounded bg-gray-200 dark:bg-slate-700 ${className}`} />
 );
 
-const SkeletonNavbar = () => (
+export const SkeletonNavbar = () => (
     <div className='fixed inset-x-0 top-0 z-50 h-14 bg-emerald-900 dark:bg-gray-950 border-b border-emerald-800 dark:border-gray-800 flex items-center px-4 gap-4'>
         <div className='flex flex-col gap-1'>
             <S className='h-3.5 w-36 bg-emerald-700/60 dark:bg-slate-600' />
