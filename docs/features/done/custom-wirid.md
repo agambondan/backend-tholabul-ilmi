@@ -12,15 +12,16 @@ Wirid kustom user: CRUD preset pribadi, membaca wirid, dan menghitung tasbih int
 
 - API: `/user-wird`
 - Web: `/wirid-custom`, `/dashboard/wirid-custom`
-- Mobile: `IbadahScreen`
+- Mobile: `IbadahScreen` navigation dan `ExploreScreen` detail/form
 
 ## Evidence
 
-- API: `services/api/app/controllers/userWird_controller.go`
+- API: `services/api/app/controllers/user_wird_controller.go`
 - Web: `apps/web/src/app/wirid-custom/`, `apps/web/src/app/dashboard/wirid-custom/`
-- Mobile: `apps/mobile/src/screens/IbadahScreen.js`
+- Mobile: `apps/mobile/src/screens/IbadahScreen.js`, `apps/mobile/src/screens/ExploreScreen.js`
 
 ## Source of Truth
 
-- `services/api/app/services/wiridService_service.go`
-- `services/api/app/model/UserWird.go`
+- `services/api/app/controllers/user_wird_controller.go`
+- `services/api/app/services/user_wird_service.go`
+- `services/api/app/model/user_wird.go`

@@ -1,6 +1,6 @@
 # Mobile Smart Notifications
 
-Status: `IN_PROGRESS`
+Status: `VERIFIED`
 Priority: `P1`
 Tanggal: `2026-05-13`
 
@@ -54,8 +54,11 @@ mengatur kategori, waktu tenang, reminder, dan inbox notifikasi.
 - Header jadwal aktif dan item kotak masuk memakai shared `SectionHeader`.
 - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-notification-section-header-export`
   `PASS`.
+- `node --check apps/mobile/src/components/NotificationCenter.js` `PASS`.
+- `node --check apps/mobile/src/utils/smartNotifications.js` `PASS`.
 - Device smoke masih wajib sebelum status dinaikkan ke `DONE`; `adb devices -l`
-  belum menampilkan device pada verifikasi terakhir.
+  sudah tersedia pada sesi 2026-05-14, tetapi tap/swipe/keyevent manual via ADB
+  masih diblokir MIUI dengan `INJECT_EVENTS`.
 
 ## Source of Truth
 
