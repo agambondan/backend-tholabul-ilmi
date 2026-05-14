@@ -1,0 +1,334 @@
+jest.mock('../context/SessionContext', () => ({
+  useSession: jest.fn(),
+}));
+
+jest.mock('../context/FeedbackContext', () => ({
+  useFeedback: jest.fn(),
+}));
+
+jest.mock('../api/client', () => ({
+  getHadithBooks: jest.fn(),
+  getHadithPage: jest.fn(),
+  getHadithDetail: jest.fn(),
+  getHadithSanad: jest.fn(),
+  getHadithTakhrij: jest.fn(),
+  getRelatedHadiths: jest.fn(),
+  getPerawiDetail: jest.fn(),
+  getPerawiJarhTadil: jest.fn(),
+  getPerawiGuru: jest.fn(),
+  getPerawiMurid: jest.fn(),
+  normalizeHadith: jest.fn((x) => x),
+  pickItems: jest.fn((x) => x?.items ?? x ?? []),
+}));
+
+jest.mock('../api/personal', () => ({
+  addBookmark: jest.fn(),
+  deleteBookmark: jest.fn(),
+  getBookmarks: jest.fn(),
+  getNotesByType: jest.fn(),
+}));
+
+jest.mock('../storage/offlineContent', () => ({
+  getOfflineItems: jest.fn(),
+  getOfflineOverview: jest.fn(),
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
+jest.mock('lucide-react-native', () => {
+  const icons = {};
+  const names = [
+    'ArrowLeft', 'BookOpen', 'Bookmark', 'BookmarkCheck', 'MoreVertical',
+    'Search', 'AlertCircle', 'CheckCircle2', 'Info', 'X', 'XCircle',
+  ];
+  names.forEach((n) => { icons[n] = n; });
+  return icons;
+});
+
+jest.mock('../components/Screen', () => ({
+  Screen: ({ children, searchSlot, title }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View>
+        <Text testID="screen-title">{title}</Text>
+        {searchSlot}
+        {children}
+      </View>
+    );
+  },
+}));
+
+jest.mock('../components/Card', () => {
+  const { View, Text } = require('react-native');
+  return {
+    Card: ({ children }) => <View>{children}</View>,
+    CardTitle: ({ children, meta }) => (
+      <View>
+        <Text>{children}</Text>
+        {meta && <Text>{meta}</Text>}
+      </View>
+    ),
+  };
+});
+
+jest.mock('../components/ContentCard', () => {
+  const { Pressable, Text } = require('react-native');
+  return {
+    ContentCard: ({ title, subtitle, onPress }) => (
+      <Pressable onPress={onPress} testID="content-card">
+        <Text testID="card-title">{title}</Text>
+        {subtitle && <Text testID="card-subtitle">{subtitle}</Text>}
+      </Pressable>
+    ),
+  };
+});
+
+jest.mock('../components/Paper', () => {
+  const { TextInput, Pressable, Text } = require('react-native');
+  return {
+    PaperSearchInput: ({ value, onChangeText, placeholder }) => (
+      <TextInput
+        testID="search-input"
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+      />
+    ),
+    IconActionButton: ({ label, onPress }) => (
+      <Pressable onPress={onPress} testID={`action-${label}`}>
+        <Text>{label}</Text>
+      </Pressable>
+    ),
+    ActionPill: ({ label, onPress }) => (
+      <Pressable onPress={onPress} testID={`pill-${label}`}>
+        <Text>{label}</Text>
+      </Pressable>
+    ),
+  };
+});
+
+jest.mock('../components/AppActionSheet', () => ({
+  AppActionSheet: ({ visible, children }) => (visible ? children : null),
+  ActionSheetRow: ({ title, onPress }) => {
+    const { Pressable, Text } = require('react-native');
+    return (
+      <Pressable onPress={onPress} testID={`sheet-row-${title}`}>
+        <Text>{title}</Text>
+      </Pressable>
+    );
+  },
+}));
+
+jest.mock('../components/NotesPanel', () => ({
+  NotesPanel: () => {
+    const { Text } = require('react-native');
+    return <Text testID="notes-panel">NotesPanel</Text>;
+  },
+}));
+
+jest.mock('../components/SectionHeader', () => ({
+  SectionHeader: ({ title, meta }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View>
+        <Text>{title}</Text>
+        {meta && <Text>{meta}</Text>}
+      </View>
+    );
+  },
+}));
+
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { HadithScreen } from '../screens/HadithScreen';
+
+const { useSession } = require('../context/SessionContext');
+const { useFeedback } = require('../context/FeedbackContext');
+const clientApi = require('../api/client');
+const personalApi = require('../api/personal');
+const { getOfflineOverview } = require('../storage/offlineContent');
+
+const mockBooks = [
+  { id: 1, slug: 'bukhari', name: 'Shahih Bukhari', count: 100 },
+  { id: 2, slug: 'muslim', name: 'Shahih Muslim', count: 80 },
+];
+
+const mockHadithItem = (id, overrides = {}) => ({
+  id,
+  book: 'Shahih Bukhari',
+  bookSlug: 'bukhari',
+  number: id,
+  grade: 'Shahih',
+  translation: `Narrated hadith ${id} text.`,
+  arabic: `\u0627\u0644\u062d\u062f\u064a\u062b ${id}`,
+  ...overrides,
+});
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  useSession.mockReturnValue({
+    error: '',
+    loading: false,
+    session: null,
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+    user: null,
+  });
+  useFeedback.mockReturnValue({
+    showError: jest.fn(),
+    showInfo: jest.fn(),
+    showSuccess: jest.fn(),
+  });
+  getOfflineOverview.mockResolvedValue({ supported: false });
+  clientApi.getHadithBooks.mockResolvedValue(mockBooks);
+  clientApi.getHadithPage.mockResolvedValue({
+    items: [mockHadithItem(1), mockHadithItem(2)],
+    page: 0,
+    hasMore: false,
+    total: 2,
+  });
+  personalApi.getBookmarks.mockResolvedValue([]);
+  personalApi.getNotesByType.mockResolvedValue([]);
+});
+
+describe('HadithScreen', () => {
+  test('renders title and search input', async () => {
+    const { getByTestId, getByText } = render(<HadithScreen isActive />);
+    await waitFor(() => {
+      expect(getByText('Hadis')).toBeTruthy();
+      expect(getByTestId('search-input')).toBeTruthy();
+    });
+  });
+
+  test('loads books and displays them in filter row', async () => {
+    const { findByText, findAllByText } = render(<HadithScreen isActive />);
+    expect(await findByText('Semua')).toBeTruthy();
+    const bukhariElements = await findAllByText('Shahih Bukhari');
+    expect(bukhariElements.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('renders hadith list after fetch', async () => {
+    const { findAllByTestId } = render(<HadithScreen isActive />);
+    const cards = await findAllByTestId('content-card');
+    expect(cards.length).toBe(2);
+  });
+
+  test('shows list summary with book name', async () => {
+    const { findByText } = render(<HadithScreen isActive />);
+    expect(await findByText('Semua kitab')).toBeTruthy();
+  });
+
+  test('shows notice when user is not logged in', async () => {
+    const { findByText } = render(<HadithScreen isActive />);
+    expect(await findByText(/Buka Profil untuk masuk/)).toBeTruthy();
+  });
+
+  test('handles API error gracefully', async () => {
+    clientApi.getHadithPage.mockRejectedValue(new Error('Network error'));
+
+    const { findByText } = render(<HadithScreen isActive />);
+    expect(await findByText('Network error')).toBeTruthy();
+  });
+
+  test('search input filters hadith list', async () => {
+    clientApi.getHadithPage.mockResolvedValue({
+      items: [
+        mockHadithItem(1, { translation: 'First hadith text' }),
+        mockHadithItem(2, { translation: 'Second different text' }),
+      ],
+      page: 0,
+      hasMore: false,
+      total: 2,
+    });
+
+    const { getByTestId, findAllByTestId, queryAllByTestId } = render(<HadithScreen isActive />);
+    expect(await findAllByTestId('content-card')).toHaveLength(2);
+
+    const searchInput = getByTestId('search-input');
+    fireEvent.changeText(searchInput, 'First');
+
+    await waitFor(() => {
+      expect(queryAllByTestId('content-card')).toHaveLength(1);
+    });
+  });
+
+  test('clear search shows all hadiths', async () => {
+    const { getByTestId, findAllByTestId, queryAllByTestId } = render(<HadithScreen isActive />);
+    expect(await findAllByTestId('content-card')).toHaveLength(2);
+
+    const searchInput = getByTestId('search-input');
+    fireEvent.changeText(searchInput, 'nonexistent');
+
+    await waitFor(() => {
+      expect(queryAllByTestId('content-card')).toHaveLength(0);
+    });
+
+    fireEvent.changeText(searchInput, '');
+
+    await waitFor(() => {
+      expect(queryAllByTestId('content-card')).toHaveLength(2);
+    });
+  });
+
+  test('book selection renders', async () => {
+    const { findByText } = render(<HadithScreen isActive />);
+    expect(await findByText('Shahih Muslim')).toBeTruthy();
+  });
+
+  test('clicking hadith card opens detail view', async () => {
+    clientApi.getHadithDetail.mockResolvedValue({
+      id: 1, book: 'Shahih Bukhari', bookSlug: 'bukhari',
+      number: 1, grade: 'Shahih', translation: 'Detail text',
+    });
+    clientApi.getHadithSanad.mockResolvedValue([]);
+    clientApi.getHadithTakhrij.mockResolvedValue([]);
+    clientApi.getRelatedHadiths.mockResolvedValue([]);
+
+    const { findAllByTestId, findByText } = render(<HadithScreen isActive />);
+    const cards = await findAllByTestId('content-card');
+
+    fireEvent.press(cards[0]);
+
+    expect(await findByText('Detail Hadis')).toBeTruthy();
+  });
+
+  test('detail view shows tab buttons', async () => {
+    clientApi.getHadithDetail.mockResolvedValue({
+      id: 1, book: 'Shahih Bukhari', bookSlug: 'bukhari',
+      number: 1, grade: 'Shahih', translation: 'Detail text',
+    });
+    clientApi.getHadithSanad.mockResolvedValue([]);
+    clientApi.getHadithTakhrij.mockResolvedValue([]);
+    clientApi.getRelatedHadiths.mockResolvedValue([]);
+
+    const { findAllByTestId, findByText } = render(<HadithScreen isActive />);
+    const cards = await findAllByTestId('content-card');
+
+    fireEvent.press(cards[0]);
+
+    expect(await findByText('Teks')).toBeTruthy();
+    expect(await findByText('Sanad')).toBeTruthy();
+    expect(await findByText('Perawi')).toBeTruthy();
+    expect(await findByText('Takhrij')).toBeTruthy();
+    expect(await findByText('Catatan')).toBeTruthy();
+  });
+
+  test('detail view shows translation text', async () => {
+    clientApi.getHadithDetail.mockResolvedValue({
+      id: 1, book: 'Shahih Bukhari', bookSlug: 'bukhari',
+      number: 1, grade: 'Shahih', translation: 'Detailed translation text here',
+    });
+    clientApi.getHadithSanad.mockResolvedValue([]);
+    clientApi.getHadithTakhrij.mockResolvedValue([]);
+    clientApi.getRelatedHadiths.mockResolvedValue([]);
+
+    const { findAllByTestId, findByText } = render(<HadithScreen isActive />);
+    const cards = await findAllByTestId('content-card');
+
+    fireEvent.press(cards[0]);
+
+    expect(await findByText('Detailed translation text here')).toBeTruthy();
+  });
+});

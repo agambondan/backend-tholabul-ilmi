@@ -1,0 +1,236 @@
+jest.mock('../context/SessionContext', () => ({
+  useSession: jest.fn(),
+}));
+
+jest.mock('../api/personal', () => ({
+  getAchievements: jest.fn(),
+  getMyAchievements: jest.fn(),
+  getMyPoints: jest.fn(),
+  getMyStreak: jest.fn(),
+  getHafalanSummary: jest.fn(),
+  getPrayerStats: jest.fn(),
+  getTilawahSummary: jest.fn(),
+}));
+
+jest.mock('lucide-react-native', () => {
+  const icons = {};
+  const names = [
+    'ArrowLeft', 'Bell', 'BookOpen', 'ChevronRight', 'HardDrive',
+    'Lock', 'LogOut', 'Palette', 'Settings', 'ShieldCheck',
+    'Target', 'Trophy', 'User',
+  ];
+  names.forEach((n) => { icons[n] = n; });
+  return icons;
+});
+
+jest.mock('../components/Screen', () => ({
+  Screen: ({ children, title }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View>
+        <Text>{title}</Text>
+        {children}
+      </View>
+    );
+  },
+}));
+
+jest.mock('../components/Card', () => {
+  const { View } = require('react-native');
+  return { Card: ({ children, style }) => <View style={style}>{children}</View> };
+});
+
+jest.mock('../components/SessionCard', () => {
+  const { Text } = require('react-native');
+  return { SessionCard: () => <Text>SessionCard</Text> };
+});
+
+jest.mock('../components/NotificationCenter', () => {
+  const { Text } = require('react-native');
+  return { NotificationCenter: () => <Text>NotificationCenter</Text> };
+});
+
+jest.mock('../components/OfflinePackCard', () => {
+  const { Text } = require('react-native');
+  return { OfflinePackCard: () => <Text>OfflinePackCard</Text> };
+});
+
+import React from 'react';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { ProfileScreen } from '../screens/ProfileScreen';
+
+const { useSession } = require('../context/SessionContext');
+const personalApi = require('../api/personal');
+
+const defaultSession = {
+  error: '',
+  loading: false,
+  session: null,
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+  user: null,
+};
+
+const loggedInSession = {
+  ...defaultSession,
+  session: { user: { id: '1', email: 'test@test.com', name: 'Test User' }, token: 'abc' },
+  user: { id: '1', email: 'test@test.com', name: 'Test User' },
+};
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  useSession.mockReturnValue(defaultSession);
+  personalApi.getAchievements.mockResolvedValue([]);
+  personalApi.getMyAchievements.mockResolvedValue([]);
+  personalApi.getMyPoints.mockResolvedValue(null);
+  personalApi.getMyStreak.mockResolvedValue(null);
+  personalApi.getHafalanSummary.mockResolvedValue(null);
+  personalApi.getPrayerStats.mockResolvedValue(null);
+  personalApi.getTilawahSummary.mockResolvedValue(null);
+});
+
+describe('ProfileScreen', () => {
+  test('renders guest state when not logged in', async () => {
+    const { getByText } = render(<ProfileScreen isActive />);
+    await waitFor(() => {
+      expect(getByText('Profil')).toBeTruthy();
+      expect(getByText('Thullabul Ilmi')).toBeTruthy();
+      expect(getByText('Belum masuk ke akun')).toBeTruthy();
+    });
+  });
+
+  test('renders user info when logged in', async () => {
+    useSession.mockReturnValue(loggedInSession);
+    personalApi.getMyPoints.mockResolvedValue({ total_points: 1500 });
+    personalApi.getMyStreak.mockResolvedValue({ current_streak: 7 });
+    personalApi.getHafalanSummary.mockResolvedValue({ memorized_count: 5 });
+
+    const { getByText } = render(<ProfileScreen isActive />);
+    await waitFor(() => {
+      expect(getByText('Test User')).toBeTruthy();
+      expect(getByText('test@test.com')).toBeTruthy();
+      expect(getByText('1.500')).toBeTruthy();
+      expect(getByText('7')).toBeTruthy();
+      expect(getByText('5')).toBeTruthy();
+    });
+  });
+
+  test('shows stats summary with points and streak', async () => {
+    useSession.mockReturnValue(loggedInSession);
+    personalApi.getMyPoints.mockResolvedValue({ points: 500 });
+    personalApi.getMyStreak.mockResolvedValue({ streak: 3 });
+    personalApi.getHafalanSummary.mockRejectedValue(new Error('fail'));
+    personalApi.getPrayerStats.mockRejectedValue(new Error('fail'));
+    personalApi.getTilawahSummary.mockRejectedValue(new Error('fail'));
+
+    const { getByText, queryByText } = render(<ProfileScreen isActive />);
+    await waitFor(() => {
+      expect(getByText('500')).toBeTruthy();
+      expect(getByText('3')).toBeTruthy();
+    });
+    expect(queryByText('Surah Hafalan')).toBeNull();
+    expect(queryByText('Sholat Minggu Ini')).toBeNull();
+    expect(queryByText('Halaman Tilawah')).toBeNull();
+  });
+
+  test('renders guest login prompt row when not logged in', async () => {
+    const { getByText } = render(<ProfileScreen isActive />);
+    await waitFor(() => {
+      expect(getByText('Masuk / Daftar')).toBeTruthy();
+    });
+  });
+
+  test('settings navigation opens settings screen', async () => {
+    useSession.mockReturnValue(loggedInSession);
+
+    const { getByText, getByLabelText } = render(<ProfileScreen isActive />);
+    await waitFor(() => expect(getByText('Test User')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('Buka pengaturan profil'));
+    expect(getByText('Pengaturan')).toBeTruthy();
+    expect(getByText('Akun')).toBeTruthy();
+    expect(getByText('Notifikasi')).toBeTruthy();
+  });
+
+  test('settings sub-screen shows session card and logout', async () => {
+    useSession.mockReturnValue(loggedInSession);
+
+    const { getByText, getByLabelText } = render(<ProfileScreen isActive />);
+    await waitFor(() => expect(getByText('Test User')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('Buka pengaturan profil'));
+    fireEvent.press(getByText('Akun'));
+    expect(getByText('SessionCard')).toBeTruthy();
+    expect(getByText('Keluar dari Akun')).toBeTruthy();
+  });
+
+  test('signOut called on logout button press', async () => {
+    const signOut = jest.fn();
+    useSession.mockReturnValue({ ...loggedInSession, signOut });
+
+    const { getByText, getByLabelText } = render(<ProfileScreen isActive />);
+    await waitFor(() => expect(getByText('Test User')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('Buka pengaturan profil'));
+    fireEvent.press(getByText('Akun'));
+    fireEvent.press(getByText('Keluar dari Akun'));
+    expect(signOut).toHaveBeenCalled();
+  });
+
+  test('notifications sub-screen renders', async () => {
+    useSession.mockReturnValue(loggedInSession);
+
+    const { getByText, getByLabelText } = render(<ProfileScreen isActive />);
+    await waitFor(() => expect(getByText('Test User')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('Buka pengaturan profil'));
+    fireEvent.press(getByText('Notifikasi'));
+    expect(getByText('NotificationCenter')).toBeTruthy();
+  });
+
+  test('storage sub-screen renders', async () => {
+    useSession.mockReturnValue(loggedInSession);
+
+    const { getByText, getByLabelText } = render(<ProfileScreen isActive />);
+    await waitFor(() => expect(getByText('Test User')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('Buka pengaturan profil'));
+    fireEvent.press(getByText('Penyimpanan'));
+    expect(getByText('OfflinePackCard')).toBeTruthy();
+  });
+
+  test('achievements are displayed', async () => {
+    useSession.mockReturnValue(loggedInSession);
+    personalApi.getAchievements.mockResolvedValue([
+      { achievement: { code: 'streak_7', name: 'Streak 7 Hari', icon: '🔥' }, earned_at: '2024-01-01' },
+      { achievement: { code: 'tilawah_first', name: 'Tilawah Perdana', icon: '📖' } },
+    ]);
+
+    const { getByText } = render(<ProfileScreen isActive />);
+    await waitFor(() => {
+      expect(getByText('PENCAPAIAN')).toBeTruthy();
+      expect(getByText('Streak 7 Hari')).toBeTruthy();
+      expect(getByText('Tilawah Perdana')).toBeTruthy();
+    });
+  });
+
+  test('achievements message shown when not logged in', async () => {
+    const { getByText } = render(<ProfileScreen isActive />);
+    await waitFor(() => {
+      expect(getByText('Masuk untuk melihat badge yang sudah kamu raih.')).toBeTruthy();
+    });
+  });
+
+  test('back button on sub-screen returns to main', async () => {
+    useSession.mockReturnValue(loggedInSession);
+
+    const { getByText, getByLabelText } = render(<ProfileScreen isActive />);
+    await waitFor(() => expect(getByText('Test User')).toBeTruthy());
+
+    fireEvent.press(getByLabelText('Buka pengaturan profil'));
+    expect(getByText('Pengaturan')).toBeTruthy();
+
+    fireEvent.press(getByLabelText('Kembali'));
+    expect(getByText('Profil')).toBeTruthy();
+  });
+});
