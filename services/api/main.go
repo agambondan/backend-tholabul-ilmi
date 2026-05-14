@@ -6,6 +6,8 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/agambondan/islamic-explorer/app/config"
@@ -65,7 +67,11 @@ func main() {
 	}
 
 	services := service.NewServices(newRepositories)
-	services.Notification.StartReminderScheduler(context.Background(), time.Minute)
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	defer stop()
+
+	services.Notification.StartReminderScheduler(ctx, time.Minute)
 
 	app := fiber.New(fiber.Config{
 		Prefork:   viper.GetString("PREFORK") == "true",
@@ -74,7 +80,23 @@ func main() {
 
 	http.Handle(app, newRepositories)
 
-	log.Fatal(app.Listen(":" + viper.GetString("PORT")))
+	go func() {
+		if err := app.Listen(":" + viper.GetString("PORT")); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	<-ctx.Done()
+	stop()
+	slog.Info("shutting down server...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := app.ShutdownWithContext(shutdownCtx); err != nil {
+		slog.Error("server shutdown error", "err", err)
+	}
+	slog.Info("server stopped gracefully")
 }
 
 func init() {

@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
+	"golang.org/x/sync/errgroup"
 )
 
 type SearchResult struct {
@@ -96,28 +97,44 @@ func (s *searchService) Search(query, searchType string, limit, page int) (*Sear
 		if each < 2 {
 			each = 2
 		}
-		ayahs, ayahTotal, err := s.repo.SearchAyah(query, each, 0)
-		if err != nil {
-			return nil, err
-		}
-		hadiths, hadithTotal, err := s.repo.SearchHadith(query, each, 0)
-		if err != nil {
-			return nil, err
-		}
-		terms, dictTotal, err := s.repo.SearchDictionary(query, each, 0)
-		if err != nil {
-			return nil, err
-		}
-		doas, doaTotal, err := s.repo.SearchDoa(query, each, 0)
-		if err != nil {
-			return nil, err
-		}
-		kajians, kajianTotal, err := s.repo.SearchKajian(query, each, 0)
-		if err != nil {
-			return nil, err
-		}
-		perawis, perawiTotal, err := s.repo.SearchPerawi(query, each, 0)
-		if err != nil {
+		g := new(errgroup.Group)
+		var ayahs []model.Ayah
+		var ayahTotal int64
+		g.Go(func() (err error) {
+			ayahs, ayahTotal, err = s.repo.SearchAyah(query, each, 0)
+			return
+		})
+		var hadiths []model.Hadith
+		var hadithTotal int64
+		g.Go(func() (err error) {
+			hadiths, hadithTotal, err = s.repo.SearchHadith(query, each, 0)
+			return
+		})
+		var terms []model.IslamicTerm
+		var dictTotal int64
+		g.Go(func() (err error) {
+			terms, dictTotal, err = s.repo.SearchDictionary(query, each, 0)
+			return
+		})
+		var doas []model.Doa
+		var doaTotal int64
+		g.Go(func() (err error) {
+			doas, doaTotal, err = s.repo.SearchDoa(query, each, 0)
+			return
+		})
+		var kajians []model.Kajian
+		var kajianTotal int64
+		g.Go(func() (err error) {
+			kajians, kajianTotal, err = s.repo.SearchKajian(query, each, 0)
+			return
+		})
+		var perawis []model.Perawi
+		var perawiTotal int64
+		g.Go(func() (err error) {
+			perawis, perawiTotal, err = s.repo.SearchPerawi(query, each, 0)
+			return
+		})
+		if err := g.Wait(); err != nil {
 			return nil, err
 		}
 		result.Ayahs = ayahs
