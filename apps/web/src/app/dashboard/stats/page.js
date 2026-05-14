@@ -2,20 +2,66 @@
 
 import { useLocale } from '@/context/Locale';
 import { useAuth } from '@/context/Auth';
-import { bookmarkApi, achievementApi } from '@/lib/api';
+import {
+    achievementApi,
+    bookmarkApi,
+    goalsApi,
+    hafalanApi,
+    muhasabahApi,
+    sholatTrackerApi,
+    statsApi,
+    tilawahApi,
+} from '@/lib/api';
+import {
+    buildLocalPrayerRows,
+    calcLocalPrayerStreak,
+    countDonePrayers,
+    isGoalCompleted,
+    isHafalanMemorized,
+    normalizeGoal,
+    normalizeHafalan,
+    normalizeMuhasabah,
+    normalizePrayerLog,
+    normalizeTilawahEntry,
+    parseApiJson,
+    pickItems,
+    prayerKey,
+    readLocalArray,
+    readLocalPrayerLog,
+    sumTilawahPages,
+    todayISO,
+    writeLocalArray,
+    writeLocalPrayerLog,
+} from '@/lib/personalSync';
 import { useEffect, useState } from 'react';
 
-const PRAYERS = ['Shubuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'];
-
-const todayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const isSameWeek = (dateStr) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    return d >= startOfWeek;
 };
 
-const dateStrOffset = (offset) => {
-    const d = new Date();
-    d.setDate(d.getDate() + offset);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const isSameMonth = (dateStr) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+};
+
+const normalizeHistoryRows = (payload) => {
+    const byDate = new Map(buildLocalPrayerRows(7).map((row) => [row.date, { ...row, count: 0 }]));
+    pickItems(payload).forEach((entry) => {
+        const date = entry.date;
+        if (!date || !byDate.has(date)) return;
+        const current = byDate.get(date);
+        const key = prayerKey(entry.prayer);
+        if (!current.prayers) current.prayers = {};
+        current.prayers[key] = entry.status !== 'missed';
+        current.count = countDonePrayers(current.prayers);
+    });
+    return [...byDate.values()].map(({ date, count }) => ({ date, count }));
 };
 
 const StatsPage = () => {
@@ -32,65 +78,72 @@ const StatsPage = () => {
     const [prayerStreak, setPrayerStreak] = useState(0);
     const [tilawahWeek, setTilawahWeek] = useState(0);
     const [tilawahMonth, setTilawahMonth] = useState(0);
+    const [syncError, setSyncError] = useState('');
 
     useEffect(() => {
-        try {
-            setTodayPrayer(
-                JSON.parse(localStorage.getItem(`sholat_log_${todayStr()}`) ?? '{}'),
-            );
-            setMuhasabahCount(
-                (JSON.parse(localStorage.getItem('tholabul_muhasabah') ?? '[]')).length,
-            );
-            const goals = JSON.parse(localStorage.getItem('tholabul_goals') ?? '[]');
-            setActiveGoals(goals.filter((g) => !g.completed).length);
-            const hafalan = JSON.parse(localStorage.getItem('tholabul_hafalan') ?? '[]');
-            setHafalCount(hafalan.filter((s) => s.status === 'hafal').length);
-        } catch {}
+        const localPrayer = readLocalPrayerLog(todayISO());
+        const localMuhasabah = readLocalArray('tholabul_muhasabah').map(normalizeMuhasabah);
+        const localGoals = readLocalArray('tholabul_goals').map(normalizeGoal);
+        const localHafalan = readLocalArray('tholabul_hafalan').map(normalizeHafalan);
+        const localTilawah = readLocalArray('tholabul_tilawah').map(normalizeTilawahEntry);
 
-        // Calculate sholat streak
-        try {
-            let streak = 0;
-            for (let i = 0; i >= -365; i--) {
-                const ds = dateStrOffset(i);
-                const entry = JSON.parse(
-                    localStorage.getItem(`sholat_log_${ds}`) ?? '{}',
+        setTodayPrayer(localPrayer);
+        setMuhasabahCount(localMuhasabah.length);
+        setActiveGoals(localGoals.filter((g) => !isGoalCompleted(g)).length);
+        setHafalCount(localHafalan.filter(isHafalanMemorized).length);
+        setPrayerStreak(calcLocalPrayerStreak());
+        setTilawahWeek(sumTilawahPages(localTilawah, isSameWeek));
+        setTilawahMonth(sumTilawahPages(localTilawah, isSameMonth));
+        setLast7(buildLocalPrayerRows(7));
+
+        const loadApiStats = async () => {
+            if (!isAuthenticated) return;
+            try {
+                const [
+                    todayPayload,
+                    historyPayload,
+                    muhasabahPayload,
+                    goalsPayload,
+                    hafalanPayload,
+                    tilawahPayload,
+                    statsPayload,
+                ] = await Promise.all([
+                    sholatTrackerApi.today().then(parseApiJson),
+                    sholatTrackerApi.history().then(parseApiJson),
+                    muhasabahApi.list().then(parseApiJson),
+                    goalsApi.list().then(parseApiJson),
+                    hafalanApi.list().then(parseApiJson),
+                    tilawahApi.list().then(parseApiJson),
+                    statsApi.summary().then(parseApiJson),
+                ]);
+                const prayer = normalizePrayerLog(todayPayload);
+                const muhasabah = pickItems(muhasabahPayload).map(normalizeMuhasabah);
+                const goals = pickItems(goalsPayload).map(normalizeGoal);
+                const hafalan = pickItems(hafalanPayload).map(normalizeHafalan);
+                const tilawah = pickItems(tilawahPayload).map(normalizeTilawahEntry);
+                const stats = statsPayload?.data ?? statsPayload ?? {};
+
+                setTodayPrayer(prayer);
+                setMuhasabahCount(muhasabah.length);
+                setActiveGoals(goals.filter((g) => !isGoalCompleted(g)).length);
+                setHafalCount(
+                    Number(stats.hafalan ?? NaN) || hafalan.filter(isHafalanMemorized).length,
                 );
-                const count = PRAYERS.filter((p) => entry[p.toLowerCase()]).length;
-                if (count > 0) {
-                    streak++;
-                } else {
-                    break;
-                }
+                setPrayerStreak(Number(stats.streak ?? NaN) || calcLocalPrayerStreak());
+                setTilawahWeek(sumTilawahPages(tilawah, isSameWeek));
+                setTilawahMonth(sumTilawahPages(tilawah, isSameMonth));
+                setLast7(normalizeHistoryRows(historyPayload));
+                writeLocalPrayerLog(todayISO(), prayer);
+                writeLocalArray('tholabul_muhasabah', muhasabah);
+                writeLocalArray('tholabul_goals', goals);
+                writeLocalArray('tholabul_hafalan', hafalan);
+                writeLocalArray('tholabul_tilawah', tilawah);
+                setSyncError('');
+            } catch {
+                setSyncError('Stat personal memakai salinan lokal karena sinkron server belum tersedia.');
             }
-            setPrayerStreak(streak);
-        } catch {}
-
-        // Tilawah stats (pages)
-        try {
-            const tilawah = JSON.parse(
-                localStorage.getItem('tholabul_tilawah') ?? '[]',
-            );
-            const now = new Date();
-            const startOfWeek = new Date(now);
-            startOfWeek.setDate(now.getDate() - now.getDay());
-            startOfWeek.setHours(0, 0, 0, 0);
-            setTilawahWeek(
-                tilawah
-                    .filter((e) => new Date(e.date + 'T00:00:00') >= startOfWeek)
-                    .reduce((s, e) => s + (e.pages ?? 0), 0),
-            );
-            setTilawahMonth(
-                tilawah
-                    .filter((e) => {
-                        const d = new Date(e.date + 'T00:00:00');
-                        return (
-                            d.getMonth() === now.getMonth() &&
-                            d.getFullYear() === now.getFullYear()
-                        );
-                    })
-                    .reduce((s, e) => s + (e.pages ?? 0), 0),
-            );
-        } catch {}
+        };
+        loadApiStats();
 
         bookmarkApi
             .list()
@@ -114,29 +167,20 @@ const StatsPage = () => {
                 .catch(() => {});
         }
 
-        const rows = [];
-        for (let i = -6; i <= 0; i++) {
-            const ds = dateStrOffset(i);
-            try {
-                const entry = JSON.parse(
-                    localStorage.getItem(`sholat_log_${ds}`) ?? '{}',
-                );
-                const count = PRAYERS.filter((p) => entry[p.toLowerCase()]).length;
-                rows.push({ date: ds, count });
-            } catch {
-                rows.push({ date: ds, count: 0 });
-            }
-        }
-        setLast7(rows);
     }, [isAuthenticated]);
 
-    const prayerCount = PRAYERS.filter((p) => todayPrayer[p.toLowerCase()]).length;
+    const prayerCount = countDonePrayers(todayPrayer);
 
     return (
         <div className='px-4 py-6'>
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-6'>
                 {t('stats.title')}
             </h1>
+            {syncError ? (
+                <div className='mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300'>
+                    {syncError}
+                </div>
+            ) : null}
 
             {/* Stat cards */}
             <div className='grid grid-cols-2 gap-3 mb-6'>
@@ -276,7 +320,7 @@ const StatsPage = () => {
                 <div className='flex items-end justify-between gap-2 h-28'>
                     {last7.map((row) => {
                         const heightPct = Math.max(4, (row.count / 5) * 100);
-                        const isToday = row.date === todayStr();
+                        const isToday = row.date === todayISO();
                         return (
                             <div
                                 key={row.date}

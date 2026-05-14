@@ -59,7 +59,16 @@ Quran, Hadis, Doa, Kajian, dan feature tanpa pindah-pindah tab.
   memberi pesan modul mana yang belum bisa dimuat.
 - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-mobile-global-search-polish-export`
   `PASS`.
-- Device smoke masih wajib sebelum status dinaikkan ke `DONE`.
+- Device/API smoke 2026-05-14:
+  - `curl 'http://localhost:9900/api/v1/search?q=shalat&type=all&limit=18'`
+    `HTTP 200`; runtime API aktif masih mengembalikan shape legacy top-level
+    `ayahs/hadiths/...`, dan mobile client sudah menormalisasi shape legacy
+    maupun wrapped `data`.
+  - Deep link `exp://10.13.55.208:19007/--/search?q=shalat` membuka screen
+    Cari tanpa fatal/redbox/network error pada logcat snapshot.
+  - Screenshot evidence: `/tmp/thollabul-smoke/search-2026-05-14.png`.
+- Smoke klik hasil source selain Quran masih perlu sentuhan manual di device
+  karena ADB input otomatis diblokir MIUI.
 
 ## Source of Truth
 

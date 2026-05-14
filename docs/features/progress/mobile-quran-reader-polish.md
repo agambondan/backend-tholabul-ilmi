@@ -103,7 +103,18 @@ utama, bukan list data biasa.
 - `node --check apps/mobile/src/screens/QuranScreen.js` `PASS`.
 - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-global-action-sheet-export`
   `PASS`.
-- Device smoke masih wajib sebelum status dinaikkan ke `DONE`.
+- Device smoke 2026-05-14:
+  - `adb devices -l` mendeteksi `POCOPHONE_F1`.
+  - `make mobile-status` menunjukkan Expo `exp://10.13.55.208:19007`,
+    API `http://localhost:9900`, dan `adb reverse` aktif untuk `19007`/`9900`.
+  - Deep link `exp://10.13.55.208:19007/--/quran/2` membuka Al-Baqara tanpa
+    fatal/redbox/network error pada logcat snapshot.
+  - Screenshot evidence: `/tmp/thollabul-smoke/quran-2-2026-05-14.png`.
+  - Hasil visual smoke: nama surat sebelum/sesudah tampil, arti muncul di mode
+    normal, marker ayat tidak keluar dari teks pada viewport yang dicek, dan
+    tajweed color terlihat.
+- Device smoke gesture kanan/kiri masih belum bisa divalidasi otomatis karena
+  MIUI memblokir `adb shell input tap/swipe/keyevent` dengan `INJECT_EVENTS`.
 
 ## Source of Truth
 

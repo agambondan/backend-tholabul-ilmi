@@ -59,6 +59,14 @@ mengatur kategori, waktu tenang, reminder, dan inbox notifikasi.
 - Device smoke masih wajib sebelum status dinaikkan ke `DONE`; `adb devices -l`
   sudah tersedia pada sesi 2026-05-14, tetapi tap/swipe/keyevent manual via ADB
   masih diblokir MIUI dengan `INJECT_EVENTS`.
+- Smoke tambahan 2026-05-14:
+  - Home device menampilkan `LOKASI AKTIF`, bukan fallback `Lokasi belum terbaca`.
+    Screenshot: `/tmp/thollabul-smoke/current-2026-05-14.png`.
+  - `GET /api/v1/notifications/settings` tanpa token mengembalikan
+    `HTTP 401`, sesuai endpoint personal yang butuh login.
+  - Deep link otomatis ke notification route belum terkonfirmasi karena device
+    tetap berada di search screen dengan keyboard aktif; perlu tap manual dari
+    user/device untuk validasi inbox, mark read, dan quiet hours.
 
 ## Source of Truth
 

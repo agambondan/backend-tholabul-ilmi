@@ -474,3 +474,81 @@ Coverage:
   Tahlil, Manasik, and Fiqh CRUD behavior.
 - Tests assert translation row creation/update, Tahlil repeat normalization,
   Manasik step ordering, and Fiqh `source`/`dalil` separation.
+
+## Follow-up Verification 2026-05-14 Stabilize Batch
+
+### Chronicle Context
+
+Chronicle context was refreshed for:
+
+- Personal Data Sync P0
+- Mobile Quran Reader Polish
+- Mobile Search and Discovery
+- Mobile Smart Notifications
+
+### Web Personal Sync
+
+```bash
+node --check apps/web/src/lib/personalSync.js && node --check apps/web/src/lib/api.js
+npm --prefix apps/web run lint
+npm --prefix apps/web run build
+```
+
+Result:
+
+- syntax check: `PASS`
+- lint: `PASS WITH EXISTING WARNINGS`
+- build: `PASS`
+
+Coverage:
+
+- dashboard summary/profile/stats now use API-first personal data when logged in
+- goals/muhasabah/notes no longer silently catch sync failures
+- sholat dashboard counters normalize `Shubuh` to API key `subuh`
+
+### Device Smoke
+
+```bash
+adb devices -l
+make mobile-status
+adb shell am start -a android.intent.action.VIEW -d 'exp://10.13.55.208:19007/--/quran/2' host.exp.exponent
+adb shell am start -a android.intent.action.VIEW -d 'exp://10.13.55.208:19007/--/search?q=shalat' host.exp.exponent
+```
+
+Result:
+
+- device detected: `POCOPHONE_F1`
+- Expo active: `exp://10.13.55.208:19007`
+- API active: `http://localhost:9900`
+- `adb reverse` active for `19007` and `9900`
+- Quran deep link opened without fatal/redbox/network error in logcat snapshot
+- Search deep link opened without fatal/redbox/network error in logcat snapshot
+
+Screenshots:
+
+- `/tmp/thollabul-smoke/current-2026-05-14.png`
+- `/tmp/thollabul-smoke/quran-2-2026-05-14.png`
+- `/tmp/thollabul-smoke/search-2026-05-14.png`
+
+### API Smoke
+
+```bash
+curl 'http://localhost:9900/api/v1/search?q=shalat&type=all&limit=18'
+curl 'http://localhost:9900/api/v1/ayah/page/2'
+curl 'http://localhost:9900/api/v1/feed?page=0&size=5'
+curl 'http://localhost:9900/api/v1/notifications/settings'
+```
+
+Result:
+
+- search: `HTTP 200`
+- Quran page 2: `HTTP 200`
+- feed: `HTTP 200`
+- notification settings without token: `HTTP 401`, expected for personal endpoint
+
+Limitations:
+
+- authenticated browser smoke for dashboard personal sync was not run because
+  no browser auth token was used in this session.
+- Android tap/swipe/keyevent automation is still blocked by MIUI `INJECT_EVENTS`,
+  so Quran gesture and search-result tap require manual device validation.

@@ -3,6 +3,17 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { notesApi } from '@/lib/api';
+import {
+    encodePersonalNoteContent,
+    normalizePersonalNote,
+    parseApiJson,
+    pickItems,
+    PERSONAL_NOTE_REF_ID,
+    PERSONAL_NOTE_REF_TYPE,
+    readLocalArray,
+    todayISO,
+    writeLocalArray,
+} from '@/lib/personalSync';
 import { useEffect, useState } from 'react';
 import { BsPencilSquare, BsTrash, BsX } from 'react-icons/bs';
 
@@ -14,41 +25,36 @@ const NotesPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [editNote, setEditNote] = useState(null);
     const [form, setForm] = useState({ title: '', content: '', tags: '' });
+    const [syncError, setSyncError] = useState('');
 
     useEffect(() => {
         const load = async () => {
             if (isAuthenticated) {
                 try {
-                    const res = await notesApi.list();
-                    const data = await res.json();
-                    const items = (data?.items ?? data ?? []).map((n) => ({
-                        id: String(n.id),
-                        title: n.title ?? '',
-                        content: n.content ?? '',
-                        tags: Array.isArray(n.tags) ? n.tags : [],
-                        date: (n.created_at ?? n.date ?? '').slice(0, 10),
-                    }));
-                    if (items.length > 0) {
-                        setNotes(items);
-                        try {
-                            localStorage.setItem('tholabul_notes', JSON.stringify(items));
-                        } catch {}
-                        return;
-                    }
-                } catch {}
+                    const items = pickItems(
+                        await parseApiJson(
+                            await notesApi.list({
+                                refId: PERSONAL_NOTE_REF_ID,
+                                refType: PERSONAL_NOTE_REF_TYPE,
+                            }),
+                        ),
+                    ).map(normalizePersonalNote);
+                    setNotes(items);
+                    writeLocalArray('tholabul_notes', items);
+                    setSyncError('');
+                    return;
+                } catch {
+                    setSyncError('Belum tersinkron. Menampilkan salinan lokal.');
+                }
             }
-            try {
-                setNotes(JSON.parse(localStorage.getItem('tholabul_notes') ?? '[]'));
-            } catch {}
+            setNotes(readLocalArray('tholabul_notes').map(normalizePersonalNote));
         };
         load();
     }, [isAuthenticated]);
 
     const persist = (updated) => {
         setNotes(updated);
-        try {
-            localStorage.setItem('tholabul_notes', JSON.stringify(updated));
-        } catch {}
+        writeLocalArray('tholabul_notes', updated);
     };
 
     const openAdd = () => {
@@ -67,7 +73,7 @@ const NotesPage = () => {
         setShowModal(true);
     };
 
-    const save = () => {
+    const save = async () => {
         if (!form.title.trim()) return;
         const tags = form.tags
             .split(',')
@@ -77,7 +83,19 @@ const NotesPage = () => {
             const payload = { title: form.title, content: form.content, tags };
             persist(notes.map((n) => (n.id === editNote.id ? { ...n, ...payload } : n)));
             if (isAuthenticated) {
-                notesApi.update(editNote.id, payload).catch(() => {});
+                try {
+                    const saved = normalizePersonalNote(
+                        await parseApiJson(
+                            await notesApi.update(editNote.id, {
+                                content: encodePersonalNoteContent(payload),
+                            }),
+                        ),
+                    );
+                    persist(notes.map((n) => (n.id === editNote.id ? saved : n)));
+                    setSyncError('');
+                } catch {
+                    setSyncError('Catatan tersimpan lokal. Sinkron cloud belum berhasil.');
+                }
             }
         } else {
             const entry = {
@@ -85,23 +103,40 @@ const NotesPage = () => {
                 title: form.title,
                 content: form.content,
                 tags,
-                date: new Date().toISOString().slice(0, 10),
+                date: todayISO(),
             };
             persist([entry, ...notes]);
             if (isAuthenticated) {
-                notesApi
-                    .create({ title: entry.title, content: entry.content, tags: entry.tags })
-                    .catch(() => {});
+                try {
+                    const saved = normalizePersonalNote(
+                        await parseApiJson(
+                            await notesApi.create({
+                                content: encodePersonalNoteContent(entry),
+                                ref_id: PERSONAL_NOTE_REF_ID,
+                                ref_type: PERSONAL_NOTE_REF_TYPE,
+                            }),
+                        ),
+                    );
+                    persist([saved, ...notes]);
+                    setSyncError('');
+                } catch {
+                    setSyncError('Catatan tersimpan lokal. Sinkron cloud belum berhasil.');
+                }
             }
         }
         setShowModal(false);
     };
 
-    const remove = (id) => {
+    const remove = async (id) => {
         if (!confirm(t('notes.delete_confirm'))) return;
         persist(notes.filter((n) => n.id !== id));
         if (isAuthenticated) {
-            notesApi.delete(id).catch(() => {});
+            try {
+                await parseApiJson(await notesApi.delete(id));
+                setSyncError('');
+            } catch {
+                setSyncError('Catatan dihapus lokal. Sinkron cloud belum berhasil.');
+            }
         }
     };
 
@@ -125,6 +160,11 @@ const NotesPage = () => {
                     {t('notes.add')}
                 </button>
             </div>
+            {syncError ? (
+                <div className='mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300'>
+                    {syncError}
+                </div>
+            ) : null}
 
             {/* Search */}
             <input

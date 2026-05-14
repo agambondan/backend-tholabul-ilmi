@@ -3,6 +3,15 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { goalsApi } from '@/lib/api';
+import {
+    goalCreatePayload,
+    goalUpdatePayload,
+    normalizeGoal,
+    parseApiJson,
+    pickItems,
+    readLocalArray,
+    writeLocalArray,
+} from '@/lib/personalSync';
 import { useEffect, useState } from 'react';
 import { BsCheckCircleFill, BsTrash, BsX } from 'react-icons/bs';
 import { MdFlag } from 'react-icons/md';
@@ -27,44 +36,29 @@ const GoalsPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [editGoal, setEditGoal] = useState(null);
     const [form, setForm] = useState(emptyForm());
+    const [syncError, setSyncError] = useState('');
 
     useEffect(() => {
         const load = async () => {
             if (isAuthenticated) {
                 try {
-                    const res = await goalsApi.list();
-                    const data = await res.json();
-                    const items = (data?.items ?? data ?? []).map((g) => ({
-                        id: String(g.id),
-                        title: g.title ?? '',
-                        target: Number(g.target ?? 1),
-                        current: Number(g.current ?? 0),
-                        unit: g.unit ?? 'kali',
-                        deadline: g.deadline ?? '',
-                        category: g.category ?? 'Lainnya',
-                        completed: !!g.completed,
-                    }));
-                    if (items.length > 0) {
-                        setGoals(items);
-                        try {
-                            localStorage.setItem('tholabul_goals', JSON.stringify(items));
-                        } catch {}
-                        return;
-                    }
-                } catch {}
+                    const items = pickItems(await parseApiJson(await goalsApi.list())).map(normalizeGoal);
+                    setGoals(items);
+                    writeLocalArray('tholabul_goals', items);
+                    setSyncError('');
+                    return;
+                } catch {
+                    setSyncError('Belum tersinkron. Menampilkan salinan lokal.');
+                }
             }
-            try {
-                setGoals(JSON.parse(localStorage.getItem('tholabul_goals') ?? '[]'));
-            } catch {}
+            setGoals(readLocalArray('tholabul_goals').map(normalizeGoal));
         };
         load();
     }, [isAuthenticated]);
 
     const persist = (updated) => {
         setGoals(updated);
-        try {
-            localStorage.setItem('tholabul_goals', JSON.stringify(updated));
-        } catch {}
+        writeLocalArray('tholabul_goals', updated);
     };
 
     const openAdd = () => {
@@ -86,7 +80,7 @@ const GoalsPage = () => {
         setShowModal(true);
     };
 
-    const save = () => {
+    const save = async () => {
         if (!form.title.trim() || !form.target) return;
         if (editGoal) {
             const payload = {
@@ -101,7 +95,13 @@ const GoalsPage = () => {
                 goals.map((g) => (g.id === editGoal.id ? { ...g, ...payload } : g)),
             );
             if (isAuthenticated) {
-                goalsApi.update(editGoal.id, payload).catch(() => {});
+                try {
+                    const saved = normalizeGoal(await parseApiJson(await goalsApi.update(editGoal.id, goalUpdatePayload(payload))));
+                    persist(goals.map((g) => (g.id === editGoal.id ? saved : g)));
+                    setSyncError('');
+                } catch {
+                    setSyncError('Perubahan tersimpan lokal. Sinkron cloud belum berhasil.');
+                }
             }
         } else {
             const entry = {
@@ -116,32 +116,42 @@ const GoalsPage = () => {
             };
             persist([entry, ...goals]);
             if (isAuthenticated) {
-                goalsApi
-                    .create({
-                        title: entry.title,
-                        target: entry.target,
-                        unit: entry.unit,
-                        deadline: entry.deadline || undefined,
-                        category: entry.category,
-                    })
-                    .catch(() => {});
+                try {
+                    const saved = normalizeGoal(await parseApiJson(await goalsApi.create(goalCreatePayload(entry))));
+                    persist([saved, ...goals]);
+                    setSyncError('');
+                } catch {
+                    setSyncError('Target tersimpan lokal. Sinkron cloud belum berhasil.');
+                }
             }
         }
         setShowModal(false);
     };
 
-    const markComplete = (id) => {
+    const markComplete = async (id) => {
+        const current = goals.find((goal) => goal.id === id);
         persist(goals.map((g) => (g.id === id ? { ...g, completed: true } : g)));
         if (isAuthenticated) {
-            goalsApi.update(id, { completed: true }).catch(() => {});
+            try {
+                const saved = normalizeGoal(await parseApiJson(await goalsApi.update(id, goalUpdatePayload({ ...current, completed: true }))));
+                persist(goals.map((g) => (g.id === id ? saved : g)));
+                setSyncError('');
+            } catch {
+                setSyncError('Status selesai tersimpan lokal. Sinkron cloud belum berhasil.');
+            }
         }
     };
 
-    const remove = (id) => {
+    const remove = async (id) => {
         if (!confirm(t('goals.delete_confirm'))) return;
         persist(goals.filter((g) => g.id !== id));
         if (isAuthenticated) {
-            goalsApi.delete(id).catch(() => {});
+            try {
+                await parseApiJson(await goalsApi.delete(id));
+                setSyncError('');
+            } catch {
+                setSyncError('Target dihapus lokal. Sinkron cloud belum berhasil.');
+            }
         }
     };
 
@@ -163,6 +173,11 @@ const GoalsPage = () => {
                     {t('goals.add')}
                 </button>
             </div>
+            {syncError ? (
+                <div className='mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300'>
+                    {syncError}
+                </div>
+            ) : null}
 
             {/* Tabs */}
             <div className='flex gap-1 mb-5 bg-gray-100 dark:bg-slate-800 rounded-lg p-1 w-fit'>

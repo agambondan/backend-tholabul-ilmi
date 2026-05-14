@@ -5,7 +5,22 @@ import DailyHadithWidget from '@/components/DailyHadithWidget';
 import PrayerCountdownWidget from '@/components/PrayerCountdownWidget';
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
-import { bookmarkApi, progressApi, streakApi } from '@/lib/api';
+import { bookmarkApi, goalsApi, muhasabahApi, progressApi, sholatTrackerApi, streakApi } from '@/lib/api';
+import {
+    calcLocalPrayerStreak,
+    countDonePrayers,
+    normalizeGoal,
+    normalizeMuhasabah,
+    normalizePrayerLog,
+    parseApiJson,
+    pickItems,
+    prayerKey,
+    readLocalArray,
+    readLocalPrayerLog,
+    todayISO,
+    writeLocalArray,
+    writeLocalPrayerLog,
+} from '@/lib/personalSync';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -32,34 +47,6 @@ import {
 } from 'react-icons/md';
 
 const PRAYERS = ['Shubuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'];
-
-const dateStr = (d = new Date()) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-const dateStrOffset = (offset) => {
-    const d = new Date();
-    d.setDate(d.getDate() + offset);
-    return dateStr(d);
-};
-
-const calcStreak = () => {
-    let streak = 0;
-    for (let i = 0; i >= -365; i--) {
-        const ds = dateStrOffset(i);
-        try {
-            const entry = JSON.parse(localStorage.getItem(`sholat_log_${ds}`) ?? '{}');
-            const count = PRAYERS.filter((p) => entry[p.toLowerCase()]).length;
-            if (count > 0) {
-                streak++;
-            } else {
-                break;
-            }
-        } catch {
-            break;
-        }
-    }
-    return streak;
-};
 
 const DashboardPage = () => {
     const { isAuthenticated, isLoading: authLoading } = useRequireAuth();
@@ -132,24 +119,47 @@ const DashboardPage = () => {
     const [streak, setStreak] = useState(0);
     const [quranProgress, setQuranProgress] = useState(null);
     const [hadithProgress, setHadithProgress] = useState(null);
+    const [syncError, setSyncError] = useState('');
 
     useEffect(() => {
         if (authLoading || !isAuthenticated) return;
-        try {
-            setPrayerLog(
-                JSON.parse(localStorage.getItem(`sholat_log_${dateStr()}`) ?? '{}'),
-            );
-            setGoals(JSON.parse(localStorage.getItem('tholabul_goals') ?? '[]'));
-            setMuhasabahList(
-                JSON.parse(localStorage.getItem('tholabul_muhasabah') ?? '[]'),
-            );
-        } catch {}
+
+        const loadPersonalSummary = async () => {
+            const today = todayISO();
+            const localPrayer = readLocalPrayerLog(today);
+            setPrayerLog(localPrayer);
+            setGoals(readLocalArray('tholabul_goals').map(normalizeGoal));
+            setMuhasabahList(readLocalArray('tholabul_muhasabah').map(normalizeMuhasabah));
+
+            try {
+                const [prayerPayload, goalsPayload, muhasabahPayload] = await Promise.all([
+                    sholatTrackerApi.today().then(parseApiJson),
+                    goalsApi.list().then(parseApiJson),
+                    muhasabahApi.list().then(parseApiJson),
+                ]);
+                const serverPrayer = normalizePrayerLog(prayerPayload);
+                const mergedPrayer = { ...localPrayer, ...serverPrayer };
+                const serverGoals = pickItems(goalsPayload).map(normalizeGoal);
+                const serverMuhasabah = pickItems(muhasabahPayload).map(normalizeMuhasabah);
+                setPrayerLog(mergedPrayer);
+                setGoals(serverGoals);
+                setMuhasabahList(serverMuhasabah);
+                writeLocalPrayerLog(today, mergedPrayer);
+                writeLocalArray('tholabul_goals', serverGoals);
+                writeLocalArray('tholabul_muhasabah', serverMuhasabah);
+                setSyncError('');
+            } catch {
+                setSyncError('Ringkasan personal memakai salinan lokal karena sinkron server belum tersedia.');
+            }
+        };
+
+        loadPersonalSummary();
 
         streakApi
             .get()
             .then((r) => r.json())
             .then((d) => setStreak(d?.current ?? d?.streak ?? 0))
-            .catch(() => setStreak(calcStreak()));
+            .catch(() => setStreak(calcLocalPrayerStreak()));
 
         bookmarkApi
             .list()
@@ -173,7 +183,7 @@ const DashboardPage = () => {
             .catch(() => {});
     }, [isAuthenticated, authLoading]);
 
-    const prayerCount = PRAYERS.filter((p) => prayerLog[p.toLowerCase()]).length;
+    const prayerCount = countDonePrayers(prayerLog);
     const activeGoals = goals.filter((g) => !g.completed);
     const lastMuhasabah = muhasabahList[0] ?? null;
 
@@ -196,6 +206,11 @@ const DashboardPage = () => {
                                 })}
                             </p>
                         </div>
+                        {syncError ? (
+                            <div className='mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300'>
+                                {syncError}
+                            </div>
+                        ) : null}
 
                         {/* Stat cards */}
                         <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6'>
@@ -325,7 +340,7 @@ const DashboardPage = () => {
                             </div>
                             <div className='flex gap-2'>
                                 {PRAYERS.map((p) => {
-                                    const done = !!prayerLog[p.toLowerCase()];
+                                    const done = !!prayerLog[prayerKey(p)];
                                     return (
                                         <div key={p} className='flex-1 flex flex-col items-center gap-1'>
                                             {done ? (

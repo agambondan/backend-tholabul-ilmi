@@ -2,42 +2,20 @@
 
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
-import { streakApi } from '@/lib/api';
+import { hafalanApi, muhasabahApi, streakApi } from '@/lib/api';
+import {
+    calcLocalPrayerStreak,
+    isHafalanMemorized,
+    normalizeHafalan,
+    normalizeMuhasabah,
+    parseApiJson,
+    pickItems,
+    readLocalArray,
+    writeLocalArray,
+} from '@/lib/personalSync';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-
-const todayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
-const PRAYERS = ['Shubuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'];
-
-const dateStrOffset = (offset) => {
-    const d = new Date();
-    d.setDate(d.getDate() + offset);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
-const calcStreak = () => {
-    let streak = 0;
-    for (let i = 0; i >= -365; i--) {
-        const ds = dateStrOffset(i);
-        try {
-            const entry = JSON.parse(localStorage.getItem(`sholat_log_${ds}`) ?? '{}');
-            const count = PRAYERS.filter((p) => entry[p.toLowerCase()]).length;
-            if (count > 0) {
-                streak++;
-            } else {
-                break;
-            }
-        } catch {
-            break;
-        }
-    }
-    return streak;
-};
 
 const ProfileDashboardPage = () => {
     const { user, isAuthenticated } = useAuth();
@@ -46,24 +24,42 @@ const ProfileDashboardPage = () => {
     const [streak, setStreak] = useState(0);
     const [muhasabahCount, setMuhasabahCount] = useState(0);
     const [hafalCount, setHafalCount] = useState(0);
+    const [syncError, setSyncError] = useState('');
 
     useEffect(() => {
-        try {
-            setMuhasabahCount(
-                JSON.parse(localStorage.getItem('tholabul_muhasabah') ?? '[]').length,
-            );
-            const hafalan = JSON.parse(localStorage.getItem('tholabul_hafalan') ?? '[]');
-            setHafalCount(hafalan.filter((s) => s.status === 'hafal').length);
-        } catch {}
+        const localMuhasabah = readLocalArray('tholabul_muhasabah').map(normalizeMuhasabah);
+        const localHafalan = readLocalArray('tholabul_hafalan').map(normalizeHafalan);
+        setMuhasabahCount(localMuhasabah.length);
+        setHafalCount(localHafalan.filter(isHafalanMemorized).length);
+
+        const loadPersonalCounts = async () => {
+            if (!isAuthenticated) return;
+            try {
+                const [muhasabahPayload, hafalanPayload] = await Promise.all([
+                    muhasabahApi.list().then(parseApiJson),
+                    hafalanApi.list().then(parseApiJson),
+                ]);
+                const muhasabah = pickItems(muhasabahPayload).map(normalizeMuhasabah);
+                const hafalan = pickItems(hafalanPayload).map(normalizeHafalan);
+                setMuhasabahCount(muhasabah.length);
+                setHafalCount(hafalan.filter(isHafalanMemorized).length);
+                writeLocalArray('tholabul_muhasabah', muhasabah);
+                writeLocalArray('tholabul_hafalan', hafalan);
+                setSyncError('');
+            } catch {
+                setSyncError('Stat profil memakai salinan lokal karena sinkron server belum tersedia.');
+            }
+        };
+        loadPersonalCounts();
 
         if (isAuthenticated) {
             streakApi
                 .get()
                 .then((r) => r.json())
                 .then((d) => setStreak(d?.current ?? d?.streak ?? 0))
-                .catch(() => setStreak(calcStreak()));
+                .catch(() => setStreak(calcLocalPrayerStreak()));
         } else {
-            setStreak(calcStreak());
+            setStreak(calcLocalPrayerStreak());
         }
     }, [isAuthenticated]);
 
@@ -86,6 +82,11 @@ const ProfileDashboardPage = () => {
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-6'>
                 {t('profile.title')}
             </h1>
+            {syncError ? (
+                <div className='mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300'>
+                    {syncError}
+                </div>
+            ) : null}
 
             {/* Avatar & info */}
             <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-6 flex flex-col items-center text-center mb-5'>

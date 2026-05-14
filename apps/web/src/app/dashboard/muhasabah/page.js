@@ -3,13 +3,17 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { muhasabahApi, streakApi } from '@/lib/api';
+import {
+    muhasabahCreatePayload,
+    normalizeMuhasabah,
+    parseApiJson,
+    pickItems,
+    readLocalArray,
+    todayISO,
+    writeLocalArray,
+} from '@/lib/personalSync';
 import { useEffect, useRef, useState } from 'react';
 import { BsPencilSquare, BsTrash, BsX } from 'react-icons/bs';
-
-const todayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
 
 const MOODS = [
     { value: 'baik', label: 'Baik', emoji: '😊' },
@@ -25,36 +29,25 @@ const MuhasabahPage = () => {
     const { isAuthenticated } = useAuth();
     const [list, setList] = useState([]);
     const [showModal, setShowModal] = useState(false);
-    const [form, setForm] = useState({ date: todayStr(), mood: 'baik', content: '' });
+    const [form, setForm] = useState({ date: todayISO(), mood: 'baik', content: '' });
+    const [syncError, setSyncError] = useState('');
     const textRef = useRef(null);
 
     useEffect(() => {
         const load = async () => {
             if (isAuthenticated) {
                 try {
-                    const res = await muhasabahApi.list();
-                    const data = await res.json();
-                    const items = (data?.items ?? data ?? []).map((e) => ({
-                        id: String(e.id),
-                        date: (e.date ?? e.created_at ?? '').slice(0, 10),
-                        mood: e.mood ?? 'biasa',
-                        content: e.content ?? e.notes ?? '',
-                    }));
-                    if (items.length > 0) {
-                        setList(items);
-                        try {
-                            localStorage.setItem(
-                                'tholabul_muhasabah',
-                                JSON.stringify(items),
-                            );
-                        } catch {}
-                        return;
-                    }
-                } catch {}
+                    const items = pickItems(await parseApiJson(await muhasabahApi.list()))
+                        .map(normalizeMuhasabah);
+                    setList(items);
+                    writeLocalArray('tholabul_muhasabah', items);
+                    setSyncError('');
+                    return;
+                } catch {
+                    setSyncError('Belum tersinkron. Menampilkan salinan lokal.');
+                }
             }
-            try {
-                setList(JSON.parse(localStorage.getItem('tholabul_muhasabah') ?? '[]'));
-            } catch {}
+            setList(readLocalArray('tholabul_muhasabah').map(normalizeMuhasabah));
         };
         load();
     }, [isAuthenticated]);
@@ -65,34 +58,43 @@ const MuhasabahPage = () => {
 
     const persist = (updated) => {
         setList(updated);
-        try {
-            localStorage.setItem('tholabul_muhasabah', JSON.stringify(updated));
-        } catch {}
+        writeLocalArray('tholabul_muhasabah', updated);
     };
 
     const openModal = () => {
-        setForm({ date: todayStr(), mood: 'baik', content: '' });
+        setForm({ date: todayISO(), mood: 'baik', content: '' });
         setShowModal(true);
     };
 
-    const save = () => {
+    const save = async () => {
         if (!form.content.trim()) return;
         const entry = { id: Date.now().toString(), ...form };
         persist([entry, ...list]);
         if (isAuthenticated) {
-            muhasabahApi
-                .create({ date: form.date, mood: form.mood, content: form.content })
-                .catch(() => {});
+            try {
+                const saved = normalizeMuhasabah(
+                    await parseApiJson(await muhasabahApi.create(muhasabahCreatePayload(entry))),
+                );
+                persist([saved, ...list]);
+                setSyncError('');
+            } catch {
+                setSyncError('Muhasabah tersimpan lokal. Sinkron cloud belum berhasil.');
+            }
             streakApi.logActivity('muhasabah').catch(() => {});
         }
         setShowModal(false);
     };
 
-    const remove = (id) => {
+    const remove = async (id) => {
         if (!confirm(t('muhasabah.delete_confirm'))) return;
         persist(list.filter((e) => e.id !== id));
         if (isAuthenticated) {
-            muhasabahApi.delete(id).catch(() => {});
+            try {
+                await parseApiJson(await muhasabahApi.delete(id));
+                setSyncError('');
+            } catch {
+                setSyncError('Muhasabah dihapus lokal. Sinkron cloud belum berhasil.');
+            }
         }
     };
 
@@ -110,6 +112,11 @@ const MuhasabahPage = () => {
                     {t('muhasabah.write_btn')}
                 </button>
             </div>
+            {syncError ? (
+                <div className='mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300'>
+                    {syncError}
+                </div>
+            ) : null}
 
             {list.length === 0 ? (
                 <div className='text-center py-16'>

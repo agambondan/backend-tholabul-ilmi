@@ -293,7 +293,13 @@ export const notificationApi = {
 };
 
 export const notesApi = {
-    list: () => authFetch('/api/v1/notes'),
+    list: ({ refId, refType } = {}) => {
+        const params = new URLSearchParams();
+        if (refType) params.set('ref_type', refType);
+        if (refId !== undefined && refId !== null) params.set('ref_id', String(refId));
+        const qs = params.toString();
+        return authFetch(`/api/v1/notes${qs ? `?${qs}` : ''}`);
+    },
     create: (data) =>
         authFetch('/api/v1/notes', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) =>
