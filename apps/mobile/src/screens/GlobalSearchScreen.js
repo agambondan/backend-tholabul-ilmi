@@ -35,7 +35,7 @@ const resultFieldByFilter = {
 };
 
 const normalizeQuery = (value = '') => value.trim().toLowerCase();
-const emptyGlobalResult = { ayahs: [], dictionaries: [], doas: [], hadiths: [], kajians: [], perawis: [], total: 0 };
+const emptyGlobalResult = { ayahs: [], dictionaries: [], doas: [], hadiths: [], kajians: [], perawis: [], ayahTotal: 0, hadithTotal: 0, dictionaryTotal: 0, doaTotal: 0, kajianTotal: 0, perawiTotal: 0, total: 0 };
 const emptyStateByFilter = {
   all: {
     title: 'Belum ada hasil',
@@ -100,8 +100,14 @@ const sanitizeRemoteResult = (filterKey, result = emptyGlobalResult) => {
   const items = Array.isArray(result?.[field]) ? result[field] : [];
   return {
     ...emptyGlobalResult,
+    ayahTotal: Number(result?.ayahTotal ?? 0),
+    hadithTotal: Number(result?.hadithTotal ?? 0),
+    dictionaryTotal: Number(result?.dictionaryTotal ?? 0),
+    doaTotal: Number(result?.doaTotal ?? 0),
+    kajianTotal: Number(result?.kajianTotal ?? 0),
+    perawiTotal: Number(result?.perawiTotal ?? 0),
     [field]: items,
-    total: items.length,
+    total: Number(result?.total ?? items.length),
   };
 };
 
