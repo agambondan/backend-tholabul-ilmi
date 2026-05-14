@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 )
@@ -14,14 +15,29 @@ type ManasikService interface {
 	Delete(id int) error
 }
 
-type manasikService struct{ repo repository.ManasikRepository }
+type manasikService struct {
+	repo  repository.ManasikRepository
+	cache *lib.CacheService
+}
 
 func NewManasikService(repo repository.ManasikRepository) ManasikService {
-	return &manasikService{repo}
+	return &manasikService{repo: repo}
+}
+
+func NewManasikServiceWithCache(repo repository.ManasikRepository, cache *lib.CacheService) ManasikService {
+	return &manasikService{repo: repo, cache: cache}
 }
 
 func (s *manasikService) FindAll(limit, offset int) ([]model.ManasikStep, error) {
-	return s.repo.FindAll(limit, offset)
+	if s.cache == nil {
+		return s.repo.FindAll(limit, offset)
+	}
+	var result []model.ManasikStep
+	key := "manasik:all"
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAll(limit, offset)
+	})
+	return result, err
 }
 
 func (s *manasikService) FindByType(t model.ManasikType, limit, offset int) ([]model.ManasikStep, error) {

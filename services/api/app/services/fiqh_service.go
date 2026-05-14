@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 )
@@ -20,11 +21,16 @@ type FiqhService interface {
 }
 
 type fiqhService struct {
-	repo repository.FiqhRepository
+	repo  repository.FiqhRepository
+	cache *lib.CacheService
 }
 
 func NewFiqhService(repo repository.FiqhRepository) FiqhService {
-	return &fiqhService{repo}
+	return &fiqhService{repo: repo}
+}
+
+func NewFiqhServiceWithCache(repo repository.FiqhRepository, cache *lib.CacheService) FiqhService {
+	return &fiqhService{repo: repo, cache: cache}
 }
 
 func (s *fiqhService) FindAllCategories(limit, offset int) ([]model.FiqhCategory, error) {
@@ -32,7 +38,15 @@ func (s *fiqhService) FindAllCategories(limit, offset int) ([]model.FiqhCategory
 }
 
 func (s *fiqhService) FindAllItems(limit, offset int) ([]model.FiqhItem, error) {
-	return s.repo.FindAllItems(limit, offset)
+	if s.cache == nil {
+		return s.repo.FindAllItems(limit, offset)
+	}
+	var result []model.FiqhItem
+	key := "fiqh:all"
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAllItems(limit, offset)
+	})
+	return result, err
 }
 
 func (s *fiqhService) FindCategoryBySlug(slug string, limit, offset int) (*model.FiqhCategory, error) {

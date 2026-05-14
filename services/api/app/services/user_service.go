@@ -125,6 +125,11 @@ func (s *userService) ForgotPassword(email string) error {
 		return err
 	}
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("panic in password reset email goroutine", "recover", r)
+			}
+		}()
 		if err := lib.SendPasswordResetEmail(*user.Email, token); err != nil {
 			slog.Warn("password reset email failed", "email", *user.Email, "err", err)
 		}

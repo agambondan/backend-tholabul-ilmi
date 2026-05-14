@@ -55,6 +55,9 @@ func (s *apiKeyService) Validate(key string) (*model.APIKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	go func() { _ = s.repo.IncrementUsage(key) }()
+	go func() {
+		defer func() { _ = recover() }()
+		_ = s.repo.IncrementUsage(key)
+	}()
 	return k, nil
 }

@@ -30,6 +30,8 @@ func NewPostgresql(env *config.Environment) *gorm.DB {
 			SingularTable: true,
 		},
 		DisableForeignKeyConstraintWhenMigrating: true,
+		PrepareStmt:                              true,
+		SkipDefaultTransaction:                   true,
 	}
 
 	var dsn string
@@ -57,8 +59,10 @@ func NewPostgresql(env *config.Environment) *gorm.DB {
 		panic(err)
 	}
 	// https://aws.amazon.com/blogs/database/performance-impact-of-idle-postgresql-connections
-	sqlDB.SetMaxOpenConns(10)
-	sqlDB.SetMaxIdleConns(10)
+	// Increased from 10 → 50 to handle concurrent mobile/web user load.
+	// 50 is safe for a typical Postgres instance (max_connections default = 100).
+	sqlDB.SetMaxOpenConns(50)
+	sqlDB.SetMaxIdleConns(25)
 	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
 

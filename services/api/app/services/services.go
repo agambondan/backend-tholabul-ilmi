@@ -1,7 +1,9 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/repository"
+	"github.com/spf13/viper"
 )
 
 type Services struct {
@@ -65,11 +67,21 @@ func NewServices(repo *repository.Repositories) *Services {
 	if repo == nil {
 		return &Services{}
 	}
+	cacheTTL := viper.GetInt64("CACHE_TTL_SECONDS")
+	db := repo.GetDB()
+	sqlDB, _ := db.DB()
+	client := repo.GetRedis()
+
+	var cache *lib.CacheService
+	if sqlDB != nil {
+		cache = lib.NewCacheService(client, cacheTTL)
+	}
+
 	streak := NewStreakService(repo.UserActivity)
 	return &Services{
 		User:              NewUserService(repo.User),
 		Ayah:              NewAyahService(repo.Ayah),
-		Surah:             NewSurahService(repo.Surah),
+		Surah:             NewSurahServiceWithCache(repo.Surah, cache),
 		Juz:               NewJuzService(repo.Juz),
 		Book:              NewBookService(repo.Book),
 		Theme:             NewThemeService(repo.Theme),
@@ -86,7 +98,7 @@ func NewServices(repo *repository.Repositories) *Services {
 		NotificationInbox: NewNotificationInboxService(repo.NotificationInbox),
 		Feed:              NewFeedService(repo.Feed, NewAyahService(repo.Ayah), NewHadithService(repo.Hadith)),
 		Tafsir:            NewTafsirService(repo.Tafsir),
-		Doa:               NewDoaService(repo.Doa),
+		Doa:               NewDoaServiceWithCache(repo.Doa, cache),
 		AsmaUlHusna:       NewAsmaUlHusnaService(repo.AsmaUlHusna),
 		Audio:             NewAudioService(repo.Audio),
 		Siroh:             NewSirohService(repo.Siroh),
@@ -94,14 +106,14 @@ func NewServices(repo *repository.Repositories) *Services {
 		Stats:             NewStatsServiceWithTilawah(repo.Bookmark, repo.Hafalan, repo.UserActivity, repo.Tilawah, streak),
 		Tilawah:           NewTilawahService(repo.Tilawah),
 		Amalan:            NewAmalanService(repo.Amalan),
-		Dzikir:            NewDzikirService(repo.Dzikir),
+		Dzikir:            NewDzikirServiceWithCache(repo.Dzikir, cache),
 		DzikirLog:         NewDzikirLogService(repo.DzikirLog),
 		Achievement:       NewAchievementService(repo.Achievement),
 		Leaderboard:       NewLeaderboardService(repo.Leaderboard),
 		Zakat:             NewZakatService(),
 		Sholat:            NewSholatService(repo.Sholat),
 		Murojaah:          NewMurojaahService(repo.Murojaah, repo.Hafalan),
-		Fiqh:              NewFiqhService(repo.Fiqh),
+		Fiqh:              NewFiqhServiceWithCache(repo.Fiqh, cache),
 		Tahlil:            NewTahlilService(repo.Tahlil),
 		Kajian:            NewKajianService(repo.Kajian),
 		Muhasabah:         NewMuhasabahService(repo.Muhasabah),
@@ -111,7 +123,7 @@ func NewServices(repo *repository.Repositories) *Services {
 		Kiblat:            NewKiblatService(),
 		PrayerTimes:       NewPrayerTimesService(),
 		History:           NewHistoryService(repo.History),
-		Manasik:           NewManasikService(repo.Manasik),
+		Manasik:           NewManasikServiceWithCache(repo.Manasik, cache),
 		Quiz:              NewQuizService(repo.Quiz),
 		Note:              NewNoteService(repo.Note),
 		Dictionary:        NewDictionaryService(repo.Dictionary),

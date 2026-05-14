@@ -23,9 +23,36 @@ import (
 func Handle(app *fiber.App, repo *repository.Repositories) {
 	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
 	app.Use(compress.New())
-	app.Use(logger.New())
+	app.Use(logger.New(logger.Config{
+		Format:     "${time} | ${status} | ${latency} | ${method} ${path}\n",
+		TimeFormat: "15:04:05",
+	}))
 	app.Use(middlewares.SecurityHeaders())
 	app.Use(middlewares.Cors())
+
+	globalLimiter := limiter.New(limiter.Config{
+		Max:        180,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			if uid := c.Locals("userId"); uid != nil {
+				return "auth:" + uid.(string)
+			}
+			return "ip:" + c.IP()
+		},
+		SkipSuccessfulRequests: false,
+	})
+	app.Use(globalLimiter)
+
+	searchLimiter := limiter.New(limiter.Config{
+		Max:        60,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			if uid := c.Locals("userId"); uid != nil {
+				return "search:" + uid.(string)
+			}
+			return "search:ip:" + c.IP()
+		},
+	})
 
 	newServices := service.NewServices(repo)
 	newUserController := controllers.NewUserController(newServices)
@@ -84,6 +111,9 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
+	cacheMw := middlewares.CacheByType(300, 30)
+	app.Use(cacheMw)
+
 	master := app.Group(viper.GetString("ENDPOINT"))
 	master.Get("/", controllers.GetAPIIndex)
 	master.Get("/info", controllers.GetAPIInfo)
@@ -122,8 +152,8 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	jwt := middlewares.JWTAuth()
 	admin := middlewares.AdminMiddleware()
 
-	// Search (public)
-	master.Get("/search", newSearchController.Search)
+	// Search (public) with stricter rate limit
+	master.Get("/search", searchLimiter, newSearchController.Search)
 
 	// Mufrodat / Kosakata Quran (public)
 	master.Get("/mufrodat/ayah/:id", newMufrodatController.FindByAyahID)

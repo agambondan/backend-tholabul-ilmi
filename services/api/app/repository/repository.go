@@ -66,6 +66,7 @@ type Repositories struct {
 	Takhrij         TakhrijRepository
 	db              *gorm.DB
 	pg              *paginate.Pagination
+	redis           *redis.Client
 }
 
 func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
@@ -136,7 +137,16 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 		Takhrij:         NewTakhrijRepository(db),
 		db:              db,
 		pg:              pg,
+		redis:           client,
 	}, nil
+}
+
+func (s *Repositories) GetDB() *gorm.DB {
+	return s.db
+}
+
+func (s *Repositories) GetRedis() *redis.Client {
+	return s.redis
 }
 
 // Close closes the  database connection

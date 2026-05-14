@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -20,11 +21,16 @@ type SurahService interface {
 
 type surahService struct {
 	surah repository.SurahRepository
+	cache *lib.CacheService
 }
 
 // NewSurahService implements the AyahService Interface
 func NewSurahService(repo repository.SurahRepository) SurahService {
-	return &surahService{repo}
+	return &surahService{surah: repo}
+}
+
+func NewSurahServiceWithCache(repo repository.SurahRepository, cache *lib.CacheService) SurahService {
+	return &surahService{surah: repo, cache: cache}
 }
 
 func (c *surahService) Create(surah *model.Surah) (*model.Surah, error) {
@@ -32,7 +38,18 @@ func (c *surahService) Create(surah *model.Surah) (*model.Surah, error) {
 }
 
 func (c *surahService) FindAll(ctx *fiber.Ctx) *paginate.Page {
-	return c.surah.FindAll(ctx)
+	if c.cache == nil {
+		return c.surah.FindAll(ctx)
+	}
+	var result *paginate.Page
+	key := "surah:all"
+	err := c.cache.Remember(key, &result, func() (interface{}, error) {
+		return c.surah.FindAll(ctx), nil
+	})
+	if err != nil {
+		return c.surah.FindAll(ctx)
+	}
+	return result
 }
 
 func (c *surahService) FindById(ctx *fiber.Ctx, id *int) (*model.Surah, error) {

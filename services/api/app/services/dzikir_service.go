@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 )
@@ -16,15 +17,28 @@ type DzikirService interface {
 }
 
 type dzikirService struct {
-	repo repository.DzikirRepository
+	repo  repository.DzikirRepository
+	cache *lib.CacheService
 }
 
 func NewDzikirService(repo repository.DzikirRepository) DzikirService {
-	return &dzikirService{repo}
+	return &dzikirService{repo: repo}
+}
+
+func NewDzikirServiceWithCache(repo repository.DzikirRepository, cache *lib.CacheService) DzikirService {
+	return &dzikirService{repo: repo, cache: cache}
 }
 
 func (s *dzikirService) FindAll(limit, offset int) ([]model.Dzikir, error) {
-	return s.repo.FindAll(limit, offset)
+	if s.cache == nil {
+		return s.repo.FindAll(limit, offset)
+	}
+	var result []model.Dzikir
+	key := "dzikir:all"
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAll(limit, offset)
+	})
+	return result, err
 }
 
 func (s *dzikirService) FindByID(id int) (*model.Dzikir, error) {
