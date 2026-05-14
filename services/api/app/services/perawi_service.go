@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -21,11 +22,16 @@ type PerawiService interface {
 }
 
 type perawiService struct {
-	repo repository.PerawiRepository
+	repo  repository.PerawiRepository
+	cache *lib.CacheService
 }
 
 func NewPerawiService(repo repository.PerawiRepository) PerawiService {
-	return &perawiService{repo}
+	return &perawiService{repo: repo}
+}
+
+func NewPerawiServiceWithCache(repo repository.PerawiRepository, cache *lib.CacheService) PerawiService {
+	return &perawiService{repo: repo, cache: cache}
 }
 
 func (s *perawiService) Create(p *model.Perawi) (*model.Perawi, error) {
@@ -33,7 +39,18 @@ func (s *perawiService) Create(p *model.Perawi) (*model.Perawi, error) {
 }
 
 func (s *perawiService) FindAll(ctx *fiber.Ctx) *paginate.Page {
-	return s.repo.FindAll(ctx)
+	if s.cache == nil {
+		return s.repo.FindAll(ctx)
+	}
+	var result *paginate.Page
+	key := "perawi:all"
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAll(ctx), nil
+	})
+	if err != nil {
+		return s.repo.FindAll(ctx)
+	}
+	return result
 }
 
 func (s *perawiService) FindByID(id *int) (*model.Perawi, error) {

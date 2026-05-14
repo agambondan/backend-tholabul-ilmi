@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 )
@@ -16,15 +17,31 @@ type TahlilService interface {
 }
 
 type tahlilService struct {
-	repo repository.TahlilRepository
+	repo  repository.TahlilRepository
+	cache *lib.CacheService
 }
 
 func NewTahlilService(repo repository.TahlilRepository) TahlilService {
-	return &tahlilService{repo}
+	return &tahlilService{repo: repo}
+}
+
+func NewTahlilServiceWithCache(repo repository.TahlilRepository, cache *lib.CacheService) TahlilService {
+	return &tahlilService{repo: repo, cache: cache}
 }
 
 func (s *tahlilService) FindAll(limit, offset int) ([]model.TahlilCollection, error) {
-	return s.repo.FindAll(limit, offset)
+	if s.cache == nil {
+		return s.repo.FindAll(limit, offset)
+	}
+	var result []model.TahlilCollection
+	key := "tahlil:all"
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAll(limit, offset)
+	})
+	if err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 func (s *tahlilService) FindByID(id int) (*model.TahlilCollection, error) {

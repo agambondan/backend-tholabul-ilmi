@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 )
@@ -13,11 +14,16 @@ type TafsirService interface {
 }
 
 type tafsirService struct {
-	repo repository.TafsirRepository
+	repo  repository.TafsirRepository
+	cache *lib.CacheService
 }
 
 func NewTafsirService(repo repository.TafsirRepository) TafsirService {
-	return &tafsirService{repo}
+	return &tafsirService{repo: repo}
+}
+
+func NewTafsirServiceWithCache(repo repository.TafsirRepository, cache *lib.CacheService) TafsirService {
+	return &tafsirService{repo: repo, cache: cache}
 }
 
 func (s *tafsirService) FindByAyahID(ayahID int) (*model.Tafsir, error) {
@@ -25,7 +31,18 @@ func (s *tafsirService) FindByAyahID(ayahID int) (*model.Tafsir, error) {
 }
 
 func (s *tafsirService) FindBySurahNumber(surahNumber, limit, offset int) ([]model.Tafsir, error) {
-	return s.repo.FindBySurahNumber(surahNumber, limit, offset)
+	if s.cache == nil {
+		return s.repo.FindBySurahNumber(surahNumber, limit, offset)
+	}
+	var result []model.Tafsir
+	key := "tafsir:all"
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindBySurahNumber(surahNumber, limit, offset)
+	})
+	if err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 func (s *tafsirService) Save(t *model.Tafsir) (*model.Tafsir, error) {

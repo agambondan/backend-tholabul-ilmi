@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -17,15 +18,31 @@ type KajianService interface {
 }
 
 type kajianService struct {
-	repo repository.KajianRepository
+	repo  repository.KajianRepository
+	cache *lib.CacheService
 }
 
 func NewKajianService(repo repository.KajianRepository) KajianService {
-	return &kajianService{repo}
+	return &kajianService{repo: repo}
+}
+
+func NewKajianServiceWithCache(repo repository.KajianRepository, cache *lib.CacheService) KajianService {
+	return &kajianService{repo: repo, cache: cache}
 }
 
 func (s *kajianService) FindAll(ctx *fiber.Ctx, topic, kajianType string) *paginate.Page {
-	return s.repo.FindAll(ctx, topic, kajianType)
+	if s.cache == nil {
+		return s.repo.FindAll(ctx, topic, kajianType)
+	}
+	var result *paginate.Page
+	key := "kajian:all"
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAll(ctx, topic, kajianType), nil
+	})
+	if err != nil {
+		return s.repo.FindAll(ctx, topic, kajianType)
+	}
+	return result
 }
 
 func (s *kajianService) FindByID(id int) (*model.Kajian, error) {

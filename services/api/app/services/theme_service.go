@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -19,11 +20,16 @@ type ThemeService interface {
 
 type themeService struct {
 	theme repository.ThemeRepository
+	cache *lib.CacheService
 }
 
 // NewThemeService implements the ThemeService Interface
 func NewThemeService(repo repository.ThemeRepository) ThemeService {
-	return &themeService{repo}
+	return &themeService{theme: repo}
+}
+
+func NewThemeServiceWithCache(repo repository.ThemeRepository, cache *lib.CacheService) ThemeService {
+	return &themeService{theme: repo, cache: cache}
 }
 
 func (b *themeService) Create(theme *model.Theme) (*model.Theme, error) {
@@ -31,7 +37,18 @@ func (b *themeService) Create(theme *model.Theme) (*model.Theme, error) {
 }
 
 func (b *themeService) FindAll(ctx *fiber.Ctx) *paginate.Page {
-	return b.theme.FindAll(ctx)
+	if b.cache == nil {
+		return b.theme.FindAll(ctx)
+	}
+	var result *paginate.Page
+	key := "themes:all"
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.theme.FindAll(ctx), nil
+	})
+	if err != nil {
+		return b.theme.FindAll(ctx)
+	}
+	return result
 }
 
 func (b *themeService) FindById(id *int) (*model.Theme, error) {

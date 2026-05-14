@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -20,11 +21,16 @@ type ChapterService interface {
 
 type chapterService struct {
 	chapter repository.ChapterRepository
+	cache   *lib.CacheService
 }
 
 // NewChapterService implements the ChapterService Interface
 func NewChapterService(repo repository.ChapterRepository) ChapterService {
-	return &chapterService{repo}
+	return &chapterService{chapter: repo}
+}
+
+func NewChapterServiceWithCache(repo repository.ChapterRepository, cache *lib.CacheService) ChapterService {
+	return &chapterService{chapter: repo, cache: cache}
 }
 
 func (b *chapterService) Create(chapter *model.Chapter) (*model.Chapter, error) {
@@ -32,7 +38,18 @@ func (b *chapterService) Create(chapter *model.Chapter) (*model.Chapter, error) 
 }
 
 func (b *chapterService) FindAll(ctx *fiber.Ctx) *paginate.Page {
-	return b.chapter.FindAll(ctx)
+	if b.cache == nil {
+		return b.chapter.FindAll(ctx)
+	}
+	var result *paginate.Page
+	key := "chapters:all"
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.chapter.FindAll(ctx), nil
+	})
+	if err != nil {
+		return b.chapter.FindAll(ctx)
+	}
+	return result
 }
 
 func (b *chapterService) FindById(id *int) (*model.Chapter, error) {

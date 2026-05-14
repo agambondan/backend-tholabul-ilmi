@@ -169,8 +169,11 @@ func (s *Repositories) Migrations() error {
 }
 
 // createCompositeIndexes adds composite indexes that include deleted_at for high-traffic tables.
+// Also adds pg_trgm GIN indexes for ILIKE search performance.
 // GORM struct tags can't express composite indexes on embedded fields, so we do it here.
 func (s *Repositories) createCompositeIndexes() {
+	s.db.Exec(`CREATE EXTENSION IF NOT EXISTS pg_trgm`)
+
 	indexes := []string{
 		`CREATE INDEX IF NOT EXISTS idx_hadith_book_del    ON hadith (book_id, deleted_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_hadith_theme_del   ON hadith (theme_id, deleted_at)`,
@@ -178,6 +181,19 @@ func (s *Repositories) createCompositeIndexes() {
 		`CREATE INDEX IF NOT EXISTS idx_ua_uid_date_del    ON user_activity (user_id, activity_date, deleted_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_hafalan_uid_del    ON hafalan_progress (user_id, deleted_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_hafalan_status_del ON hafalan_progress (status, deleted_at)`,
+
+		// pg_trgm GIN indexes for ILIKE search optimization
+		`CREATE INDEX IF NOT EXISTS idx_trgm_translation_ar  ON translation USING GIN (ar gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_translation_idn ON translation USING GIN (idn gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_translation_en  ON translation USING GIN (en gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_islamic_term    ON islamic_terms USING GIN (term gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_islamic_def     ON islamic_terms USING GIN (definition gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_doa_title       ON doas USING GIN (title gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_doa_arabic      ON doas USING GIN (arabic gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_kajian_title    ON kajians USING GIN (title gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_kajian_speaker  ON kajians USING GIN (speaker gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_perawi_latin    ON perawi USING GIN (nama_latin gin_trgm_ops)`,
+		`CREATE INDEX IF NOT EXISTS idx_trgm_perawi_arab     ON perawi USING GIN (nama_arab gin_trgm_ops)`,
 	}
 	for _, sql := range indexes {
 		s.db.Exec(sql)

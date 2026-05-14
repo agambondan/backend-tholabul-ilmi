@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -18,12 +19,17 @@ type BookService interface {
 }
 
 type bookService struct {
-	book repository.BookRepository
+	book  repository.BookRepository
+	cache *lib.CacheService
 }
 
 // NewBookService implements the BookService Interface
 func NewBookService(repo repository.BookRepository) BookService {
-	return &bookService{repo}
+	return &bookService{book: repo}
+}
+
+func NewBookServiceWithCache(repo repository.BookRepository, cache *lib.CacheService) BookService {
+	return &bookService{book: repo, cache: cache}
 }
 
 func (b *bookService) Create(book *model.Book) (*model.Book, error) {
@@ -31,7 +37,18 @@ func (b *bookService) Create(book *model.Book) (*model.Book, error) {
 }
 
 func (b *bookService) FindAll(ctx *fiber.Ctx) *paginate.Page {
-	return b.book.FindAll(ctx)
+	if b.cache == nil {
+		return b.book.FindAll(ctx)
+	}
+	var result *paginate.Page
+	key := "books:all"
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.book.FindAll(ctx), nil
+	})
+	if err != nil {
+		return b.book.FindAll(ctx)
+	}
+	return result
 }
 
 func (b *bookService) FindById(id *int) (*model.Book, error) {

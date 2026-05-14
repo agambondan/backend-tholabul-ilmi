@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
@@ -22,15 +23,31 @@ type SirohService interface {
 }
 
 type sirohService struct {
-	repo repository.SirohRepository
+	repo  repository.SirohRepository
+	cache *lib.CacheService
 }
 
 func NewSirohService(repo repository.SirohRepository) SirohService {
-	return &sirohService{repo}
+	return &sirohService{repo: repo}
+}
+
+func NewSirohServiceWithCache(repo repository.SirohRepository, cache *lib.CacheService) SirohService {
+	return &sirohService{repo: repo, cache: cache}
 }
 
 func (s *sirohService) FindAllCategories() ([]model.SirohCategory, error) {
-	return s.repo.FindAllCategories()
+	if s.cache == nil {
+		return s.repo.FindAllCategories()
+	}
+	var result []model.SirohCategory
+	key := "siroh:all"
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAllCategories()
+	})
+	if err != nil {
+		return result, err
+	}
+	return result, nil
 }
 func (s *sirohService) FindCategoryBySlug(slug string) (*model.SirohCategory, error) {
 	return s.repo.FindCategoryBySlug(slug)
