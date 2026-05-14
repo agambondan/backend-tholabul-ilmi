@@ -32,15 +32,19 @@ func (r *searchRepo) SearchAyah(query string, limit, offset int) ([]model.Ayah, 
 	var ayahs []model.Ayah
 	var total int64
 
-	base := r.db.
+	filter := tsvAyah + ` @@ websearch_to_tsquery('simple', ?) OR "Translation".ar ILIKE ?`
+	args := []interface{}{query, "%" + query + "%"}
+
+	r.db.Model(&model.Ayah{}).
 		Joins("Translation").
 		Joins("Surah").Joins("Surah.Translation").
-		Where(tsvAyah+` @@ websearch_to_tsquery('simple', ?) OR "Translation".ar ILIKE ?`,
-			query, "%"+query+"%")
+		Where(filter, args...).
+		Count(&total)
 
-	base.Model(&model.Ayah{}).Count(&total)
-
-	err := base.
+	err := r.db.Model(&model.Ayah{}).
+		Joins("Translation").
+		Joins("Surah").Joins("Surah.Translation").
+		Where(filter, args...).
 		Order(gorm.Expr(`ts_rank(`+tsvAyah+`, websearch_to_tsquery('simple', ?)) DESC`, query)).
 		Limit(limit).Offset(offset).
 		Find(&ayahs).Error
@@ -51,17 +55,23 @@ func (r *searchRepo) SearchHadith(query string, limit, offset int) ([]model.Hadi
 	var hadiths []model.Hadith
 	var total int64
 
-	base := r.db.
+	filter := tsvHadith + ` @@ websearch_to_tsquery('simple', ?) OR "Translation".ar ILIKE ?`
+	args := []interface{}{query, "%" + query + "%"}
+
+	r.db.Model(&model.Hadith{}).
 		Joins("Translation").
 		Joins("Book").Joins("Book.Translation").
 		Joins("Theme").Joins("Theme.Translation").
 		Joins("Chapter").Joins("Chapter.Translation").
-		Where(tsvHadith+` @@ websearch_to_tsquery('simple', ?) OR "Translation".ar ILIKE ?`,
-			query, "%"+query+"%")
+		Where(filter, args...).
+		Count(&total)
 
-	base.Model(&model.Hadith{}).Count(&total)
-
-	err := base.
+	err := r.db.Model(&model.Hadith{}).
+		Joins("Translation").
+		Joins("Book").Joins("Book.Translation").
+		Joins("Theme").Joins("Theme.Translation").
+		Joins("Chapter").Joins("Chapter.Translation").
+		Where(filter, args...).
 		Order(gorm.Expr(`ts_rank(`+tsvHadith+`, websearch_to_tsquery('simple', ?)) DESC`, query)).
 		Limit(limit).Offset(offset).
 		Find(&hadiths).Error
@@ -72,14 +82,13 @@ func (r *searchRepo) SearchDictionary(query string, limit, offset int) ([]model.
 	var terms []model.IslamicTerm
 	var total int64
 
-	base := r.db.
-		Preload("Translation").
-		Where("term ILIKE ? OR definition ILIKE ? OR example ILIKE ? OR source ILIKE ?",
-			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+	filter := "term ILIKE ? OR definition ILIKE ? OR example ILIKE ? OR source ILIKE ?"
+	args := []interface{}{"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%"}
 
-	base.Model(&model.IslamicTerm{}).Count(&total)
+	r.db.Model(&model.IslamicTerm{}).Where(filter, args...).Count(&total)
 
-	err := base.
+	err := r.db.Model(&model.IslamicTerm{}).Preload("Translation").
+		Where(filter, args...).
 		Order("term ASC").
 		Limit(limit).Offset(offset).
 		Find(&terms).Error
@@ -90,15 +99,14 @@ func (r *searchRepo) SearchDoa(query string, limit, offset int) ([]model.Doa, in
 	var doas []model.Doa
 	var total int64
 
-	base := r.db.
-		Joins("Translation").
-		Where(`doas.title ILIKE ? OR doas.arabic ILIKE ? OR doas.translation ILIKE ? OR doas.source ILIKE ? OR doas.category::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".latin_idn ILIKE ? OR "Translation".latin_en ILIKE ? OR "Translation".ar ILIKE ?`,
-			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%",
-			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+	filter := `doas.title ILIKE ? OR doas.arabic ILIKE ? OR doas.translation ILIKE ? OR doas.source ILIKE ? OR doas.category::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".latin_idn ILIKE ? OR "Translation".latin_en ILIKE ? OR "Translation".ar ILIKE ?`
+	args := []interface{}{"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%",
+		"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%"}
 
-	base.Model(&model.Doa{}).Count(&total)
+	r.db.Model(&model.Doa{}).Joins("Translation").Where(filter, args...).Count(&total)
 
-	err := base.
+	err := r.db.Model(&model.Doa{}).Joins("Translation").
+		Where(filter, args...).
 		Order("doas.category, doas.id").
 		Limit(limit).Offset(offset).
 		Find(&doas).Error
@@ -109,15 +117,14 @@ func (r *searchRepo) SearchKajian(query string, limit, offset int) ([]model.Kaji
 	var kajians []model.Kajian
 	var total int64
 
-	base := r.db.
-		Joins("Translation").
-		Where(`kajians.title ILIKE ? OR kajians.description ILIKE ? OR kajians.speaker ILIKE ? OR kajians.topic ILIKE ? OR kajians.type::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".description_idn ILIKE ? OR "Translation".description_en ILIKE ?`,
-			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%",
-			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+	filter := `kajians.title ILIKE ? OR kajians.description ILIKE ? OR kajians.speaker ILIKE ? OR kajians.topic ILIKE ? OR kajians.type::text ILIKE ? OR "Translation".idn ILIKE ? OR "Translation".en ILIKE ? OR "Translation".description_idn ILIKE ? OR "Translation".description_en ILIKE ?`
+	args := []interface{}{"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%",
+		"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%"}
 
-	base.Model(&model.Kajian{}).Count(&total)
+	r.db.Model(&model.Kajian{}).Joins("Translation").Where(filter, args...).Count(&total)
 
-	err := base.
+	err := r.db.Model(&model.Kajian{}).Joins("Translation").
+		Where(filter, args...).
 		Order("kajians.published_at DESC, kajians.id DESC").
 		Limit(limit).Offset(offset).
 		Find(&kajians).Error
@@ -128,13 +135,13 @@ func (r *searchRepo) SearchPerawi(query string, limit, offset int) ([]model.Pera
 	var perawis []model.Perawi
 	var total int64
 
-	base := r.db.
-		Where("nama_latin ILIKE ? OR nama_arab ILIKE ? OR nama_lengkap ILIKE ? OR kunyah ILIKE ? OR laqab ILIKE ? OR nisbah ILIKE ?",
-			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+	filter := "nama_latin ILIKE ? OR nama_arab ILIKE ? OR nama_lengkap ILIKE ? OR kunyah ILIKE ? OR laqab ILIKE ? OR nisbah ILIKE ?"
+	args := []interface{}{"%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%", "%" + query + "%"}
 
-	base.Model(&model.Perawi{}).Count(&total)
+	r.db.Model(&model.Perawi{}).Where(filter, args...).Count(&total)
 
-	err := base.
+	err := r.db.Model(&model.Perawi{}).
+		Where(filter, args...).
 		Order("nama_latin ASC").
 		Limit(limit).Offset(offset).
 		Find(&perawis).Error
