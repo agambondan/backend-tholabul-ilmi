@@ -6,6 +6,7 @@ import (
 	"github.com/agambondan/islamic-explorer/app/lib"
 	service "github.com/agambondan/islamic-explorer/app/services"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/sync/errgroup"
 )
 
 type SearchController interface {
@@ -48,29 +49,45 @@ func (c *searchController) Search(ctx *fiber.Ctx) error {
 		return lib.ErrorInternal(ctx)
 	}
 
-	for i := range result.Ayahs {
-		result.Ayahs[i].Translation.FilterByLang(lang)
-		if result.Ayahs[i].Surah != nil {
-			result.Ayahs[i].Surah.Translation.FilterByLang(lang)
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		for i := range result.Ayahs {
+			result.Ayahs[i].Translation.FilterByLang(lang)
+			if result.Ayahs[i].Surah != nil {
+				result.Ayahs[i].Surah.Translation.FilterByLang(lang)
+			}
 		}
-	}
-	for i := range result.Hadiths {
-		result.Hadiths[i].Translation.FilterByLang(lang)
-		if result.Hadiths[i].Book != nil {
-			result.Hadiths[i].Book.Translation.FilterByLang(lang)
+		return nil
+	})
+	g.Go(func() error {
+		for i := range result.Hadiths {
+			result.Hadiths[i].Translation.FilterByLang(lang)
+			if result.Hadiths[i].Book != nil {
+				result.Hadiths[i].Book.Translation.FilterByLang(lang)
+			}
+			if result.Hadiths[i].Theme != nil {
+				result.Hadiths[i].Theme.Translation.FilterByLang(lang)
+			}
+			if result.Hadiths[i].Chapter != nil {
+				result.Hadiths[i].Chapter.Translation.FilterByLang(lang)
+			}
 		}
-		if result.Hadiths[i].Theme != nil {
-			result.Hadiths[i].Theme.Translation.FilterByLang(lang)
+		return nil
+	})
+	g.Go(func() error {
+		for i := range result.Doas {
+			result.Doas[i].Translation.FilterByLang(lang)
 		}
-		if result.Hadiths[i].Chapter != nil {
-			result.Hadiths[i].Chapter.Translation.FilterByLang(lang)
+		return nil
+	})
+	g.Go(func() error {
+		for i := range result.Kajians {
+			result.Kajians[i].Translation.FilterByLang(lang)
 		}
-	}
-	for i := range result.Doas {
-		result.Doas[i].Translation.FilterByLang(lang)
-	}
-	for i := range result.Kajians {
-		result.Kajians[i].Translation.FilterByLang(lang)
+		return nil
+	})
+	if err := g.Wait(); err != nil {
+		return lib.ErrorInternal(ctx)
 	}
 
 	return lib.OK(ctx, result)

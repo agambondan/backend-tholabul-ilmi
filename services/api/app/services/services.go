@@ -62,6 +62,7 @@ type Services struct {
 	Sanad             SanadService
 	Takhrij           TakhrijService
 	Sync              SyncService
+	Dashboard         DashboardService
 }
 
 func NewServices(repo *repository.Repositories) *Services {
@@ -82,7 +83,7 @@ func NewServices(repo *repository.Repositories) *Services {
 	doaSvc := NewDoaServiceWithCache(repo.Doa, cache)
 	dzikirSvc := NewDzikirServiceWithCache(repo.Dzikir, cache)
 	asmaulHusnaSvc := NewAsmaUlHusnaServiceWithCache(repo.AsmaUlHusna, cache)
-	return &Services{
+	svc := &Services{
 		User:              NewUserService(repo.User),
 		Ayah:              NewAyahServiceWithCache(repo.Ayah, cache),
 		Surah:             NewSurahServiceWithCache(repo.Surah, cache),
@@ -139,4 +140,6 @@ func NewServices(repo *repository.Repositories) *Services {
 		Takhrij:           NewTakhrijService(repo.Takhrij),
 		Sync:              NewSyncService(db, cache, doaSvc, dzikirSvc, asmaulHusnaSvc),
 	}
+	svc.Dashboard = NewDashboardService(db, svc.Ayah, svc.Hadith, svc.Streak, svc.Sholat, svc.NotificationInbox, svc.Tilawah)
+	return svc
 }

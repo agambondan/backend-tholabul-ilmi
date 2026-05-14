@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 )
 
@@ -55,74 +56,96 @@ func (s *syncService) GetInitialSync(lang string) (*SyncResponse, error) {
 }
 
 func (s *syncService) buildSyncData(lang string) (*SyncResponse, error) {
-	var surahs []model.Surah
-	if err := s.db.Preload("Translation").Order("number").Find(&surahs).Error; err != nil {
-		return nil, err
-	}
-	for i := range surahs {
-		surahs[i].Translation.FilterByLang(lang)
-	}
+	resp := &SyncResponse{PrayerMethods: syncPrayerMethods}
+	g := new(errgroup.Group)
 
-	var juzs []model.Juz
-	if err := s.db.Preload("StartSurah.Translation").Preload("EndSurah.Translation").
-		Preload("StartAyah.Translation").Preload("EndAyah.Translation").
-		Order("number").Find(&juzs).Error; err != nil {
-		return nil, err
-	}
-	for i := range juzs {
-		if juzs[i].StartSurah != nil {
-			juzs[i].StartSurah.Translation.FilterByLang(lang)
+	g.Go(func() error {
+		var surahs []model.Surah
+		if err := s.db.Preload("Translation").Order("number").Find(&surahs).Error; err != nil {
+			return err
 		}
-		if juzs[i].EndSurah != nil {
-			juzs[i].EndSurah.Translation.FilterByLang(lang)
+		for i := range surahs {
+			surahs[i].Translation.FilterByLang(lang)
 		}
-		if juzs[i].StartAyah != nil {
-			juzs[i].StartAyah.Translation.FilterByLang(lang)
+		resp.Surahs = surahs
+		return nil
+	})
+
+	g.Go(func() error {
+		var juzs []model.Juz
+		if err := s.db.Preload("StartSurah.Translation").Preload("EndSurah.Translation").
+			Preload("StartAyah.Translation").Preload("EndAyah.Translation").
+			Order("number").Find(&juzs).Error; err != nil {
+			return err
 		}
-		if juzs[i].EndAyah != nil {
-			juzs[i].EndAyah.Translation.FilterByLang(lang)
+		for i := range juzs {
+			if juzs[i].StartSurah != nil {
+				juzs[i].StartSurah.Translation.FilterByLang(lang)
+			}
+			if juzs[i].EndSurah != nil {
+				juzs[i].EndSurah.Translation.FilterByLang(lang)
+			}
+			if juzs[i].StartAyah != nil {
+				juzs[i].StartAyah.Translation.FilterByLang(lang)
+			}
+			if juzs[i].EndAyah != nil {
+				juzs[i].EndAyah.Translation.FilterByLang(lang)
+			}
 		}
-	}
+		resp.Juzs = juzs
+		return nil
+	})
 
-	doas, err := s.doa.FindAll(99999, 0)
-	if err != nil {
+	g.Go(func() error {
+		doas, err := s.doa.FindAll(99999, 0)
+		if err != nil {
+			return err
+		}
+		for i := range doas {
+			doas[i].Translation.FilterByLang(lang)
+		}
+		resp.Doas = doas
+		return nil
+	})
+
+	g.Go(func() error {
+		dzikirs, err := s.dzikir.FindAll(99999, 0)
+		if err != nil {
+			return err
+		}
+		for i := range dzikirs {
+			dzikirs[i].Translation.FilterByLang(lang)
+		}
+		resp.Dzikirs = dzikirs
+		return nil
+	})
+
+	g.Go(func() error {
+		asmaulHusnas, err := s.asmaulHusna.FindAll(99999, 0)
+		if err != nil {
+			return err
+		}
+		for i := range asmaulHusnas {
+			asmaulHusnas[i].Translation.FilterByLang(lang)
+		}
+		resp.AsmaulHusnas = asmaulHusnas
+		return nil
+	})
+
+	g.Go(func() error {
+		var books []model.Book
+		if err := s.db.Preload("Translation").Preload("Media").Order("id").Find(&books).Error; err != nil {
+			return err
+		}
+		for i := range books {
+			books[i].Translation.FilterByLang(lang)
+		}
+		resp.HadithBooks = books
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
 		return nil, err
 	}
-	for i := range doas {
-		doas[i].Translation.FilterByLang(lang)
-	}
-
-	dzikirs, err := s.dzikir.FindAll(99999, 0)
-	if err != nil {
-		return nil, err
-	}
-	for i := range dzikirs {
-		dzikirs[i].Translation.FilterByLang(lang)
-	}
-
-	asmaulHusnas, err := s.asmaulHusna.FindAll(99999, 0)
-	if err != nil {
-		return nil, err
-	}
-	for i := range asmaulHusnas {
-		asmaulHusnas[i].Translation.FilterByLang(lang)
-	}
-
-	var books []model.Book
-	if err := s.db.Preload("Translation").Preload("Media").Order("id").Find(&books).Error; err != nil {
-		return nil, err
-	}
-	for i := range books {
-		books[i].Translation.FilterByLang(lang)
-	}
-
-	return &SyncResponse{
-		Surahs:        surahs,
-		Juzs:          juzs,
-		Doas:          doas,
-		Dzikirs:       dzikirs,
-		AsmaulHusnas:  asmaulHusnas,
-		HadithBooks:   books,
-		PrayerMethods: syncPrayerMethods,
-	}, nil
+	return resp, nil
 }

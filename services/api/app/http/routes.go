@@ -81,6 +81,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newStreakController := controllers.NewStreakController(newServices)
 	newSearchController := controllers.NewSearchController(newServices)
 	newSyncController := controllers.NewSyncController(newServices)
+	newDashboardController := controllers.NewDashboardController(newServices)
 	newMufrodatController := controllers.NewMufrodatController(newServices)
 	newNotificationController := controllers.NewNotificationController(newServices)
 	newNotificationInboxController := controllers.NewNotificationInboxController(newServices)
@@ -209,6 +210,9 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 
 	// Mobile Sync (public)
 	master.Get("/sync", newSyncController.InitialSync)
+
+	// Dashboard (protected — user home screen aggregation)
+	master.Get("/dashboard", jwt, newDashboardController.GetHome)
 
 	// Mufrodat / Kosakata Quran (public)
 	master.Get("/mufrodat/ayah/:id", newMufrodatController.FindByAyahID)
