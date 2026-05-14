@@ -250,7 +250,7 @@ export const getDailyAyah = async () => {
   return normalizeAyah(payload?.data ?? payload?.item ?? payload);
 };
 
-export const searchGlobal = async (query, { limit = 12, type = 'all' } = {}) => {
+export const searchGlobal = async (query, { limit = 12, page = 0, type = 'all' } = {}) => {
   const normalizedQuery = `${query ?? ''}`.trim();
   if (!normalizedQuery) {
     return { ayahs: [], hadiths: [], total: 0 };
@@ -258,6 +258,7 @@ export const searchGlobal = async (query, { limit = 12, type = 'all' } = {}) => 
 
   const params = new URLSearchParams({
     limit: `${limit}`,
+    page: `${page}`,
     q: normalizedQuery,
     type,
   });
@@ -265,13 +266,19 @@ export const searchGlobal = async (query, { limit = 12, type = 'all' } = {}) => 
   const data = payload?.data ?? payload;
 
   return {
-    ayahs: pickItems(data?.ayahs ?? data?.data?.ayahs ?? []).map(normalizeAyah),
-    hadiths: pickItems(data?.hadiths ?? data?.data?.hadiths ?? []).map(normalizeHadith),
-    dictionaries: pickItems(data?.dictionaries ?? data?.dictionary ?? []).map(normalizeDictionary),
-    doas: pickItems(data?.doas ?? data?.doa ?? []).map(normalizeDoa),
-    kajians: pickItems(data?.kajians ?? data?.kajian ?? []).map(normalizeKajian),
-    perawis: pickItems(data?.perawis ?? data?.perawi ?? []).map(normalizePerawi),
-    total: Number(data?.total ?? data?.data?.total ?? 0),
+    ayahs: pickItems(data?.ayahs ?? []).map(normalizeAyah),
+    ayahTotal: Number(data?.ayah_total ?? 0),
+    hadiths: pickItems(data?.hadiths ?? []).map(normalizeHadith),
+    hadithTotal: Number(data?.hadith_total ?? 0),
+    dictionaries: pickItems(data?.dictionaries ?? []).map(normalizeDictionary),
+    dictionaryTotal: Number(data?.dictionary_total ?? 0),
+    doas: pickItems(data?.doas ?? []).map(normalizeDoa),
+    doaTotal: Number(data?.doa_total ?? 0),
+    kajians: pickItems(data?.kajians ?? []).map(normalizeKajian),
+    kajianTotal: Number(data?.kajian_total ?? 0),
+    perawis: pickItems(data?.perawis ?? []).map(normalizePerawi),
+    perawiTotal: Number(data?.perawi_total ?? 0),
+    total: Number(data?.total ?? 0),
   };
 };
 
