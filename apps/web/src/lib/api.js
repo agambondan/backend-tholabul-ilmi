@@ -125,8 +125,8 @@ export const streakApi = {
 };
 
 export const searchApi = {
-    search: (q, type = 'all', lang = 'id') =>
-        fetch(`${API_URL}/api/v1/search?q=${encodeURIComponent(q)}&type=${type}&lang=${lang}`),
+    search: (q, type = 'all', lang = 'id', page = 0, limit = 20) =>
+        fetch(`${API_URL}/api/v1/search?q=${encodeURIComponent(q)}&type=${type}&lang=${lang}&page=${page}&limit=${limit}`),
 };
 
 export const doaApi = {

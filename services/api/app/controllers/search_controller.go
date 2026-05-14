@@ -27,9 +27,10 @@ func (c *searchController) Search(ctx *fiber.Ctx) error {
 	}
 	searchType := ctx.Query("type", "all")
 	limit, _ := strconv.Atoi(ctx.Query("limit", "20"))
+	page, _ := strconv.Atoi(ctx.Query("page", "0"))
 	lang := lib.GetPreferredLang(ctx)
 
-	result, err := c.svc.Search(q, searchType, limit)
+	result, err := c.svc.Search(q, searchType, limit, page)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}

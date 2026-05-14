@@ -6,17 +6,23 @@ import (
 )
 
 type SearchResult struct {
-	Ayahs        []model.Ayah        `json:"ayahs"`
-	Hadiths      []model.Hadith      `json:"hadiths"`
-	Dictionaries []model.IslamicTerm `json:"dictionaries"`
-	Doas         []model.Doa         `json:"doas"`
-	Kajians      []model.Kajian      `json:"kajians"`
-	Perawis      []model.Perawi      `json:"perawis"`
-	Total        int                 `json:"total"`
+	Ayahs           []model.Ayah        `json:"ayahs"`
+	AyahTotal       int64               `json:"ayah_total"`
+	Hadiths         []model.Hadith      `json:"hadiths"`
+	HadithTotal     int64               `json:"hadith_total"`
+	Dictionaries    []model.IslamicTerm `json:"dictionaries"`
+	DictionaryTotal int64               `json:"dictionary_total"`
+	Doas            []model.Doa         `json:"doas"`
+	DoaTotal        int64               `json:"doa_total"`
+	Kajians         []model.Kajian      `json:"kajians"`
+	KajianTotal     int64               `json:"kajian_total"`
+	Perawis         []model.Perawi      `json:"perawis"`
+	PerawiTotal     int64               `json:"perawi_total"`
+	Total           int                 `json:"total"`
 }
 
 type SearchService interface {
-	Search(query, searchType string, limit int) (*SearchResult, error)
+	Search(query, searchType string, limit, page int) (*SearchResult, error)
 }
 
 type searchService struct {
@@ -27,10 +33,11 @@ func NewSearchService(repo repository.SearchRepository) SearchService {
 	return &searchService{repo}
 }
 
-func (s *searchService) Search(query, searchType string, limit int) (*SearchResult, error) {
+func (s *searchService) Search(query, searchType string, limit, page int) (*SearchResult, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
+	offset := page * limit
 
 	result := &SearchResult{
 		Ayahs:        []model.Ayah{},
@@ -43,78 +50,90 @@ func (s *searchService) Search(query, searchType string, limit int) (*SearchResu
 
 	switch searchType {
 	case "ayah":
-		ayahs, err := s.repo.SearchAyah(query, limit)
+		ayahs, total, err := s.repo.SearchAyah(query, limit, offset)
 		if err != nil {
 			return nil, err
 		}
 		result.Ayahs = ayahs
+		result.AyahTotal = total
 	case "hadith":
-		hadiths, err := s.repo.SearchHadith(query, limit)
+		hadiths, total, err := s.repo.SearchHadith(query, limit, offset)
 		if err != nil {
 			return nil, err
 		}
 		result.Hadiths = hadiths
+		result.HadithTotal = total
 	case "dictionary", "kamus":
-		terms, err := s.repo.SearchDictionary(query, limit)
+		terms, total, err := s.repo.SearchDictionary(query, limit, offset)
 		if err != nil {
 			return nil, err
 		}
 		result.Dictionaries = terms
+		result.DictionaryTotal = total
 	case "doa", "dua", "prayer":
-		doas, err := s.repo.SearchDoa(query, limit)
+		doas, total, err := s.repo.SearchDoa(query, limit, offset)
 		if err != nil {
 			return nil, err
 		}
 		result.Doas = doas
+		result.DoaTotal = total
 	case "kajian", "study", "lesson":
-		kajians, err := s.repo.SearchKajian(query, limit)
+		kajians, total, err := s.repo.SearchKajian(query, limit, offset)
 		if err != nil {
 			return nil, err
 		}
 		result.Kajians = kajians
+		result.KajianTotal = total
 	case "perawi", "rawi", "rijal":
-		perawis, err := s.repo.SearchPerawi(query, limit)
+		perawis, total, err := s.repo.SearchPerawi(query, limit, offset)
 		if err != nil {
 			return nil, err
 		}
 		result.Perawis = perawis
+		result.PerawiTotal = total
 	default:
 		each := limit / 6
 		if each < 2 {
 			each = 2
 		}
-		ayahs, err := s.repo.SearchAyah(query, each)
+		ayahs, ayahTotal, err := s.repo.SearchAyah(query, each, 0)
 		if err != nil {
 			return nil, err
 		}
-		hadiths, err := s.repo.SearchHadith(query, each)
+		hadiths, hadithTotal, err := s.repo.SearchHadith(query, each, 0)
 		if err != nil {
 			return nil, err
 		}
-		terms, err := s.repo.SearchDictionary(query, each)
+		terms, dictTotal, err := s.repo.SearchDictionary(query, each, 0)
 		if err != nil {
 			return nil, err
 		}
-		doas, err := s.repo.SearchDoa(query, each)
+		doas, doaTotal, err := s.repo.SearchDoa(query, each, 0)
 		if err != nil {
 			return nil, err
 		}
-		kajians, err := s.repo.SearchKajian(query, each)
+		kajians, kajianTotal, err := s.repo.SearchKajian(query, each, 0)
 		if err != nil {
 			return nil, err
 		}
-		perawis, err := s.repo.SearchPerawi(query, each)
+		perawis, perawiTotal, err := s.repo.SearchPerawi(query, each, 0)
 		if err != nil {
 			return nil, err
 		}
 		result.Ayahs = ayahs
+		result.AyahTotal = ayahTotal
 		result.Hadiths = hadiths
+		result.HadithTotal = hadithTotal
 		result.Dictionaries = terms
+		result.DictionaryTotal = dictTotal
 		result.Doas = doas
+		result.DoaTotal = doaTotal
 		result.Kajians = kajians
+		result.KajianTotal = kajianTotal
 		result.Perawis = perawis
+		result.PerawiTotal = perawiTotal
 	}
 
-	result.Total = len(result.Ayahs) + len(result.Hadiths) + len(result.Dictionaries) + len(result.Doas) + len(result.Kajians) + len(result.Perawis)
+	result.Total = int(result.AyahTotal + result.HadithTotal + result.DictionaryTotal + result.DoaTotal + result.KajianTotal + result.PerawiTotal)
 	return result, nil
 }

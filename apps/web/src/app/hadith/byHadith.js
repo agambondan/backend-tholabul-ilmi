@@ -1,12 +1,13 @@
 'use client';
 /* eslint-disable react-hooks/exhaustive-deps */
 
+import GradeBadge from '@/components/GradeBadge';
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedTranslation } from '@/lib/translation';
 import classNames from 'classnames';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const PAGE_SIZE = 20;
 
@@ -24,6 +25,8 @@ const ByHadith = () => {
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isError, setIsError] = useState(false);
 
+    const isSearching = query.trim().length > 0;
+
     const currentBook = useMemo(
         () => bookList.find((book) => book.slug === selectedBookSlug),
         [bookList, selectedBookSlug]
@@ -39,6 +42,27 @@ const ByHadith = () => {
             })
             .catch(() => setIsError(true));
     }, []);
+
+    const fetchSearch = useCallback(async (q, pg, append) => {
+        if (append) setIsLoadingMore(true);
+        else setIsLoading(true);
+
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/search?q=${encodeURIComponent(q)}&type=hadith&limit=${PAGE_SIZE}&page=${pg}&lang=${lang}`
+            );
+            const data = await res.json();
+            const items = data?.hadiths ?? [];
+            setTotal(data?.hadith_total ?? items.length);
+            setHadiths((prev) => (append ? [...prev, ...items] : items));
+            setIsError(false);
+        } catch {
+            setIsError(true);
+        } finally {
+            if (append) setIsLoadingMore(false);
+            else setIsLoading(false);
+        }
+    }, [lang]);
 
     const fetchHadiths = async (bookSlug, pageNum, append) => {
         if (append) setIsLoadingMore(true);
@@ -71,24 +95,23 @@ const ByHadith = () => {
         fetchHadiths(selectedBookSlug, 0, false);
     }, [selectedBookSlug]);
 
-    const filteredHadiths = useMemo(() => {
-        const normalizedQuery = query.trim().toLowerCase();
-        if (!normalizedQuery) return hadiths;
-
-        return hadiths.filter((hadith) => {
-            const numberMatch = String(hadith?.number ?? '').includes(normalizedQuery);
-            const arabicMatch = String(hadith?.translation?.ar ?? '').toLowerCase().includes(normalizedQuery);
-            const translationMatch = getLocalizedTranslation(hadith?.translation, lang)
-                .toLowerCase()
-                .includes(normalizedQuery);
-            return numberMatch || arabicMatch || translationMatch;
-        });
-    }, [hadiths, query, lang]);
+    useEffect(() => {
+        if (!query.trim() || !selectedBookSlug) return;
+        setPage(0);
+        setHadiths([]);
+        setTotal(0);
+        const debounce = setTimeout(() => fetchSearch(query, 0, false), 300);
+        return () => clearTimeout(debounce);
+    }, [query]);
 
     const handleLoadMore = () => {
         const nextPage = page + 1;
         setPage(nextPage);
-        fetchHadiths(selectedBookSlug, nextPage, true);
+        if (isSearching) {
+            fetchSearch(query, nextPage, true);
+        } else {
+            fetchHadiths(selectedBookSlug, nextPage, true);
+        }
     };
 
     const jumpToHadith = () => {
@@ -168,24 +191,25 @@ const ByHadith = () => {
                 <>
                     <div className='flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 px-1'>
                         <p>
-                            {t('common.showing')} {filteredHadiths.length} {t('common.of')} {total}{' '}
+                            {t('common.showing')} {hadiths.length} {t('common.of')} {total}{' '}
                             {t('hadith.unit')}
                         </p>
-                        <p>{t('hadith.search_hint')}</p>
+                        {isSearching && <p>Pencarian: &quot;{query}&quot;</p>}
+                        {!isSearching && <p>{t('hadith.search_hint')}</p>}
                     </div>
 
-                    {filteredHadiths.length === 0 ? (
+                    {hadiths.length === 0 ? (
                         <div className='flex flex-col items-center justify-center min-h-[36vh] text-center px-4'>
                             <h2 className='text-xl font-bold text-emerald-900 dark:text-white mb-2'>
-                                {t('hadith.not_found_title')}
+                                {isSearching ? t('hadith.not_found_title') : t('hadith.not_found_title')}
                             </h2>
                             <p className='text-gray-500 dark:text-gray-400 max-w-sm text-sm leading-relaxed'>
-                                {t('hadith.not_found_hint')}
+                                {isSearching ? `Tidak ditemukan hadis untuk "${query}"` : t('hadith.not_found_hint')}
                             </p>
                         </div>
                     ) : (
                         <div className='space-y-3'>
-                            {filteredHadiths.map((hadith) => (
+                            {hadiths.map((hadith) => (
                                 <Link
                                     href={`/hadith/${selectedBookSlug}#${hadith.number}`}
                                     key={hadith.id}
@@ -198,6 +222,7 @@ const ByHadith = () => {
                                             <p className='text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500'>
                                                 {getLocalizedTranslation(currentBook?.translation, lang) || 'Hadith'} · No. {hadith.number}
                                             </p>
+                                            <GradeBadge grade={hadith.grade} />
                                         </div>
                                         <span className='rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold px-2.5 py-1'>
                                             {t('common.open')}
