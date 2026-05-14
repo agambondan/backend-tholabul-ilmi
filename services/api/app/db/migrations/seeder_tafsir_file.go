@@ -57,11 +57,11 @@ func SeedTafsirFromFiles(db *gorm.DB) {
 	}
 
 	var existing []model.Tafsir
-	db.Select("ayah_id").Find(&existing)
-	existingSet := make(map[int]bool, len(existing))
+	db.Select("id", "ayah_id", "kemenag_translation_id", "ibnu_katsir_translation_id").Find(&existing)
+	existingByAyah := make(map[int]model.Tafsir, len(existing))
 	for _, t := range existing {
 		if t.AyahID != nil {
-			existingSet[*t.AyahID] = true
+			existingByAyah[*t.AyahID] = t
 		}
 	}
 
@@ -90,7 +90,7 @@ func SeedTafsirFromFiles(db *gorm.DB) {
 
 		for ayah := 1; ayah <= maxAyah; ayah++ {
 			ayahID, ok := ayahMap[fmt.Sprintf("%d:%d", surah, ayah)]
-			if !ok || existingSet[ayahID] {
+			if !ok {
 				continue
 			}
 			jalalaynText := jalalayn[ayah]
@@ -99,22 +99,38 @@ func SeedTafsirFromFiles(db *gorm.DB) {
 				continue
 			}
 
+			existingTafsir, exists := existingByAyah[ayahID]
+			if exists {
+				updates := map[string]interface{}{}
+				if jalalaynText != "" && existingTafsir.KemenagTranslationID == nil {
+					if id := createTafsirTranslation(db, jalalaynText, surah, ayah, "jalalayn"); id != nil {
+						updates["kemenag_translation_id"] = *id
+						existingTafsir.KemenagTranslationID = id
+					}
+				}
+				if quraishText != "" && existingTafsir.IbnuKatsirTranslationID == nil {
+					if id := createTafsirTranslation(db, quraishText, surah, ayah, "quraish"); id != nil {
+						updates["ibnu_katsir_translation_id"] = *id
+						existingTafsir.IbnuKatsirTranslationID = id
+					}
+				}
+				if len(updates) > 0 && existingTafsir.ID != nil {
+					if err := db.Model(&model.Tafsir{}).Where("id = ?", *existingTafsir.ID).Updates(updates).Error; err != nil {
+						log.Printf("[seeder] tafsir QS %d:%d update gagal: %v", surah, ayah, err)
+						continue
+					}
+					existingByAyah[ayahID] = existingTafsir
+					created++
+				}
+				continue
+			}
+
 			tafsir := model.Tafsir{AyahID: lib.Intptr(ayahID)}
 			if jalalaynText != "" {
-				tr := model.Translation{DescriptionIdn: lib.Strptr(jalalaynText)}
-				if err := db.Create(&tr).Error; err != nil {
-					log.Printf("[seeder] tafsir jalalayn QS %d:%d gagal: %v", surah, ayah, err)
-				} else {
-					tafsir.KemenagTranslationID = tr.ID
-				}
+				tafsir.KemenagTranslationID = createTafsirTranslation(db, jalalaynText, surah, ayah, "jalalayn")
 			}
 			if quraishText != "" {
-				tr := model.Translation{DescriptionIdn: lib.Strptr(quraishText)}
-				if err := db.Create(&tr).Error; err != nil {
-					log.Printf("[seeder] tafsir quraish QS %d:%d gagal: %v", surah, ayah, err)
-				} else {
-					tafsir.IbnuKatsirTranslationID = tr.ID
-				}
+				tafsir.IbnuKatsirTranslationID = createTafsirTranslation(db, quraishText, surah, ayah, "quraish")
 			}
 			if tafsir.KemenagTranslationID == nil && tafsir.IbnuKatsirTranslationID == nil {
 				continue
@@ -123,12 +139,21 @@ func SeedTafsirFromFiles(db *gorm.DB) {
 				log.Printf("[seeder] tafsir QS %d:%d gagal: %v", surah, ayah, err)
 				continue
 			}
-			existingSet[ayahID] = true
+			existingByAyah[ayahID] = tafsir
 			created++
 		}
 	}
 
-	log.Printf("[seeder] SeedTafsirFromFiles: %d tafsir seeded", created)
+	log.Printf("[seeder] SeedTafsirFromFiles: %d tafsir seeded/updated", created)
+}
+
+func createTafsirTranslation(db *gorm.DB, text string, surah, ayah int, source string) *int {
+	tr := model.Translation{DescriptionIdn: lib.Strptr(text)}
+	if err := db.Create(&tr).Error; err != nil {
+		log.Printf("[seeder] tafsir %s QS %d:%d gagal: %v", source, surah, ayah, err)
+		return nil
+	}
+	return tr.ID
 }
 
 func readTafsirSurah(path string) map[int]string {

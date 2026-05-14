@@ -6,8 +6,8 @@ import (
 )
 
 type ManasikRepository interface {
-	FindAll() ([]model.ManasikStep, error)
-	FindByType(t model.ManasikType) ([]model.ManasikStep, error)
+	FindAll(limit, offset int) ([]model.ManasikStep, error)
+	FindByType(t model.ManasikType, limit, offset int) ([]model.ManasikStep, error)
 	FindByTypeAndStep(t model.ManasikType, step int) (*model.ManasikStep, error)
 	Create(step *model.ManasikStep) (*model.ManasikStep, error)
 	Update(id int, step *model.ManasikStep) (*model.ManasikStep, error)
@@ -20,14 +20,26 @@ func NewManasikRepository(db *gorm.DB) ManasikRepository {
 	return &manasikRepository{db}
 }
 
-func (r *manasikRepository) FindAll() ([]model.ManasikStep, error) {
+func (r *manasikRepository) FindAll(limit, offset int) ([]model.ManasikStep, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var steps []model.ManasikStep
-	return steps, r.db.Preload("Translation").Order("type ASC, step_order ASC").Find(&steps).Error
+	return steps, r.db.Preload("Translation").Order("type ASC, step_order ASC").Limit(limit).Offset(offset).Find(&steps).Error
 }
 
-func (r *manasikRepository) FindByType(t model.ManasikType) ([]model.ManasikStep, error) {
+func (r *manasikRepository) FindByType(t model.ManasikType, limit, offset int) ([]model.ManasikStep, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var steps []model.ManasikStep
-	return steps, r.db.Preload("Translation").Where("type = ?", t).Order("step_order ASC").Find(&steps).Error
+	return steps, r.db.Preload("Translation").Where("type = ?", t).Order("step_order ASC").Limit(limit).Offset(offset).Find(&steps).Error
 }
 
 func (r *manasikRepository) FindByTypeAndStep(t model.ManasikType, step int) (*model.ManasikStep, error) {

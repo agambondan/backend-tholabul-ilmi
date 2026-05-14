@@ -54,7 +54,7 @@ func TestDzikirRepositoryCreateUpdateAndQueries(t *testing.T) {
 		t.Fatalf("expected translation update, got %#v", updated.Translation)
 	}
 
-	byOccasion, err := repo.FindByOccasion("petang")
+	byOccasion, err := repo.FindByOccasion("petang", 20, 0)
 	if err != nil {
 		t.Fatalf("find dzikir by occasion: %v", err)
 	}
@@ -157,7 +157,7 @@ func TestManasikRepositoryCreateUpdateAndOrder(t *testing.T) {
 		t.Fatalf("create manasik step 1: %v", err)
 	}
 
-	steps, err := repo.FindByType(model.ManasikTypeHaji)
+	steps, err := repo.FindByType(model.ManasikTypeHaji, 20, 0)
 	if err != nil {
 		t.Fatalf("find manasik by type: %v", err)
 	}
@@ -237,7 +237,7 @@ func TestFiqhRepositoryItemCRUDKeepsDalilSeparate(t *testing.T) {
 		t.Fatalf("expected persisted source and dalil, got source=%q dalil=%q", loaded.Source, loaded.Dalil)
 	}
 
-	allItems, err := repo.FindAllItems()
+	allItems, err := repo.FindAllItems(20, 0)
 	if err != nil {
 		t.Fatalf("find all fiqh items: %v", err)
 	}

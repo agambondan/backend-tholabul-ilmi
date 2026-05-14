@@ -76,12 +76,32 @@ utama, bukan list data biasa.
   - Quran reader sekarang memakai satu jalur gesture swipe berbasis touch
     tracking dengan edge guard, bukan kombinasi `PanResponder` plus touch
     handler yang bisa berebut dengan `FlatList`/`ScrollView`.
+- Mobile ayah action hardening:
+  - teks ayat di mode non-mushaf bisa diketuk untuk membuka halaman detail
+    penuh.
+  - menu 3-dot ayat menjadi `Aksi Cepat` dan menaruh `Buka Detail` sebagai
+    aksi utama, sedangkan tafsir, asbabun nuzul, audio, progres, bookmark, dan
+    catatan tetap berupa aksi cepat.
 - `cd services/api && go test ./app/repository` `PASS`.
 - `cd services/api && go test ./app/controllers ./app/services ./app/repository ./app/http`
   `PASS`.
 - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-mobile-search-target-export`
   `PASS`.
 - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-mobile-quran-gesture-export`
+  `PASS`.
+- Refactor hook tahap pertama:
+  - preference reader Quran diekstrak ke
+    `apps/mobile/src/hooks/useQuranReaderPreferences.js`.
+  - hook mengelola ukuran font Arab, pilihan font Arab, mode tampilan, dan
+    mode hafalan.
+  - `QuranScreen` tetap memegang audio/qari, data reader, bookmark, notes, dan
+    gesture agar behavior runtime tidak berubah besar dalam satu slice.
+  - `node --check apps/mobile/src/hooks/useQuranReaderPreferences.js` `PASS`.
+  - `node --check apps/mobile/src/screens/QuranScreen.js` `PASS`.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-step5-quran-hook-export`
+    `PASS`.
+- `node --check apps/mobile/src/screens/QuranScreen.js` `PASS`.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-global-action-sheet-export`
   `PASS`.
 - Device smoke masih wajib sebelum status dinaikkan ke `DONE`.
 

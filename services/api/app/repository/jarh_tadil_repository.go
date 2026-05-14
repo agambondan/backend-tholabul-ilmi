@@ -7,7 +7,7 @@ import (
 
 type JarhTadilRepository interface {
 	Save(*model.JarhTadil) (*model.JarhTadil, error)
-	FindAll() ([]model.JarhTadil, error)
+	FindAll(limit, offset int) ([]model.JarhTadil, error)
 	FindByID(*int) (*model.JarhTadil, error)
 	FindByPerawiID(*int) ([]model.JarhTadil, error)
 	UpdateByID(*int, *model.JarhTadil) (*model.JarhTadil, error)
@@ -33,9 +33,15 @@ func (r *jarhTadilRepo) Save(j *model.JarhTadil) (*model.JarhTadil, error) {
 	return j, nil
 }
 
-func (r *jarhTadilRepo) FindAll() ([]model.JarhTadil, error) {
+func (r *jarhTadilRepo) FindAll(limit, offset int) ([]model.JarhTadil, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.JarhTadil
-	err := r.withRelations(r.db).Order("id").Find(&list).Error
+	err := r.withRelations(r.db).Order("id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 

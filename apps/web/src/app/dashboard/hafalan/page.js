@@ -5,12 +5,36 @@ import { useLocale } from '@/context/Locale';
 import { hafalanApi, streakApi } from '@/lib/api';
 import { useEffect, useState } from 'react';
 
-const STATUSES = ['hafal', 'sedang', 'belum'];
+const STATUSES = ['memorized', 'in_progress', 'not_started'];
+const LEGACY_STATUS_MAP = {
+    belum: 'not_started',
+    hafal: 'memorized',
+    memorized: 'memorized',
+    not_started: 'not_started',
+    sedang: 'in_progress',
+    in_progress: 'in_progress',
+};
+
+const normalizeStatus = (status) => LEGACY_STATUS_MAP[status] ?? 'not_started';
+
+const normalizeItem = (item) => ({
+    ...item,
+    status: normalizeStatus(item.status),
+    surah_id: item.surah_id ?? item.surah_number ?? item.surah?.number,
+    surah_name:
+        item.surah_name ??
+        item.surah?.latin_name ??
+        item.surah?.name_latin ??
+        item.surah?.name ??
+        item.name ??
+        '-',
+    surah_number: item.surah_number ?? item.surah?.number ?? item.surah_id,
+});
 
 const statusBadge = (status) => {
-    if (status === 'hafal')
+    if (status === 'memorized')
         return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400';
-    if (status === 'sedang')
+    if (status === 'in_progress')
         return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
     return 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400';
 };
@@ -26,53 +50,70 @@ const HafalanPage = () => {
     const [list, setList] = useState([]);
     const [filter, setFilter] = useState('semua');
     const [loading, setLoading] = useState(true);
+    const [syncError, setSyncError] = useState('');
 
     const statusLabel = (s) => {
-        if (s === 'hafal') return t('hafalan.memorized');
-        if (s === 'sedang') return t('hafalan.in_progress_short');
+        if (s === 'memorized') return t('hafalan.memorized');
+        if (s === 'in_progress') return t('hafalan.in_progress_short');
         return t('hafalan.not_started');
     };
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                const res = await hafalanApi.list();
-                const json = await res.json();
-                const data = json?.items ?? json ?? [];
-                if (Array.isArray(data) && data.length > 0) {
-                    setList(data);
-                    setLoading(false);
-                    return;
+                if (isAuthenticated) {
+                    const res = await hafalanApi.list();
+                    if (!res.ok) throw new Error('failed');
+                    const json = await res.json();
+                    const data = json?.items ?? json?.data ?? json ?? [];
+                    if (Array.isArray(data)) {
+                        const normalized = data.map(normalizeItem);
+                        setList(normalized);
+                        localStorage.setItem('tholabul_hafalan', JSON.stringify(normalized));
+                        setSyncError('');
+                        setLoading(false);
+                        return;
+                    }
                 }
-            } catch {}
+            } catch {
+                setSyncError('Belum bisa memuat data hafalan dari server. Cache perangkat ditampilkan.');
+            }
             try {
                 const local = JSON.parse(
                     localStorage.getItem('tholabul_hafalan') ?? '[]',
                 );
-                setList(local);
+                if (Array.isArray(local)) {
+                    setList(local.map(normalizeItem));
+                    setLoading(false);
+                    return;
+                }
             } catch {}
             setLoading(false);
         };
         loadData();
-    }, []);
+    }, [isAuthenticated]);
 
     const toggleStatus = (idx) => {
         const item = list[idx];
+        if (!item) return;
         const newStatus = cycleStatus(item.status ?? 'belum');
         const updated = list.map((s, i) => (i === idx ? { ...s, status: newStatus } : s));
         setList(updated);
         try {
             localStorage.setItem('tholabul_hafalan', JSON.stringify(updated));
         } catch {}
-        if (isAuthenticated && item.surah_number) {
-            hafalanApi.update(item.surah_number, newStatus).catch(() => {});
+        if (isAuthenticated && item.surah_id) {
+            setSyncError('');
+            hafalanApi.update(item.surah_id, newStatus).catch(() => {
+                setSyncError('Perubahan hafalan tersimpan di perangkat, tetapi belum tersinkron ke server.');
+            });
             streakApi.logActivity('hafalan').catch(() => {});
         }
     };
 
-    const hafal = list.filter((s) => s.status === 'hafal').length;
-    const sedang = list.filter((s) => s.status === 'sedang').length;
-    const belum = list.filter((s) => !s.status || s.status === 'belum').length;
+    const hafal = list.filter((s) => s.status === 'memorized').length;
+    const sedang = list.filter((s) => s.status === 'in_progress').length;
+    const belum = list.filter((s) => !s.status || s.status === 'not_started').length;
 
     const filtered =
         filter === 'semua'
@@ -84,6 +125,11 @@ const HafalanPage = () => {
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-6'>
                 {t('hafalan.title')}
             </h1>
+            {syncError ? (
+                <div className='mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300'>
+                    {syncError}
+                </div>
+            ) : null}
 
             {/* Stat cards */}
             <div className='grid grid-cols-3 gap-3 mb-6'>
@@ -115,7 +161,7 @@ const HafalanPage = () => {
 
             {/* Filter tabs */}
             <div className='flex gap-1 mb-4 bg-gray-100 dark:bg-slate-800 rounded-lg p-1 w-fit'>
-                {['semua', 'hafal', 'sedang', 'belum'].map((tab) => (
+                {['semua', 'memorized', 'in_progress', 'not_started'].map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setFilter(tab)}
@@ -173,14 +219,14 @@ const HafalanPage = () => {
                                                 toggleStatus(
                                                     list.findIndex(
                                                         (l) =>
-                                                            l.surah_number ===
-                                                            item.surah_number,
+                                                            l.surah_id ===
+                                                            item.surah_id,
                                                     ),
                                                 )
                                             }
-                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-opacity hover:opacity-80 ${statusBadge(item.status ?? 'belum')}`}
+                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-opacity hover:opacity-80 ${statusBadge(item.status ?? 'not_started')}`}
                                         >
-                                            {statusLabel(item.status ?? 'belum')}
+                                            {statusLabel(item.status ?? 'not_started')}
                                         </button>
                                     </td>
                                 </tr>

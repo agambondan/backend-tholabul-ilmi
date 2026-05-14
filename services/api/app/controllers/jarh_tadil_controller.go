@@ -51,11 +51,16 @@ func (c *jarhTadilController) FindByPerawiID(ctx *fiber.Ctx) error {
 }
 
 func (c *jarhTadilController) FindAll(ctx *fiber.Ctx) error {
-	list, err := c.svc.FindAll()
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	list, err := c.svc.FindAll(lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
-	return lib.OK(ctx, list)
+	list, hasMore := lib.TrimPaginationItems(list, limit)
+	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
 func (c *jarhTadilController) FindByID(ctx *fiber.Ctx) error {

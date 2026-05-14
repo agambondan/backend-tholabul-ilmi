@@ -56,21 +56,30 @@ func NewFiqhController(services *service.Services) FiqhController {
 }
 
 func (c *fiqhController) FindAllCategories(ctx *fiber.Ctx) error {
-	list, err := c.svc.FindAllCategories()
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	list, err := c.svc.FindAllCategories(lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	list, hasMore := lib.TrimPaginationItems(list, limit)
 	lang := lib.GetPreferredLang(ctx)
 	for i := range list {
 		if list[i].Translation != nil {
 			list[i].Translation.FilterByLang(lang)
 		}
 	}
-	return lib.OK(ctx, list)
+	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
 func (c *fiqhController) FindAllItems(ctx *fiber.Ctx) error {
-	list, err := c.svc.FindAllItems()
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 500 {
+		limit = 500
+	}
+	list, err := c.svc.FindAllItems(limit, offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
@@ -82,10 +91,16 @@ func (c *fiqhController) FindAllItems(ctx *fiber.Ctx) error {
 }
 
 func (c *fiqhController) FindCategoryBySlug(ctx *fiber.Ctx) error {
-	cat, err := c.svc.FindCategoryBySlug(ctx.Params("slug"))
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	cat, err := c.svc.FindCategoryBySlug(ctx.Params("slug"), lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
+	items, hasMore := lib.TrimPaginationItems(cat.Items, limit)
+	cat.Items = items
 	lang := lib.GetPreferredLang(ctx)
 	if cat.Translation != nil {
 		cat.Translation.FilterByLang(lang)
@@ -94,6 +109,18 @@ func (c *fiqhController) FindCategoryBySlug(ctx *fiber.Ctx) error {
 		if cat.Items[i].Translation != nil {
 			cat.Items[i].Translation.FilterByLang(lang)
 		}
+	}
+	if lib.WantsPaginationMeta(ctx) {
+		return lib.OK(ctx, fiber.Map{
+			"items": cat.Items,
+			"meta": fiber.Map{
+				"category":    cat,
+				"limit":       limit,
+				"offset":      offset,
+				"has_more":    hasMore,
+				"next_offset": lib.OptionalNextOffset(limit, offset, hasMore),
+			},
+		})
 	}
 	return lib.OK(ctx, cat)
 }
@@ -213,7 +240,7 @@ func (c *fiqhController) DeleteItem(ctx *fiber.Ctx) error {
 func (c *fiqhController) fiqhAdminRequestToCreateItem(req *fiqhAdminItemRequest) (*model.CreateFiqhItemRequest, error) {
 	categoryID := req.CategoryID
 	if categoryID == 0 && req.Category != "" {
-		cat, err := c.svc.FindCategoryBySlug(req.Category)
+		cat, err := c.svc.FindCategoryBySlug(req.Category, 0, 0)
 		if err != nil {
 			return nil, err
 		}

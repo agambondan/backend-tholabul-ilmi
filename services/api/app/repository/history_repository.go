@@ -7,7 +7,7 @@ import (
 )
 
 type HistoryRepository interface {
-	FindAll(category string, yearFrom, yearTo int) ([]model.HistoryEvent, error)
+	FindAll(category string, yearFrom, yearTo, limit, offset int) ([]model.HistoryEvent, error)
 	FindByID(id int) (*model.HistoryEvent, error)
 	FindBySlug(slug string) (*model.HistoryEvent, error)
 	Create(e *model.HistoryEvent) (*model.HistoryEvent, error)
@@ -21,7 +21,13 @@ func NewHistoryRepository(db *gorm.DB) HistoryRepository {
 	return &historyRepository{db}
 }
 
-func (r *historyRepository) FindAll(category string, yearFrom, yearTo int) ([]model.HistoryEvent, error) {
+func (r *historyRepository) FindAll(category string, yearFrom, yearTo, limit, offset int) ([]model.HistoryEvent, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var items []model.HistoryEvent
 	q := r.db.Preload("Translation").Order("year_miladi ASC")
 	if category != "" {
@@ -33,7 +39,7 @@ func (r *historyRepository) FindAll(category string, yearFrom, yearTo int) ([]mo
 	if yearTo > 0 {
 		q = q.Where("year_miladi <= ?", yearTo)
 	}
-	return items, q.Limit(500).Find(&items).Error
+	return items, q.Limit(limit).Offset(offset).Find(&items).Error
 }
 
 func (r *historyRepository) FindByID(id int) (*model.HistoryEvent, error) {

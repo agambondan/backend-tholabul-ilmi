@@ -6,7 +6,7 @@ import (
 )
 
 type HistoryService interface {
-	FindAll(category string, yearFrom, yearTo int) ([]model.HistoryEvent, error)
+	FindAll(category string, yearFrom, yearTo, limit, offset int) ([]model.HistoryEvent, error)
 	FindByID(id int) (*model.HistoryEvent, error)
 	FindBySlug(slug string) (*model.HistoryEvent, error)
 	Create(req *model.CreateHistoryEventRequest) (*model.HistoryEvent, error)
@@ -20,8 +20,8 @@ func NewHistoryService(repo repository.HistoryRepository) HistoryService {
 	return &historyService{repo}
 }
 
-func (s *historyService) FindAll(category string, yearFrom, yearTo int) ([]model.HistoryEvent, error) {
-	return s.repo.FindAll(category, yearFrom, yearTo)
+func (s *historyService) FindAll(category string, yearFrom, yearTo, limit, offset int) ([]model.HistoryEvent, error) {
+	return s.repo.FindAll(category, yearFrom, yearTo, limit, offset)
 }
 
 func (s *historyService) FindByID(id int) (*model.HistoryEvent, error) {

@@ -55,21 +55,30 @@ func NewManasikController(services *service.Services) ManasikController {
 }
 
 func (c *manasikController) FindAll(ctx *fiber.Ctx) error {
-	steps, err := c.svc.FindAll()
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	steps, err := c.svc.FindAll(lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	steps, hasMore := lib.TrimPaginationItems(steps, limit)
 	lang := lib.GetPreferredLang(ctx)
 	for i := range steps {
 		if steps[i].Translation != nil {
 			steps[i].Translation.FilterByLang(lang)
 		}
 	}
-	return lib.OK(ctx, steps)
+	return lib.OKPaginated(ctx, steps, limit, offset, hasMore)
 }
 
 func (c *manasikController) FindAllAdmin(ctx *fiber.Ctx) error {
-	steps, err := c.svc.FindAll()
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 500 {
+		limit = 500
+	}
+	steps, err := c.svc.FindAll(limit, offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
@@ -85,17 +94,22 @@ func (c *manasikController) FindByType(ctx *fiber.Ctx) error {
 	if t != model.ManasikTypeHaji && t != model.ManasikTypeUmrah {
 		return lib.ErrorBadRequest(ctx, "type harus 'haji' atau 'umrah'")
 	}
-	steps, err := c.svc.FindByType(t)
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	steps, err := c.svc.FindByType(t, lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	steps, hasMore := lib.TrimPaginationItems(steps, limit)
 	lang := lib.GetPreferredLang(ctx)
 	for i := range steps {
 		if steps[i].Translation != nil {
 			steps[i].Translation.FilterByLang(lang)
 		}
 	}
-	return lib.OK(ctx, steps)
+	return lib.OKPaginated(ctx, steps, limit, offset, hasMore)
 }
 
 func (c *manasikController) FindByStep(ctx *fiber.Ctx) error {

@@ -24,15 +24,20 @@ func NewDoaController(services *service.Services) DoaController {
 }
 
 func (c *doaController) FindAll(ctx *fiber.Ctx) error {
-	list, err := c.svc.FindAll()
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	list, err := c.svc.FindAll(lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	list, hasMore := lib.TrimPaginationItems(list, limit)
 	lang := lib.GetPreferredLang(ctx)
 	for i := range list {
 		list[i].Translation.FilterByLang(lang)
 	}
-	return lib.OK(ctx, list)
+	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
 func (c *doaController) FindByID(ctx *fiber.Ctx) error {
@@ -50,13 +55,18 @@ func (c *doaController) FindByID(ctx *fiber.Ctx) error {
 
 func (c *doaController) FindByCategory(ctx *fiber.Ctx) error {
 	category := model.DoaCategory(ctx.Params("category"))
-	list, err := c.svc.FindByCategory(category)
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	list, err := c.svc.FindByCategory(category, lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	list, hasMore := lib.TrimPaginationItems(list, limit)
 	lang := lib.GetPreferredLang(ctx)
 	for i := range list {
 		list[i].Translation.FilterByLang(lang)
 	}
-	return lib.OK(ctx, list)
+	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }

@@ -2,7 +2,7 @@
 
 Tanggal: `2026-05-13`
 Scope: `apps/web`
-Status: `REVIEWED`
+Status: `REVIEWED_WITH_PARTIAL_FIX`
 
 ## P0 Findings
 
@@ -33,6 +33,15 @@ Rekomendasi:
 - localStorage hanya cache/offline queue, bukan canonical data.
 - tampilkan badge "Belum tersinkron" jika data lokal belum berhasil dikirim.
 
+Update 2026-05-13:
+
+- dashboard hafalan, sholat tracker, dan tilawah sudah dibuat API-first saat
+  user login.
+- `localStorage` dipertahankan sebagai cache/fallback dan menampilkan warning
+  ketika sync gagal.
+- dashboard summary/profile/stats, goals, muhasabah, dan notes masih perlu
+  audit lanjutan.
+
 ### 2. Hafalan Status Web Tidak Sesuai Enum API/Mobile
 
 Evidence:
@@ -55,6 +64,9 @@ Rekomendasi:
   - `in_progress` -> `Sedang`
   - `memorized` -> `Hafal`
 
+Update 2026-05-13: dashboard web hafalan sudah memakai enum API tersebut dan
+melakukan normalisasi legacy localStorage.
+
 ### 3. Sholat Tracker Web Mengirim Payload Berbeda Dari API
 
 Evidence:
@@ -73,6 +85,9 @@ Rekomendasi:
 
 - ubah web toggle agar mengirim satu prayer per request.
 - gunakan status API valid, minimal `munfarid` untuk quick-check.
+
+Update 2026-05-13: dashboard web sholat sudah mengirim `{ date, prayer,
+status }` per prayer dan menormalisasi label `Shubuh` ke key API `subuh`.
 
 ### 4. Admin CMS Route Drift
 

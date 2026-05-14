@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import { tafsirApi } from '@/lib/api';
+import { getTafsirPrimary, getTafsirSecondary, normalizeTafsirEntry } from '@/lib/tafsirContent';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import {
@@ -59,8 +60,13 @@ const TafsirSurahPage = ({ params }) => {
             .then((data) => {
                 const map = {};
                 const list = Array.isArray(data) ? data : data?.tafsirs ?? data?.items ?? [];
-                list.forEach((t) => {
-                    map[t.ayah_id ?? t.ayah_number] = t;
+                list.forEach((entry, index) => {
+                    const normalized = normalizeTafsirEntry(entry, index);
+                    [entry.ayah_id, entry.ayah?.id, normalized.ayahNumber]
+                        .filter(Boolean)
+                        .forEach((key) => {
+                            map[key] = normalized;
+                        });
                 });
                 setTafsirMap(map);
             })
@@ -99,6 +105,8 @@ const TafsirSurahPage = ({ params }) => {
             tafsir?.content,
             tafsir?.text,
             tafsir?.description,
+            tafsir?.primaryTafsir,
+            tafsir?.secondaryTafsir,
             tafsir?.source,
         ]
             .filter(Boolean)
@@ -251,6 +259,8 @@ const TafsirSurahPage = ({ params }) => {
                             {visibleAyahs.map((ayah) => {
                                 const tafsir = tafsirMap[ayah.id] ?? tafsirMap[ayah.number];
                                 const isOpen = open.has(ayah.id);
+                                const primaryTafsir = getTafsirPrimary(tafsir);
+                                const secondaryTafsir = getTafsirSecondary(tafsir);
                                 return (
                                     <div
                                         key={ayah.id}
@@ -310,14 +320,28 @@ const TafsirSurahPage = ({ params }) => {
                                                 )}
 
                                                 {/* Tafsir */}
-                                                {tafsir ? (
-                                                    <div className='bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-4 py-3 space-y-1'>
-                                                        <p className='text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide'>
-                                                            {t('tafsir.title')}{tafsir.source ? ` - ${tafsir.source}` : ''}
-                                                        </p>
-                                                        <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
-                                                            {tafsir.content ?? tafsir.text ?? tafsir.description}
-                                                        </p>
+                                                {primaryTafsir || secondaryTafsir ? (
+                                                    <div className='space-y-3'>
+                                                        {primaryTafsir ? (
+                                                            <div className='bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-4 py-3'>
+                                                                <p className='text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-1'>
+                                                                    Tafsir Jalalain
+                                                                </p>
+                                                                <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
+                                                                    {primaryTafsir}
+                                                                </p>
+                                                            </div>
+                                                        ) : null}
+                                                        {secondaryTafsir ? (
+                                                            <div className='bg-sky-50 dark:bg-sky-900/20 rounded-lg px-4 py-3'>
+                                                                <p className='text-xs font-semibold text-sky-700 dark:text-sky-400 uppercase tracking-wide mb-1'>
+                                                                    Tafsir Quraish Shihab
+                                                                </p>
+                                                                <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
+                                                                    {secondaryTafsir}
+                                                                </p>
+                                                            </div>
+                                                        ) : null}
                                                     </div>
                                                 ) : (
                                                     <div className='bg-gray-50 dark:bg-slate-700/40 rounded-lg px-4 py-3'>

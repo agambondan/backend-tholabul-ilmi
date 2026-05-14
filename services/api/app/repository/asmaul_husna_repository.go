@@ -6,7 +6,7 @@ import (
 )
 
 type AsmaUlHusnaRepository interface {
-	FindAll() ([]model.AsmaUlHusna, error)
+	FindAll(limit, offset int) ([]model.AsmaUlHusna, error)
 	FindByNumber(int) (*model.AsmaUlHusna, error)
 }
 
@@ -18,9 +18,15 @@ func NewAsmaUlHusnaRepository(db *gorm.DB) AsmaUlHusnaRepository {
 	return &asmaUlHusnaRepo{db}
 }
 
-func (r *asmaUlHusnaRepo) FindAll() ([]model.AsmaUlHusna, error) {
+func (r *asmaUlHusnaRepo) FindAll(limit, offset int) ([]model.AsmaUlHusna, error) {
+	if limit <= 0 {
+		limit = 99
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.AsmaUlHusna
-	err := r.db.Preload("Translation").Order("number asc").Find(&list).Error
+	err := r.db.Preload("Translation").Order("number asc").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 

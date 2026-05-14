@@ -41,11 +41,16 @@ func (c *tafsirController) FindBySurahNumber(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorBadRequest(ctx, "invalid surah number")
 	}
-	list, err := c.svc.FindBySurahNumber(number)
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	list, err := c.svc.FindBySurahNumber(number, lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
-	return lib.OK(ctx, list)
+	list, hasMore := lib.TrimPaginationItems(list, limit)
+	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
 func (c *tafsirController) Save(ctx *fiber.Ctx) error {

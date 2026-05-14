@@ -8,7 +8,7 @@ import (
 type AsbabunNuzulRepository interface {
 	FindAll(page, size int) ([]model.AsbabunNuzul, error)
 	FindByAyahID(ayahID int) ([]model.AsbabunNuzul, error)
-	FindBySurahNumber(surahNumber int) ([]model.AsbabunNuzul, error)
+	FindBySurahNumber(surahNumber, limit, offset int) ([]model.AsbabunNuzul, error)
 	FindByID(id int) (*model.AsbabunNuzul, error)
 	FindAyahIDsByReferences(refs []model.AyahReference) ([]int, error)
 	Create(a *model.AsbabunNuzul) (*model.AsbabunNuzul, error)
@@ -61,7 +61,14 @@ func (r *asbabunNuzulRepository) FindByAyahID(ayahID int) ([]model.AsbabunNuzul,
 
 // FindBySurahNumber returns all asbabun nuzul tied to any ayah of the given
 // surah, sorted by the smallest ayah number each riwayat references.
-func (r *asbabunNuzulRepository) FindBySurahNumber(surahNumber int) ([]model.AsbabunNuzul, error) {
+func (r *asbabunNuzulRepository) FindBySurahNumber(surahNumber, limit, offset int) ([]model.AsbabunNuzul, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
 	var items []model.AsbabunNuzul
 	err := r.db.
 		Preload("Translation").
@@ -73,6 +80,8 @@ func (r *asbabunNuzulRepository) FindBySurahNumber(surahNumber int) ([]model.Asb
 		Where("surah.number = ?", surahNumber).
 		Group("asbabun_nuzul.id").
 		Order("MIN(ayah.number) ASC").
+		Limit(limit).
+		Offset(offset).
 		Find(&items).Error
 	return items, err
 }

@@ -6,9 +6,9 @@ import (
 )
 
 type FiqhService interface {
-	FindAllCategories() ([]model.FiqhCategory, error)
-	FindAllItems() ([]model.FiqhItem, error)
-	FindCategoryBySlug(slug string) (*model.FiqhCategory, error)
+	FindAllCategories(limit, offset int) ([]model.FiqhCategory, error)
+	FindAllItems(limit, offset int) ([]model.FiqhItem, error)
+	FindCategoryBySlug(slug string, limit, offset int) (*model.FiqhCategory, error)
 	FindItemBySlug(slug string) (*model.FiqhItem, error)
 	FindItemByCategoryAndID(slug string, id int) (*model.FiqhItem, error)
 	CreateCategory(req *model.CreateFiqhCategoryRequest) (*model.FiqhCategory, error)
@@ -27,16 +27,16 @@ func NewFiqhService(repo repository.FiqhRepository) FiqhService {
 	return &fiqhService{repo}
 }
 
-func (s *fiqhService) FindAllCategories() ([]model.FiqhCategory, error) {
-	return s.repo.FindAllCategories()
+func (s *fiqhService) FindAllCategories(limit, offset int) ([]model.FiqhCategory, error) {
+	return s.repo.FindAllCategories(limit, offset)
 }
 
-func (s *fiqhService) FindAllItems() ([]model.FiqhItem, error) {
-	return s.repo.FindAllItems()
+func (s *fiqhService) FindAllItems(limit, offset int) ([]model.FiqhItem, error) {
+	return s.repo.FindAllItems(limit, offset)
 }
 
-func (s *fiqhService) FindCategoryBySlug(slug string) (*model.FiqhCategory, error) {
-	return s.repo.FindCategoryBySlug(slug)
+func (s *fiqhService) FindCategoryBySlug(slug string, limit, offset int) (*model.FiqhCategory, error) {
+	return s.repo.FindCategoryBySlug(slug, limit, offset)
 }
 
 func (s *fiqhService) FindItemBySlug(slug string) (*model.FiqhItem, error) {

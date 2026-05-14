@@ -27,15 +27,20 @@ func (c *historyController) FindAll(ctx *fiber.Ctx) error {
 	category := ctx.Query("category")
 	yearFrom, _ := strconv.Atoi(ctx.Query("year_from"))
 	yearTo, _ := strconv.Atoi(ctx.Query("year_to"))
-	items, err := c.svc.FindAll(category, yearFrom, yearTo)
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	items, err := c.svc.FindAll(category, yearFrom, yearTo, lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	items, hasMore := lib.TrimPaginationItems(items, limit)
 	lang := lib.GetPreferredLang(ctx)
 	for i := range items {
 		items[i].Translation.FilterByLang(lang)
 	}
-	return lib.OK(ctx, items)
+	return lib.OKPaginated(ctx, items, limit, offset, hasMore)
 }
 
 func (c *historyController) FindBySlug(ctx *fiber.Ctx) error {

@@ -103,7 +103,11 @@ func (c *asbabunNuzulController) FindBySurahNumber(ctx *fiber.Ctx) error {
 	if err != nil {
 		return lib.ErrorBadRequest(ctx, err)
 	}
-	items, err := c.svc.FindBySurahNumber(number)
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	items, err := c.svc.FindBySurahNumber(number, lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
@@ -113,7 +117,8 @@ func (c *asbabunNuzulController) FindBySurahNumber(ctx *fiber.Ctx) error {
 			items[i].Translation.FilterByLang(lang)
 		}
 	}
-	return lib.OK(ctx, asbabunNuzulResponses(items))
+	items, hasMore := lib.TrimPaginationItems(items, limit)
+	return lib.OKPaginated(ctx, asbabunNuzulResponses(items), limit, offset, hasMore)
 }
 
 func (c *asbabunNuzulController) Create(ctx *fiber.Ctx) error {

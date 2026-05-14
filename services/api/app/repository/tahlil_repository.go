@@ -6,9 +6,9 @@ import (
 )
 
 type TahlilRepository interface {
-	FindAll() ([]model.TahlilCollection, error)
+	FindAll(limit, offset int) ([]model.TahlilCollection, error)
 	FindByID(id int) (*model.TahlilCollection, error)
-	FindAllItems() ([]model.TahlilItem, error)
+	FindAllItems(limit, offset int) ([]model.TahlilItem, error)
 	CreateItem(item *model.TahlilItem) (*model.TahlilItem, error)
 	UpdateItem(id int, item *model.TahlilItem) (*model.TahlilItem, error)
 	DeleteItem(id int) error
@@ -23,9 +23,15 @@ func NewTahlilRepository(db *gorm.DB) TahlilRepository {
 	return &tahlilRepository{db}
 }
 
-func (r *tahlilRepository) FindAll() ([]model.TahlilCollection, error) {
+func (r *tahlilRepository) FindAll(limit, offset int) ([]model.TahlilCollection, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.TahlilCollection
-	err := r.db.Order("id").Find(&list).Error
+	err := r.db.Order("id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 
@@ -37,9 +43,15 @@ func (r *tahlilRepository) FindByID(id int) (*model.TahlilCollection, error) {
 	return &col, err
 }
 
-func (r *tahlilRepository) FindAllItems() ([]model.TahlilItem, error) {
+func (r *tahlilRepository) FindAllItems(limit, offset int) ([]model.TahlilItem, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.TahlilItem
-	err := r.db.Preload("Translation").Order("collection_id, sort_order, id").Find(&list).Error
+	err := r.db.Preload("Translation").Order("collection_id, sort_order, id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 

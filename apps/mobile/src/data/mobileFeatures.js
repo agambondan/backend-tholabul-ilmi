@@ -6,7 +6,7 @@ export const featureGroups = [
       {
         key: 'doa',
         title: 'Doa',
-        subtitle: 'Doa harian dan pilahan',
+        subtitle: 'Doa harian dan pilihan',
         type: 'list',
         endpoint: '/api/v1/doa?page=0&size=30',
       },
@@ -130,7 +130,7 @@ export const featureGroups = [
       },
       {
         key: 'perawi',
-        title: 'Perawi Hadith',
+        title: 'Perawi Hadis',
         subtitle: 'Basis data perawi',
         type: 'list',
         endpoint: '/api/v1/perawi',
@@ -207,7 +207,7 @@ export const featureGroups = [
       {
         key: 'bookmarks',
         title: 'Bookmark',
-        subtitle: 'Quran dan hadith tersimpan',
+        subtitle: 'Quran dan hadis tersimpan',
         type: 'bookmarks',
       },
       {

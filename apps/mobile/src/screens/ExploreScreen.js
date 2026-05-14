@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, Heart, HelpCircle, ListChecks, MessageCircle, Pencil, Scale, Star, StickyNote, Trash2, UserCircle, Users, Video } from 'lucide-react-native';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
   getAllNotes,
   getBookmarkItems,
-  getFeatureItems,
+  getFeatureItemPage,
   getHijriOverview,
   getQuizQuestions,
   searchDictionary,
 } from '../api/explore';
-import { createComment, getCommentsByRef, getFeedPosts, likeFeedPost } from '../api/social';
+import { createComment, getCommentsByRef, getFeedPostPage, likeFeedPost } from '../api/social';
 import { AppActionSheet, ActionSheetRow } from '../components/AppActionSheet';
-import { AppModalSheet } from '../components/AppModalSheet';
 import { Card, CardTitle } from '../components/Card';
 import { ContentCard } from '../components/ContentCard';
 import { NotesPanel } from '../components/NotesPanel';
@@ -67,7 +66,7 @@ const belajarSections = belajarFeatureGroups.map((group) => ({
 }));
 
 const PRAYER_ITEMS = [
-  { key: 'shubuh', label: 'Shubuh' },
+  { key: 'subuh', label: 'Subuh' },
   { key: 'dzuhur', label: 'Dzuhur' },
   { key: 'ashar', label: 'Ashar' },
   { key: 'maghrib', label: 'Maghrib' },
@@ -95,10 +94,18 @@ const formatNumericInput = (value = '') => {
   return Number(normalized).toLocaleString('id-ID');
 };
 const formatCurrency = (value = 0) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
-const formatDetailLabel = (key = '') =>
-  `${key}`
-    .replace(/[_-]+/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+const normalizePrayerLog = (payload = {}) => {
+  const prayers = payload?.prayers ?? payload;
+  return PRAYER_ITEMS.reduce((acc, item) => {
+    const value = prayers?.[item.key];
+    if (typeof value === 'boolean') {
+      acc[item.key] = value;
+    } else if (value && typeof value === 'object') {
+      acc[item.key] = Boolean(value.status && value.status !== 'missed');
+    }
+    return acc;
+  }, {});
+};
 
 const getItemRef = (feature, item) => {
   if (feature?.type === 'feed') {
@@ -188,8 +195,10 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [userWirdForm, setUserWirdForm] = useState(emptyUserWirdForm);
   const [surahs, setSurahs] = useState([]);
   const [selectedSurahNumber, setSelectedSurahNumber] = useState(null);
+  const [surahSearch, setSurahSearch] = useState('');
   const [sholatLog, setSholatLog] = useState({});
   const [pagination, setPagination] = useState({ page: 0, hasMore: false, loadingMore: false });
+  const loadingMoreRef = useRef(false);
 
   const catalogSections = useMemo(() => {
     const query = normalizeSearchText(featureSearch);
@@ -202,6 +211,22 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       })
       .filter((section) => section.rows.length > 0);
   }, [featureSearch]);
+
+  const visibleSurahOptions = useMemo(() => {
+    const query = normalizeSearchText(surahSearch);
+    const matches = query
+      ? surahs.filter((surah) =>
+          normalizeSearchText(`${surah.number} ${surah.name} ${surah.latin ?? ''} ${surah.translation ?? ''}`).includes(query),
+        )
+      : surahs.slice(0, 24);
+
+    if (!query && selectedSurahNumber && !matches.some((surah) => surah.number === selectedSurahNumber)) {
+      const selected = surahs.find((surah) => surah.number === selectedSurahNumber);
+      return selected ? [selected, ...matches] : matches;
+    }
+
+    return matches;
+  }, [selectedSurahNumber, surahSearch, surahs]);
 
   const refreshDiscoveryState = useCallback(async () => {
     const [pinned, recent] = await Promise.all([readPinnedFeatures(), readRecentFeatures()]);
@@ -259,6 +284,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       setEditingUserWirdId('');
       setUserWirdForm(emptyUserWirdForm);
       setError('');
+      loadingMoreRef.current = false;
       setPagination({ page: 0, hasMore: false, loadingMore: false });
       setFocusDictionaryInput(Boolean(options.focusSearch && feature?.type === 'kamus'));
       if (feature?.type !== 'surah-content') {
@@ -285,7 +311,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           setLoading(true);
           try {
             const log = await getTodayPrayerLog();
-            setSholatLog(log?.prayers ?? {});
+            setSholatLog(normalizePrayerLog(log));
           } catch {
             setSholatLog({});
           } finally {
@@ -314,10 +340,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         } else if (feature.type === 'hijri') {
           nextItems = await getHijriOverview();
         } else if (feature.type === 'feed') {
-          nextItems = await getFeedPosts({ page: 0, size: EXPLORE_PAGE_SIZE });
+          const page = await getFeedPostPage({ page: 0, size: EXPLORE_PAGE_SIZE });
+          nextItems = page.items;
           setPagination({
             page: 0,
-            hasMore: nextItems.length >= EXPLORE_PAGE_SIZE,
+            hasMore: page.meta.hasMore,
             loadingMore: false,
           });
         } else if (feature.type === 'user-wird') {
@@ -325,13 +352,14 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           nextItems = wirds.map(normalizeUserWirdItem);
         } else if (feature.endpoint) {
           const paginated = isPaginatedFeature(feature);
-          nextItems = await getFeatureItems(
+          const page = await getFeatureItemPage(
             feature,
             paginated ? { page: 0, size: EXPLORE_PAGE_SIZE } : undefined,
           );
+          nextItems = page.items;
           setPagination({
             page: 0,
-            hasMore: paginated && nextItems.length >= EXPLORE_PAGE_SIZE,
+            hasMore: paginated && page.meta.hasMore,
             loadingMore: false,
           });
         }
@@ -346,30 +374,41 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   );
 
   const loadMoreFeature = useCallback(async () => {
-    if (!activeFeature || !isPaginatedFeature(activeFeature) || loading || pagination.loadingMore || !pagination.hasMore) {
+    if (
+      loadingMoreRef.current ||
+      !activeFeature ||
+      !isPaginatedFeature(activeFeature) ||
+      loading ||
+      pagination.loadingMore ||
+      !pagination.hasMore
+    ) {
       return;
     }
 
     const nextPage = pagination.page + 1;
+    loadingMoreRef.current = true;
     setPagination((current) => ({ ...current, loadingMore: true }));
     setError('');
 
     try {
-      const nextItems =
+      const page =
         activeFeature.type === 'feed'
-          ? await getFeedPosts({ page: nextPage, size: EXPLORE_PAGE_SIZE })
-          : await getFeatureItems(activeFeature, { page: nextPage, size: EXPLORE_PAGE_SIZE });
+          ? await getFeedPostPage({ page: nextPage, size: EXPLORE_PAGE_SIZE })
+          : await getFeatureItemPage(activeFeature, { page: nextPage, size: EXPLORE_PAGE_SIZE });
+      const nextItems = page.items;
       const merged = mergeUniqueItems(items, nextItems);
       const addedCount = merged.length - items.length;
       setItems(merged);
       setPagination({
         page: nextPage,
-        hasMore: nextItems.length >= EXPLORE_PAGE_SIZE && addedCount > 0,
+        hasMore: page.meta.hasMore && addedCount > 0,
         loadingMore: false,
       });
     } catch (err) {
       setError(err?.message ?? 'Data lanjutan belum bisa dimuat.');
       setPagination((current) => ({ ...current, loadingMore: false }));
+    } finally {
+      loadingMoreRef.current = false;
     }
   }, [activeFeature, items, loading, pagination.hasMore, pagination.loadingMore, pagination.page]);
 
@@ -634,14 +673,15 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         activeFeature.contentType === 'tafsir'
           ? `/api/v1/tafsir/surah/${surahNumber}`
           : `/api/v1/asbabun-nuzul/surah/${surahNumber}`;
-      const nextItems = await getFeatureItems(
+      const page = await getFeatureItemPage(
         { ...activeFeature, endpoint, type: 'list' },
         { page: 0, size: EXPLORE_PAGE_SIZE },
       );
+      const nextItems = page.items;
       setItems(nextItems);
       setPagination({
         page: 0,
-        hasMore: nextItems.length >= EXPLORE_PAGE_SIZE,
+        hasMore: page.meta.hasMore,
         loadingMore: false,
       });
     } catch (err) {
@@ -743,6 +783,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     }, 0);
   };
 
+  const openItemDetail = (item) => {
+    setItemActionSheet({ visible: false, item: null });
+    setSelectedItem(item);
+    setActiveNoteRef('');
+  };
+
   const renderCurrencyInput = ({ label, value, onChangeText, placeholder }) => (
     <View style={styles.currencyField}>
       <Text style={styles.inputLabel}>{label}</Text>
@@ -805,6 +851,34 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   };
 
   const renderItem = (item, index) => {
+    if (activeFeature?.type === 'surah-content') {
+      return (
+        <ContentCard
+          key={`${item.id}-${index}`}
+          meta={item.meta || activeFeature?.title}
+          onPress={() => openItemDetail(item)}
+          onMenuPress={() => setItemActionSheet({ visible: true, item })}
+          style={styles.tafsirCard}
+          title={item.title}
+          titleStyle={styles.itemTitle}
+        >
+          {item.arabic ? <Text numberOfLines={3} style={styles.tafsirArabic}>{item.arabic}</Text> : null}
+          {item.body ? (
+            <View style={styles.tafsirTranslationBox}>
+              <Text numberOfLines={3} style={styles.tafsirTranslation}>{item.body}</Text>
+            </View>
+          ) : null}
+          {item.tafsir ? (
+            <View style={styles.tafsirPanel}>
+              <Text style={styles.tafsirSource}>Tafsir Jalalain</Text>
+              <Text numberOfLines={4} style={styles.tafsirText}>{item.tafsir}</Text>
+            </View>
+          ) : null}
+          <Text style={styles.cardReadMore}>Ketuk untuk membaca lengkap</Text>
+        </ContentCard>
+      );
+    }
+
     if (activeFeature?.type === 'user-wird') {
       return (
         <Card key={`${item.id}-${index}`} style={styles.itemCard}>
@@ -871,13 +945,14 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       <ContentCard
         key={`${item.id}-${index}`}
         meta={item.meta || activeFeature?.title}
+        onPress={activeFeature?.type === 'quiz' ? undefined : () => openItemDetail(item)}
         onMenuPress={() => setItemActionSheet({ visible: true, item })}
         style={styles.itemCard}
         title={item.title}
         titleStyle={styles.itemTitle}
       >
-        {item.arabic ? <Text style={styles.arabic}>{item.arabic}</Text> : null}
-        {item.body ? <Text style={styles.body}>{item.body}</Text> : null}
+        {item.arabic ? <Text numberOfLines={3} style={styles.arabic}>{item.arabic}</Text> : null}
+        {item.body ? <Text numberOfLines={4} style={styles.body}>{item.body}</Text> : null}
         {activeFeature?.type === 'quiz' ? (
           <View style={styles.answerRow}>
             {getQuizChoices(item).map((option) => (
@@ -909,20 +984,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     return (
       <AppActionSheet
         onClose={() => setItemActionSheet({ visible: false, item: null })}
-        subtitle={item.title}
-        title="Aksi Konten"
+        subtitle={item.meta || item.title}
+        title="Aksi Cepat"
         visible={visible}
       >
         {activeFeature?.type !== 'bookmarks' ? (
           <ActionSheetRow
             Icon={BookOpen}
-            onPress={() => {
-              setItemActionSheet({ visible: false, item: null });
-              setSelectedItem(item);
-              setActiveNoteRef('');
-            }}
-            subtitle="Buka detail konten"
-            title="Detail"
+            onPress={() => openItemDetail(item)}
+            subtitle="Baca dengan ruang yang lebih luas"
+            title="Buka Detail"
           />
         ) : null}
 
@@ -942,7 +1013,10 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           Icon={isBookmarked ? BookmarkCheck : Bookmark}
           active={isBookmarked}
           disabled={savingBookmark === key}
-          onPress={() => toggleBookmark(item)}
+          onPress={() => {
+            setItemActionSheet({ visible: false, item: null });
+            toggleBookmark(item);
+          }}
           subtitle={isBookmarked ? 'Hapus dari koleksi' : 'Simpan ke koleksi pribadi'}
           title={isBookmarked ? 'Hapus Bookmark' : 'Bookmark'}
         />
@@ -950,7 +1024,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     );
   };
 
-  const closeDetailModal = () => {
+  const closeDetailView = () => {
     setSelectedItem(null);
     setActiveNoteRef('');
     setFeedComments([]);
@@ -1004,39 +1078,55 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     );
   };
 
-  const renderDetailModal = () => {
+  const renderDetailScreen = () => {
     if (!selectedItem) return null;
     const ref = getItemRef(activeFeature, selectedItem);
     const noteKey = refKey(ref.refType, ref.refId);
-    const rawEntries = Object.entries(selectedItem.raw ?? {})
-      .filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value))
-      .slice(0, 12);
+    const isTafsirDetail = activeFeature?.type === 'surah-content';
 
     return (
-      <AppModalSheet
-        onClose={closeDetailModal}
+      <Screen
+        actions={(
+          <IconActionButton
+            Icon={ArrowLeft}
+            label="Kembali"
+            onPress={closeDetailView}
+          />
+        )}
         subtitle={selectedItem.meta || activeFeature?.title}
         title={selectedItem.title}
-        visible={Boolean(selectedItem)}
       >
-        {selectedItem.arabic ? (
-          <Text style={styles.arabic}>{selectedItem.arabic}</Text>
-        ) : null}
-        {selectedItem.body ? (
-          <Text style={styles.body}>{selectedItem.body}</Text>
-        ) : null}
-        {rawEntries.length ? (
-          <View style={styles.detailPanel}>
-            <Text style={styles.detailTitle}>Detail</Text>
-            {rawEntries.map(([key, value]) => (
-              <Text key={key} style={styles.detailLine}>
-                {formatDetailLabel(key)}: {String(value)}
-              </Text>
-            ))}
+        <Card style={styles.detailCard}>
+          {selectedItem.arabic ? (
+            <Text style={[isTafsirDetail ? styles.detailArabic : styles.arabic]}>{selectedItem.arabic}</Text>
+          ) : null}
+          {selectedItem.body ? (
+            <View style={isTafsirDetail ? styles.detailTranslationBox : null}>
+              <Text style={isTafsirDetail ? styles.detailTranslation : styles.detailBody}>{selectedItem.body}</Text>
+            </View>
+          ) : null}
+          {selectedItem.tafsir ? (
+            <View style={styles.detailTafsirPanel}>
+              <Text style={styles.tafsirSource}>Tafsir Jalalain</Text>
+              <Text style={styles.detailBody}>{selectedItem.tafsir}</Text>
+            </View>
+          ) : null}
+          {selectedItem.secondaryTafsir ? (
+            <View style={[styles.detailTafsirPanel, styles.tafsirPanelSecondary]}>
+              <Text style={[styles.tafsirSource, styles.tafsirSourceSecondary]}>Tafsir Quraish Shihab</Text>
+              <Text style={styles.detailBody}>{selectedItem.secondaryTafsir}</Text>
+            </View>
+          ) : null}
+          <View style={styles.detailMetaPanel}>
+            <Text style={styles.detailTitle}>Info</Text>
+            <Text style={styles.detailLine}>{selectedItem.meta || activeFeature?.title}</Text>
+            {ref.refId ? <Text style={styles.detailLine}>Rujukan: {ref.refType} #{ref.refId}</Text> : null}
           </View>
-        ) : null}
+        </Card>
+
         {renderFeedCommentsPanel()}
-        <View style={styles.modalActions}>
+
+        <View style={styles.detailActions}>
           {activeFeature?.type !== 'feed' ? (
             <ActionPill
               Icon={StickyNote}
@@ -1054,7 +1144,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         {activeNoteRef === noteKey ? (
           <NotesPanel refType={ref.refType} refId={ref.refId} />
         ) : null}
-      </AppModalSheet>
+      </Screen>
     );
   };
 
@@ -1198,9 +1288,17 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           <CardTitle meta={selectedSurahNumber ? `Surah ${selectedSurahNumber}` : 'Pilih Surah'}>
             {activeFeature.title}
           </CardTitle>
-          <Text style={styles.body}>Pilih surah untuk memuat konten dari backend.</Text>
+          <Text style={styles.body}>Pilih surah untuk membaca penjelasan ayat.</Text>
+          <TextInput
+            autoCapitalize="none"
+            onChangeText={setSurahSearch}
+            placeholder="Cari nama atau nomor surah"
+            placeholderTextColor={colors.muted}
+            style={styles.surahSearchInput}
+            value={surahSearch}
+          />
           <View style={styles.surahSelector}>
-            {surahs.slice(0, 12).map((surah) => (
+            {visibleSurahOptions.map((surah) => (
               <Pressable
                 android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
                 key={`${activeFeature.key}-${surah.number}`}
@@ -1213,6 +1311,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
               </Pressable>
             ))}
           </View>
+          {!surahSearch && surahs.length > visibleSurahOptions.length ? (
+            <Text style={styles.selectorHint}>Tampilkan surah lain lewat pencarian.</Text>
+          ) : null}
+          {surahSearch && !visibleSurahOptions.length ? (
+            <Text style={styles.empty}>Surah tidak ditemukan.</Text>
+          ) : null}
           {!loading && surahs.length === 0 ? <Text style={styles.empty}>Daftar surah belum tersedia.</Text> : null}
         </Card>
       );
@@ -1375,12 +1479,41 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     setActiveNoteRef('');
   };
 
-  const hasMoreItems = activeFeature && isPaginatedFeature(activeFeature) && items.length;
+  const shouldLoadMore = Boolean(
+    activeFeature &&
+    isPaginatedFeature(activeFeature) &&
+    items.length &&
+    pagination.hasMore,
+  );
+  const screenTitle = activeFeature?.title ?? 'Belajar';
+  const screenSubtitle = activeFeature
+    ? ['Belajar', activeFeature.group, activeFeature.subtitle].filter(Boolean).join(' · ')
+    : 'Kajian, referensi Islam, dan fitur personal.';
+  const listFooter = (
+    <>
+      {pagination.loadingMore ? (
+        <View style={styles.loadMoreFooter}>
+          <ActivityIndicator color={colors.primary} size="small" />
+          <Text style={styles.loadMoreText}>Memuat data berikutnya...</Text>
+        </View>
+      ) : null}
+      {renderItemActionSheet()}
+    </>
+  );
+
+  if (selectedItem) {
+    return renderDetailScreen();
+  }
 
   return (
     <Screen
-      title="Belajar"
-      subtitle="Kajian, referensi Islam, dan fitur personal."
+      title={screenTitle}
+      subtitle={screenSubtitle}
+      onEndReached={shouldLoadMore ? loadMoreFeature : undefined}
+      listData={activeFeature ? items : undefined}
+      listFooter={activeFeature ? listFooter : undefined}
+      listKeyExtractor={(item, index) => `${getExploreItemKey(item)}-${index}`}
+      renderListItem={({ item, index }) => renderItem(item, index)}
       actions={
         activeFeature ? (
           <IconActionButton
@@ -1468,32 +1601,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
             : activeFeature.type === 'notes'
               ? 'Belum ada catatan. Buka detail konten untuk menambahkan catatan.'
               : activeFeature.type === 'feed'
-                ? 'Belum ada post komunitas dari server.'
+                ? 'Belum ada post komunitas.'
                 : activeFeature.type === 'user-wird'
                   ? 'Belum ada wirid pribadi. Tambahkan bacaan pertamamu dari form di atas.'
                   : 'Belum ada data untuk fitur ini.'}
         </Text>
       ) : null}
       {!loading && activeFeature?.type === 'surah-content' && selectedSurahNumber && !error && !items.length ? (
-        <Text style={styles.empty}>Belum ada data untuk surah ini.</Text>
+        <Text style={styles.empty}>Tafsir untuk surah ini belum tersedia. Coba pilih surah lain.</Text>
       ) : null}
-      {items.map(renderItem)}
-
-      {hasMoreItems ? (
-        <Pressable
-          android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-          disabled={pagination.loadingMore}
-          onPress={loadMoreFeature}
-          style={styles.loadMoreButton}
-        >
-          <Text style={styles.loadMoreText}>
-            {pagination.loadingMore ? 'Memuat data berikutnya...' : 'Muat lebih banyak'}
-          </Text>
-        </Pressable>
-      ) : null}
-
-      {renderDetailModal()}
-      {renderItemActionSheet()}
+      {!activeFeature ? renderItemActionSheet() : null}
     </Screen>
   );
 }
@@ -1652,6 +1769,10 @@ const styles = StyleSheet.create({
   itemCard: {
     marginBottom: spacing.md,
   },
+  tafsirCard: {
+    marginBottom: spacing.md,
+    paddingTop: spacing.md,
+  },
   itemTitleBlock: {
     marginBottom: spacing.sm,
     minWidth: 0,
@@ -1739,11 +1860,54 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: spacing.xs,
   },
-  modalActions: {
+  detailActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.md,
+  },
+  detailCard: {
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  detailArabic: {
+    color: colors.ink,
+    fontSize: 28,
+    lineHeight: 48,
+    marginBottom: spacing.md,
+    textAlign: 'right',
+  },
+  detailBody: {
+    color: colors.text,
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  detailTranslationBox: {
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  detailTranslation: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  detailTafsirPanel: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.md,
+    padding: spacing.md,
+  },
+  detailMetaPanel: {
+    borderTopColor: colors.faint,
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
   },
   commentsPanel: {
     borderTopColor: colors.faint,
@@ -1829,6 +1993,59 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     textAlign: 'right',
   },
+  tafsirArabic: {
+    color: colors.ink,
+    fontSize: 23,
+    lineHeight: 38,
+    marginBottom: spacing.md,
+    textAlign: 'right',
+  },
+  tafsirTranslationBox: {
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  tafsirTranslation: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  tafsirPanel: {
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginTop: spacing.sm,
+    padding: spacing.md,
+  },
+  tafsirPanelSecondary: {
+    backgroundColor: colors.bg,
+  },
+  tafsirSource: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+  },
+  tafsirSourceSecondary: {
+    color: colors.ink,
+  },
+  tafsirText: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  cardReadMore: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+    marginTop: spacing.sm,
+  },
   body: {
     color: colors.text,
     fontSize: 14,
@@ -1868,6 +2085,23 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.md,
+  },
+  surahSearchInput: {
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    color: colors.text,
+    fontSize: 14,
+    marginTop: spacing.md,
+    minHeight: 46,
+    paddingHorizontal: spacing.md,
+  },
+  selectorHint: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: spacing.sm,
   },
   surahChip: {
     backgroundColor: colors.bg,
@@ -2007,19 +2241,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: spacing.md,
   },
-  loadMoreButton: {
+  loadMoreFooter: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.primary,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: spacing.md,
-  },
-  loadMoreButtonDisabled: {
-    borderColor: colors.faint,
-    opacity: 0.75,
+    paddingVertical: spacing.sm,
   },
   loadMoreText: {
     color: colors.primary,

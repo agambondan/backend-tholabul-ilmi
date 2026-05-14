@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import { BsCheckCircleFill, BsCircle } from 'react-icons/bs';
 
 const PRAYERS = ['Shubuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'];
+const PRAYER_KEYS = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+const prayerKey = (label) => (label === 'Shubuh' ? 'subuh' : label.toLowerCase());
 
 const todayStr = () => {
     const d = new Date();
@@ -29,7 +31,7 @@ const buildMonthDays = () => {
         const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         try {
             const entry = JSON.parse(localStorage.getItem(`sholat_log_${ds}`) ?? '{}');
-            const count = PRAYERS.filter((p) => entry[p.toLowerCase()]).length;
+            const count = PRAYERS.filter((p) => entry[prayerKey(p)]).length;
             days.push({ day: d, date: ds, count });
         } catch {
             days.push({ day: d, date: ds, count: 0 });
@@ -38,12 +40,26 @@ const buildMonthDays = () => {
     return days;
 };
 
+const normalizePrayerLog = (payload = {}) => {
+    const prayers = payload?.prayers ?? payload;
+    return PRAYER_KEYS.reduce((acc, key) => {
+        const value = prayers?.[key];
+        if (typeof value === 'boolean') {
+            acc[key] = value;
+        } else if (value && typeof value === 'object') {
+            acc[key] = value.status && value.status !== 'missed';
+        }
+        return acc;
+    }, {});
+};
+
 const SholatTrackerPage = () => {
     const { t, lang } = useLocale();
     const { isAuthenticated } = useAuth();
     const [log, setLog] = useState({});
     const [last7, setLast7] = useState([]);
     const [monthDays, setMonthDays] = useState([]);
+    const [syncError, setSyncError] = useState('');
 
     useEffect(() => {
         const loadToday = async () => {
@@ -56,11 +72,13 @@ const SholatTrackerPage = () => {
             if (isAuthenticated) {
                 try {
                     const res = await sholatTrackerApi.today();
+                    if (!res.ok) throw new Error('failed');
                     const data = await res.json();
                     const serverLog = data?.data ?? data ?? {};
-                    if (typeof serverLog === 'object' && serverLog !== null) {
-                        const merged = { ...stored, ...serverLog };
+                    if (serverLog && typeof serverLog === 'object') {
+                        const merged = { ...stored, ...normalizePrayerLog(serverLog) };
                         stored = merged;
+                        setSyncError('');
                         try {
                             localStorage.setItem(
                                 `sholat_log_${todayStr()}`,
@@ -68,7 +86,9 @@ const SholatTrackerPage = () => {
                             );
                         } catch {}
                     }
-                } catch {}
+                } catch {
+                    setSyncError('Belum bisa memuat log sholat dari server. Cache perangkat ditampilkan.');
+                }
             }
             setLog(stored);
         };
@@ -81,7 +101,7 @@ const SholatTrackerPage = () => {
                 const entry = JSON.parse(
                     localStorage.getItem(`sholat_log_${ds}`) ?? '{}',
                 );
-                const count = PRAYERS.filter((p) => entry[p.toLowerCase()]).length;
+                const count = PRAYERS.filter((p) => entry[prayerKey(p)]).length;
                 rows.push({ date: ds, count });
             } catch {
                 rows.push({ date: ds, count: 0 });
@@ -91,8 +111,9 @@ const SholatTrackerPage = () => {
     }, [isAuthenticated]);
 
     const toggle = (prayer) => {
-        const key = prayer.toLowerCase();
-        const updated = { ...log, [key]: !log[key] };
+        const key = prayerKey(prayer);
+        const nowDone = !log[key];
+        const updated = { ...log, [key]: nowDone };
         setLog(updated);
         try {
             localStorage.setItem(
@@ -101,14 +122,19 @@ const SholatTrackerPage = () => {
             );
         } catch {}
         if (isAuthenticated) {
-            sholatTrackerApi.update(updated).catch(() => {});
+            setSyncError('');
+            sholatTrackerApi
+                .update({ date: todayStr(), prayer: key, status: nowDone ? 'munfarid' : 'missed' })
+                .catch(() => {
+                    setSyncError('Perubahan sholat tersimpan di perangkat, tetapi belum tersinkron ke server.');
+                });
             streakApi.logActivity('prayer').catch(() => {});
         }
         setLast7((prev) =>
             prev.map((row) => {
                 if (row.date !== todayStr()) return row;
                 const count = PRAYERS.filter(
-                    (p) => (p.toLowerCase() === key ? !log[key] : updated[p.toLowerCase()]),
+                    (p) => (prayerKey(p) === key ? !log[key] : updated[prayerKey(p)]),
                 ).length;
                 return { ...row, count };
             }),
@@ -116,7 +142,7 @@ const SholatTrackerPage = () => {
         setMonthDays(buildMonthDays());
     };
 
-    const doneCount = PRAYERS.filter((p) => log[p.toLowerCase()]).length;
+    const doneCount = PRAYERS.filter((p) => log[prayerKey(p)]).length;
     const pct = Math.round((doneCount / 5) * 100);
 
     return (
@@ -124,6 +150,11 @@ const SholatTrackerPage = () => {
             <h1 className='text-xl font-bold text-gray-900 dark:text-white mb-6'>
                 {t('sholat.title')}
             </h1>
+            {syncError ? (
+                <div className='mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300'>
+                    {syncError}
+                </div>
+            ) : null}
 
             {/* Progress card */}
             <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 mb-6'>
@@ -149,7 +180,7 @@ const SholatTrackerPage = () => {
             {/* Prayer buttons */}
             <div className='grid grid-cols-1 gap-3 mb-8'>
                 {PRAYERS.map((p) => {
-                    const done = !!log[p.toLowerCase()];
+                    const done = !!log[prayerKey(p)];
                     return (
                         <button
                             key={p}

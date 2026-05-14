@@ -6,9 +6,9 @@ import (
 )
 
 type TahlilService interface {
-	FindAll() ([]model.TahlilCollection, error)
+	FindAll(limit, offset int) ([]model.TahlilCollection, error)
 	FindByID(id int) (*model.TahlilCollection, error)
-	FindAllItems() ([]model.TahlilItem, error)
+	FindAllItems(limit, offset int) ([]model.TahlilItem, error)
 	CreateItem(item *model.TahlilItem) (*model.TahlilItem, error)
 	UpdateItem(id int, item *model.TahlilItem) (*model.TahlilItem, error)
 	DeleteItem(id int) error
@@ -23,16 +23,16 @@ func NewTahlilService(repo repository.TahlilRepository) TahlilService {
 	return &tahlilService{repo}
 }
 
-func (s *tahlilService) FindAll() ([]model.TahlilCollection, error) {
-	return s.repo.FindAll()
+func (s *tahlilService) FindAll(limit, offset int) ([]model.TahlilCollection, error) {
+	return s.repo.FindAll(limit, offset)
 }
 
 func (s *tahlilService) FindByID(id int) (*model.TahlilCollection, error) {
 	return s.repo.FindByID(id)
 }
 
-func (s *tahlilService) FindAllItems() ([]model.TahlilItem, error) {
-	return s.repo.FindAllItems()
+func (s *tahlilService) FindAllItems(limit, offset int) ([]model.TahlilItem, error) {
+	return s.repo.FindAllItems(limit, offset)
 }
 
 func (s *tahlilService) CreateItem(item *model.TahlilItem) (*model.TahlilItem, error) {

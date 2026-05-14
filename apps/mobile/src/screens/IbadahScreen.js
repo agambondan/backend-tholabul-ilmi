@@ -2,7 +2,6 @@ import {
   BookOpenCheck,
   Calculator,
   CalendarDays,
-  ChevronRight,
   CheckSquare,
   Clock3,
   Compass,
@@ -14,10 +13,9 @@ import {
 } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { Card } from '../components/Card';
-import { ContentCard } from '../components/ContentCard';
 import { CompactRow, SectionHeader } from '../components/Paper';
 import { Screen } from '../components/Screen';
-import { colors, radius, spacing } from '../theme';
+import { spacing } from '../theme';
 import { PrayerScreen } from './PrayerScreen';
 import { QiblaScreen } from './QiblaScreen';
 
@@ -157,25 +155,6 @@ const sections = [
   },
 ];
 
-function HeroAction({ Icon, title, subtitle, onPress }) {
-  return (
-    <ContentCard
-      Icon={Icon}
-      iconColor={colors.onPrimary}
-      iconSize={20}
-      iconStyle={styles.heroIcon}
-      iconStrokeWidth={2.4}
-      onPress={onPress}
-      style={styles.hero}
-      subtitle={subtitle}
-      subtitleStyle={styles.heroSubtitle}
-      title={title}
-      titleStyle={styles.heroTitle}
-      trailing={<ChevronRight color={colors.onPrimary} size={20} strokeWidth={2.5} />}
-    />
-  );
-}
-
 function IbadahHub({ navigation, onOpenTab }) {
   const openRow = (row) => {
     if (row.view) {
@@ -198,20 +177,6 @@ function IbadahHub({ navigation, onOpenTab }) {
       subtitle="Sholat, qibla, dzikir, bacaan, dan alat ibadah dalam satu hub ringkas."
       title="Ibadah"
     >
-      <HeroAction
-        Icon={Clock3}
-        onPress={() => navigation?.open?.('ibadah', 'prayer')}
-        subtitle="Jadwal, log, pengingat, dan penyimpanan offline."
-        title="Jadwal Sholat"
-      />
-      <View style={styles.heroGap} />
-      <HeroAction
-        Icon={Compass}
-        onPress={() => navigation?.open?.('ibadah', 'qibla')}
-        subtitle="Kompas kiblat dengan lokasi GPS atau manual."
-        title="Qibla"
-      />
-
       {sections.map((section) => (
         <View key={section.key} style={styles.section}>
           <SectionHeader meta={section.meta} title={section.title} />
@@ -248,38 +213,6 @@ export function IbadahScreen({ isActive, navigation, onOpenTab }) {
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    borderRadius: radius.lg,
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  heroGap: {
-    height: spacing.sm,
-  },
-  heroIcon: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
-    borderRadius: radius.md,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  heroSubtitle: {
-    color: '#e6e2d6',
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 2,
-  },
-  heroTitle: {
-    color: colors.onPrimary,
-    fontFamily: 'serif',
-    fontSize: 17,
-    fontWeight: '900',
-  },
   section: {
     marginTop: spacing.lg,
   },

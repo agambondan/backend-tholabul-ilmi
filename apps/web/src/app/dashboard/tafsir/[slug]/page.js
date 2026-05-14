@@ -5,6 +5,13 @@ import { useEffect, useState } from 'react';
 import { BsArrowLeft, BsChevronDown, BsChevronRight, BsSearch } from 'react-icons/bs';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
+import {
+    getTafsirArabic,
+    getTafsirPrimary,
+    getTafsirSecondary,
+    getTafsirTranslation,
+    normalizeTafsirEntry,
+} from '@/lib/tafsirContent';
 
 const DashboardTafsirReaderPage = ({ params }) => {
     const { t, lang } = useLocale();
@@ -43,7 +50,8 @@ const DashboardTafsirReaderPage = ({ params }) => {
             })
             .then((r) => r.json())
             .then((data) => {
-                setTafsirList(data?.items ?? data ?? []);
+                const list = data?.items ?? data ?? [];
+                setTafsirList(list.map(normalizeTafsirEntry));
             })
             .catch(() => setError(true))
             .finally(() => setLoading(false));
@@ -102,9 +110,13 @@ const DashboardTafsirReaderPage = ({ params }) => {
             item.ayah_number,
             item.number,
             item.arabic,
+            getTafsirArabic(item),
             item.text,
             getLocalizedTranslation(item.translation, lang),
+            getTafsirTranslation(item, lang),
             getLocalizedField(item, 'content', lang),
+            item.primaryTafsir,
+            item.secondaryTafsir,
             item.source,
         ]
             .filter(Boolean)
@@ -205,10 +217,13 @@ const DashboardTafsirReaderPage = ({ params }) => {
             {/* Tafsir accordion */}
             <div className='px-4 pt-3 space-y-2'>
                 {visible.map((item, idx) => {
-                    const id = item.id ?? item.ayah_number ?? idx;
+                    const id = item.id ?? item.ayahNumber ?? item.ayah_number ?? idx;
                     const isOpen = expanded.has(id);
-                    const translationText = getLocalizedTranslation(item.translation, lang) || item.text;
+                    const arabicText = getTafsirArabic(item);
+                    const translationText = getTafsirTranslation(item, lang) || getLocalizedTranslation(item.translation, lang) || item.text;
                     const contentText = getLocalizedField(item, 'content', lang);
+                    const primaryTafsir = getTafsirPrimary(item);
+                    const secondaryTafsir = getTafsirSecondary(item);
                     return (
                         <div
                             key={id}
@@ -221,14 +236,14 @@ const DashboardTafsirReaderPage = ({ params }) => {
                             >
                                 <div className='flex items-center gap-3 min-w-0'>
                                     <span className='w-7 h-7 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center justify-center shrink-0'>
-                                        {item.ayah_number ?? item.number ?? idx + 1}
+                                        {item.ayahNumber ?? item.ayah_number ?? item.number ?? idx + 1}
                                     </span>
-                                    {item.arabic && (
+                                    {arabicText && (
                                         <p
                                             dir='rtl'
                                             className='text-sm arabic-text text-gray-700 dark:text-gray-300 truncate'
                                         >
-                                            {item.arabic}
+                                            {arabicText}
                                         </p>
                                     )}
                                 </div>
@@ -241,12 +256,12 @@ const DashboardTafsirReaderPage = ({ params }) => {
 
                             {isOpen && (
                                 <div className='px-4 pb-4 border-t border-gray-50 dark:border-slate-700 pt-3 space-y-3'>
-                                    {item.arabic && (
+                                    {arabicText && (
                                         <p
                                             dir='rtl'
                                             className='text-xl arabic-text text-gray-800 dark:text-gray-100 leading-loose text-right'
                                         >
-                                            {item.arabic}
+                                            {arabicText}
                                         </p>
                                     )}
                                     {item.latin && showLatin && (
@@ -259,11 +274,31 @@ const DashboardTafsirReaderPage = ({ params }) => {
                                             {translationText}
                                         </p>
                                     )}
-                                    {contentText && (
+                                    {contentText ? (
                                         <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line'>
                                             {contentText}
                                         </p>
-                                    )}
+                                    ) : null}
+                                    {primaryTafsir ? (
+                                        <div className='rounded-xl bg-amber-50 dark:bg-amber-900/20 px-4 py-3'>
+                                            <p className='text-xs font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1'>
+                                                Tafsir Jalalain
+                                            </p>
+                                            <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line'>
+                                                {primaryTafsir}
+                                            </p>
+                                        </div>
+                                    ) : null}
+                                    {secondaryTafsir ? (
+                                        <div className='rounded-xl bg-sky-50 dark:bg-sky-900/20 px-4 py-3'>
+                                            <p className='text-xs font-bold uppercase tracking-wide text-sky-700 dark:text-sky-400 mb-1'>
+                                                Tafsir Quraish Shihab
+                                            </p>
+                                            <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line'>
+                                                {secondaryTafsir}
+                                            </p>
+                                        </div>
+                                    ) : null}
                                     {item.source && (
                                         <p className='text-xs text-gray-400 dark:text-gray-500 mt-1'>
                                             {t('common.source')}: {item.source}

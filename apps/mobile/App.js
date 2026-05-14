@@ -45,6 +45,7 @@ export default function App() {
 
   const openTab = useCallback((requestedTab, requestedParams = null) => {
     const { params, tab } = normalizeTabRequest(requestedTab, requestedParams);
+    const returnTab = activeTabRef.current && activeTabRef.current !== tab ? activeTabRef.current : null;
 
     setActiveTab(tab);
     if (params?.view) {
@@ -53,6 +54,7 @@ export default function App() {
         [tab]: {
           id: `${Date.now()}:${tab}:${params.view}`,
           params,
+          returnTab,
           view: params.view,
         },
       }));
@@ -71,6 +73,7 @@ export default function App() {
   const openInternalView = useCallback((requestedTab, view, params = {}) => {
     const normalized = normalizeTabRequest(requestedTab, { ...params, view });
     const tab = normalized.tab;
+    const returnTab = activeTabRef.current && activeTabRef.current !== tab ? activeTabRef.current : null;
 
     setActiveTab(tab);
     setInternalRoutes((current) => ({
@@ -78,17 +81,22 @@ export default function App() {
       [tab]: {
         id: `${Date.now()}:${tab}:${normalized.params.view}`,
         params: normalized.params,
+        returnTab,
         view: normalized.params.view,
       },
     }));
   }, []);
 
   const closeInternalView = useCallback((tab = activeTab) => {
+    const route = internalRoutesRef.current[tab];
     setInternalRoutes((current) => {
       const next = { ...current };
       delete next[tab];
       return next;
     });
+    if (route?.returnTab && route.returnTab !== tab) {
+      setActiveTab(route.returnTab);
+    }
   }, [activeTab]);
 
   const resetInternalViews = useCallback(() => {
@@ -128,11 +136,15 @@ export default function App() {
       if (screenBackRef.current?.()) return true;
       const tab = activeTabRef.current;
       if (internalRoutesRef.current[tab]) {
+        const route = internalRoutesRef.current[tab];
         setInternalRoutes((prev) => {
           const next = { ...prev };
           delete next[tab];
           return next;
         });
+        if (route?.returnTab && route.returnTab !== tab) {
+          setActiveTab(route.returnTab);
+        }
         return true;
       }
       if (tab !== 'home') {

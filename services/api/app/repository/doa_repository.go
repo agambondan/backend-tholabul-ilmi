@@ -6,9 +6,9 @@ import (
 )
 
 type DoaRepository interface {
-	FindAll() ([]model.Doa, error)
+	FindAll(limit, offset int) ([]model.Doa, error)
 	FindByID(int) (*model.Doa, error)
-	FindByCategory(model.DoaCategory) ([]model.Doa, error)
+	FindByCategory(model.DoaCategory, int, int) ([]model.Doa, error)
 }
 
 type doaRepo struct {
@@ -19,9 +19,15 @@ func NewDoaRepository(db *gorm.DB) DoaRepository {
 	return &doaRepo{db}
 }
 
-func (r *doaRepo) FindAll() ([]model.Doa, error) {
+func (r *doaRepo) FindAll(limit, offset int) ([]model.Doa, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.Doa
-	err := r.db.Preload("Translation").Order("category, id").Limit(500).Find(&list).Error
+	err := r.db.Preload("Translation").Order("category, id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 
@@ -33,8 +39,14 @@ func (r *doaRepo) FindByID(id int) (*model.Doa, error) {
 	return &d, nil
 }
 
-func (r *doaRepo) FindByCategory(category model.DoaCategory) ([]model.Doa, error) {
+func (r *doaRepo) FindByCategory(category model.DoaCategory, limit, offset int) ([]model.Doa, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.Doa
-	err := r.db.Preload("Translation").Where("category = ?", category).Order("id").Limit(100).Find(&list).Error
+	err := r.db.Preload("Translation").Where("category = ?", category).Order("id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }

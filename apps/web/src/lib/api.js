@@ -217,10 +217,10 @@ export const statsApi = {
 };
 
 export const tilawahApi = {
-    add: (pagesRead, juzRead, note = '') =>
+    add: (pagesRead, juzRead, note = '', date = new Date().toISOString().slice(0, 10)) =>
         authFetch('/api/v1/tilawah', {
             method: 'POST',
-            body: JSON.stringify({ pages_read: pagesRead, juz_read: juzRead, note }),
+            body: JSON.stringify({ date, pages_read: pagesRead, juz_read: juzRead, note }),
         }),
     list: (start, end) => {
         const params = new URLSearchParams();

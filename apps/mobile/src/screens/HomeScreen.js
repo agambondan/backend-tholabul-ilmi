@@ -72,6 +72,9 @@ const featureDirectoryIcons = {
   blog: BookOpen,
   bookmarks: Bookmark,
   'community-feed': MessageCircle,
+  doa: BookOpen,
+  dzikir: ListChecks,
+  faraidh: Users,
   fiqh: BookOpen,
   goals: Star,
   hafalan: BookOpenCheck,
@@ -118,6 +121,19 @@ const formatCountdown = (secondsDelta) => {
 const formatHadisSource = (value = '') => {
   if (!value) return '';
   return value.replace(/\bHadith\b/g, 'Hadis');
+};
+
+const locationErrorLabels = new Set(['LOKASI NONAKTIF', 'LOKASI BELUM TERSEDIA']);
+
+const getHomeLocationLabel = async (coords) => {
+  try {
+    const places = await Location.reverseGeocodeAsync(coords);
+    const place = places?.[0];
+    const city = place?.city || place?.subregion || place?.district || place?.region;
+    return (city || 'Lokasi aktif').toUpperCase();
+  } catch {
+    return 'LOKASI AKTIF';
+  }
 };
 
 const resolvePrayerState = (prayers, now = new Date()) => {
@@ -245,12 +261,24 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (permission.status === 'granted') {
-        const position = await Location.getCurrentPositionAsync({});
-        coords = { lat: position.coords.latitude, lng: position.coords.longitude };
-        const places = await Location.reverseGeocodeAsync(coords);
-        const place = places?.[0];
-        const city = place?.city || place?.subregion || place?.district || place?.region;
-        if (mountedRef.current) setLocationLabel((city || 'Lokasi aktif').toUpperCase());
+        let position = null;
+        try {
+          position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        } catch {
+          position = await Location.getLastKnownPositionAsync({
+            maxAge: 10 * 60 * 1000,
+            requiredAccuracy: 5000,
+          });
+        }
+
+        if (position?.coords) {
+          coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+          const label = await getHomeLocationLabel(coords);
+          if (mountedRef.current) setLocationLabel(label);
+        } else if (mountedRef.current) {
+          setLocationLabel('LOKASI BELUM TERSEDIA');
+          setPrayerMessage('Lokasi belum terbaca. Tarik untuk memuat ulang jadwal sholat.');
+        }
       } else if (mountedRef.current) {
         setLocationLabel('LOKASI NONAKTIF');
         setPrayerMessage('Aktifkan lokasi untuk melihat jadwal sholat di tempatmu.');
@@ -343,6 +371,10 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     if (!isActive) return;
     let mounted = true;
 
+    if (locationErrorLabels.has(locationLabel)) {
+      loadHomeData({ refresh: true });
+    }
+
     Promise.all([readPinnedFeatures(), readRecentFeatures()]).then(([pinnedItems, recentItems]) => {
       if (!mounted) return;
       setPinnedFeatures(pinnedItems.slice(0, 4));
@@ -352,7 +384,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     return () => {
       mounted = false;
     };
-  }, [isActive]);
+  }, [isActive, loadHomeData, locationLabel]);
 
   useEffect(() => {
     const activeView = navigation?.current?.view;

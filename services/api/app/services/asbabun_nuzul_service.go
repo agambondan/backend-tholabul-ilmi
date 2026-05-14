@@ -8,7 +8,7 @@ import (
 type AsbabunNuzulService interface {
 	FindAll(page, size int) ([]model.AsbabunNuzul, error)
 	FindByAyahID(ayahID int) ([]model.AsbabunNuzul, error)
-	FindBySurahNumber(surahNumber int) ([]model.AsbabunNuzul, error)
+	FindBySurahNumber(surahNumber, limit, offset int) ([]model.AsbabunNuzul, error)
 	ResolveAyahIDs(refs []model.AyahReference) ([]int, error)
 	Create(a *model.AsbabunNuzul) (*model.AsbabunNuzul, error)
 	CreateWithAyahs(a *model.AsbabunNuzul, ayahIDs []int) (*model.AsbabunNuzul, error)
@@ -33,8 +33,8 @@ func (s *asbabunNuzulService) FindByAyahID(ayahID int) ([]model.AsbabunNuzul, er
 	return s.repo.FindByAyahID(ayahID)
 }
 
-func (s *asbabunNuzulService) FindBySurahNumber(surahNumber int) ([]model.AsbabunNuzul, error) {
-	return s.repo.FindBySurahNumber(surahNumber)
+func (s *asbabunNuzulService) FindBySurahNumber(surahNumber, limit, offset int) ([]model.AsbabunNuzul, error) {
+	return s.repo.FindBySurahNumber(surahNumber, limit, offset)
 }
 
 func (s *asbabunNuzulService) ResolveAyahIDs(refs []model.AyahReference) ([]int, error) {

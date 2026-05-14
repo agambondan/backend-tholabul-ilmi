@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTabActivity } from '../context/TabActivityContext';
 import { colors, spacing } from '../theme';
 
@@ -14,6 +14,10 @@ export function Screen({
   headerExtra,
   searchSlot,
   contentStyle,
+  listData,
+  renderListItem,
+  listKeyExtractor,
+  listFooter,
 }) {
   const { notifyTabActivity } = useTabActivity();
   const handleScrollActivity = useCallback((event) => {
@@ -26,6 +30,52 @@ export function Screen({
       onEndReached();
     }
   }, [notifyTabActivity, onEndReached]);
+
+  const renderHeader = () => (
+    <>
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerCopy}>
+            <Text style={styles.title}>{title}</Text>
+            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          </View>
+          {actions ? <View style={styles.actions}>{actions}</View> : null}
+        </View>
+        {searchSlot ? <View style={styles.searchSlot}>{searchSlot}</View> : null}
+        {headerExtra ? <View style={styles.headerExtra}>{headerExtra}</View> : null}
+      </View>
+      <View style={[styles.body, contentStyle]}>{children}</View>
+    </>
+  );
+
+  if (Array.isArray(listData) && renderListItem) {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 16 : 0}
+        style={styles.flex}
+      >
+        <FlatList
+          contentContainerStyle={styles.content}
+          data={listData}
+          keyboardShouldPersistTaps="handled"
+          keyExtractor={listKeyExtractor}
+          ListFooterComponent={listFooter}
+          ListHeaderComponent={renderHeader}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.65}
+          onScroll={notifyTabActivity}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+            ) : undefined
+          }
+          renderItem={renderListItem}
+          scrollEventThrottle={250}
+        />
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -46,18 +96,7 @@ export function Screen({
         }
         scrollEventThrottle={250}
       >
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View style={styles.headerCopy}>
-              <Text style={styles.title}>{title}</Text>
-              {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-            </View>
-            {actions ? <View style={styles.actions}>{actions}</View> : null}
-          </View>
-          {searchSlot ? <View style={styles.searchSlot}>{searchSlot}</View> : null}
-          {headerExtra ? <View style={styles.headerExtra}>{headerExtra}</View> : null}
-        </View>
-        <View style={[styles.body, contentStyle]}>{children}</View>
+        {renderHeader()}
       </ScrollView>
     </KeyboardAvoidingView>
   );

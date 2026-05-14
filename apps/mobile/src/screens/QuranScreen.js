@@ -56,11 +56,13 @@ import { AppActionSheet, ActionSheetRow } from '../components/AppActionSheet';
 import { AppModalSheet } from '../components/AppModalSheet';
 import { Card, CardTitle } from '../components/Card';
 import { NotesPanel } from '../components/NotesPanel';
-import { EmptyState, IconActionButton } from '../components/Paper';
+import { ActionPill, EmptyState, IconActionButton } from '../components/Paper';
+import { Screen } from '../components/Screen';
 import { QURAN_FONT_FAMILIES } from '../constants/quranFonts';
 import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { useTabActivity } from '../context/TabActivityContext';
+import { useQuranReaderPreferences } from '../hooks/useQuranReaderPreferences';
 import { preferenceKeys, readPreference, writePreference } from '../storage/preferences';
 import { colors, radius, spacing } from '../theme';
 import { playAudioUrl, stopAudio } from '../utils/audioPlayer';
@@ -104,16 +106,6 @@ const ARABIC_FONTS = [
     { key: 'indopak', label: 'Indopak', fontFamily: QURAN_FONT_FAMILIES.indopak },
     { key: 'naskh', label: 'Naskh', fontFamily: QURAN_FONT_FAMILIES.naskh },
 ];
-
-const LEGACY_ARABIC_FONT_MAP = {
-    amiri: 'naskh',
-    default: 'kitab',
-    mono: 'naskh',
-    sans: 'indopak',
-    serif: 'kitab',
-    system: 'kitab',
-    uthmani: 'kitab',
-};
 
 const QURAN_TABS = [
     { key: 'surah', label: 'Surah' },
@@ -492,9 +484,6 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const [progress, setProgress] = useState(null);
     const [savingSurah, setSavingSurah] = useState(null);
     const [savingAyah, setSavingAyah] = useState(null);
-    const [fontSize, setFontSize] = useState(28);
-    const [arabicFont, setArabicFont] = useState('kitab');
-    const [displayMode, setDisplayMode] = useState('card');
     const [activeNoteAyah, setActiveNoteAyah] = useState(null);
     const [referenceState, setReferenceState] = useState({});
     const [message, setMessage] = useState('');
@@ -503,7 +492,6 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const [hizbInput, setHizbInput] = useState('1');
     const [quranTab, setQuranTab] = useState('surah');
     const [surahQuery, setSurahQuery] = useState('');
-    const [memorizationMode, setMemorizationMode] = useState('off');
     const [revealedAyahs, setRevealedAyahs] = useState({});
     const [audioState, setAudioState] = useState({
         activeAyahId: null,
@@ -526,34 +514,27 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const [tajweedVisible, setTajweedVisible] = useState(false);
     const [referenceModal, setReferenceModal] = useState({ visible: false, type: null, ayah: null });
     const [ayahActionSheet, setAyahActionSheet] = useState({ visible: false, ayah: null });
+    const [selectedDetailAyah, setSelectedDetailAyah] = useState(null);
     const [readerMenuVisible, setReaderMenuVisible] = useState(false);
 
     const handleScrollActivity = useCallback(() => {
         notifyTabActivity();
     }, [notifyTabActivity]);
 
-    const updateFontSize = async (nextSize) => {
-        const normalized = Math.max(MIN_ARABIC_FONT_SIZE, Math.min(MAX_ARABIC_FONT_SIZE, nextSize));
-        setFontSize(normalized);
-        await writePreference(preferenceKeys.quranFontSize, normalized);
-    };
-
-    const updateArabicFont = async (key) => {
-        const normalized = normalizeArabicFontKey(key);
-        setArabicFont(normalized);
-        await writePreference(preferenceKeys.quranArabicFont, normalized);
-    };
-
-    const updateDisplayMode = async (key) => {
-        setDisplayMode(key);
-        await writePreference(preferenceKeys.quranDisplayMode, key);
-    };
-
-    const updateMemorizationMode = async (mode) => {
-        setMemorizationMode(mode);
+    const resetRevealedAyahs = useCallback(() => {
         setRevealedAyahs({});
-        await writePreference(preferenceKeys.quranMemorizationMode, mode);
-    };
+    }, []);
+
+    const {
+        arabicFont,
+        displayMode,
+        fontSize,
+        memorizationMode,
+        updateArabicFont,
+        updateDisplayMode,
+        updateFontSize,
+        updateMemorizationMode,
+    } = useQuranReaderPreferences({ onMemorizationModeChange: resetRevealedAyahs });
 
     const openReferenceModal = async (ayah, type) => {
         setReferenceModal({ visible: true, type, ayah });
@@ -1023,6 +1004,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const closeReader = () => {
         stopAudio();
         setReaderMenuVisible(false);
+        setSelectedDetailAyah(null);
         setSelectedSurah(null);
     };
 
@@ -1290,8 +1272,6 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         await writePreference(preferenceKeys.quranAudioQari, qariSlug);
     };
 
-    const normalizeArabicFontKey = (key) => LEGACY_ARABIC_FONT_MAP[key] ?? key;
-
     const getArabicTypography = (extraSize = 0, lineHeightRatio = 1.75) => {
         const font = ARABIC_FONTS.find((f) => f.key === arabicFont);
         const size = Math.max(
@@ -1409,6 +1389,16 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         );
     };
 
+    const openAyahDetail = (ayah) => {
+        setAyahActionSheet({ visible: false, ayah: null });
+        setSelectedDetailAyah(ayah);
+    };
+
+    const closeAyahDetail = () => {
+        setSelectedDetailAyah(null);
+        setActiveNoteAyah(null);
+    };
+
     const renderInlineArabicRow = (ayah) => (
         <View style={styles.inlineArabicRow}>
             <Pressable
@@ -1420,9 +1410,18 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             >
                 <MoreVertical color={colors.primary} size={18} strokeWidth={2.4} />
             </Pressable>
-            <View style={styles.inlineArabicText}>
+            <Pressable
+                accessibilityLabel={`Buka detail ayat ${ayah.number}`}
+                accessibilityRole="button"
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.08)', borderless: false }}
+                onPress={() => openAyahDetail(ayah)}
+                style={styles.inlineArabicText}
+            >
                 {renderAyahText(ayah)}
-            </View>
+                {displayMode !== 'mushaf' ? (
+                    <Text style={styles.ayahReadMore}>Ketuk untuk membaca lengkap</Text>
+                ) : null}
+            </Pressable>
         </View>
     );
 
@@ -2058,6 +2057,102 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         );
     };
 
+    const renderAyahDetailScreen = () => {
+        if (!selectedDetailAyah) return null;
+
+        const isAudioLoading = audioState.loadingAyahId === selectedDetailAyah.id;
+        const isAudioPlaying = audioState.playingAyahId === selectedDetailAyah.id;
+        const isBookmarked = Boolean(bookmarks[selectedDetailAyah.id]);
+        const noteOpen = activeNoteAyah === selectedDetailAyah.id;
+
+        return (
+            <>
+                {renderSettingsModal()}
+                {renderReaderMenuModal()}
+                {renderReferenceModal()}
+                {renderAyahActionSheet()}
+                {renderTajweedModal()}
+                <Screen
+                    actions={(
+                        <IconActionButton
+                            Icon={ArrowLeft}
+                            label="Kembali"
+                            onPress={closeAyahDetail}
+                        />
+                    )}
+                    subtitle={`${selectedSurah?.name ?? "Al-Qur'an"} · Ayat ${selectedDetailAyah.number}`}
+                    title="Detail Ayat"
+                >
+                    <Card style={styles.quranDetailCard}>
+                        <Text style={styles.quranDetailKicker}>
+                            {selectedSurah?.name ?? "Al-Qur'an"} · Ayat {selectedDetailAyah.number}
+                        </Text>
+                        {(selectedDetailAyah.arabic || selectedDetailAyah.arabicHtml) ? (
+                            renderArabicContent(
+                                selectedDetailAyah,
+                                [styles.quranDetailArabic, getArabicTypography(2, 1.85)],
+                                'detail-ayah',
+                            )
+                        ) : null}
+                        {selectedDetailAyah.latin ? (
+                            <Text style={styles.quranDetailLatin}>{selectedDetailAyah.latin}</Text>
+                        ) : null}
+                        {selectedDetailAyah.translation ? (
+                            <View style={styles.quranDetailTranslationBox}>
+                                <Text style={styles.quranDetailTranslation}>{selectedDetailAyah.translation}</Text>
+                            </View>
+                        ) : null}
+                        {audioState.activeAyahId === selectedDetailAyah.id ? renderAudioSources(selectedDetailAyah) : null}
+                    </Card>
+
+                    <View style={styles.quranDetailActions}>
+                        <ActionPill
+                            Icon={isAudioPlaying ? Pause : Volume2}
+                            active={isAudioPlaying}
+                            disabled={isAudioLoading}
+                            label={isAudioLoading ? 'Memuat audio' : isAudioPlaying ? 'Jeda audio' : 'Putar audio'}
+                            onPress={() => playAyahAudio(selectedDetailAyah)}
+                        />
+                        <ActionPill
+                            Icon={BookOpen}
+                            label="Tafsir"
+                            onPress={() => openReferenceModal(selectedDetailAyah, 'tafsir')}
+                        />
+                        <ActionPill
+                            Icon={BookOpen}
+                            label="Asbabun"
+                            onPress={() => openReferenceModal(selectedDetailAyah, 'asbab')}
+                        />
+                        {user ? (
+                            <>
+                                <ActionPill
+                                    Icon={isBookmarked ? BookmarkCheck : Bookmark}
+                                    active={isBookmarked}
+                                    disabled={savingAyah === `bookmark:${selectedDetailAyah.id}`}
+                                    label={isBookmarked ? 'Hapus bookmark' : 'Bookmark'}
+                                    onPress={() => toggleAyahBookmark(selectedDetailAyah)}
+                                />
+                                <ActionPill
+                                    Icon={StickyNote}
+                                    active={noteOpen}
+                                    label="Catatan"
+                                    onPress={() => setActiveNoteAyah(noteOpen ? null : selectedDetailAyah.id)}
+                                />
+                            </>
+                        ) : null}
+                    </View>
+
+                    {noteOpen ? (
+                        <Card style={styles.quranDetailNoteCard}>
+                            <CardTitle meta="Pribadi">Catatan</CardTitle>
+                            <NotesPanel refType="ayah" refId={selectedDetailAyah.id} />
+                        </Card>
+                    ) : null}
+                </Screen>
+            </>
+        );
+    };
+
     const renderAyahActionSheet = () => {
         const { visible, ayah } = ayahActionSheet;
         if (!ayah) return null;
@@ -2070,9 +2165,15 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             <AppActionSheet
                 onClose={() => setAyahActionSheet({ visible: false, ayah: null })}
                 subtitle={`${selectedSurah?.name} · Ayat ${ayah.number}`}
-                title="Aksi Ayat"
+                title="Aksi Cepat"
                 visible={visible}
             >
+                <ActionSheetRow
+                    Icon={BookOpen}
+                    onPress={() => openAyahDetail(ayah)}
+                    subtitle="Baca ayat, terjemahan, tafsir, dan catatan lebih luas"
+                    title="Buka Detail"
+                />
                 <ActionSheetRow
                     Icon={isAudioPlaying ? Pause : Volume2}
                     active={isAudioPlaying}
@@ -2279,7 +2380,12 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
 
     useEffect(() => {
         if (!isActive) return;
-        if (selectedSurah) {
+        if (selectedDetailAyah) {
+            navigation?.setBack(() => {
+                closeAyahDetail();
+                return true;
+            });
+        } else if (selectedSurah) {
             navigation?.setBack(() => {
                 setSelectedSurah(null);
                 return true;
@@ -2287,39 +2393,13 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         } else {
             navigation?.clearBack?.();
         }
-    }, [isActive, selectedSurah, navigation]);
+    }, [isActive, selectedDetailAyah, selectedSurah, navigation]);
 
     useEffect(() => {
         let mounted = true;
-        readPreference(preferenceKeys.quranFontSize, 28).then((value) => {
-            if (mounted && typeof value === 'number') {
-                setFontSize(Math.max(MIN_ARABIC_FONT_SIZE, Math.min(MAX_ARABIC_FONT_SIZE, value)));
-            }
-        });
         readPreference(preferenceKeys.quranAudioQari, 'Alafasy_64kbps').then((value) => {
             if (mounted && typeof value === 'string')
                 setAudioState((current) => ({ ...current, qariSlug: value }));
-        });
-        readPreference(preferenceKeys.quranMemorizationMode, 'off').then((value) => {
-            if (mounted && MEMORIZATION_MODES.some((m) => m.key === value)) setMemorizationMode(value);
-        });
-        readPreference(preferenceKeys.quranArabicFont, 'kitab').then((value) => {
-            const normalizedValue = normalizeArabicFontKey(value);
-            if (mounted && ARABIC_FONTS.some((f) => f.key === normalizedValue)) {
-                setArabicFont(normalizedValue);
-                if (normalizedValue !== value) {
-                    writePreference(preferenceKeys.quranArabicFont, normalizedValue).catch(() => {});
-                }
-            }
-        });
-        readPreference(preferenceKeys.quranDisplayMode, 'card').then((value) => {
-            const normalizedValue = value === 'normal' ? 'card' : value;
-            if (mounted && DISPLAY_MODES.some((m) => m.key === normalizedValue)) {
-                setDisplayMode(normalizedValue);
-                if (normalizedValue !== value) {
-                    writePreference(preferenceKeys.quranDisplayMode, normalizedValue).catch(() => {});
-                }
-            }
         });
         return () => {
             mounted = false;
@@ -2773,6 +2853,10 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     };
 
     if (selectedSurah) {
+        if (selectedDetailAyah) {
+            return renderAyahDetailScreen();
+        }
+
         if (displayMode === 'mushaf') {
             return (
                 <>
@@ -3722,6 +3806,57 @@ const styles = StyleSheet.create({
         color: colors.text,
         fontSize: 14,
         lineHeight: 22,
+    },
+    ayahReadMore: {
+        color: colors.primary,
+        fontSize: 12,
+        fontWeight: '900',
+        marginTop: spacing.sm,
+        textAlign: 'right',
+    },
+    quranDetailCard: {
+        padding: spacing.lg,
+    },
+    quranDetailKicker: {
+        color: colors.primary,
+        fontSize: 12,
+        fontWeight: '900',
+        marginBottom: spacing.md,
+    },
+    quranDetailArabic: {
+        color: colors.ink,
+        fontWeight: '800',
+        lineHeight: 54,
+        marginBottom: spacing.md,
+        textAlign: 'right',
+        writingDirection: 'rtl',
+    },
+    quranDetailLatin: {
+        color: colors.muted,
+        fontSize: 13,
+        lineHeight: 21,
+        marginBottom: spacing.md,
+    },
+    quranDetailTranslationBox: {
+        backgroundColor: colors.bg,
+        borderColor: colors.faint,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        padding: spacing.md,
+    },
+    quranDetailTranslation: {
+        color: colors.text,
+        fontSize: 15,
+        lineHeight: 24,
+    },
+    quranDetailActions: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+        marginBottom: spacing.md,
+    },
+    quranDetailNoteCard: {
+        marginTop: spacing.sm,
     },
     hiddenBlock: {
         backgroundColor: colors.surfaceMuted,

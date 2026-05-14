@@ -6,7 +6,7 @@ import (
 )
 
 type AsmaUlHusnaService interface {
-	FindAll() ([]model.AsmaUlHusna, error)
+	FindAll(limit, offset int) ([]model.AsmaUlHusna, error)
 	FindByNumber(int) (*model.AsmaUlHusna, error)
 }
 
@@ -18,8 +18,8 @@ func NewAsmaUlHusnaService(repo repository.AsmaUlHusnaRepository) AsmaUlHusnaSer
 	return &asmaUlHusnaService{repo}
 }
 
-func (s *asmaUlHusnaService) FindAll() ([]model.AsmaUlHusna, error) {
-	return s.repo.FindAll()
+func (s *asmaUlHusnaService) FindAll(limit, offset int) ([]model.AsmaUlHusna, error) {
+	return s.repo.FindAll(limit, offset)
 }
 
 func (s *asmaUlHusnaService) FindByNumber(number int) (*model.AsmaUlHusna, error) {

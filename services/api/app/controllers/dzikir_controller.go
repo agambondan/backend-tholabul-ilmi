@@ -41,17 +41,22 @@ func NewDzikirController(services *service.Services) DzikirController {
 }
 
 func (c *dzikirController) FindAll(ctx *fiber.Ctx) error {
-	list, err := c.svc.FindAll()
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	list, err := c.svc.FindAll(lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	list, hasMore := lib.TrimPaginationItems(list, limit)
 	lang := lib.GetPreferredLang(ctx)
 	for i := range list {
 		if list[i].Translation != nil {
 			list[i].Translation.FilterByLang(lang)
 		}
 	}
-	return lib.OK(ctx, list)
+	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
 func (c *dzikirController) FindByID(ctx *fiber.Ctx) error {
@@ -71,32 +76,42 @@ func (c *dzikirController) FindByID(ctx *fiber.Ctx) error {
 
 func (c *dzikirController) FindByCategory(ctx *fiber.Ctx) error {
 	category := ctx.Params("category")
-	list, err := c.svc.FindByCategory(category)
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	list, err := c.svc.FindByCategory(category, lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	list, hasMore := lib.TrimPaginationItems(list, limit)
 	lang := lib.GetPreferredLang(ctx)
 	for i := range list {
 		if list[i].Translation != nil {
 			list[i].Translation.FilterByLang(lang)
 		}
 	}
-	return lib.OK(ctx, list)
+	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
 func (c *dzikirController) FindByOccasion(ctx *fiber.Ctx) error {
 	occasion := ctx.Params("occasion")
-	list, err := c.svc.FindByOccasion(occasion)
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	list, err := c.svc.FindByOccasion(occasion, lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}
+	list, hasMore := lib.TrimPaginationItems(list, limit)
 	lang := lib.GetPreferredLang(ctx)
 	for i := range list {
 		if list[i].Translation != nil {
 			list[i].Translation.FilterByLang(lang)
 		}
 	}
-	return lib.OK(ctx, list)
+	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
 }
 
 func (c *dzikirController) Create(ctx *fiber.Ctx) error {

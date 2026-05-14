@@ -6,9 +6,9 @@ import (
 )
 
 type FiqhRepository interface {
-	FindAllCategories() ([]model.FiqhCategory, error)
-	FindAllItems() ([]model.FiqhItem, error)
-	FindCategoryBySlug(slug string) (*model.FiqhCategory, error)
+	FindAllCategories(limit, offset int) ([]model.FiqhCategory, error)
+	FindAllItems(limit, offset int) ([]model.FiqhItem, error)
+	FindCategoryBySlug(slug string, limit, offset int) (*model.FiqhCategory, error)
 	FindItemBySlug(slug string) (*model.FiqhItem, error)
 	FindItemByCategoryAndID(slug string, id int) (*model.FiqhItem, error)
 	CreateCategory(cat *model.FiqhCategory) (*model.FiqhCategory, error)
@@ -27,22 +27,40 @@ func NewFiqhRepository(db *gorm.DB) FiqhRepository {
 	return &fiqhRepository{db}
 }
 
-func (r *fiqhRepository) FindAllCategories() ([]model.FiqhCategory, error) {
+func (r *fiqhRepository) FindAllCategories(limit, offset int) ([]model.FiqhCategory, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.FiqhCategory
-	err := r.db.Preload("Translation").Order("id").Find(&list).Error
+	err := r.db.Preload("Translation").Order("id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 
-func (r *fiqhRepository) FindAllItems() ([]model.FiqhItem, error) {
+func (r *fiqhRepository) FindAllItems(limit, offset int) ([]model.FiqhItem, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.FiqhItem
-	err := r.db.Preload("Translation").Preload("Category").Order("category_id, sort_order, id").Find(&list).Error
+	err := r.db.Preload("Translation").Preload("Category").Order("category_id, sort_order, id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 
-func (r *fiqhRepository) FindCategoryBySlug(slug string) (*model.FiqhCategory, error) {
+func (r *fiqhRepository) FindCategoryBySlug(slug string, limit, offset int) (*model.FiqhCategory, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var cat model.FiqhCategory
 	err := r.db.Preload("Translation").Preload("Items.Translation").Preload("Items", func(db *gorm.DB) *gorm.DB {
-		return db.Order("sort_order, id")
+		return db.Order("sort_order, id").Limit(limit).Offset(offset)
 	}).Where("slug = ?", slug).First(&cat).Error
 	return &cat, err
 }

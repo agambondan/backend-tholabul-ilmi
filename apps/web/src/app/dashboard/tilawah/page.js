@@ -34,18 +34,52 @@ const emptyForm = () => ({
     notes: '',
 });
 
+const normalizeEntry = (entry) => ({
+    id: String(entry.id ?? Date.now()),
+    date: entry.date ?? todayStr(),
+    surah: entry.surah ?? entry.title ?? 'Tilawah',
+    ayahFrom: entry.ayahFrom ?? entry.ayah_from ?? '',
+    ayahTo: entry.ayahTo ?? entry.ayah_to ?? '',
+    pages: Number(entry.pages ?? entry.pages_read ?? 0),
+    notes: entry.notes ?? entry.note ?? '',
+});
+
 const TilawahPage = () => {
     const { t, lang } = useLocale();
     const { isAuthenticated } = useAuth();
     const [entries, setEntries] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState(emptyForm());
+    const [syncError, setSyncError] = useState('');
 
     useEffect(() => {
-        try {
-            setEntries(JSON.parse(localStorage.getItem('tholabul_tilawah') ?? '[]'));
-        } catch {}
-    }, []);
+        const load = async () => {
+            if (isAuthenticated) {
+                try {
+                    const res = await tilawahApi.list();
+                    if (!res.ok) throw new Error('failed');
+                    const json = await res.json();
+                    const items = json?.items ?? json?.data ?? json ?? [];
+                    if (Array.isArray(items)) {
+                        const normalized = items.map(normalizeEntry);
+                        setEntries(normalized);
+                        localStorage.setItem('tholabul_tilawah', JSON.stringify(normalized));
+                        setSyncError('');
+                        return;
+                    }
+                } catch {
+                    setSyncError('Belum bisa memuat tilawah dari server. Cache perangkat ditampilkan.');
+                }
+            }
+
+            try {
+                const local = JSON.parse(localStorage.getItem('tholabul_tilawah') ?? '[]');
+                setEntries(Array.isArray(local) ? local.map(normalizeEntry) : []);
+            } catch {}
+        };
+
+        load();
+    }, [isAuthenticated]);
 
     const persist = (updated) => {
         setEntries(updated);
@@ -68,7 +102,12 @@ const TilawahPage = () => {
         };
         persist([entry, ...entries]);
         if (isAuthenticated) {
-            if (pages > 0) tilawahApi.add(pages, 0, form.notes).catch(() => {});
+            setSyncError('');
+            if (pages > 0) {
+                tilawahApi.add(pages, 0, form.notes, entry.date).catch(() => {
+                    setSyncError('Catatan tilawah tersimpan di perangkat, tetapi belum tersinkron ke server.');
+                });
+            }
             streakApi.logActivity('tilawah').catch(() => {});
         }
         setShowModal(false);
@@ -100,6 +139,11 @@ const TilawahPage = () => {
                     {t('tilawah.log_btn')}
                 </button>
             </div>
+            {syncError ? (
+                <div className='mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300'>
+                    {syncError}
+                </div>
+            ) : null}
 
             {/* Today's entry */}
             {todayEntry ? (

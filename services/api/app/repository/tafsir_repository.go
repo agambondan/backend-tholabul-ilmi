@@ -8,7 +8,7 @@ import (
 
 type TafsirRepository interface {
 	FindByAyahID(int) (*model.Tafsir, error)
-	FindBySurahNumber(int) ([]model.Tafsir, error)
+	FindBySurahNumber(int, int, int) ([]model.Tafsir, error)
 	Save(*model.Tafsir) (*model.Tafsir, error)
 	UpdateByAyahID(int, *model.Tafsir) (*model.Tafsir, error)
 }
@@ -35,7 +35,14 @@ func (r *tafsirRepo) FindByAyahID(ayahID int) (*model.Tafsir, error) {
 	return &t, nil
 }
 
-func (r *tafsirRepo) FindBySurahNumber(surahNumber int) ([]model.Tafsir, error) {
+func (r *tafsirRepo) FindBySurahNumber(surahNumber, limit, offset int) ([]model.Tafsir, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
 	var list []model.Tafsir
 	err := r.db.
 		Preload("KemenagTranslation").
@@ -45,6 +52,8 @@ func (r *tafsirRepo) FindBySurahNumber(surahNumber int) ([]model.Tafsir, error) 
 		Joins("JOIN surah ON surah.id = ayah.surah_id").
 		Where("surah.number = ?", surahNumber).
 		Order("ayah.number asc").
+		Limit(limit).
+		Offset(offset).
 		Find(&list).Error
 	return list, err
 }

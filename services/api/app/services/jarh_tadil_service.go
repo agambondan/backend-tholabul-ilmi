@@ -7,7 +7,7 @@ import (
 
 type JarhTadilService interface {
 	Create(*model.JarhTadil) (*model.JarhTadil, error)
-	FindAll() ([]model.JarhTadil, error)
+	FindAll(limit, offset int) ([]model.JarhTadil, error)
 	FindByID(*int) (*model.JarhTadil, error)
 	FindByPerawiID(*int) ([]model.JarhTadil, error)
 	UpdateByID(*int, *model.JarhTadil) (*model.JarhTadil, error)
@@ -26,8 +26,8 @@ func (s *jarhTadilService) Create(j *model.JarhTadil) (*model.JarhTadil, error) 
 	return s.repo.Save(j)
 }
 
-func (s *jarhTadilService) FindAll() ([]model.JarhTadil, error) {
-	return s.repo.FindAll()
+func (s *jarhTadilService) FindAll(limit, offset int) ([]model.JarhTadil, error) {
+	return s.repo.FindAll(limit, offset)
 }
 
 func (s *jarhTadilService) FindByID(id *int) (*model.JarhTadil, error) {

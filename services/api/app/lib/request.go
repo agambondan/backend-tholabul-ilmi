@@ -83,23 +83,89 @@ func BodyParser(c *fiber.Ctx, payload interface{}) error {
 
 func GetLimitOffset(ctx *fiber.Ctx) (int, int) {
 	query := ctx.Queries()
-	limitStr := query["size"]
-	pageStr := query["page"]
+	limitStr := query["limit"]
+	if limitStr == "" {
+		limitStr = query["size"]
+	}
 	if limitStr == "" {
 		limitStr = "10"
 	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		return 10, 0
+	}
+
+	offsetStr := query["offset"]
+	if offsetStr != "" {
+		offset, err := strconv.Atoi(offsetStr)
+		if err != nil || offset < 0 {
+			return limit, 0
+		}
+		return limit, offset
+	}
+
+	pageStr := query["page"]
 	if pageStr == "" {
 		pageStr = "0"
 	}
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		return 10, 0
-	}
 	page, err := strconv.Atoi(pageStr)
-	if err != nil {
+	if err != nil || page < 0 {
 		return limit, 0
 	}
+
 	offset := limit * page
 
 	return limit, offset
+}
+
+type PaginationMeta struct {
+	Limit      int  `json:"limit"`
+	Offset     int  `json:"offset"`
+	HasMore    bool `json:"has_more"`
+	NextOffset *int `json:"next_offset,omitempty"`
+}
+
+func WantsPaginationMeta(ctx *fiber.Ctx) bool {
+	value := strings.ToLower(strings.TrimSpace(ctx.Query("meta")))
+	return value == "1" || value == "true" || value == "pagination"
+}
+
+func FetchLimitForMeta(ctx *fiber.Ctx, limit int) int {
+	if WantsPaginationMeta(ctx) && limit > 0 {
+		return limit + 1
+	}
+	return limit
+}
+
+func OptionalNextOffset(limit, offset int, hasMore bool) *int {
+	if !hasMore {
+		return nil
+	}
+	nextOffset := offset + limit
+	return &nextOffset
+}
+
+func TrimPaginationItems[T any](items []T, limit int) ([]T, bool) {
+	if limit > 0 && len(items) > limit {
+		return items[:limit], true
+	}
+	return items, false
+}
+
+func OKPaginated[T any](ctx *fiber.Ctx, items []T, limit, offset int, hasMore bool) error {
+	if !WantsPaginationMeta(ctx) {
+		return OK(ctx, items)
+	}
+
+	meta := PaginationMeta{
+		Limit:   limit,
+		Offset:  offset,
+		HasMore: hasMore,
+	}
+	meta.NextOffset = OptionalNextOffset(limit, offset, hasMore)
+
+	return OK(ctx, fiber.Map{
+		"items": items,
+		"meta":  meta,
+	})
 }

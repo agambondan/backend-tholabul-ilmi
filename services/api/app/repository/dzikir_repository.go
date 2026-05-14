@@ -6,10 +6,10 @@ import (
 )
 
 type DzikirRepository interface {
-	FindAll() ([]model.Dzikir, error)
+	FindAll(limit, offset int) ([]model.Dzikir, error)
 	FindByID(id int) (*model.Dzikir, error)
-	FindByCategory(category model.DzikirCategory) ([]model.Dzikir, error)
-	FindByOccasion(occasion string) ([]model.Dzikir, error)
+	FindByCategory(category model.DzikirCategory, limit, offset int) ([]model.Dzikir, error)
+	FindByOccasion(occasion string, limit, offset int) ([]model.Dzikir, error)
 	Create(d *model.Dzikir) (*model.Dzikir, error)
 	Update(id int, d *model.Dzikir) (*model.Dzikir, error)
 	Delete(id int) error
@@ -23,9 +23,15 @@ func NewDzikirRepository(db *gorm.DB) DzikirRepository {
 	return &dzikirRepository{db}
 }
 
-func (r *dzikirRepository) FindAll() ([]model.Dzikir, error) {
+func (r *dzikirRepository) FindAll(limit, offset int) ([]model.Dzikir, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.Dzikir
-	err := r.db.Preload("Translation").Order("category, id").Limit(500).Find(&list).Error
+	err := r.db.Preload("Translation").Order("category, id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 
@@ -35,15 +41,27 @@ func (r *dzikirRepository) FindByID(id int) (*model.Dzikir, error) {
 	return &d, err
 }
 
-func (r *dzikirRepository) FindByCategory(category model.DzikirCategory) ([]model.Dzikir, error) {
+func (r *dzikirRepository) FindByCategory(category model.DzikirCategory, limit, offset int) ([]model.Dzikir, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.Dzikir
-	err := r.db.Preload("Translation").Where("category = ?", category).Order("id").Limit(100).Find(&list).Error
+	err := r.db.Preload("Translation").Where("category = ?", category).Order("id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 
-func (r *dzikirRepository) FindByOccasion(occasion string) ([]model.Dzikir, error) {
+func (r *dzikirRepository) FindByOccasion(occasion string, limit, offset int) ([]model.Dzikir, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
 	var list []model.Dzikir
-	err := r.db.Preload("Translation").Where("occasion = ?", occasion).Order("id").Limit(100).Find(&list).Error
+	err := r.db.Preload("Translation").Where("occasion = ?", occasion).Order("id").Limit(limit).Offset(offset).Find(&list).Error
 	return list, err
 }
 

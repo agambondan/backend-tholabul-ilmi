@@ -6,9 +6,9 @@ import (
 )
 
 type DoaService interface {
-	FindAll() ([]model.Doa, error)
+	FindAll(limit, offset int) ([]model.Doa, error)
 	FindByID(int) (*model.Doa, error)
-	FindByCategory(model.DoaCategory) ([]model.Doa, error)
+	FindByCategory(model.DoaCategory, int, int) ([]model.Doa, error)
 }
 
 type doaService struct {
@@ -19,14 +19,14 @@ func NewDoaService(repo repository.DoaRepository) DoaService {
 	return &doaService{repo}
 }
 
-func (s *doaService) FindAll() ([]model.Doa, error) {
-	return s.repo.FindAll()
+func (s *doaService) FindAll(limit, offset int) ([]model.Doa, error) {
+	return s.repo.FindAll(limit, offset)
 }
 
 func (s *doaService) FindByID(id int) (*model.Doa, error) {
 	return s.repo.FindByID(id)
 }
 
-func (s *doaService) FindByCategory(category model.DoaCategory) ([]model.Doa, error) {
-	return s.repo.FindByCategory(category)
+func (s *doaService) FindByCategory(category model.DoaCategory, limit, offset int) ([]model.Doa, error) {
+	return s.repo.FindByCategory(category, limit, offset)
 }

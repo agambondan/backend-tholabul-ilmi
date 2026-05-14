@@ -11,8 +11,47 @@ const pickItems = (payload) => {
   return payload ? [payload?.data ?? payload] : [];
 };
 
+const paginationOffset = (pagination = {}) => (Number(pagination.page ?? 0) * Number(pagination.size ?? 0)) || 0;
+
+const pickPaginationMeta = (payload, pagination, itemCount = 0) => {
+  const meta = payload?.meta ?? payload?.data?.meta;
+  if (meta) {
+    return {
+      hasMore: Boolean(meta.has_more ?? meta.hasMore ?? meta.has_next ?? meta.hasNext),
+      limit: Number(meta.limit ?? pagination?.size ?? itemCount),
+      offset: Number(meta.offset ?? paginationOffset(pagination)),
+      nextOffset: meta.next_offset ?? meta.nextOffset ?? null,
+    };
+  }
+
+  if (typeof payload?.last === 'boolean') {
+    return {
+      hasMore: !payload.last,
+      limit: Number(payload.size ?? pagination?.size ?? itemCount),
+      offset: Number(payload.page ?? pagination?.page ?? 0) * Number(payload.size ?? pagination?.size ?? itemCount),
+      nextOffset: null,
+    };
+  }
+
+  return {
+    hasMore: pagination ? itemCount >= (pagination.size ?? 20) : false,
+    limit: pagination?.size ?? itemCount,
+    offset: (pagination?.page ?? 0) * (pagination?.size ?? itemCount),
+    nextOffset: null,
+  };
+};
+
 const pickText = (...values) => values.find((value) => typeof value === 'string' && value.trim()) ?? '';
 const joinMeta = (...values) => values.filter((value) => typeof value === 'string' && value.trim()).join(' · ');
+const pickTafsirText = (translation = {}) =>
+  pickText(
+    translation.description_idn,
+    translation.description_en,
+    translation.text_idn,
+    translation.text_en,
+    translation.idn,
+    translation.en,
+  );
 
 const formatJarhTadilJenis = (value) => {
   if (value === 'jarh') return 'Jarh';
@@ -27,12 +66,39 @@ const withPagination = (endpoint, { page = 0, size = 20 } = {}) => {
   const params = new URLSearchParams(query);
   params.set('page', `${page}`);
   params.set('size', `${size}`);
+  params.set('limit', `${size}`);
+  params.set('offset', `${page * size}`);
+  params.set('meta', '1');
   return `${path}?${params.toString()}`;
 };
 
 export const normalizeExploreItem = (item, index = 0) => {
   if (item?.raw && (item?.title || item?.body || item?.arabic)) {
     return item;
+  }
+
+  if (item?.kemenag || item?.ibnu_katsir || item?.ayah_id) {
+    const ayah = item?.ayah ?? {};
+    const ayahTranslation = ayah?.translation ?? {};
+    const ayahNumber = ayah?.number ?? item?.ayah_number ?? index + 1;
+    const surahName = pickText(
+      ayah?.surah?.translation?.latin_en,
+      ayah?.surah?.identifier,
+      ayah?.surah?.latin,
+    );
+    const primaryTafsir = pickTafsirText(item?.kemenag);
+    const secondaryTafsir = pickTafsirText(item?.ibnu_katsir);
+
+    return {
+      id: item?.id ?? item?.ayah_id ?? `tafsir-${index}`,
+      title: `Ayat ${ayahNumber}`,
+      arabic: pickText(ayahTranslation.ar, ayahTranslation.arab, ayah?.arabic, item?.arabic),
+      body: pickText(ayahTranslation.idn, ayahTranslation.en, item?.translation),
+      meta: joinMeta(surahName, primaryTafsir ? 'Jalalain' : '', secondaryTafsir ? 'Quraish Shihab' : ''),
+      raw: item,
+      secondaryTafsir,
+      tafsir: primaryTafsir,
+    };
   }
 
   if (item?.jenis_nilai || item?.teks_nilai || item?.perawi_id || item?.penilai_id) {
@@ -114,9 +180,18 @@ export const normalizeExploreItem = (item, index = 0) => {
 };
 
 export const getFeatureItems = async (feature, pagination) => {
+  const page = await getFeatureItemPage(feature, pagination);
+  return page.items;
+};
+
+export const getFeatureItemPage = async (feature, pagination) => {
   const endpoint = pagination ? withPagination(feature.endpoint, pagination) : feature.endpoint;
   const payload = await requestJson(endpoint, { auth: feature.type === 'protected-list' });
-  return pickItems(payload).map(normalizeExploreItem);
+  const items = pickItems(payload).map(normalizeExploreItem);
+  return {
+    items,
+    meta: pickPaginationMeta(payload, pagination, items.length),
+  };
 };
 
 export const getAllNotes = async () => {

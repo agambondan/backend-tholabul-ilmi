@@ -583,8 +583,8 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     return (
       <AppActionSheet
         onClose={() => setHadithActionSheet({ visible: false, hadith: null })}
-        subtitle={hadith.title}
-        title="Aksi Hadis"
+        subtitle={getHadithBookLabel(hadith)}
+        title="Aksi Cepat"
         visible={visible}
       >
         <ActionSheetRow
@@ -593,8 +593,8 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
             setHadithActionSheet({ visible: false, hadith: null });
             openHadith(hadith);
           }}
-          subtitle="Buka teks lengkap dan sanad"
-          title="Detail"
+          subtitle="Baca teks lengkap, sanad, perawi, dan takhrij"
+          title="Buka Detail"
         />
         {user ? (
           <ActionSheetRow
