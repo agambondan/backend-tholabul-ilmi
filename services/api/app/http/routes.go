@@ -13,7 +13,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/timeout"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
 	"github.com/spf13/viper"
@@ -23,10 +23,8 @@ import (
 func Handle(app *fiber.App, repo *repository.Repositories) {
 	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
 	app.Use(compress.New())
-	app.Use(logger.New(logger.Config{
-		Format:     "${time} | ${status} | ${latency} | ${method} ${path}\n",
-		TimeFormat: "15:04:05",
-	}))
+	app.Use(middlewares.RequestID())
+	app.Use(middlewares.StructuredLog())
 	app.Use(middlewares.SecurityHeaders())
 	app.Use(middlewares.Cors())
 
@@ -40,6 +38,15 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 			return "ip:" + c.IP()
 		},
 		SkipSuccessfulRequests: false,
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(429).JSON(fiber.Map{
+				"error":       "too many requests",
+				"retry_after": 60,
+			})
+		},
+		Next: func(c *fiber.Ctx) bool {
+			return c.Path() == "/metrics" || c.Path() == "/health"
+		},
 	})
 	app.Use(globalLimiter)
 
@@ -68,6 +75,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newHafalanController := controllers.NewHafalanController(newServices)
 	newStreakController := controllers.NewStreakController(newServices)
 	newSearchController := controllers.NewSearchController(newServices)
+	newSyncController := controllers.NewSyncController(newServices)
 	newMufrodatController := controllers.NewMufrodatController(newServices)
 	newNotificationController := controllers.NewNotificationController(newServices)
 	newNotificationInboxController := controllers.NewNotificationInboxController(newServices)
@@ -117,6 +125,9 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	app.Use(cacheMw)
 
 	master := app.Group(viper.GetString("ENDPOINT"))
+	master.Use(timeout.NewWithContext(func(c *fiber.Ctx) error {
+		return c.Next()
+	}, 30*time.Second))
 	master.Get("/", controllers.GetAPIIndex)
 	master.Get("/info", controllers.GetAPIInfo)
 	if viper.GetString("ENVIRONMENT") != "production" {
@@ -156,6 +167,9 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 
 	// Search (public) with stricter rate limit
 	master.Get("/search", searchLimiter, newSearchController.Search)
+
+	// Mobile Sync (public)
+	master.Get("/sync", newSyncController.InitialSync)
 
 	// Mufrodat / Kosakata Quran (public)
 	master.Get("/mufrodat/ayah/:id", newMufrodatController.FindByAyahID)

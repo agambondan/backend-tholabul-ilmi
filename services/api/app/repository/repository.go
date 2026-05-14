@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/agambondan/islamic-explorer/app/db/migrations"
+	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/go-redis/redis/v8"
 	"github.com/morkid/gocache"
 	cache_redis "github.com/morkid/gocache-redis/v8"
@@ -202,6 +204,12 @@ func (s *Repositories) createCompositeIndexes() {
 
 // Seeder is insert data to table
 func (s *Repositories) Seeder() error {
+	var count int64
+	s.db.Model(&model.Surah{}).Count(&count)
+	if count > 0 {
+		slog.Info("seed data already exists, skipping seeder")
+		return nil
+	}
 	migrations.DeduplicateSeedData(s.db)
 	seeds := migrations.DataSeeds(s.db)
 	for i := range seeds {

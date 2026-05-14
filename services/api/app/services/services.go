@@ -61,6 +61,7 @@ type Services struct {
 	JarhTadil         JarhTadilService
 	Sanad             SanadService
 	Takhrij           TakhrijService
+	Sync              SyncService
 }
 
 func NewServices(repo *repository.Repositories) *Services {
@@ -78,6 +79,9 @@ func NewServices(repo *repository.Repositories) *Services {
 	}
 
 	streak := NewStreakService(repo.UserActivity)
+	doaSvc := NewDoaServiceWithCache(repo.Doa, cache)
+	dzikirSvc := NewDzikirServiceWithCache(repo.Dzikir, cache)
+	asmaulHusnaSvc := NewAsmaUlHusnaServiceWithCache(repo.AsmaUlHusna, cache)
 	return &Services{
 		User:              NewUserService(repo.User),
 		Ayah:              NewAyahService(repo.Ayah),
@@ -98,15 +102,15 @@ func NewServices(repo *repository.Repositories) *Services {
 		NotificationInbox: NewNotificationInboxService(repo.NotificationInbox),
 		Feed:              NewFeedService(repo.Feed, NewAyahService(repo.Ayah), NewHadithService(repo.Hadith)),
 		Tafsir:            NewTafsirServiceWithCache(repo.Tafsir, cache),
-		Doa:               NewDoaServiceWithCache(repo.Doa, cache),
-		AsmaUlHusna:       NewAsmaUlHusnaServiceWithCache(repo.AsmaUlHusna, cache),
+		Doa:               doaSvc,
+		AsmaUlHusna:       asmaulHusnaSvc,
 		Audio:             NewAudioService(repo.Audio),
 		Siroh:             NewSirohServiceWithCache(repo.Siroh, cache),
 		Blog:              NewBlogService(repo.Blog),
 		Stats:             NewStatsServiceWithTilawah(repo.Bookmark, repo.Hafalan, repo.UserActivity, repo.Tilawah, streak),
 		Tilawah:           NewTilawahService(repo.Tilawah),
 		Amalan:            NewAmalanService(repo.Amalan),
-		Dzikir:            NewDzikirServiceWithCache(repo.Dzikir, cache),
+		Dzikir:            dzikirSvc,
 		DzikirLog:         NewDzikirLogService(repo.DzikirLog),
 		Achievement:       NewAchievementService(repo.Achievement),
 		Leaderboard:       NewLeaderboardService(repo.Leaderboard),
@@ -133,5 +137,6 @@ func NewServices(repo *repository.Repositories) *Services {
 		JarhTadil:         NewJarhTadilService(repo.JarhTadil),
 		Sanad:             NewSanadService(repo.Sanad),
 		Takhrij:           NewTakhrijService(repo.Takhrij),
+		Sync:              NewSyncService(db, cache, doaSvc, dzikirSvc, asmaulHusnaSvc),
 	}
 }

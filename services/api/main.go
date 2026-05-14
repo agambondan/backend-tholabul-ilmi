@@ -16,6 +16,7 @@ import (
 	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	service "github.com/agambondan/islamic-explorer/app/services"
+	"github.com/go-redis/redis/v8"
 	"github.com/gofiber/fiber/v2"
 	"github.com/spf13/viper"
 )
@@ -44,26 +45,41 @@ func main() {
 
 	redisDB, err := db.NewRedisDB(env)
 	if err != nil {
-		panic(err)
+		slog.Warn("redis unavailable, running without cache layer", "err", err)
+	}
+	var redisClient *redis.Client
+	if redisDB != nil {
+		redisClient = redisDB.Client
 	}
 
 	newPostgresql := db.NewPostgresql(env)
 
-	newRepositories, err := repository.NewRepositories(newPostgresql, redisDB.Client)
+	newRepositories, err := repository.NewRepositories(newPostgresql, redisClient)
 	if err != nil {
 		panic(err)
 	}
-	err = newRepositories.Migrations()
-	if err != nil {
-		panic(err)
-	}
-	err = newRepositories.Seeder()
-	if err != nil {
-		panic(err)
-	}
-	err = newRepositories.AddForeignKey()
-	if err != nil {
-		panic(err)
+
+	switch {
+	case *migrateFlag:
+		err = newRepositories.Migrations()
+		if err != nil {
+			panic(err)
+		}
+		err = newRepositories.Seeder()
+		if err != nil {
+			panic(err)
+		}
+		err = newRepositories.AddForeignKey()
+		if err != nil {
+			panic(err)
+		}
+		return
+	case *seedFlag:
+		err = newRepositories.Seeder()
+		if err != nil {
+			panic(err)
+		}
+		return
 	}
 
 	services := service.NewServices(newRepositories)
@@ -98,6 +114,11 @@ func main() {
 	}
 	slog.Info("server stopped gracefully")
 }
+
+var (
+	migrateFlag = flag.Bool("migrate", false, "run migrations and seed, then exit")
+	seedFlag    = flag.Bool("seed", false, "run seed only, then exit")
+)
 
 func init() {
 	env := flag.String("environment", "", "set environment")
