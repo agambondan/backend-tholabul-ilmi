@@ -11,6 +11,7 @@ import { colors, radius, shadows, spacing } from '../theme';
 
 const MIN_QUERY_LENGTH = 2;
 const PAGE_SIZE = 20;
+const PREVIEW_SIZE = 3;
 const quickSuggestions = ['shalat', 'sabar', 'zakat', 'tafsir'];
 
 const searchFilters = [
@@ -95,30 +96,34 @@ const resultCountForFilter = (result, filterKey) => {
 
 const sanitizeRemoteResult = (filterKey, result = emptyGlobalResult) => {
   const field = resultFieldByFilter[filterKey];
+  const totalField = totalFieldByFilter[filterKey];
   if (!field) return emptyGlobalResult;
 
   const items = Array.isArray(result?.[field]) ? result[field] : [];
+  const rawTotal = Number(result?.[totalField] ?? result?.total ?? items.length);
+  const scopedTotal = items.length ? Math.max(rawTotal, items.length) : 0;
   return {
     ...emptyGlobalResult,
-    ayahTotal: Number(result?.ayahTotal ?? 0),
-    hadithTotal: Number(result?.hadithTotal ?? 0),
-    dictionaryTotal: Number(result?.dictionaryTotal ?? 0),
-    doaTotal: Number(result?.doaTotal ?? 0),
-    kajianTotal: Number(result?.kajianTotal ?? 0),
-    perawiTotal: Number(result?.perawiTotal ?? 0),
+    [totalField]: scopedTotal,
     [field]: items,
-    total: Number(result?.total ?? items.length),
+    total: scopedTotal,
   };
 };
 
 const mergeResultsByFilter = (resultsByFilter) => ({
   ...emptyGlobalResult,
   ayahs: resultsByFilter.quran?.ayahs ?? [],
+  ayahTotal: resultCountForFilter(resultsByFilter.quran, 'quran'),
   dictionaries: resultsByFilter.dictionary?.dictionaries ?? [],
+  dictionaryTotal: resultCountForFilter(resultsByFilter.dictionary, 'dictionary'),
   doas: resultsByFilter.doa?.doas ?? [],
+  doaTotal: resultCountForFilter(resultsByFilter.doa, 'doa'),
   hadiths: resultsByFilter.hadith?.hadiths ?? [],
+  hadithTotal: resultCountForFilter(resultsByFilter.hadith, 'hadith'),
   kajians: resultsByFilter.kajian?.kajians ?? [],
+  kajianTotal: resultCountForFilter(resultsByFilter.kajian, 'kajian'),
   perawis: resultsByFilter.perawi?.perawis ?? [],
+  perawiTotal: resultCountForFilter(resultsByFilter.perawi, 'perawi'),
 });
 
 const cleanMeta = (value, fallback) => {
@@ -142,11 +147,10 @@ const findFeatureResults = (query) => {
         .join(' ')
         .toLowerCase()
         .includes(normalized),
-    )
-    .slice(0, 6);
+    );
 };
 
-const ResultSection = ({ children, count, seeAllFilter, title }) => {
+const ResultSection = ({ children, count, title }) => {
   if (!count) return null;
   return (
     <View style={styles.section}>
@@ -159,13 +163,13 @@ const ResultSection = ({ children, count, seeAllFilter, title }) => {
   );
 };
 
-const SeeAllButton = ({ filter, onPress }) => (
+const SeeAllButton = ({ count, filter, onPress }) => (
   <Pressable
     android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
     onPress={() => onPress(filter)}
     style={styles.seeAllButton}
   >
-    <Text style={styles.seeAllText}>Lihat Semua &gt;</Text>
+    <Text style={styles.seeAllText}>Lihat semua{count ? ` (${count})` : ''}</Text>
   </Pressable>
 );
 
@@ -229,14 +233,6 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
   const showDictionaries = activeFilter === 'all' || activeFilter === 'dictionary';
   const showPerawis = activeFilter === 'all' || activeFilter === 'perawi';
   const showFeatures = activeFilter === 'all' || activeFilter === 'feature';
-  const totalResults =
-    (showAyahs ? remoteResults.ayahs.length : 0) +
-    (showDoas ? remoteResults.doas.length : 0) +
-    (showHadiths ? remoteResults.hadiths.length : 0) +
-    (showKajians ? remoteResults.kajians.length : 0) +
-    (showDictionaries ? remoteResults.dictionaries.length : 0) +
-    (showPerawis ? remoteResults.perawis.length : 0) +
-    (showFeatures ? featureResults.length : 0);
   const filterCounts = {
     all: remoteSearchFilters.reduce(
       (sum, filter) => sum + resultCountForFilter(remoteResultsByFilter[filter.key], filter.key),
@@ -250,6 +246,8 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
     perawi: resultCountForFilter(remoteResultsByFilter.perawi, 'perawi'),
     quran: resultCountForFilter(remoteResultsByFilter.quran, 'quran'),
   };
+  const totalResults = filterCounts[activeFilter] ?? 0;
+  const displayedFeatureResults = activeFilter === 'all' ? featureResults.slice(0, PREVIEW_SIZE) : featureResults;
 
   useEffect(() => {
     if (initialQuery) setQuery(initialQuery);
@@ -310,7 +308,8 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
     const timer = setTimeout(async () => {
       const searchSettled = await Promise.all(
         remoteSearchFilters.map(async (filter) => {
-          const result = await Promise.resolve(searchGlobal(trimmedQuery, { limit: PAGE_SIZE, page: 0, type: filter.remoteType })).then(
+          const limit = activeFilter === filter.key ? PAGE_SIZE : PREVIEW_SIZE;
+          const result = await Promise.resolve(searchGlobal(trimmedQuery, { limit, page: 0, type: filter.remoteType })).then(
             (value) => ({ status: 'fulfilled', value }),
             (reason) => ({ status: 'rejected', reason }),
           );
@@ -357,7 +356,7 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [featureResults.length, hasQuery, trimmedQuery]);
+  }, [activeFilter, featureResults.length, hasQuery, trimmedQuery]);
 
   const handleLoadMore = async () => {
     if (loadingMore || activeFilter === 'all' || activeFilter === 'feature') return;
@@ -374,19 +373,25 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
 
     if (result.status === 'fulfilled') {
       const field = resultFieldByFilter[activeFilter];
-      const totalField = totalFieldByFilter[activeFilter];
       setRemoteResultsByFilter((prev) => {
         const next = { ...prev };
+        const currentItems = prev[activeFilter]?.[field] ?? [];
+        const existingKeys = new Set(currentItems.map((item) => `${item.id ?? item.number ?? JSON.stringify(item)}`));
+        const appendedItems = (result.value[field] ?? []).filter((item) => {
+          const key = `${item.id ?? item.number ?? JSON.stringify(item)}`;
+          if (existingKeys.has(key)) return false;
+          existingKeys.add(key);
+          return true;
+        });
+        const sanitized = sanitizeRemoteResult(activeFilter, result.value);
         next[activeFilter] = {
-          ...emptyGlobalResult,
-          [field]: [...(prev[activeFilter]?.[field] ?? []), ...(result.value[field] ?? [])],
+          ...sanitized,
+          [field]: [...currentItems, ...appendedItems],
         };
-        if (totalField && result.value[totalField] != null) {
-          next[activeFilter][totalField] = result.value[totalField];
-        }
-        next[activeFilter].total = result.value.total;
         return next;
       });
+    } else {
+      setMessage(`${selectedFilter.label} belum bisa dimuat. Coba lagi beberapa saat.`);
     }
     setLoadingMore(false);
   };
@@ -515,7 +520,9 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
               />
             );
           })}
-          {activeFilter === 'all' && <SeeAllButton filter="quran" onPress={handleSeeAll} />}
+          {activeFilter === 'all' && filterCounts.quran > remoteResults.ayahs.length ? (
+            <SeeAllButton count={filterCounts.quran} filter="quran" onPress={handleSeeAll} />
+          ) : null}
         </ResultSection>
       ) : null}
 
@@ -531,7 +538,9 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
               title={item.title || `Hadis ${item.id}`}
             />
           ))}
-          {activeFilter === 'all' && <SeeAllButton filter="hadith" onPress={handleSeeAll} />}
+          {activeFilter === 'all' && filterCounts.hadith > remoteResults.hadiths.length ? (
+            <SeeAllButton count={filterCounts.hadith} filter="hadith" onPress={handleSeeAll} />
+          ) : null}
         </ResultSection>
       ) : null}
 
@@ -547,7 +556,9 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
               title={item.title}
             />
           ))}
-          {activeFilter === 'all' && <SeeAllButton filter="doa" onPress={handleSeeAll} />}
+          {activeFilter === 'all' && filterCounts.doa > remoteResults.doas.length ? (
+            <SeeAllButton count={filterCounts.doa} filter="doa" onPress={handleSeeAll} />
+          ) : null}
         </ResultSection>
       ) : null}
 
@@ -563,13 +574,15 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
               title={item.title}
             />
           ))}
-          {activeFilter === 'all' && <SeeAllButton filter="kajian" onPress={handleSeeAll} />}
+          {activeFilter === 'all' && filterCounts.kajian > remoteResults.kajians.length ? (
+            <SeeAllButton count={filterCounts.kajian} filter="kajian" onPress={handleSeeAll} />
+          ) : null}
         </ResultSection>
       ) : null}
 
       {showFeatures ? (
         <ResultSection count={featureResults.length} title="Fitur">
-          {featureResults.map((feature) => (
+          {displayedFeatureResults.map((feature) => (
             <ResultRow
               Icon={Layers}
               key={`feature-${feature.key}`}
@@ -579,6 +592,9 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
               title={feature.title}
             />
           ))}
+          {activeFilter === 'all' && featureResults.length > displayedFeatureResults.length ? (
+            <SeeAllButton count={featureResults.length} filter="feature" onPress={handleSeeAll} />
+          ) : null}
         </ResultSection>
       ) : null}
 
@@ -594,7 +610,9 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
               title={item.title}
             />
           ))}
-          {activeFilter === 'all' && <SeeAllButton filter="dictionary" onPress={handleSeeAll} />}
+          {activeFilter === 'all' && filterCounts.dictionary > remoteResults.dictionaries.length ? (
+            <SeeAllButton count={filterCounts.dictionary} filter="dictionary" onPress={handleSeeAll} />
+          ) : null}
         </ResultSection>
       ) : null}
 
@@ -610,7 +628,9 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
               title={item.title}
             />
           ))}
-          {activeFilter === 'all' && <SeeAllButton filter="perawi" onPress={handleSeeAll} />}
+          {activeFilter === 'all' && filterCounts.perawi > remoteResults.perawis.length ? (
+            <SeeAllButton count={filterCounts.perawi} filter="perawi" onPress={handleSeeAll} />
+          ) : null}
         </ResultSection>
       ) : null}
 

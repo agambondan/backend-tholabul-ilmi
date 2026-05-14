@@ -264,21 +264,22 @@ export const searchGlobal = async (query, { limit = 12, page = 0, type = 'all' }
   });
   const payload = await requestJson(`/api/v1/search?${params.toString()}`);
   const data = payload?.data ?? payload;
+  const total = Number(data?.total ?? 0);
 
   return {
     ayahs: pickItems(data?.ayahs ?? []).map(normalizeAyah),
-    ayahTotal: Number(data?.ayah_total ?? 0),
+    ayahTotal: Number(data?.ayah_total ?? (type === 'ayah' ? total : 0)),
     hadiths: pickItems(data?.hadiths ?? []).map(normalizeHadith),
-    hadithTotal: Number(data?.hadith_total ?? 0),
+    hadithTotal: Number(data?.hadith_total ?? (type === 'hadith' ? total : 0)),
     dictionaries: pickItems(data?.dictionaries ?? []).map(normalizeDictionary),
-    dictionaryTotal: Number(data?.dictionary_total ?? 0),
+    dictionaryTotal: Number(data?.dictionary_total ?? (type === 'dictionary' || type === 'kamus' ? total : 0)),
     doas: pickItems(data?.doas ?? []).map(normalizeDoa),
-    doaTotal: Number(data?.doa_total ?? 0),
+    doaTotal: Number(data?.doa_total ?? (type === 'doa' || type === 'dua' || type === 'prayer' ? total : 0)),
     kajians: pickItems(data?.kajians ?? []).map(normalizeKajian),
-    kajianTotal: Number(data?.kajian_total ?? 0),
+    kajianTotal: Number(data?.kajian_total ?? (type === 'kajian' || type === 'study' || type === 'lesson' ? total : 0)),
     perawis: pickItems(data?.perawis ?? []).map(normalizePerawi),
-    perawiTotal: Number(data?.perawi_total ?? 0),
-    total: Number(data?.total ?? 0),
+    perawiTotal: Number(data?.perawi_total ?? (type === 'perawi' || type === 'rawi' || type === 'rijal' ? total : 0)),
+    total,
   };
 };
 

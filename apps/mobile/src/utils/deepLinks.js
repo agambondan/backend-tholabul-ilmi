@@ -61,7 +61,7 @@ export const parseDeepLink = (url) => {
   if (tab === 'home') {
     if (rawTab === 'search' || rawTab === 'global-search') {
       return {
-        params: { query: second ?? '', view: 'global-search' },
+        params: { filter: third ?? 'all', query: second ?? '', view: 'global-search' },
         tab,
       };
     }
@@ -69,7 +69,7 @@ export const parseDeepLink = (url) => {
     return {
       params:
         second === 'search' || second === 'global-search'
-          ? { query: third ?? '', view: 'global-search' }
+          ? { filter: fourth ?? 'all', query: third ?? '', view: 'global-search' }
           : {},
       tab,
     };

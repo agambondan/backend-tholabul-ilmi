@@ -62,6 +62,7 @@ const menuItems = [
   { Icon: Book, key: 'hadith', label: 'Hadis' },
   { Icon: Grid, internalView: 'feature-directory', key: 'belajar', label: 'Lainnya' },
 ];
+const featureDirectoryReturnTo = { tab: 'home', view: 'feature-directory' };
 
 const scheduleOrder = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -404,28 +405,49 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
 
   const openDirectoryRow = useCallback((row) => {
     if (row.type === 'internal' && row.view) {
-      navigation?.open?.('home', row.view);
+      navigation?.open?.('home', row.view, { returnTo: featureDirectoryReturnTo, returnTab: null });
       return;
     }
     if (row.type === 'tab' && row.tab) {
-      navigation?.close?.('home');
-      onOpenTab(row.tab, row.params ?? null);
+      const params = {
+        ...(row.params ?? {}),
+        returnTo: featureDirectoryReturnTo,
+      };
+      if (navigation?.closeAndOpen) {
+        navigation.closeAndOpen('home', row.tab, params);
+      } else {
+        navigation?.close?.('home');
+        onOpenTab(row.tab, params);
+      }
       return;
     }
     if (row.type === 'feature' && row.featureKey) {
-      navigation?.close?.('home');
-      onOpenTab('belajar', { featureKey: row.featureKey });
+      const params = {
+        featureKey: row.featureKey,
+        returnTo: featureDirectoryReturnTo,
+      };
+      if (navigation?.closeAndOpen) {
+        navigation.closeAndOpen('home', 'belajar', params);
+      } else {
+        navigation?.close?.('home');
+        onOpenTab('belajar', params);
+      }
     }
   }, [navigation, onOpenTab]);
 
   if (navigation?.current?.view === 'global-search') {
     return (
       <GlobalSearchScreen
+        initialFilter={navigation?.current?.params?.filter ?? 'all'}
         initialQuery={navigation?.current?.params?.query ?? ''}
         onBack={() => navigation?.close?.('home')}
         onOpenTab={(tab, params) => {
-          navigation?.close?.('home');
-          onOpenTab(tab, params);
+          if (navigation?.closeAndOpen) {
+            navigation.closeAndOpen('home', tab, params);
+          } else {
+            navigation?.close?.('home');
+            onOpenTab(tab, params);
+          }
         }}
       />
     );

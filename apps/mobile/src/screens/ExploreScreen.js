@@ -169,6 +169,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const dictionaryInputRef = useRef(null);
   const [featureSearch, setFeatureSearch] = useState('');
   const [activeFeature, setActiveFeature] = useState(null);
+  const [featureReturnRoute, setFeatureReturnRoute] = useState(null);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -275,6 +276,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         })
         .catch(() => {});
       setActiveFeature(feature);
+      setFeatureReturnRoute(options.returnTo ?? null);
       setItems([]);
       setAnswers({});
       setSelectedItem(null);
@@ -729,7 +731,10 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     if (!feature) return;
 
     handledDeepLinkId.current = deepLinkTarget.id;
-    loadFeature(feature, { focusSearch: Boolean(deepLinkTarget?.params?.focusSearch) });
+    loadFeature(feature, {
+      focusSearch: Boolean(deepLinkTarget?.params?.focusSearch),
+      returnTo: deepLinkTarget?.params?.returnTo ?? null,
+    });
   }, [deepLinkTarget?.id, loadFeature]);
 
   useEffect(() => {
@@ -759,16 +764,13 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       navigation?.setBack(() => { setSelectedItem(null); return true; });
     } else if (activeFeature) {
       navigation?.setBack(() => {
-        setActiveFeature(null);
-        setItems([]);
-        setSelectedItem(null);
-        setError('');
+        clearFeature();
         return true;
       });
     } else {
       navigation?.clearBack?.();
     }
-  }, [isActive, selectedItem, activeFeature, navigation]);
+  }, [isActive, selectedItem, activeFeature, navigation, featureReturnRoute]);
 
   const scoreQuiz = () => {
     if (!items.length) return 0;
@@ -1472,11 +1474,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   };
 
   const clearFeature = () => {
+    const returnRoute = featureReturnRoute;
     setActiveFeature(null);
+    setFeatureReturnRoute(null);
     setItems([]);
     setSelectedItem(null);
     setError('');
     setActiveNoteRef('');
+    if (returnRoute?.tab && returnRoute?.view) {
+      navigation?.open?.(returnRoute.tab, returnRoute.view, { returnTab: null });
+    }
   };
 
   const shouldLoadMore = Boolean(

@@ -2,7 +2,7 @@ import * as Linking from 'expo-linking';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { TabBar } from './src/components/TabBar';
 import { FeedbackProvider } from './src/context/FeedbackContext';
@@ -17,90 +17,91 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { QuranScreen } from './src/screens/QuranScreen';
 import { colors } from './src/theme';
 import { parseDeepLink } from './src/utils/deepLinks';
-
-const normalizeTabRequest = (tab, params = null) => {
-  if (tab === 'qibla') {
-    return {
-      params: { ...(params ?? {}), view: 'qibla' },
-      tab: 'ibadah',
-    };
-  }
-
-  return { params, tab };
-};
+import {
+  closeInternalViewState,
+  closeInternalViewThenOpenTabState,
+  hardwareBackState,
+  normalizeTabRequest,
+  openInternalViewState,
+  openReturnRouteState,
+  openTabState,
+} from './src/navigation/appNavigation';
 
 export default function App() {
   const [quranFontsLoaded, quranFontsError] = useFonts(quranFontAssets);
   const [activeTab, setActiveTab] = useState('home');
   const [deepLinkTarget, setDeepLinkTarget] = useState(null);
   const [internalRoutes, setInternalRoutes] = useState({});
+  const [returnRoutes, setReturnRoutes] = useState({});
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // Refs so the single BackHandler registration never goes stale
   const activeTabRef = useRef('home');
+  const deepLinkTargetRef = useRef(null);
   const internalRoutesRef = useRef({});
+  const returnRoutesRef = useRef({});
   const screenBackRef = useRef(null); // set by active screen when it has sub-navigation
 
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => { deepLinkTargetRef.current = deepLinkTarget; }, [deepLinkTarget]);
   useEffect(() => { internalRoutesRef.current = internalRoutes; }, [internalRoutes]);
+  useEffect(() => { returnRoutesRef.current = returnRoutes; }, [returnRoutes]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const getNavigationState = useCallback(() => ({
+    activeTab: activeTabRef.current,
+    deepLinkTarget: deepLinkTargetRef.current,
+    internalRoutes: internalRoutesRef.current,
+    returnRoutes: returnRoutesRef.current,
+  }), []);
+
+  const applyNavigationState = useCallback((nextState) => {
+    setActiveTab(nextState.activeTab);
+    setInternalRoutes(nextState.internalRoutes);
+    setReturnRoutes(nextState.returnRoutes);
+    setDeepLinkTarget(nextState.deepLinkTarget ?? null);
+  }, []);
+
+  const openReturnRoute = useCallback((returnRoute) => {
+    const result = openReturnRouteState(getNavigationState(), returnRoute);
+    applyNavigationState(result.state);
+    return result.handled;
+  }, [applyNavigationState, getNavigationState]);
 
   const openTab = useCallback((requestedTab, requestedParams = null) => {
-    const { params, tab } = normalizeTabRequest(requestedTab, requestedParams);
-    const returnTab = activeTabRef.current && activeTabRef.current !== tab ? activeTabRef.current : null;
-
-    setActiveTab(tab);
-    if (params?.view) {
-      setInternalRoutes((current) => ({
-        ...current,
-        [tab]: {
-          id: `${Date.now()}:${tab}:${params.view}`,
-          params,
-          returnTab,
-          view: params.view,
-        },
-      }));
-    }
-    setDeepLinkTarget(
-      params
-        ? {
-            id: `${Date.now()}:${tab}:${JSON.stringify(params)}`,
-            params,
-            tab,
-          }
-        : null,
-    );
-  }, []);
+    const result = openTabState(getNavigationState(), requestedTab, requestedParams);
+    applyNavigationState(result.state);
+  }, [applyNavigationState, getNavigationState]);
 
   const openInternalView = useCallback((requestedTab, view, params = {}) => {
-    const normalized = normalizeTabRequest(requestedTab, { ...params, view });
-    const tab = normalized.tab;
-    const returnTab = activeTabRef.current && activeTabRef.current !== tab ? activeTabRef.current : null;
-
-    setActiveTab(tab);
-    setInternalRoutes((current) => ({
-      ...current,
-      [tab]: {
-        id: `${Date.now()}:${tab}:${normalized.params.view}`,
-        params: normalized.params,
-        returnTab,
-        view: normalized.params.view,
-      },
-    }));
-  }, []);
+    const result = openInternalViewState(getNavigationState(), requestedTab, view, params);
+    applyNavigationState(result.state);
+  }, [applyNavigationState, getNavigationState]);
 
   const closeInternalView = useCallback((tab = activeTab) => {
-    const route = internalRoutesRef.current[tab];
-    setInternalRoutes((current) => {
-      const next = { ...current };
-      delete next[tab];
-      return next;
-    });
-    if (route?.returnTab && route.returnTab !== tab) {
-      setActiveTab(route.returnTab);
-    }
-  }, [activeTab]);
+    const result = closeInternalViewState(getNavigationState(), tab);
+    applyNavigationState(result.state);
+  }, [activeTab, applyNavigationState, getNavigationState]);
+
+  const closeAndOpenTab = useCallback((tabToClose, requestedTab, requestedParams = null) => {
+    const result = closeInternalViewThenOpenTabState(getNavigationState(), tabToClose, requestedTab, requestedParams);
+    applyNavigationState(result.state);
+  }, [applyNavigationState, getNavigationState]);
 
   const resetInternalViews = useCallback(() => {
     setInternalRoutes({});
+    setReturnRoutes({});
   }, []);
 
   const handleDeepLink = useCallback((url) => {
@@ -134,27 +135,12 @@ export default function App() {
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       if (screenBackRef.current?.()) return true;
-      const tab = activeTabRef.current;
-      if (internalRoutesRef.current[tab]) {
-        const route = internalRoutesRef.current[tab];
-        setInternalRoutes((prev) => {
-          const next = { ...prev };
-          delete next[tab];
-          return next;
-        });
-        if (route?.returnTab && route.returnTab !== tab) {
-          setActiveTab(route.returnTab);
-        }
-        return true;
-      }
-      if (tab !== 'home') {
-        setActiveTab('home');
-        return true;
-      }
-      return false;
+      const result = hardwareBackState(getNavigationState());
+      applyNavigationState(result.state);
+      return result.handled;
     });
     return () => sub.remove();
-  }, []);
+  }, [applyNavigationState, getNavigationState]);
 
   useEffect(() => {
     let mounted = true;
@@ -197,13 +183,14 @@ export default function App() {
     () => ({
       clearBack,
       close: closeInternalView,
+      closeAndOpen: closeAndOpenTab,
       current: internalRoutes[activeTab] ?? null,
       open: openInternalView,
       reset: resetInternalViews,
       routes: internalRoutes,
       setBack,
     }),
-    [activeTab, clearBack, closeInternalView, internalRoutes, openInternalView, resetInternalViews, setBack],
+    [activeTab, clearBack, closeAndOpenTab, closeInternalView, internalRoutes, openInternalView, resetInternalViews, setBack],
   );
 
   if (!quranFontsLoaded && !quranFontsError) {
@@ -223,7 +210,7 @@ export default function App() {
           <TabActivityProvider>
             <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
               <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 keyboardVerticalOffset={0}
                 style={styles.container}
               >
@@ -246,7 +233,7 @@ export default function App() {
                   <ProfileScreen isActive={activeTab === 'profile'} navigation={navigation} onOpenTab={openTab} />
                 </View>
               </KeyboardAvoidingView>
-              {activeTab === 'quran' ? null : <TabBar active={activeTab} onChange={openTab} />}
+              {activeTab === 'quran' || keyboardVisible ? null : <TabBar active={activeTab} onChange={openTab} />}
               <StatusBar style="dark" backgroundColor={colors.bg} />
             </SafeAreaView>
           </TabActivityProvider>
