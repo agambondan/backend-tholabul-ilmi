@@ -34,7 +34,7 @@ func NewMuhasabahController(services *service.Services) MuhasabahController {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/muhasabah [post]
+// @Router /muhasabah [post]
 func (c *muhasabahController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -59,7 +59,7 @@ func (c *muhasabahController) Create(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/muhasabah [get]
+// @Router /muhasabah [get]
 func (c *muhasabahController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -82,7 +82,7 @@ func (c *muhasabahController) FindAll(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/muhasabah/{id} [get]
+// @Router /muhasabah/{id} [get]
 func (c *muhasabahController) FindByID(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -109,7 +109,7 @@ func (c *muhasabahController) FindByID(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/muhasabah/{id} [put]
+// @Router /muhasabah/{id} [put]
 func (c *muhasabahController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -138,7 +138,7 @@ func (c *muhasabahController) Update(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/muhasabah/{id} [delete]
+// @Router /muhasabah/{id} [delete]
 func (c *muhasabahController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

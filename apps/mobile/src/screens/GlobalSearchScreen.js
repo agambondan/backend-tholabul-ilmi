@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ArrowLeft, Book, BookOpen, Languages, Layers, Search, UserRound } from 'lucide-react-native';
 import { getSurahs, searchGlobal } from '../api/client';
@@ -219,6 +219,9 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [message, setMessage] = useState('');
+  const [pageByFilter, setPageByFilter] = useState({});
+  const searchGenRef = useRef(0);
+  const loadedFullRef = useRef({});
 
   const featureResults = useMemo(() => findFeatureResults(query), [query]);
   const selectedFilter = searchFilters.find((item) => item.key === activeFilter) ?? searchFilters[0];
@@ -301,12 +304,16 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
   useEffect(() => {
     if (!hasQuery) {
       setRemoteResultsByFilter(createEmptyResultsByFilter());
+      setPageByFilter({});
+      loadedFullRef.current = {};
       setLoading(false);
       setMessage('');
       return undefined;
     }
 
     let cancelled = false;
+    const gen = ++searchGenRef.current;
+    loadedFullRef.current = {};
     setLoading(true);
     setMessage('');
 
@@ -320,7 +327,10 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
         searchSettled.push({ filter, result });
       }
 
-      if (cancelled) return;
+      if (cancelled || gen !== searchGenRef.current) {
+        setLoading(false);
+        return;
+      }
 
       const nextResultsByFilter = createEmptyResultsByFilter();
       const failedModules = [];
@@ -368,26 +378,33 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
     const field = resultFieldByFilter[activeFilter];
     if (!filter || !field || filter.remoteType === 'all') return undefined;
 
-    const currentResult = remoteResultsByFilter[activeFilter] ?? emptyGlobalResult;
-    const loaded = currentResult[field]?.length ?? 0;
-    const total = resultCountForFilter(currentResult, activeFilter);
-    if (loaded >= PAGE_SIZE || (total > 0 && loaded >= total)) return undefined;
+    const loadKey = `${activeFilter}:${trimmedQuery}`;
+    if (loadedFullRef.current[loadKey]) return undefined;
+    loadedFullRef.current[loadKey] = true;
 
     let cancelled = false;
+    const gen = ++searchGenRef.current;
     setLoadingMore(true);
 
     runRemoteFilterSearch(filter, trimmedQuery, PAGE_SIZE)
       .then((result) => {
-        if (cancelled) return;
+        if (cancelled || gen !== searchGenRef.current) return;
+        setLoading(false);
         setRemoteResultsByFilter((prev) => ({
           ...prev,
           [activeFilter]: result,
         }));
+        setPageByFilter((prev) => ({ ...prev, [activeFilter]: 1 }));
         setMessage('');
       })
       .catch(() => {
-        if (!cancelled && loaded === 0) {
-          setMessage(`${filter.label} belum bisa dimuat penuh. Preview yang tersedia tetap ditampilkan.`);
+        if (!cancelled) {
+          setLoading(false);
+          const currentResult = remoteResultsByFilter[activeFilter] ?? emptyGlobalResult;
+          const loaded = currentResult[field]?.length ?? 0;
+          if (loaded === 0) {
+            setMessage(`${filter.label} belum bisa dimuat penuh. Preview yang tersedia tetap ditampilkan.`);
+          }
         }
       })
       .finally(() => {
@@ -397,7 +414,7 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
     return () => {
       cancelled = true;
     };
-  }, [activeFilter, hasQuery, remoteResultsByFilter, trimmedQuery]);
+  }, [activeFilter, hasQuery, trimmedQuery]);
 
   const handleLoadMore = async () => {
     if (loadingMore || activeFilter === 'all' || activeFilter === 'feature') return;
@@ -405,15 +422,17 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
     const filter = searchFilters.find((item) => item.key === activeFilter);
     if (!filter || filter.remoteType === 'all') { setLoadingMore(false); return; }
 
-    const currentPage = Math.floor(
-      (remoteResultsByFilter[activeFilter]?.[resultFieldByFilter[activeFilter]]?.length ?? 0) / PAGE_SIZE
-    );
+    const gen = ++searchGenRef.current;
+    const currentPage = pageByFilter[activeFilter] ?? 1;
     const result = await searchGlobal(trimmedQuery, { limit: PAGE_SIZE, page: currentPage, type: filter.remoteType })
       .then((value) => ({ status: 'fulfilled', value }))
       .catch((reason) => ({ status: 'rejected', reason }));
 
     if (result.status === 'fulfilled') {
+      if (gen !== searchGenRef.current) { setLoadingMore(false); return; }
       const field = resultFieldByFilter[activeFilter];
+      const totalField = totalFieldByFilter[activeFilter];
+      setPageByFilter((prev) => ({ ...prev, [activeFilter]: currentPage + 1 }));
       setRemoteResultsByFilter((prev) => {
         const next = { ...prev };
         const currentItems = prev[activeFilter]?.[field] ?? [];
@@ -424,16 +443,19 @@ export function GlobalSearchScreen({ initialFilter = 'all', initialQuery = '', o
           existingKeys.add(key);
           return true;
         });
-        const sanitized = sanitizeRemoteResult(activeFilter, result.value);
         next[activeFilter] = {
-          ...sanitized,
+          ...prev[activeFilter],
+          [totalField]: Math.max(
+            Number(result.value[totalField] ?? result.value?.total ?? 0),
+            prev[activeFilter]?.[totalField] ?? 0,
+          ),
           [field]: [...currentItems, ...appendedItems],
         };
         return next;
       });
       setMessage('');
     } else {
-      setMessage(`${selectedFilter.label} belum bisa dimuat. Coba lagi beberapa saat.`);
+      setMessage(`${selectedFilter.label} belum bisa dimuat. Coba lagi.`);
     }
     setLoadingMore(false);
   };

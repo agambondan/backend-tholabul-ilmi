@@ -1,9 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from '../fixtures/mockApi';
+
+test.beforeEach(async ({ page }) => {
+  await setupApiMocks(page);
+});
 
 test.describe('Homepage Journey', () => {
   test('homepage loads with all sections', async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
 
     await expect(page.locator('nav').or(page.locator('header'))).toBeVisible();
 
@@ -15,7 +20,7 @@ test.describe('Homepage Journey', () => {
 
   test('homepage has navigation links', async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     const quranLink = page.locator('a[href="/quran"]');
     const hadithLink = page.locator('a[href="/hadith"]');

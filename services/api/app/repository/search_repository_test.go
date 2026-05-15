@@ -3,10 +3,12 @@
 package repository
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/agambondan/islamic-explorer/app/model"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -15,10 +17,24 @@ func strPtr(s string) *string { return &s }
 
 func newSearchTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	host := getEnv("DB_HOST", "localhost")
+	port := getEnv("DB_PORT", "5432")
+	user := getEnv("DB_USER", "postgres")
+	pass := getEnv("DB_PASS", "postgres")
+	name := getEnv("DB_NAME", "thullabul_ilmi")
+
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, pass, name)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		SkipDefaultTransaction: true,
+	})
 	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
+		t.Fatalf("open postgres: %v", err)
 	}
+
+	db.Exec("TRUNCATE TABLE translations, surahs, ayahs, hadiths, books, themes, chapters, islamic_terms, doas, kajians, perawis RESTART IDENTITY CASCADE")
+
 	if err := db.AutoMigrate(
 		&model.Translation{},
 		&model.Surah{},
@@ -35,6 +51,13 @@ func newSearchTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("migrate: %v", err)
 	}
 	return db
+}
+
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
 }
 
 func TestSearchAyahByArabic(t *testing.T) {

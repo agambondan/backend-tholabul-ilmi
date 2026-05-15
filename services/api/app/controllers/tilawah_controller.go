@@ -33,7 +33,7 @@ func NewTilawahController(services *service.Services) TilawahController {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/tilawah [post]
+// @Router /tilawah [post]
 func (c *tilawahController) Add(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -58,7 +58,7 @@ func (c *tilawahController) Add(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/tilawah [get]
+// @Router /tilawah [get]
 func (c *tilawahController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -79,7 +79,7 @@ func (c *tilawahController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/tilawah/summary [get]
+// @Router /tilawah/summary [get]
 func (c *tilawahController) Summary(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -100,7 +100,7 @@ func (c *tilawahController) Summary(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/tilawah/{id} [delete]
+// @Router /tilawah/{id} [delete]
 func (c *tilawahController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

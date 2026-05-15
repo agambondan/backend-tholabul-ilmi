@@ -30,7 +30,7 @@ func NewNoteController(services *service.Services) NoteController {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/notes [get]
+// @Router /notes [get]
 func (c *noteController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -54,7 +54,7 @@ func (c *noteController) FindAll(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/notes [post]
+// @Router /notes [post]
 func (c *noteController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -81,7 +81,7 @@ func (c *noteController) Create(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 403 {object} lib.Response
-// @Router /api/v1/notes/{id} [put]
+// @Router /notes/{id} [put]
 func (c *noteController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -110,7 +110,7 @@ func (c *noteController) Update(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/notes/{id} [delete]
+// @Router /notes/{id} [delete]
 func (c *noteController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

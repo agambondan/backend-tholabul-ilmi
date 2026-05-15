@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from './fixtures/mockApi';
 
 const publicRoutes = [
   '/',
@@ -96,21 +97,26 @@ const dashboardRoutes = [
 ];
 
 test.describe('Public Routes Smoke Test', () => {
+  test.beforeEach(async ({ page }) => {
+    await setupApiMocks(page);
+  });
+
   for (const route of publicRoutes) {
     test(`Should successfully load public route: ${route}`, async ({ page }) => {
       const response = await page.goto(route);
-      expect(response.status()).toBeLessThan(400); // Should be 200-399
+      expect(response.status()).toBeLessThan(400);
     });
   }
 });
 
-// For dashboard routes, we might get redirected to login if unauthenticated,
-// but the server should still return a valid response (e.g. 200 or 30x), not 500.
 test.describe('Dashboard Routes Smoke Test', () => {
+  test.beforeEach(async ({ page }) => {
+    await setupApiMocks(page, { isAuthenticated: true });
+  });
+
   for (const route of dashboardRoutes) {
     test(`Should successfully load or redirect dashboard route: ${route}`, async ({ page }) => {
       const response = await page.goto(route);
-      // Since it might redirect to /auth/login, we just ensure no 500 or 404
       expect(response.status()).toBeLessThan(400);
     });
   }

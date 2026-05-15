@@ -1,9 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from '../fixtures/mockApi';
+
+test.beforeEach(async ({ page }) => {
+  await setupApiMocks(page);
+});
 
 test.describe('Search User Journey', () => {
   test('search form and filter tabs render', async ({ page }) => {
     await page.goto('/search');
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     await expect(page.locator('input[type="text"]')).toBeVisible();
     await expect(page.locator('button:has-text("Cari")').first()).toBeVisible();
@@ -15,12 +20,12 @@ test.describe('Search User Journey', () => {
     await page.goto('/search');
     await page.fill('input[type="text"]', 'sabar');
     await page.click('button:has-text("Cari")');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
 
     const hadithTab = page.locator('button:has-text("Hadith")');
     await expect(hadithTab.first()).toBeVisible();
     await hadithTab.first().click();
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
     const allTab = page.locator('button:has-text("Semua")');
     await expect(allTab.first()).toBeVisible();

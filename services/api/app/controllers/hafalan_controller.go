@@ -33,7 +33,7 @@ func NewHafalanController(services *service.Services) HafalanController {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/hafalan/surah/{surahId} [put]
+// @Router /hafalan/surah/{surahId} [put]
 func (c *hafalanController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -60,7 +60,7 @@ func (c *hafalanController) Update(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/hafalan [get]
+// @Router /hafalan [get]
 func (c *hafalanController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -79,7 +79,7 @@ func (c *hafalanController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/hafalan/summary [get]
+// @Router /hafalan/summary [get]
 func (c *hafalanController) Summary(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

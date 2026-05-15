@@ -29,7 +29,7 @@ func NewNotificationController(services *service.Services) NotificationControlle
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/notifications/settings [get]
+// @Router /notifications/settings [get]
 func (c *notificationController) FindSettings(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -48,7 +48,7 @@ func (c *notificationController) FindSettings(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/notifications/push-tokens [get]
+// @Router /notifications/push-tokens [get]
 func (c *notificationController) FindPushTokens(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -69,7 +69,7 @@ func (c *notificationController) FindPushTokens(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
-// @Router /api/v1/notifications/push-token [put]
+// @Router /notifications/push-token [put]
 func (c *notificationController) RegisterPushToken(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -92,7 +92,7 @@ func (c *notificationController) RegisterPushToken(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
-// @Router /api/v1/notifications/push-test [post]
+// @Router /notifications/push-test [post]
 func (c *notificationController) SendTestPush(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -113,7 +113,7 @@ func (c *notificationController) SendTestPush(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
-// @Router /api/v1/notifications/settings [put]
+// @Router /notifications/settings [put]
 func (c *notificationController) UpsertSettings(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

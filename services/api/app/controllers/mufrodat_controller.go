@@ -33,7 +33,7 @@ func NewMufrodatController(services *service.Services) MufrodatController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/mufrodat/ayah/{id} [get]
+// @Router /mufrodat/ayah/{id} [get]
 // @Tags Mufrodat
 func (c *mufrodatController) FindByAyahID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -56,7 +56,7 @@ func (c *mufrodatController) FindByAyahID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/mufrodat/surah/{number} [get]
+// @Router /mufrodat/surah/{number} [get]
 // @Tags Mufrodat
 func (c *mufrodatController) FindBySurahNumber(ctx *fiber.Ctx) error {
 	number, err := strconv.Atoi(ctx.Params("number"))
@@ -80,7 +80,7 @@ func (c *mufrodatController) FindBySurahNumber(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/mufrodat/surah/{surah}/ayah/{ayah} [get]
+// @Router /mufrodat/surah/{surah}/ayah/{ayah} [get]
 // @Tags Mufrodat
 func (c *mufrodatController) FindBySurahAndAyahNumber(ctx *fiber.Ctx) error {
 	surahNumber, err := strconv.Atoi(ctx.Params("surah"))
@@ -107,7 +107,7 @@ func (c *mufrodatController) FindBySurahAndAyahNumber(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/mufrodat/page/{page} [get]
+// @Router /mufrodat/page/{page} [get]
 // @Tags Mufrodat
 func (c *mufrodatController) FindByPage(ctx *fiber.Ctx) error {
 	page, err := strconv.Atoi(ctx.Params("page"))
@@ -130,7 +130,7 @@ func (c *mufrodatController) FindByPage(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/mufrodat/root/{word} [get]
+// @Router /mufrodat/root/{word} [get]
 // @Tags Mufrodat
 func (c *mufrodatController) FindByRootWord(ctx *fiber.Ctx) error {
 	word := ctx.Params("word")

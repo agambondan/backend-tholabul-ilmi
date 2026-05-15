@@ -29,7 +29,7 @@ func NewFeedController(services *service.Services) FeedController {
 // @Param ref_type query string false "Filter by reference type"
 // @Success 200 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/feed [get]
+// @Router /feed [get]
 func (c *feedController) FindAll(ctx *fiber.Ctx) error {
 	refType := model.FeedRefType(ctx.Query("ref_type"))
 	return lib.OK(ctx, c.svc.FindAll(ctx, refType))
@@ -41,7 +41,7 @@ func (c *feedController) FindAll(ctx *fiber.Ctx) error {
 // @Param id path string true "Post ID"
 // @Success 200 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/feed/{id} [get]
+// @Router /feed/{id} [get]
 func (c *feedController) FindByID(ctx *fiber.Ctx) error {
 	post, err := c.svc.FindByID(ctx.Params("id"))
 	if err != nil {
@@ -58,7 +58,7 @@ func (c *feedController) FindByID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
-// @Router /api/v1/feed [post]
+// @Router /feed [post]
 func (c *feedController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -82,7 +82,7 @@ func (c *feedController) Create(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/feed/{id}/like [post]
+// @Router /feed/{id}/like [post]
 func (c *feedController) Like(ctx *fiber.Ctx) error {
 	if _, err := extractUserID(ctx); err != nil {
 		return lib.ErrorUnauthorized(ctx)
@@ -102,7 +102,7 @@ func (c *feedController) Like(ctx *fiber.Ctx) error {
 // @Failure 401 {object} lib.Response
 // @Failure 403 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/feed/{id} [delete]
+// @Router /feed/{id} [delete]
 func (c *feedController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

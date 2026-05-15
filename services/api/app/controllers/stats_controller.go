@@ -30,7 +30,7 @@ func NewStatsController(services *service.Services) StatsController {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/stats [get]
+// @Router /stats [get]
 func (c *statsController) GetStats(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -49,7 +49,7 @@ func (c *statsController) GetStats(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/stats/weekly [get]
+// @Router /stats/weekly [get]
 func (c *statsController) GetWeekly(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -70,7 +70,7 @@ func (c *statsController) GetWeekly(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/stats/monthly [get]
+// @Router /stats/monthly [get]
 func (c *statsController) GetMonthly(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -93,7 +93,7 @@ func (c *statsController) GetMonthly(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/stats/yearly [get]
+// @Router /stats/yearly [get]
 func (c *statsController) GetYearly(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

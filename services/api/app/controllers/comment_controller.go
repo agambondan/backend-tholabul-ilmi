@@ -29,7 +29,7 @@ func NewCommentController(services *service.Services) CommentController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/comments [get]
+// @Router /comments [get]
 func (c *commentController) FindByRef(ctx *fiber.Ctx) error {
 	refType := model.CommentRefType(ctx.Query("ref_type"))
 	refID, err := strconv.Atoi(ctx.Query("ref_id"))
@@ -52,7 +52,7 @@ func (c *commentController) FindByRef(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/comments [post]
+// @Router /comments [post]
 func (c *commentController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -77,7 +77,7 @@ func (c *commentController) Create(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/comments/{id} [delete]
+// @Router /comments/{id} [delete]
 func (c *commentController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

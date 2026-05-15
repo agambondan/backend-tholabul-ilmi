@@ -1,9 +1,14 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from '../fixtures/mockApi';
+
+test.beforeEach(async ({ page }) => {
+  await setupApiMocks(page);
+});
 
 test.describe('Hadith Browsing Journey', () => {
   test('hadith page loads with tab navigation', async ({ page }) => {
     await page.goto('/hadith');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
 
     const tabs = page.locator('button, a').filter({ hasText: /Book|Theme|Chapter|Hadith|Kitab|Tema|Bab|Hadis/i });
     const tabCount = await tabs.count();
@@ -12,12 +17,12 @@ test.describe('Hadith Browsing Journey', () => {
 
   test('select book and view hadith list', async ({ page }) => {
     await page.goto('/hadith');
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
 
     const hadithTab = page.locator('button:has-text("Hadith")').or(page.locator('button:has-text("Hadis")'));
     if (await hadithTab.count() > 0) {
       await hadithTab.first().click();
-      await page.waitForTimeout(1000);
+      await page.waitForLoadState('networkidle');
     }
 
     const select = page.locator('select').first();

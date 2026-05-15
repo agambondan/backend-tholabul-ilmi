@@ -35,7 +35,7 @@ func NewTakhrijController(services *service.Services) TakhrijController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/takhrij [post]
+// @Router /takhrij [post]
 // @Tags Takhrij
 func (c *takhrijController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Takhrij)
@@ -68,7 +68,7 @@ func (c *takhrijController) FindByHadithID(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/takhrij [get]
+// @Router /takhrij [get]
 // @Tags Takhrij
 func (c *takhrijController) FindAll(ctx *fiber.Ctx) error {
 	list, err := c.svc.FindAll()
@@ -87,7 +87,7 @@ func (c *takhrijController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/takhrij/{id} [get]
+// @Router /takhrij/{id} [get]
 // @Tags Takhrij
 func (c *takhrijController) FindByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -111,7 +111,7 @@ func (c *takhrijController) FindByID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/takhrij/{id} [put]
+// @Router /takhrij/{id} [put]
 // @Tags Takhrij
 func (c *takhrijController) UpdateByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -138,7 +138,7 @@ func (c *takhrijController) UpdateByID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/takhrij/{id} [delete]
+// @Router /takhrij/{id} [delete]
 // @Tags Takhrij
 func (c *takhrijController) DeleteByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

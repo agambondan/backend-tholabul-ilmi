@@ -35,7 +35,7 @@ func NewJarhTadilController(services *service.Services) JarhTadilController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/jarh-tadil [post]
+// @Router /jarh-tadil [post]
 // @Tags JarhTadil
 func (c *jarhTadilController) Create(ctx *fiber.Ctx) error {
 	data := new(model.JarhTadil)
@@ -68,7 +68,7 @@ func (c *jarhTadilController) FindByPerawiID(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/jarh-tadil [get]
+// @Router /jarh-tadil [get]
 // @Tags JarhTadil
 func (c *jarhTadilController) FindAll(ctx *fiber.Ctx) error {
 	limit, offset := lib.GetLimitOffset(ctx)
@@ -92,7 +92,7 @@ func (c *jarhTadilController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/jarh-tadil/{id} [get]
+// @Router /jarh-tadil/{id} [get]
 // @Tags JarhTadil
 func (c *jarhTadilController) FindByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -116,7 +116,7 @@ func (c *jarhTadilController) FindByID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/jarh-tadil/{id} [put]
+// @Router /jarh-tadil/{id} [put]
 // @Tags JarhTadil
 func (c *jarhTadilController) UpdateByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -143,7 +143,7 @@ func (c *jarhTadilController) UpdateByID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/jarh-tadil/{id} [delete]
+// @Router /jarh-tadil/{id} [delete]
 // @Tags JarhTadil
 func (c *jarhTadilController) DeleteByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

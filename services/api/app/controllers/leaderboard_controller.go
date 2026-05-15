@@ -28,7 +28,7 @@ func NewLeaderboardController(services *service.Services) LeaderboardController 
 // @Param limit query int false "Number of results (default 20, max 100)"
 // @Success 200 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/leaderboard/streak [get]
+// @Router /leaderboard/streak [get]
 func (c *leaderboardController) TopStreak(ctx *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(ctx.Query("limit", "20"))
 	if limit > 100 {
@@ -47,7 +47,7 @@ func (c *leaderboardController) TopStreak(ctx *fiber.Ctx) error {
 // @Param limit query int false "Number of results (default 20, max 100)"
 // @Success 200 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/leaderboard/hafalan [get]
+// @Router /leaderboard/hafalan [get]
 func (c *leaderboardController) TopHafalan(ctx *fiber.Ctx) error {
 	limit, _ := strconv.Atoi(ctx.Query("limit", "20"))
 	if limit > 100 {
@@ -66,7 +66,7 @@ func (c *leaderboardController) TopHafalan(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/leaderboard/me [get]
+// @Router /leaderboard/me [get]
 func (c *leaderboardController) MyRank(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

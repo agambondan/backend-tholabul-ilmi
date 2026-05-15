@@ -36,7 +36,7 @@ func NewBookController(services *service.Services) BookController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/books [post]
+// @Router /books [post]
 // @Tags Books
 func (c *bookController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Book)
@@ -56,7 +56,7 @@ func (c *bookController) Create(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/books [get]
+// @Router /books [get]
 // @Tags Books
 func (c *bookController) FindAll(ctx *fiber.Ctx) error {
 	page := c.book.FindAll(ctx)
@@ -72,7 +72,7 @@ func (c *bookController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/books/{id} [get]
+// @Router /books/{id} [get]
 // @Tags Books
 func (c *bookController) FindById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -95,7 +95,7 @@ func (c *bookController) FindById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/books/slug/{slug} [get]
+// @Router /books/slug/{slug} [get]
 // @Tags Books
 func (c *bookController) FindBySlug(ctx *fiber.Ctx) error {
 	slug := ctx.Params("slug")
@@ -116,7 +116,7 @@ func (c *bookController) FindBySlug(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/books/{id} [put]
+// @Router /books/{id} [put]
 // @Tags Books
 func (c *bookController) UpdateById(ctx *fiber.Ctx) error {
 	data := new(model.Book)
@@ -142,7 +142,7 @@ func (c *bookController) UpdateById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/books/{id} [delete]
+// @Router /books/{id} [delete]
 // @Tags Books
 func (c *bookController) DeleteById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

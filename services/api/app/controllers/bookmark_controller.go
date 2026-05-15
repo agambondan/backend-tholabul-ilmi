@@ -32,7 +32,7 @@ func NewBookmarkController(services *service.Services) BookmarkController {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/bookmarks [post]
+// @Router /bookmarks [post]
 func (c *bookmarkController) Add(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -87,7 +87,7 @@ func (c *bookmarkController) Add(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/bookmarks/{id} [put]
+// @Router /bookmarks/{id} [put]
 func (c *bookmarkController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -124,7 +124,7 @@ func (c *bookmarkController) Update(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/bookmarks [get]
+// @Router /bookmarks [get]
 func (c *bookmarkController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -146,7 +146,7 @@ func (c *bookmarkController) FindAll(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/bookmarks/{id} [delete]
+// @Router /bookmarks/{id} [delete]
 func (c *bookmarkController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

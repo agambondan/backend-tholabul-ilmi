@@ -38,7 +38,7 @@ func NewSanadController(services *service.Services) SanadController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/sanad [post]
+// @Router /sanad [post]
 // @Tags Sanad
 func (c *sanadController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Sanad)
@@ -73,7 +73,7 @@ func (c *sanadController) FindByHadithID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/sanad/{id} [get]
+// @Router /sanad/{id} [get]
 // @Tags Sanad
 func (c *sanadController) FindByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -97,7 +97,7 @@ func (c *sanadController) FindByID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/sanad/{id} [put]
+// @Router /sanad/{id} [put]
 // @Tags Sanad
 func (c *sanadController) UpdateByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -124,7 +124,7 @@ func (c *sanadController) UpdateByID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/sanad/{id} [delete]
+// @Router /sanad/{id} [delete]
 // @Tags Sanad
 func (c *sanadController) DeleteByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

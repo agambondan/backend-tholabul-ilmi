@@ -38,7 +38,7 @@ func NewPerawiController(services *service.Services) PerawiController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/perawi [post]
+// @Router /perawi [post]
 // @Tags Perawi
 func (c *perawiController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Perawi)
@@ -59,7 +59,7 @@ func (c *perawiController) Create(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/perawi [get]
+// @Router /perawi [get]
 // @Tags Perawi
 func (c *perawiController) FindAll(ctx *fiber.Ctx) error {
 	page := c.svc.FindAll(ctx)
@@ -75,7 +75,7 @@ func (c *perawiController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/perawi/{id} [get]
+// @Router /perawi/{id} [get]
 // @Tags Perawi
 func (c *perawiController) FindByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -97,7 +97,7 @@ func (c *perawiController) FindByID(ctx *fiber.Ctx) error {
 // @Param tabaqah path string true "Tabaqah"
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/perawi/tabaqah/{tabaqah} [get]
+// @Router /perawi/tabaqah/{tabaqah} [get]
 // @Tags Perawi
 func (c *perawiController) FindByTabaqah(ctx *fiber.Ctx) error {
 	tabaqah := ctx.Params("tabaqah")
@@ -113,7 +113,7 @@ func (c *perawiController) FindByTabaqah(ctx *fiber.Ctx) error {
 // @Param q query string true "Search query"
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/perawi/search [get]
+// @Router /perawi/search [get]
 // @Tags Perawi
 func (c *perawiController) Search(ctx *fiber.Ctx) error {
 	q := ctx.Query("q")
@@ -133,7 +133,7 @@ func (c *perawiController) Search(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/perawi/{id}/guru [get]
+// @Router /perawi/{id}/guru [get]
 // @Tags Perawi
 func (c *perawiController) FindGuru(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -156,7 +156,7 @@ func (c *perawiController) FindGuru(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/perawi/{id}/murid [get]
+// @Router /perawi/{id}/murid [get]
 // @Tags Perawi
 func (c *perawiController) FindMurid(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -180,7 +180,7 @@ func (c *perawiController) FindMurid(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/perawi/{id} [put]
+// @Router /perawi/{id} [put]
 // @Tags Perawi
 func (c *perawiController) UpdateByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -207,7 +207,7 @@ func (c *perawiController) UpdateByID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/perawi/{id} [delete]
+// @Router /perawi/{id} [delete]
 // @Tags Perawi
 func (c *perawiController) DeleteByID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

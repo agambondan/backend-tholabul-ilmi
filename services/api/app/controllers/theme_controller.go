@@ -36,7 +36,7 @@ func NewThemeController(services *service.Services) ThemeController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/themes [post]
+// @Router /themes [post]
 // @Tags Themes
 func (c *themeController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Theme)
@@ -56,7 +56,7 @@ func (c *themeController) Create(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/themes [get]
+// @Router /themes [get]
 // @Tags Themes
 func (c *themeController) FindAll(ctx *fiber.Ctx) error {
 	page := c.theme.FindAll(ctx)
@@ -72,7 +72,7 @@ func (c *themeController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/themes/{id} [get]
+// @Router /themes/{id} [get]
 // @Tags Themes
 func (c *themeController) FindById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -95,7 +95,7 @@ func (c *themeController) FindById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/themes/book/{slug} [get]
+// @Router /themes/book/{slug} [get]
 // @Tags Themes
 func (c *themeController) FindByBookSlug(ctx *fiber.Ctx) error {
 	slug := ctx.Params("slug")
@@ -116,7 +116,7 @@ func (c *themeController) FindByBookSlug(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/themes/{id} [put]
+// @Router /themes/{id} [put]
 // @Tags Themes
 func (c *themeController) UpdateById(ctx *fiber.Ctx) error {
 	data := new(model.Theme)
@@ -142,7 +142,7 @@ func (c *themeController) UpdateById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/themes/{id} [delete]
+// @Router /themes/{id} [delete]
 // @Tags Themes
 func (c *themeController) DeleteById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

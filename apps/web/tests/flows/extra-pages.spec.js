@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from '../fixtures/mockApi';
+
+test.beforeEach(async ({ page }) => {
+  await setupApiMocks(page);
+});
 
 const publicPages = ['/tahlil', '/wirid-custom', '/wirid', '/khatam', '/leaderboard', '/perawi'];
 const authPages = ['/amalan', '/stats', '/profile'];

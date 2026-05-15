@@ -38,7 +38,7 @@ func NewSurahController(services *service.Services) SurahController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/surah [post]
+// @Router /surah [post]
 // @Tags Surah
 func (c *surahController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Surah)
@@ -58,7 +58,7 @@ func (c *surahController) Create(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/surah [get]
+// @Router /surah [get]
 // @Tags Surah
 func (c *surahController) FindAll(ctx *fiber.Ctx) error {
 	page := c.surah.FindAll(ctx)
@@ -74,7 +74,7 @@ func (c *surahController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/surah/{id} [get]
+// @Router /surah/{id} [get]
 // @Tags Surah
 func (c *surahController) FindById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -97,7 +97,7 @@ func (c *surahController) FindById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/surah/number/{number} [get]
+// @Router /surah/number/{number} [get]
 // @Tags Surah
 func (c *surahController) FindByNumber(ctx *fiber.Ctx) error {
 	number, err := strconv.Atoi(ctx.Params("number"))
@@ -120,7 +120,7 @@ func (c *surahController) FindByNumber(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/surah/name/{name} [get]
+// @Router /surah/name/{name} [get]
 // @Tags Surah
 func (c *surahController) FindByName(ctx *fiber.Ctx) error {
 	decodedString, err := url.QueryUnescape(ctx.Params("name"))
@@ -144,7 +144,7 @@ func (c *surahController) FindByName(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/surah/{id} [put]
+// @Router /surah/{id} [put]
 // @Tags Surah
 func (c *surahController) UpdateById(ctx *fiber.Ctx) error {
 	data := new(model.Surah)
@@ -171,7 +171,7 @@ func (c *surahController) UpdateById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/surah/{id}/{scoped} [delete]
+// @Router /surah/{id}/{scoped} [delete]
 // @Tags Surah
 func (c *surahController) DeleteById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

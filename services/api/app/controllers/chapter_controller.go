@@ -37,7 +37,7 @@ func NewChapterController(services *service.Services) ChapterController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/chapters [post]
+// @Router /chapters [post]
 // @Tags Chapters
 func (c *chapterController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Chapter)
@@ -57,7 +57,7 @@ func (c *chapterController) Create(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/chapters [get]
+// @Router /chapters [get]
 // @Tags Chapters
 func (c *chapterController) FindAll(ctx *fiber.Ctx) error {
 	page := c.chapter.FindAll(ctx)
@@ -73,7 +73,7 @@ func (c *chapterController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/chapters/{id} [get]
+// @Router /chapters/{id} [get]
 // @Tags Chapters
 func (c *chapterController) FindById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -97,7 +97,7 @@ func (c *chapterController) FindById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/chapters/book/{slug}/theme/{themeId} [get]
+// @Router /chapters/book/{slug}/theme/{themeId} [get]
 // @Tags Chapters
 func (c *chapterController) FindByBookSlugThemeId(ctx *fiber.Ctx) error {
 	bookSlug := ctx.Params("slug")
@@ -121,7 +121,7 @@ func (c *chapterController) FindByBookSlugThemeId(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/chapters/theme/{id} [get]
+// @Router /chapters/theme/{id} [get]
 // @Tags Chapters
 func (c *chapterController) FindByThemeId(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -145,7 +145,7 @@ func (c *chapterController) FindByThemeId(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/chapters/{id} [put]
+// @Router /chapters/{id} [put]
 // @Tags Chapters
 func (c *chapterController) UpdateById(ctx *fiber.Ctx) error {
 	data := new(model.Chapter)
@@ -171,7 +171,7 @@ func (c *chapterController) UpdateById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/chapters/{id} [delete]
+// @Router /chapters/{id} [delete]
 // @Tags Chapters
 func (c *chapterController) DeleteById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

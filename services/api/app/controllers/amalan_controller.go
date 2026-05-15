@@ -28,7 +28,7 @@ func NewAmalanController(services *service.Services) AmalanController {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/amalan [get]
+// @Router /amalan [get]
 func (c *amalanController) FindAllItems(ctx *fiber.Ctx) error {
 	items, err := c.svc.FindAllItems()
 	if err != nil {
@@ -43,7 +43,7 @@ func (c *amalanController) FindAllItems(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/amalan/today [get]
+// @Router /amalan/today [get]
 func (c *amalanController) GetToday(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -66,7 +66,7 @@ func (c *amalanController) GetToday(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/amalan/{id}/check [put]
+// @Router /amalan/{id}/check [put]
 func (c *amalanController) Toggle(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -96,7 +96,7 @@ func (c *amalanController) Toggle(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/amalan/history [get]
+// @Router /amalan/history [get]
 func (c *amalanController) GetHistory(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

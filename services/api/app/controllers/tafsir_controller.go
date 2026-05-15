@@ -33,7 +33,7 @@ func NewTafsirController(services *service.Services) TafsirController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/tafsir/ayah/{id} [get]
+// @Router /tafsir/ayah/{id} [get]
 // @Tags Tafsir
 func (c *tafsirController) FindByAyahID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -56,7 +56,7 @@ func (c *tafsirController) FindByAyahID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/tafsir/surah/{number} [get]
+// @Router /tafsir/surah/{number} [get]
 // @Tags Tafsir
 func (c *tafsirController) FindBySurahNumber(ctx *fiber.Ctx) error {
 	number, err := strconv.Atoi(ctx.Params("number"))
@@ -84,7 +84,7 @@ func (c *tafsirController) FindBySurahNumber(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/tafsir [post]
+// @Router /tafsir [post]
 // @Tags Tafsir
 func (c *tafsirController) Save(ctx *fiber.Ctx) error {
 	t := new(model.Tafsir)
@@ -108,7 +108,7 @@ func (c *tafsirController) Save(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/tafsir/ayah/{id} [put]
+// @Router /tafsir/ayah/{id} [put]
 // @Tags Tafsir
 func (c *tafsirController) UpdateByAyahID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

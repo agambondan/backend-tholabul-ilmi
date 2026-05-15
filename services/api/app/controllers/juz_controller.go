@@ -37,7 +37,7 @@ func NewJuzController(services *service.Services) JuzController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/juz [post]
+// @Router /juz [post]
 // @Tags Juz
 func (c *juzController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Juz)
@@ -57,7 +57,7 @@ func (c *juzController) Create(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/juz [get]
+// @Router /juz [get]
 // @Tags Juz
 func (c *juzController) FindAll(ctx *fiber.Ctx) error {
 	page := c.juz.FindAll(ctx)
@@ -73,7 +73,7 @@ func (c *juzController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/juz/{id} [get]
+// @Router /juz/{id} [get]
 // @Tags Juz
 func (c *juzController) FindById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -96,7 +96,7 @@ func (c *juzController) FindById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/juz/surah/{name} [get]
+// @Router /juz/surah/{name} [get]
 // @Tags Juz
 func (c *juzController) FindBySurahName(ctx *fiber.Ctx) error {
 	decodedString, err := url.QueryUnescape(ctx.Params("name"))
@@ -120,7 +120,7 @@ func (c *juzController) FindBySurahName(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/juz/{id} [put]
+// @Router /juz/{id} [put]
 // @Tags Juz
 func (c *juzController) UpdateById(ctx *fiber.Ctx) error {
 	data := new(model.Juz)
@@ -147,7 +147,7 @@ func (c *juzController) UpdateById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/juz/{id}/{scoped} [delete]
+// @Router /juz/{id}/{scoped} [delete]
 // @Tags Juz
 func (c *juzController) DeleteById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

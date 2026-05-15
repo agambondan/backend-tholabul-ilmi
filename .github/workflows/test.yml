@@ -5,13 +5,20 @@ on:
     branches: [master, main, develop]
     paths:
       - 'services/api/**'
+      - 'apps/web/**'
+      - 'apps/mobile/**'
       - '.github/workflows/test.yml'
   pull_request:
     paths:
       - 'services/api/**'
+      - 'apps/web/**'
+      - 'apps/mobile/**'
+
+env:
+  NODE_VERSION: '22'
 
 jobs:
-  test:
+  go-test:
     name: Go Test
     runs-on: ubuntu-latest
     defaults:
@@ -55,9 +62,7 @@ jobs:
       - name: Go mod cache
         uses: actions/cache@v4
         with:
-          path: |
-            ~/go/pkg/mod
-            services/api/go.sum
+          path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('services/api/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
@@ -68,7 +73,7 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Test (lib + middleware + services)
+      - name: Test (lib + middleware + services + repository)
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -81,7 +86,7 @@ jobs:
           REDIS_INDEX: 0
           CACHE_TTL_SECONDS: 60
           ENVIRONMENT: test
-        run: go test -v -count=1 ./app/... ./tests/lib/... 2>&1 | tee /tmp/test-output.txt
+        run: go test -v -count=1 -tags postgres ./app/... ./tests/lib/... ./tests/... 2>&1 | tee /tmp/test-output.txt
 
       - name: Check test results
         run: |
@@ -91,7 +96,7 @@ jobs:
           fi
           echo "All tests passed"
 
-  lint:
+  go-lint:
     name: Go Lint
     runs-on: ubuntu-latest
     defaults:
@@ -112,3 +117,142 @@ jobs:
         with:
           version: latest
           working-directory: services/api
+
+  web-test:
+    name: Web Jest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Node cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-web-${{ hashFiles('apps/web/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-web-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npx jest --no-cache 2>&1 | tee /tmp/jest-output.txt
+
+      - name: Check test results
+        run: |
+          if grep -q "FAIL" /tmp/jest-output.txt; then
+            echo "Some web tests failed"
+            exit 1
+          fi
+          echo "All web tests passed"
+
+  web-lint:
+    name: Web Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npx next lint
+
+  mobile-test:
+    name: Mobile Jest
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Node cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-mobile-${{ hashFiles('apps/mobile/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-mobile-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npx jest --no-cache 2>&1 | tee /tmp/jest-output.txt
+
+      - name: Check test results
+        run: |
+          if grep -q "FAIL" /tmp/jest-output.txt; then
+            echo "Some mobile tests failed"
+            exit 1
+          fi
+          echo "All mobile tests passed"
+
+  web-e2e:
+    name: Web E2E
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Node cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-web-e2e-${{ hashFiles('apps/web/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-web-e2e-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Run E2E tests
+        run: npx playwright test --reporter=list 2>&1 | tee /tmp/e2e-output.txt
+
+      - name: Check test results
+        run: |
+          if grep -q "failed" /tmp/e2e-output.txt; then
+            echo "Some E2E tests failed"
+            exit 1
+          fi
+          echo "All E2E tests passed"

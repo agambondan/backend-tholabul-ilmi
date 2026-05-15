@@ -31,7 +31,7 @@ func NewMurojaahController(services *service.Services) MurojaahController {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/murojaah/session [get]
+// @Router /murojaah/session [get]
 func (c *murojaahController) GetSession(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -54,7 +54,7 @@ func (c *murojaahController) GetSession(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/murojaah/result [post]
+// @Router /murojaah/result [post]
 func (c *murojaahController) RecordSession(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -78,7 +78,7 @@ func (c *murojaahController) RecordSession(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/murojaah/history [get]
+// @Router /murojaah/history [get]
 func (c *murojaahController) GetHistory(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -98,7 +98,7 @@ func (c *murojaahController) GetHistory(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/murojaah/stats [get]
+// @Router /murojaah/stats [get]
 func (c *murojaahController) GetStats(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

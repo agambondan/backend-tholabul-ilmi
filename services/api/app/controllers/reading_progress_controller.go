@@ -32,7 +32,7 @@ func NewReadingProgressController(services *service.Services) ReadingProgressCon
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/progress/quran [put]
+// @Router /progress/quran [put]
 func (c *readingProgressController) UpdateQuran(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -58,7 +58,7 @@ func (c *readingProgressController) UpdateQuran(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/progress/hadith [put]
+// @Router /progress/hadith [put]
 func (c *readingProgressController) UpdateHadith(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -80,7 +80,7 @@ func (c *readingProgressController) UpdateHadith(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
-// @Router /api/v1/progress/quran [get]
+// @Router /progress/quran [get]
 func (c *readingProgressController) GetQuran(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -98,7 +98,7 @@ func (c *readingProgressController) GetQuran(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
-// @Router /api/v1/progress/hadith [get]
+// @Router /progress/hadith [get]
 func (c *readingProgressController) GetHadith(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -117,7 +117,7 @@ func (c *readingProgressController) GetHadith(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/progress [get]
+// @Router /progress [get]
 func (c *readingProgressController) GetAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

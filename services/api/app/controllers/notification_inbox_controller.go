@@ -20,7 +20,7 @@ func NewNotificationInboxController(svc *service.Services) *notificationInboxCon
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/notifications/inbox [get]
+// @Router /notifications/inbox [get]
 func (c *notificationInboxController) List(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -42,7 +42,7 @@ func (c *notificationInboxController) List(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/notifications/inbox/{id}/read [put]
+// @Router /notifications/inbox/{id}/read [put]
 func (c *notificationInboxController) MarkRead(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -64,7 +64,7 @@ func (c *notificationInboxController) MarkRead(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/notifications/inbox/read-all [put]
+// @Router /notifications/inbox/read-all [put]
 func (c *notificationInboxController) MarkAllRead(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

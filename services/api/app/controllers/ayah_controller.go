@@ -41,7 +41,7 @@ func NewAyahController(services *service.Services) AyahController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/ayah [post]
+// @Router /ayah [post]
 // @Tags Ayah
 func (c *ayahController) Create(ctx *fiber.Ctx) error {
 	data := new(model.Ayah)
@@ -61,7 +61,7 @@ func (c *ayahController) Create(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
-// @Router /api/v1/ayah [get]
+// @Router /ayah [get]
 // @Tags Ayah
 func (c *ayahController) FindAll(ctx *fiber.Ctx) error {
 	page := c.ayah.FindAll(ctx)
@@ -76,7 +76,7 @@ func (c *ayahController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/ayah/keyset [get]
+// @Router /ayah/keyset [get]
 // @Tags Ayah
 func (c *ayahController) FindAllKeyset(ctx *fiber.Ctx) error {
 	page, err := c.ayah.FindAllKeyset(ctx)
@@ -95,7 +95,7 @@ func (c *ayahController) FindAllKeyset(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/ayah/{id} [get]
+// @Router /ayah/{id} [get]
 // @Tags Ayah
 func (c *ayahController) FindById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -116,7 +116,7 @@ func (c *ayahController) FindById(ctx *fiber.Ctx) error {
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/ayah/daily [get]
+// @Router /ayah/daily [get]
 // @Tags Ayah
 func (c *ayahController) FindDaily(ctx *fiber.Ctx) error {
 	data, err := c.ayah.FindDaily()
@@ -135,7 +135,7 @@ func (c *ayahController) FindDaily(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/ayah/number/{number} [get]
+// @Router /ayah/number/{number} [get]
 // @Tags Ayah
 func (c *ayahController) FindByNumber(ctx *fiber.Ctx) error {
 	number, err := strconv.Atoi(ctx.Params("number"))
@@ -158,7 +158,7 @@ func (c *ayahController) FindByNumber(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/ayah/surah/number/{number} [get]
+// @Router /ayah/surah/number/{number} [get]
 // @Tags Ayah
 func (c *ayahController) FindBySurahNumber(ctx *fiber.Ctx) error {
 	number, err := strconv.Atoi(ctx.Params("number"))
@@ -181,7 +181,7 @@ func (c *ayahController) FindBySurahNumber(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/ayah/page/{page} [get]
+// @Router /ayah/page/{page} [get]
 // @Tags Ayah
 func (c *ayahController) FindByPage(ctx *fiber.Ctx) error {
 	page, err := strconv.Atoi(ctx.Params("page"))
@@ -204,7 +204,7 @@ func (c *ayahController) FindByPage(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/ayah/hizb/{hizb} [get]
+// @Router /ayah/hizb/{hizb} [get]
 // @Tags Ayah
 func (c *ayahController) FindByHizbQuarter(ctx *fiber.Ctx) error {
 	hizb, err := strconv.Atoi(ctx.Params("hizb"))
@@ -228,7 +228,7 @@ func (c *ayahController) FindByHizbQuarter(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/ayah/{id} [put]
+// @Router /ayah/{id} [put]
 // @Tags Ayah
 func (c *ayahController) UpdateById(ctx *fiber.Ctx) error {
 	data := new(model.Ayah)
@@ -255,7 +255,7 @@ func (c *ayahController) UpdateById(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/ayah/{id}/{scoped} [delete]
+// @Router /ayah/{id}/{scoped} [delete]
 // @Tags Ayah
 func (c *ayahController) DeleteById(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

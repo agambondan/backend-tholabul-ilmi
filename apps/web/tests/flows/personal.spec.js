@@ -1,10 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { setupApiMocks } from '../fixtures/mockApi';
+
+test.beforeEach(async ({ page }) => {
+  await setupApiMocks(page);
+});
 
 test.describe('Personal Features Journey', () => {
   test('sholat tracker page loads', async ({ page }) => {
     test.setTimeout(30000);
     await page.goto('/sholat-tracker');
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const bodyText = await page.locator('body').innerText();
     expect(bodyText.length).toBeGreaterThan(50);
   });
@@ -12,7 +17,7 @@ test.describe('Personal Features Journey', () => {
   test('hafalan tracker page loads', async ({ page }) => {
     test.setTimeout(30000);
     await page.goto('/hafalan');
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const bodyText = await page.locator('body').innerText();
     expect(bodyText.length).toBeGreaterThan(50);
   });
@@ -20,7 +25,7 @@ test.describe('Personal Features Journey', () => {
   test('tilawah tracker page loads', async ({ page }) => {
     test.setTimeout(30000);
     await page.goto('/tilawah');
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const bodyText = await page.locator('body').innerText();
     expect(bodyText.length).toBeGreaterThan(50);
   });
@@ -28,7 +33,7 @@ test.describe('Personal Features Journey', () => {
   test('goals page loads', async ({ page }) => {
     test.setTimeout(30000);
     await page.goto('/goals');
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const bodyText = await page.locator('body').innerText();
     expect(bodyText.length).toBeGreaterThan(50);
   });
@@ -36,7 +41,7 @@ test.describe('Personal Features Journey', () => {
   test('muhasabah page loads', async ({ page }) => {
     test.setTimeout(30000);
     await page.goto('/muhasabah');
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const bodyText = await page.locator('body').innerText();
     expect(bodyText.length).toBeGreaterThan(50);
   });
@@ -44,7 +49,7 @@ test.describe('Personal Features Journey', () => {
   test('muroja-ah page loads', async ({ page }) => {
     test.setTimeout(30000);
     await page.goto('/muroja-ah');
-    await page.waitForTimeout(3000);
+    await page.waitForLoadState('networkidle');
     const bodyText = await page.locator('body').innerText();
     expect(bodyText.length).toBeGreaterThan(50);
   });

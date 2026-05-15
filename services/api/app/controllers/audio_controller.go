@@ -35,7 +35,7 @@ func NewAudioController(services *service.Services) AudioController {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/audio/surah/{surahId} [get]
+// @Router /audio/surah/{surahId} [get]
 // @Tags Audio
 func (c *audioController) FindSurahAudio(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("surahId"))
@@ -58,7 +58,7 @@ func (c *audioController) FindSurahAudio(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/audio/ayah/{ayahId} [get]
+// @Router /audio/ayah/{ayahId} [get]
 // @Tags Audio
 func (c *audioController) FindAyahAudio(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("ayahId"))
@@ -81,7 +81,7 @@ func (c *audioController) FindAyahAudio(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/audio/surah [post]
+// @Router /audio/surah [post]
 // @Tags Audio
 func (c *audioController) AddSurahAudio(ctx *fiber.Ctx) error {
 	a := new(model.SurahAudio)
@@ -104,7 +104,7 @@ func (c *audioController) AddSurahAudio(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 409 {object} lib.Response
-// @Router /api/v1/audio/ayah [post]
+// @Router /audio/ayah [post]
 // @Tags Audio
 func (c *audioController) AddAyahAudio(ctx *fiber.Ctx) error {
 	a := new(model.AyahAudio)
@@ -127,7 +127,7 @@ func (c *audioController) AddAyahAudio(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/audio/surah/{id} [delete]
+// @Router /audio/surah/{id} [delete]
 // @Tags Audio
 func (c *audioController) DeleteSurahAudio(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -149,7 +149,7 @@ func (c *audioController) DeleteSurahAudio(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/audio/ayah/{id} [delete]
+// @Router /audio/ayah/{id} [delete]
 // @Tags Audio
 func (c *audioController) DeleteAyahAudio(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

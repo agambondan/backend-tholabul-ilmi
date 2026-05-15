@@ -33,7 +33,7 @@ func NewGoalController(services *service.Services) GoalController {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/goals [post]
+// @Router /goals [post]
 func (c *goalController) Create(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -56,7 +56,7 @@ func (c *goalController) Create(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/goals [get]
+// @Router /goals [get]
 func (c *goalController) FindAll(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -79,7 +79,7 @@ func (c *goalController) FindAll(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/goals/{id} [put]
+// @Router /goals/{id} [put]
 func (c *goalController) Update(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {
@@ -108,7 +108,7 @@ func (c *goalController) Update(ctx *fiber.Ctx) error {
 // @Failure 400 {object} lib.Response
 // @Failure 401 {object} lib.Response
 // @Failure 404 {object} lib.Response
-// @Router /api/v1/goals/{id} [delete]
+// @Router /goals/{id} [delete]
 func (c *goalController) Delete(ctx *fiber.Ctx) error {
 	userID, err := extractUserID(ctx)
 	if err != nil {

@@ -67,7 +67,7 @@ func NewAsbabunNuzulController(services *service.Services) AsbabunNuzulControlle
 // @Produce json
 // @Success 200 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/asbabun-nuzul [get]
+// @Router /asbabun-nuzul [get]
 // @Tags AsbabunNuzul
 func (c *asbabunNuzulController) FindAll(ctx *fiber.Ctx) error {
 	page := ctx.QueryInt("page", 0)
@@ -98,7 +98,7 @@ func (c *asbabunNuzulController) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/asbabun-nuzul/ayah/{id} [get]
+// @Router /asbabun-nuzul/ayah/{id} [get]
 // @Tags AsbabunNuzul
 func (c *asbabunNuzulController) FindByAyahID(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -127,7 +127,7 @@ func (c *asbabunNuzulController) FindByAyahID(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/asbabun-nuzul/surah/{number} [get]
+// @Router /asbabun-nuzul/surah/{number} [get]
 // @Tags AsbabunNuzul
 func (c *asbabunNuzulController) FindBySurahNumber(ctx *fiber.Ctx) error {
 	number, err := strconv.Atoi(ctx.Params("number"))
@@ -161,7 +161,7 @@ func (c *asbabunNuzulController) FindBySurahNumber(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/asbabun-nuzul [post]
+// @Router /asbabun-nuzul [post]
 // @Tags AsbabunNuzul
 func (c *asbabunNuzulController) Create(ctx *fiber.Ctx) error {
 	req := new(asbabunNuzulRequest)
@@ -189,7 +189,7 @@ func (c *asbabunNuzulController) Create(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/asbabun-nuzul/{id} [put]
+// @Router /asbabun-nuzul/{id} [put]
 // @Tags AsbabunNuzul
 func (c *asbabunNuzulController) Update(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))
@@ -220,7 +220,7 @@ func (c *asbabunNuzulController) Update(ctx *fiber.Ctx) error {
 // @Success 200 {object} lib.Response
 // @Failure 400 {object} lib.Response
 // @Failure 500 {object} lib.Response
-// @Router /api/v1/asbabun-nuzul/{id} [delete]
+// @Router /asbabun-nuzul/{id} [delete]
 // @Tags AsbabunNuzul
 func (c *asbabunNuzulController) Delete(ctx *fiber.Ctx) error {
 	id, err := strconv.Atoi(ctx.Params("id"))

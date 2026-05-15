@@ -1,7 +1,10 @@
+import { useRef } from 'react';
+import { Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { X } from 'lucide-react-native';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, spacing } from '../theme';
 import { hapticTap } from '../utils/haptics';
+
+const DRAG_THRESHOLD = 100;
 
 export function AppModalSheet({
   visible,
@@ -30,11 +33,61 @@ export function AppModalSheet({
       }
     : { style: [styles.content, styles.staticBody, contentStyle] };
 
+  return <ModalSheetInner
+    visible={visible} onClose={onClose} title={title} subtitle={subtitle}
+    children={children} footer={footer} stickyFooter={shouldStickFooter}
+    Body={Body} bodyProps={bodyProps} maxHeight={maxHeight} closeLabel={closeLabel}
+    headerStyle={headerStyle} sheetStyle={sheetStyle} titleStyle={titleStyle}
+    subtitleStyle={subtitleStyle} scroll={scroll}
+  />;
+}
+
+function ModalSheetInner({
+  visible, onClose, title, subtitle, children, footer, stickyFooter,
+  Body, bodyProps, maxHeight, closeLabel, headerStyle, sheetStyle, titleStyle, subtitleStyle, scroll,
+}) {
+  const panY = useRef(new Animated.Value(0)).current;
+  const isDragging = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gesture) => {
+        return gesture.dy > 5 && gesture.dy > Math.abs(gesture.dx);
+      },
+      onPanResponderGrant: () => {
+        isDragging.current = true;
+        panY.setOffset(0);
+        panY.setValue(0);
+      },
+      onPanResponderMove: Animated.event([null, { dy: panY }], { useNativeDriver: false }),
+      onPanResponderRelease: (_, gesture) => {
+        isDragging.current = false;
+        panY.flattenOffset();
+        if (gesture.dy > DRAG_THRESHOLD) {
+          Animated.timing(panY, {
+            toValue: 600,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => onClose?.());
+        } else {
+          Animated.spring(panY, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        isDragging.current = false;
+        Animated.spring(panY, { toValue: 0, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
+
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
       <Pressable accessibilityLabel={closeLabel} onPress={onClose} style={styles.overlay} />
-      <View style={[styles.sheet, { maxHeight }, sheetStyle]}>
-        <View style={styles.handle} />
+      <Animated.View style={[styles.sheet, { maxHeight, transform: [{ translateY: panY }] }, sheetStyle]}>
+        <View {...panResponder.panHandlers}>
+          <View style={styles.handle} />
+        </View>
         <View style={[styles.header, headerStyle]}>
           <View style={styles.headerCopy}>
             <Text style={[styles.title, titleStyle]}>{title}</Text>
@@ -56,11 +109,11 @@ export function AppModalSheet({
         </View>
         <Body {...bodyProps}>
           {children}
-          {shouldStickFooter ? null : footer}
-          {scroll ? <View style={shouldStickFooter ? styles.stickyBottomPad : styles.bottomPad} /> : null}
+          {stickyFooter ? null : footer}
+          {scroll ? <View style={stickyFooter ? styles.stickyBottomPad : styles.bottomPad} /> : null}
         </Body>
-        {shouldStickFooter ? <View style={styles.footer}>{footer}</View> : null}
-      </View>
+        {stickyFooter ? <View style={styles.footer}>{footer}</View> : null}
+      </Animated.View>
     </Modal>
   );
 }

@@ -247,12 +247,14 @@ describe('GlobalSearchScreen', () => {
 
     // Switch to Quran tab
     await waitFor(() => {
-      fireEvent.press(getByText('Quran'));
+      fireEvent.press(getByText(/^Quran/));
     });
 
-    await waitFor(() => {
-      expect(getByText('Muat Lainnya')).toBeTruthy();
-    });
+    // Flush pending promises from Effect B auto-load
+    await act(() => Promise.resolve());
+    await act(() => Promise.resolve());
+
+    await expect(getByText('Muat Lainnya')).toBeTruthy();
   });
 
   it('shows loading state', async () => {
