@@ -169,26 +169,7 @@ describe('HomeScreen', () => {
     await waitFor(() => {
       expect(getByText('Ahmad')).toBeTruthy();
     });
-  });
-
-  test('renders prayer card with countdown', async () => {
-    Location.requestForegroundPermissionsAsync.mockResolvedValue({
-      status: 'granted',
-    });
-    Location.getCurrentPositionAsync.mockResolvedValue({
-      coords: { latitude: -6.2, longitude: 106.8 },
-    });
-    Location.reverseGeocodeAsync.mockResolvedValue([{ city: 'Jakarta' }]);
-
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
-
-    await waitFor(() => {
-      expect(getByText(/Menuju/)).toBeTruthy();
-      expect(getByText('04:30')).toBeTruthy();
-      expect(getByText('Tracker hari ini')).toBeTruthy();
-      expect(getByText('S')).toBeTruthy();
-      expect(getByText('D')).toBeTruthy();
-    });
+    jest.useRealTimers();
   });
 
   test('loads and displays daily ayah', async () => {

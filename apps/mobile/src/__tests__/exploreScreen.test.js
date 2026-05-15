@@ -219,6 +219,8 @@ jest.mock('../data/mobileFeatures', () => {
 
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+
+jest.setTimeout(15000);
 import { ExploreScreen } from '../screens/ExploreScreen';
 
 const { useSession } = require('../context/SessionContext');

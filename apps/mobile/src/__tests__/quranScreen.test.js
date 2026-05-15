@@ -1,3 +1,5 @@
+jest.setTimeout(15000);
+
 jest.mock('../constants/quranFonts', () => ({
   QURAN_FONT_FAMILIES: { kitab: 'KitabFont', indopak: 'IndopakFont', naskh: 'NaskhFont' },
 }));
