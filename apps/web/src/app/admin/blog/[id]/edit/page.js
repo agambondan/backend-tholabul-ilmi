@@ -5,10 +5,11 @@ export const dynamic = 'force-dynamic';
 import { Spinner3 } from '@/components/spinner/Spinner';
 import { useLocale } from '@/context/Locale';
 import { adminBlogApi } from '@/lib/api';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import BlogForm from '../../_BlogForm';
 
-const EditBlogPage = ({ params }) => {
+const EditBlogPage = props => {
+    const params = use(props.params);
     const { t } = useLocale();
     const [post, setPost] = useState(null);
     const [isLoading, setIsLoading] = useState(true);

@@ -1,6 +1,7 @@
 import SearchClient from '@/app/search/SearchClient';
 
-export default function DashboardSearchPage({ searchParams }) {
+export default async function DashboardSearchPage(props) {
+    const searchParams = await props.searchParams;
     return (
         <div className='py-2'>
             <SearchClient initialQuery={searchParams?.q ?? ''} />

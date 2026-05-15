@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useLocale } from '@/context/Locale';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -71,7 +71,8 @@ function PerawiMiniCard({ perawi, basePath = '/dashboard/perawi' }) {
     );
 }
 
-export default function DashboardPerawiDetailPage({ params }) {
+export default function DashboardPerawiDetailPage(props) {
+    const params = use(props.params);
     return <PerawiDetailContent params={params} basePath='/dashboard/perawi' />;
 }
 
@@ -130,7 +131,6 @@ export function PerawiDetailContent({ params, basePath = '/dashboard/perawi' }) 
                 className='inline-flex items-center gap-1 text-sm text-teal-600 dark:text-teal-400 hover:underline mb-5'>
                 ← {t('perawi.back')}
             </Link>
-
             {/* Header */}
             <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 mb-4'>
                 {data.nama_arab && (
@@ -158,7 +158,6 @@ export function PerawiDetailContent({ params, basePath = '/dashboard/perawi' }) 
                     )}
                 </div>
             </div>
-
             {/* Bio & Info */}
             <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 mb-4 space-y-2'>
                 {data.kunyah && <InfoRow label='Kunyah' value={data.kunyah} />}
@@ -187,7 +186,6 @@ export function PerawiDetailContent({ params, basePath = '/dashboard/perawi' }) 
                     </div>
                 )}
             </div>
-
             {/* Jarh wa Ta'dil */}
             {jarhTadilList.length > 0 && (
                 <div className='bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 p-5 mb-4'>
@@ -238,7 +236,6 @@ export function PerawiDetailContent({ params, basePath = '/dashboard/perawi' }) 
                     </div>
                 </div>
             )}
-
             {/* Guru & Murid */}
             {(guru.length > 0 || murid.length > 0) && (
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4'>

@@ -9,7 +9,7 @@ import { listMasjidImage } from '@/lib/const';
 import { CopyImageToClipboard, CopyToClipboard } from '@/lib/copy';
 import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, use } from 'react';
 import {
     BsFileEarmarkPlay,
     BsPauseFill,
@@ -389,7 +389,8 @@ function HadithCard({ h, idx, lang, t, slug }) {
     );
 }
 
-export default function DashboardHadithDetailPage({ params }) {
+export default function DashboardHadithDetailPage(props) {
+    const params = use(props.params);
     return <HadithDetailContent params={params} basePath='/dashboard/hadith' />;
 }
 

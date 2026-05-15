@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { BsArrowLeft, BsChevronDown, BsChevronRight, BsSearch } from 'react-icons/bs';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedField, getLocalizedTranslation } from '@/lib/translation';
@@ -13,7 +13,8 @@ import {
     normalizeTafsirEntry,
 } from '@/lib/tafsirContent';
 
-const DashboardTafsirReaderPage = ({ params }) => {
+const DashboardTafsirReaderPage = props => {
+    const params = use(props.params);
     const { t, lang } = useLocale();
     const slug = decodeURIComponent(params.slug);
 

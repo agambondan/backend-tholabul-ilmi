@@ -9,9 +9,10 @@ import { useLocale } from '@/context/Locale';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 
-const SirohDetailPage = ({ params }) => {
+const SirohDetailPage = props => {
+    const params = use(props.params);
     const { t, lang } = useLocale();
     const { isWide } = useLayoutMode();
     const [content, setContent] = useState(null);

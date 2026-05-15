@@ -11,7 +11,7 @@ import { useLayoutMode } from '@/lib/useLayoutMode';
 import { blogApi, bookmarkApi } from '@/lib/api';
 import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { BsBookmark, BsBookmarkFill } from 'react-icons/bs';
 
 const normalizeItems = (data) => data?.items ?? data?.data ?? data ?? [];
@@ -329,14 +329,18 @@ export const BlogDetailContent = ({ params, basePath = '/blog' }) => {
     );
 };
 
-const BlogDetailPage = ({ params }) => (
-    <main className='min-h-screen flex flex-col'>
-        <NavbarTailwindCss />
-        <Section>
-            <BlogDetailContent params={params} basePath='/blog' />
-        </Section>
-        <Footer />
-    </main>
-);
+const BlogDetailPage = props => {
+    const params = use(props.params);
+
+    return (
+        <main className='min-h-screen flex flex-col'>
+            <NavbarTailwindCss />
+            <Section>
+                <BlogDetailContent params={params} basePath='/blog' />
+            </Section>
+            <Footer />
+        </main>
+    );
+};
 
 export default BlogDetailPage;

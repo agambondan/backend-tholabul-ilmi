@@ -14,7 +14,8 @@ async function getBlogPost(slug) {
     }
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+    const params = await props.params;
     const post = await getBlogPost(params.slug);
 
     const title = post?.title ?? `Blog — Thullaabul 'Ilmi`;
@@ -45,7 +46,13 @@ export async function generateMetadata({ params }) {
     };
 }
 
-export default async function BlogSlugLayout({ children, params }) {
+export default async function BlogSlugLayout(props) {
+    const params = await props.params;
+
+    const {
+        children
+    } = props;
+
     const post = await getBlogPost(params.slug);
 
     const jsonLd = post

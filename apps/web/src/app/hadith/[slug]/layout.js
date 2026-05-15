@@ -8,7 +8,8 @@ export async function generateStaticParams() {
     return books.map((k) => ({ slug: k.slug }));
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+    const params = await props.params;
     const books = await getBooks();
     const book = books.find((k) => k.slug === params.slug);
     const bookName = book?.translation?.en ?? book?.translation?.idn ?? null;

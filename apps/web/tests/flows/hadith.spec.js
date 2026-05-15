@@ -20,13 +20,13 @@ test.describe('Hadith Browsing Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const hadithTab = page.locator('button:has-text("Hadith")').or(page.locator('button:has-text("Hadis")'));
-    if (await hadithTab.count() > 0) {
+    if ((await hadithTab.count()) > 0) {
       await hadithTab.first().click();
       await page.waitForLoadState('networkidle');
     }
 
     const select = page.locator('select').first();
-    if (await select.count() > 0) {
+    if ((await select.count()) > 0) {
       const options = await select.locator('option').count();
       expect(options).toBeGreaterThan(0);
     }

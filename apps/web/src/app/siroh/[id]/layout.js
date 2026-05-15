@@ -14,7 +14,8 @@ async function getSirohContent(id) {
     }
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+    const params = await props.params;
     const content = await getSirohContent(params.id);
 
     const title = content?.title

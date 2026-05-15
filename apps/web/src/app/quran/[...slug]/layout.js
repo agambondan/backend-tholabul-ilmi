@@ -15,7 +15,8 @@ async function getSurah(slug) {
     }
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+    const params = await props.params;
     const slugParts = params.slug ?? [];
     const surahSlug = decodeURIComponent(slugParts[1] ?? slugParts[0] ?? '');
     const surah = surahSlug ? await getSurah(surahSlug) : null;

@@ -13,7 +13,7 @@ test.describe('Homepage Journey', () => {
     await expect(page.locator('nav').or(page.locator('header'))).toBeVisible();
 
     const footer = page.locator('footer');
-    if (await footer.count() > 0) {
+    if ((await footer.count()) > 0) {
       await expect(footer).toBeVisible();
     }
   });
@@ -25,8 +25,8 @@ test.describe('Homepage Journey', () => {
     const quranLink = page.locator('a[href="/quran"]');
     const hadithLink = page.locator('a[href="/hadith"]');
 
-    const hasQuran = await quranLink.count() > 0;
-    const hasHadith = await hadithLink.count() > 0;
+    const hasQuran = (await quranLink.count()) > 0;
+    const hasHadith = (await hadithLink.count()) > 0;
 
     expect(hasQuran || hasHadith).toBeTruthy();
   });

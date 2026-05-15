@@ -8,7 +8,7 @@ import { useLayoutMode } from '@/lib/useLayoutMode';
 import { tafsirApi } from '@/lib/api';
 import { getTafsirPrimary, getTafsirSecondary, normalizeTafsirEntry } from '@/lib/tafsirContent';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import {
     BsChevronDown,
     BsChevronLeft,
@@ -19,7 +19,8 @@ import { MdOutlineAutoStories } from 'react-icons/md';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const TafsirSurahPage = ({ params }) => {
+const TafsirSurahPage = props => {
+    const params = use(props.params);
     const { t } = useLocale();
     const { isWide } = useLayoutMode();
     const { slug } = params;

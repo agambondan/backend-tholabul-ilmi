@@ -4,7 +4,7 @@ import { sirohApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedField } from '@/lib/translation';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 
 const toStr = (v) => {
     if (!v) return '';
@@ -12,7 +12,8 @@ const toStr = (v) => {
     return v.name ?? v.title ?? v.label ?? v.value ?? '';
 };
 
-export default function SirohDetailPage({ params }) {
+export default function SirohDetailPage(props) {
+    const params = use(props.params);
     const { t, lang } = useLocale();
     const [content, setContent] = useState(null);
     const [loading, setLoading] = useState(true);

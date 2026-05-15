@@ -4,13 +4,14 @@ import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import HadithThemeError from './HadithThemeError';
 
-const Page = async ({ params }) => {
-	const slugLowercase = (params.slug ?? '').replaceAll('-', ' ').toLowerCase();
+const Page = async props => {
+    const params = await props.params;
+    const slugLowercase = (params.slug ?? '').replaceAll('-', ' ').toLowerCase();
 
-	let hadiths = [];
-	let isError = false;
+    let hadiths = [];
+    let isError = false;
 
-	try {
+    try {
 		const res = await fetch(
 			`${(process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL)}/api/v1/hadiths/theme/slug/${slugLowercase}?size=1`
 		);
@@ -31,7 +32,7 @@ const Page = async ({ params }) => {
 		isError = true;
 	}
 
-	return (
+    return (
 		<main className='min-h-screen flex flex-col'>
 			<NavbarTailwindCss />
 			<Section>

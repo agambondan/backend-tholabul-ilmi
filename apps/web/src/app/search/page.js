@@ -3,7 +3,8 @@ import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import SearchClient from './SearchClient';
 
-export default function SearchPage({ searchParams }) {
+export default async function SearchPage(props) {
+    const searchParams = await props.searchParams;
     return (
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />

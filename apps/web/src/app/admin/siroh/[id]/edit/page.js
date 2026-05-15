@@ -5,10 +5,11 @@ export const dynamic = 'force-dynamic';
 import { Spinner3 } from '@/components/spinner/Spinner';
 import { useLocale } from '@/context/Locale';
 import { adminSirohApi } from '@/lib/api';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import SirahForm from '../../_SirohForm';
 
-const EditSirahPage = ({ params }) => {
+const EditSirahPage = props => {
+    const params = use(props.params);
     const { t } = useLocale();
     const [item, setItem] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
