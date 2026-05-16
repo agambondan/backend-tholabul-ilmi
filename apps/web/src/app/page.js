@@ -8,6 +8,7 @@ import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { buildRegisterHref } from '@/lib/authRedirect';
 import Link from 'next/link';
+import { useSyncExternalStore } from 'react';
 import {
     BsBarChart,
     BsBell,
@@ -82,9 +83,68 @@ const COLOR_MAP = {
     },
 };
 
+const DATE_FORMAT_OPTIONS = {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+};
+
+let homeDateSnapshot = null;
+
+const subscribeHomeDateSnapshot = () => () => {};
+const getServerHomeDateSnapshot = () => null;
+const getClientHomeDateSnapshot = () => {
+    if (!homeDateSnapshot) {
+        homeDateSnapshot = Date.now();
+    }
+
+    return homeDateSnapshot;
+};
+
+const formatCalendarDate = (date, locale, calendar) => {
+    if (!calendar) {
+        return new Intl.DateTimeFormat(locale, DATE_FORMAT_OPTIONS).format(date);
+    }
+
+    const calendarLocales = [
+        `${locale}-u-ca-${calendar}`,
+        `${locale}-u-ca-islamic`,
+    ];
+
+    for (const calendarLocale of calendarLocales) {
+        try {
+            const formatter = new Intl.DateTimeFormat(calendarLocale, DATE_FORMAT_OPTIONS);
+            if (formatter.resolvedOptions().calendar !== 'gregory') {
+                return formatter.format(date);
+            }
+        } catch {
+            // Keep the landing page resilient on runtimes with limited Intl calendars.
+        }
+    }
+
+    return new Intl.DateTimeFormat(locale, DATE_FORMAT_OPTIONS).format(date);
+};
+
+const getHomeDates = (lang, dateSnapshot) => {
+    const locale = lang === 'EN' ? 'en-US' : 'id-ID';
+    const now = new Date(dateSnapshot);
+
+    return {
+        hijri: formatCalendarDate(now, locale, 'islamic-umalqura'),
+        gregorian: formatCalendarDate(now, locale),
+    };
+};
+
 export default function Home() {
-    const { t } = useLocale();
+    const { lang, t } = useLocale();
     const { isAuthenticated } = useAuth();
+    const dateSnapshot = useSyncExternalStore(
+        subscribeHomeDateSnapshot,
+        getClientHomeDateSnapshot,
+        getServerHomeDateSnapshot,
+    );
+    const homeDates = dateSnapshot ? getHomeDates(lang, dateSnapshot) : null;
     const personalHref = (href) => (isAuthenticated ? href : buildRegisterHref(href));
 
     const STATS = [
@@ -217,6 +277,38 @@ export default function Home() {
                     <p className='text-base md:text-lg text-emerald-200 mb-10 max-w-xl mx-auto leading-relaxed'>
                         {t('home.hero_desc')}
                     </p>
+
+                    {homeDates && (
+                        <div className='mx-auto mb-10 flex max-w-2xl flex-col overflow-hidden rounded-lg border border-white/10 bg-white/10 text-left shadow-xl shadow-emerald-950/20 backdrop-blur-sm sm:flex-row sm:items-stretch'>
+                            <div className='flex flex-1 items-center gap-3 px-5 py-4'>
+                                <span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gold-400/15 text-gold-300'>
+                                    <BsCalendar3 />
+                                </span>
+                                <div className='min-w-0'>
+                                    <p className='text-xs font-semibold uppercase text-emerald-200'>
+                                        {t('home.date_hijri')}
+                                    </p>
+                                    <p className='mt-1 text-sm font-bold text-white md:text-base'>
+                                        {homeDates.hijri}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className='h-px bg-white/10 sm:h-auto sm:w-px' />
+                            <div className='flex flex-1 items-center gap-3 px-5 py-4'>
+                                <span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-emerald-300/15 text-emerald-100'>
+                                    <BsCalendar3 />
+                                </span>
+                                <div className='min-w-0'>
+                                    <p className='text-xs font-semibold uppercase text-emerald-200'>
+                                        {t('home.date_gregorian')}
+                                    </p>
+                                    <p className='mt-1 text-sm font-bold text-white md:text-base'>
+                                        {homeDates.gregorian}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className='flex gap-4 justify-center flex-wrap mb-12'>
                         <Link
