@@ -12,6 +12,7 @@ jest.mock('react-native-safe-area-context', () => {
 });
 
 import { Screen } from '../components/Screen';
+import { SwipeBackView } from '../components/SwipeBackView';
 import {
   SectionHeader,
   SegmentedTabs,
@@ -779,5 +780,24 @@ describe('SectionHeader (standalone)', () => {
   test('does not render meta when omitted', () => {
     const { queryByText } = render(<SectionHeaderStandalone title="Bagian" />);
     expect(queryByText('5 item')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SwipeBackView
+// ---------------------------------------------------------------------------
+
+describe('SwipeBackView', () => {
+  test('keeps disabled wrapper full height', () => {
+    const { getByText, toJSON } = render(
+      <SwipeBackView enabled={false}>
+        <Text>Swipe content</Text>
+      </SwipeBackView>,
+    );
+
+    expect(getByText('Swipe content')).toBeTruthy();
+    expect(toJSON().props.style).toEqual(
+      expect.arrayContaining([expect.objectContaining({ flex: 1 })]),
+    );
   });
 });

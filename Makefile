@@ -19,7 +19,7 @@ INOTIFY_MIN_WATCHES ?= 524288
 INOTIFY_MIN_INSTANCES ?= 1024
 LAN_IP ?= $(shell ip route get 8.8.8.8 2>/dev/null | awk '{for (i=1; i<=NF; i++) if ($$i == "src") {print $$(i+1); exit}}')
 API_URL ?= http://localhost:$(API_PORT)
-EXPO_URL ?= exp://$(LAN_IP):$(EXPO_PORT)
+EXPO_URL ?= exp://127.0.0.1:$(EXPO_PORT)
 
 ANDROID_ENV := JAVA_HOME=$(BUILD_JAVA_HOME) ANDROID_HOME=$(ANDROID_SDK) PATH="$(BUILD_JAVA_HOME)/bin:$(ANDROID_SDK)/platform-tools:$(ANDROID_SDK)/emulator:$(PATH)"
 DEBUG_APK := $(ANDROID_DIR)/app/build/outputs/apk/debug/app-debug.apk
@@ -188,8 +188,8 @@ mobile-tools-check:
 	@command -v node >/dev/null || { echo 'node tidak ditemukan.'; exit 1; }
 	@command -v npm >/dev/null || { echo 'npm tidak ditemukan.'; exit 1; }
 	@command -v npx >/dev/null || { echo 'npx tidak ditemukan.'; exit 1; }
-	@test -n "$(LAN_IP)" || { echo 'LAN_IP kosong. Set manual: make mobile-dev LAN_IP=192.168.x.x'; exit 1; }
-	@echo 'OK: Node, npm, Expo CLI, dan LAN IP siap.'
+	@test -n "$(EXPO_URL)" || { echo 'EXPO_URL kosong. Set manual: make mobile-dev EXPO_URL=exp://127.0.0.1:$(EXPO_PORT)'; exit 1; }
+	@echo 'OK: Node, npm, Expo CLI, dan Expo URL siap.'
 
 mobile-watchers-check:
 	@watches=$$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo 0); \
@@ -275,7 +275,7 @@ mobile-reverse-clear:
 	@echo 'ADB reverse dibersihkan untuk tcp:$(EXPO_PORT) dan tcp:$(API_PORT)'
 
 mobile-dev: mobile-watchers-check mobile-clean-ports mobile-reverse
-	cd $(MOBILE_DIR) && EXPO_PUBLIC_API_URL=$(API_URL) npx expo start --port $(EXPO_PORT) --host lan --clear
+	cd $(MOBILE_DIR) && ANDROID_HOME=$(ANDROID_SDK) EXPO_PUBLIC_API_URL=$(API_URL) npx expo start --port $(EXPO_PORT) --host localhost --clear
 
 mobile-dev-all: mobile-tools-check mobile-watchers-check
 	@command -v $(ADB) >/dev/null || { echo 'adb tidak ditemukan. Install Android platform-tools dulu.'; exit 1; }
@@ -299,7 +299,7 @@ mobile-dev-all: mobile-tools-check mobile-watchers-check
 	fi; \
 	$(MAKE) --no-print-directory mobile-clean-ports; \
 	$(MAKE) --no-print-directory mobile-reverse; \
-	(cd $(MOBILE_DIR) && EXPO_PUBLIC_API_URL=$(API_URL) npx expo start --port $(EXPO_PORT) --host lan --clear) & expo_pid=$$!; \
+	(cd $(MOBILE_DIR) && ANDROID_HOME=$(ANDROID_SDK) EXPO_PUBLIC_API_URL=$(API_URL) npx expo start --port $(EXPO_PORT) --host localhost --clear) & expo_pid=$$!; \
 	for _ in $$(seq 1 30); do \
 		ss -ltn 2>/dev/null | grep -q ":$(EXPO_PORT)\\b" && break; \
 		sleep 1; \

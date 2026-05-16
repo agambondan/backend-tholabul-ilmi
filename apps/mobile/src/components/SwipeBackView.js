@@ -44,7 +44,7 @@ export function SwipeBackView({ children, enabled = true, onSwipeBack, style }) 
     })
   ).current;
 
-  if (!enabled) return <View style={style}>{children}</View>;
+  if (!enabled) return <View style={[styles.container, style]}>{children}</View>;
 
   return (
     <Animated.View
