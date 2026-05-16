@@ -213,14 +213,18 @@ const DashboardPage = () => {
             ) : null}
             {/* Stat cards */}
             <div className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6'>
-                <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center'>
+                <Link
+                    href='/dashboard/sholat-tracker'
+                    className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center hover:border-emerald-200 dark:hover:border-emerald-700 transition-colors group'
+                    aria-label={t('dash.prayers_today')}
+                >
                     <p className='text-2xl font-bold text-emerald-700 dark:text-emerald-400'>
                         {prayerCount}/5
                     </p>
                     <p className='text-[11px] text-gray-500 dark:text-gray-400 mt-0.5'>
                         {t('dash.prayers_today')}
                     </p>
-                </div>
+                </Link>
                 <Link
                     href='/dashboard/stats'
                     className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center hover:border-orange-200 dark:hover:border-orange-700 transition-colors group'
@@ -233,22 +237,30 @@ const DashboardPage = () => {
                         {t('stats.prayer_streak')}
                     </p>
                 </Link>
-                <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center'>
+                <Link
+                    href='/dashboard/goals'
+                    className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center hover:border-blue-200 dark:hover:border-blue-700 transition-colors group'
+                    aria-label={t('dash.active_goals_count')}
+                >
                     <p className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
                         {activeGoals.length}
                     </p>
                     <p className='text-[11px] text-gray-500 dark:text-gray-400 mt-0.5'>
                         {t('dash.active_goals_count')}
                     </p>
-                </div>
-                <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center'>
+                </Link>
+                <Link
+                    href='/dashboard/bookmarks'
+                    className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 text-center hover:border-amber-200 dark:hover:border-amber-700 transition-colors group'
+                    aria-label={t('bookmarks.title')}
+                >
                     <p className='text-2xl font-bold text-amber-600 dark:text-amber-400'>
                         {bookmarks.length}
                     </p>
                     <p className='text-[11px] text-gray-500 dark:text-gray-400 mt-0.5'>
                         {t('bookmarks.title')}
                     </p>
-                </div>
+                </Link>
             </div>
             {/* Prayer countdown */}
             <div className='mb-4'>
@@ -331,7 +343,7 @@ const DashboardPage = () => {
                         href='/dashboard/sholat-tracker'
                         className='text-xs text-emerald-600 dark:text-emerald-400 hover:underline'
                     >
-                        {t('common.manage')}
+                        {t('dash.log_prayers')}
                     </Link>
                 </div>
                 <div className='flex gap-2'>

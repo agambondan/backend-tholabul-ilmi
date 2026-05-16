@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { buildLoginHref } from '@/lib/authRedirect';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -84,7 +85,13 @@ const Sidebar = ({ onClose }) => {
                 { labelKey: 'link.hijri_calendar', href: '/hijri', icon: <MdCalendarMonth /> },
                 { labelKey: 'link.arabic_dict', href: '/kamus', icon: <BsBook /> },
                 { labelKey: 'link.quiz', href: '/quiz', icon: <FaBrain /> },
-                { labelKey: 'link.leaderboard', href: '/leaderboard', icon: <BsTrophyFill /> },
+                {
+                    labelKey: 'link.leaderboard',
+                    href: isAuthenticated
+                        ? '/dashboard/leaderboard'
+                        : buildLoginHref('/dashboard/leaderboard'),
+                    icon: <BsTrophyFill />,
+                },
                 { labelKey: 'link.imsakiyah', href: '/imsakiyah', icon: <BsCalendar3 /> },
             ],
         },

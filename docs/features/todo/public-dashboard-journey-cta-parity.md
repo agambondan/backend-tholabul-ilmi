@@ -508,6 +508,62 @@ Acceptance Criteria:
    P2-14, P2-16.
 5. **Slice E - Low-impact recovery/admin polish:** P2-15, P2-17.
 
+## Follow-up Journey Pass - 2026-05-16
+
+Status: `DONE`
+
+Files:
+
+- `apps/web/src/app/page.js`
+- `apps/web/src/app/dashboard/page.js`
+- `apps/web/src/app/dashboard/profile/page.js`
+- `apps/web/src/app/dashboard/notifications/page.js`
+- `apps/web/src/components/Sidebar.js`
+- `apps/web/src/lib/i18n.js`
+
+Changes:
+
+1. Landing page now separates public content CTAs from personal dashboard CTAs:
+   Quran/Hadith/content readers stay public, while hafalan, tilawah, amalan,
+   stats, sholat tracker, muhasabah, goals, notifications, leaderboard,
+   bookmarks, notes, and muroja'ah route to dashboard equivalents.
+2. Guest clicks on personal landing features now go to register with preserved
+   dashboard `next`, e.g. `/auth/register?next=/dashboard/tilawah`; logged-in
+   users go directly to the dashboard route.
+3. Landing hero and final CTA no longer imply that the primary CTA only opens a
+   public reader. The primary CTA now opens dashboard for authenticated users or
+   registration with dashboard intent for guests; the secondary CTA remains the
+   public Quran reader.
+4. Dashboard overview stat cards for today's prayers, active goals, and
+   bookmarks are now real links to their owning dashboard journeys instead of
+   passive cards.
+5. Dashboard prayer summary CTA label changed from generic `Kelola`/`Manage` to
+   specific `Catat sholat`/`Log prayers`.
+6. Dashboard notifications no longer rely on clicking the entire notification
+   card to mark as read. Local reminders now expose explicit action CTAs:
+   muhasabah -> `/dashboard/muhasabah`, prayer -> `/dashboard/sholat-tracker`,
+   tilawah -> `/dashboard/tilawah`, and muroja'ah -> `/dashboard/muroja-ah`.
+7. Notification items now use separate `Buka`/action and `Tandai dibaca`
+   controls, reducing accidental read-state changes when the user intended to
+   follow the reminder.
+8. Dashboard profile edit no longer exits to `/profile`; name editing is now
+   inline inside `/dashboard/profile`.
+9. Dashboard profile stats are now links to the owning dashboard journeys:
+   streak -> `/dashboard/stats`, muhasabah -> `/dashboard/muhasabah`, and
+   memorization -> `/dashboard/hafalan`.
+10. Legacy Sidebar leaderboard link is dashboard-aware: authenticated users go
+    to `/dashboard/leaderboard`, guests go to login with dashboard `next`.
+
+Acceptance Criteria:
+
+- Public landing can still introduce public content without login.
+- Personal landing features preserve dashboard intent instead of bouncing
+  through legacy public personal redirects.
+- Dashboard overview cards and reminder CTAs keep the user inside
+  `/dashboard/*`.
+- Dashboard profile no longer needs public profile as the edit CTA target.
+- CTA labels describe the next action, not a vague generic action.
+
 ## Verification Plan
 
 - `npm run lint`
@@ -545,3 +601,10 @@ Acceptance Criteria:
   `/dashboard/hadith/theme/[slug]` successfully.
 - `npm run build` passed after admin CRUD feedback changes. Admin routes and
   shared `authFetch` mutation feedback compiled successfully.
+- `npm run build` passed after the 2026-05-16 follow-up journey pass.
+- `npm run build` passed after the dashboard profile and legacy Sidebar
+  account-route follow-up.
+- Targeted ESLint command was attempted with `npx eslint src/app/page.js
+  src/app/dashboard/page.js src/app/dashboard/notifications/page.js
+  src/lib/i18n.js`, but the local ESLint setup currently fails before linting
+  because `typescript` is missing from `apps/web/node_modules`.

@@ -4,7 +4,9 @@ import Footer from '@/components/Footer';
 import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import TajweedTable from '@/components/table/Tajweed';
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { buildRegisterHref } from '@/lib/authRedirect';
 import Link from 'next/link';
 import {
     BsBarChart,
@@ -82,6 +84,8 @@ const COLOR_MAP = {
 
 export default function Home() {
     const { t } = useLocale();
+    const { isAuthenticated } = useAuth();
+    const personalHref = (href) => (isAuthenticated ? href : buildRegisterHref(href));
 
     const STATS = [
         { labelKey: 'home.stat.ayah', value: '6.236' },
@@ -108,22 +112,22 @@ export default function Home() {
             color: 'gold',
             features: [
                 { icon: <ImBook />, labelKey: 'home.f.kitab_hadith', descKey: 'home.f.kitab_hadith_d', href: '/hadith' },
-                { icon: <MdBookmark />, labelKey: 'home.f.bm_hadith', descKey: 'home.f.bm_hadith_d', href: '/bookmarks' },
+                { icon: <MdBookmark />, labelKey: 'home.f.bm_hadith', descKey: 'home.f.bm_hadith_d', href: '/dashboard/bookmarks', personal: true },
             ],
         },
         {
             groupKey: 'home.group.tracker',
             color: 'teal',
             features: [
-                { icon: <MdBookmark />, labelKey: 'home.f.hafalan', descKey: 'home.f.hafalan_d', href: '/hafalan' },
-                { icon: <BsJournalCheck />, labelKey: 'home.f.tilawah', descKey: 'home.f.tilawah_d', href: '/tilawah' },
-                { icon: <MdFormatListBulleted />, labelKey: 'home.f.amalan', descKey: 'home.f.amalan_d', href: '/amalan' },
-                { icon: <BsFire />, labelKey: 'home.f.streak', descKey: 'home.f.streak_d', href: '/stats' },
-                { icon: <BsBarChart />, labelKey: 'home.f.stats', descKey: 'home.f.stats_d', href: '/stats' },
-                { icon: <MdMosque />, labelKey: 'home.f.sholat_tracker', descKey: 'home.f.sholat_tracker_d', href: '/sholat-tracker' },
-                { icon: <MdSelfImprovement />, labelKey: 'home.f.muhasabah', descKey: 'home.f.muhasabah_d', href: '/muhasabah' },
-                { icon: <MdFlag />, labelKey: 'home.f.goals', descKey: 'home.f.goals_d', href: '/goals' },
-                { icon: <BsBell />, labelKey: 'home.f.notif', descKey: 'home.f.notif_d', href: '/notifications' },
+                { icon: <MdBookmark />, labelKey: 'home.f.hafalan', descKey: 'home.f.hafalan_d', href: '/dashboard/hafalan', personal: true },
+                { icon: <BsJournalCheck />, labelKey: 'home.f.tilawah', descKey: 'home.f.tilawah_d', href: '/dashboard/tilawah', personal: true },
+                { icon: <MdFormatListBulleted />, labelKey: 'home.f.amalan', descKey: 'home.f.amalan_d', href: '/dashboard/amalan', personal: true },
+                { icon: <BsFire />, labelKey: 'home.f.streak', descKey: 'home.f.streak_d', href: '/dashboard/stats', personal: true },
+                { icon: <BsBarChart />, labelKey: 'home.f.stats', descKey: 'home.f.stats_d', href: '/dashboard/stats', personal: true },
+                { icon: <MdMosque />, labelKey: 'home.f.sholat_tracker', descKey: 'home.f.sholat_tracker_d', href: '/dashboard/sholat-tracker', personal: true },
+                { icon: <MdSelfImprovement />, labelKey: 'home.f.muhasabah', descKey: 'home.f.muhasabah_d', href: '/dashboard/muhasabah', personal: true },
+                { icon: <MdFlag />, labelKey: 'home.f.goals', descKey: 'home.f.goals_d', href: '/dashboard/goals', personal: true },
+                { icon: <BsBell />, labelKey: 'home.f.notif', descKey: 'home.f.notif_d', href: '/dashboard/notifications', personal: true },
             ],
         },
         {
@@ -147,10 +151,10 @@ export default function Home() {
             features: [
                 { icon: <BsSearch />, labelKey: 'home.f.search', descKey: 'home.f.search_d', href: '/search' },
                 { icon: <BsCalendar3 />, labelKey: 'home.f.hijri', descKey: 'home.f.hijri_d', href: '/hijri' },
-                { icon: <BsTrophyFill />, labelKey: 'home.f.leaderboard', descKey: 'home.f.leaderboard_d', href: '/leaderboard' },
-                { icon: <BsBookmark />, labelKey: 'home.f.bookmarks', descKey: 'home.f.bookmarks_d', href: '/bookmarks' },
+                { icon: <BsTrophyFill />, labelKey: 'home.f.leaderboard', descKey: 'home.f.leaderboard_d', href: '/dashboard/leaderboard', personal: true },
+                { icon: <BsBookmark />, labelKey: 'home.f.bookmarks', descKey: 'home.f.bookmarks_d', href: '/dashboard/bookmarks', personal: true },
                 { icon: <FaBrain />, labelKey: 'home.f.quiz', descKey: 'home.f.quiz_d', href: '/quiz' },
-                { icon: <BsStickyFill />, labelKey: 'home.f.notes', descKey: 'home.f.notes_d', href: '/notes' },
+                { icon: <BsStickyFill />, labelKey: 'home.f.notes', descKey: 'home.f.notes_d', href: '/dashboard/notes', personal: true },
                 { icon: <BsBook />, labelKey: 'home.f.kamus', descKey: 'home.f.kamus_d', href: '/kamus' },
             ],
         },
@@ -163,7 +167,7 @@ export default function Home() {
                 { icon: <MdMenuBook />, labelKey: 'home.f.panduan_sholat', descKey: 'home.f.panduan_sholat_d', href: '/panduan-sholat' },
                 { icon: <FaCalculator />, labelKey: 'home.f.zakat', descKey: 'home.f.zakat_d', href: '/zakat' },
                 { icon: <MdOutlineAutoStories />, labelKey: 'home.f.fiqh', descKey: 'home.f.fiqh_d', href: '/fiqh' },
-                { icon: <MdRefresh />, labelKey: 'home.f.muroja', descKey: 'home.f.muroja_d', href: '/muroja-ah' },
+                { icon: <MdRefresh />, labelKey: 'home.f.muroja', descKey: 'home.f.muroja_d', href: '/dashboard/muroja-ah', personal: true },
                 { icon: <MdOutlineDirectionsWalk />, labelKey: 'home.f.manasik', descKey: 'home.f.manasik_d', href: '/manasik' },
                 { icon: <BsCalendar3 />, labelKey: 'home.f.imsakiyah', descKey: 'home.f.imsakiyah_d', href: '/imsakiyah' },
             ],
@@ -216,18 +220,18 @@ export default function Home() {
 
                     <div className='flex gap-4 justify-center flex-wrap mb-12'>
                         <Link
-                            href='/quran'
+                            href={personalHref('/dashboard')}
                             className='bg-gold-500 hover:bg-gold-400 text-emerald-950 px-8 py-3 rounded-full font-bold text-base transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 inline-flex items-center gap-2'
                         >
                             <FaQuran />
-                            {t('home.hero_read_quran')}
+                            {isAuthenticated ? t('link.dashboard') : t('home.cta_register')}
                         </Link>
                         <Link
-                            href='/hadith'
+                            href='/quran'
                             className='border-2 border-emerald-300 text-emerald-100 hover:bg-emerald-300 hover:text-emerald-950 px-8 py-3 rounded-full font-bold text-base transition-all inline-flex items-center gap-2'
                         >
-                            <ImBook />
-                            {t('home.hero_read_hadith')}
+                            <FaQuran />
+                            {t('home.hero_read_quran')}
                         </Link>
                     </div>
 
@@ -289,7 +293,7 @@ export default function Home() {
                                         {group.features.map((feat) => (
                                             <Link
                                                 key={feat.labelKey}
-                                                href={feat.href}
+                                                href={feat.personal ? personalHref(feat.href) : feat.href}
                                                 className='group flex items-start gap-3 bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-slate-500 hover:shadow-sm transition-all hover:-translate-y-0.5'
                                             >
                                                 <span
@@ -346,10 +350,10 @@ export default function Home() {
                     </p>
                     <div className='flex gap-4 justify-center flex-wrap'>
                         <Link
-                            href='/auth/register'
+                            href={personalHref('/dashboard')}
                             className='bg-gold-500 hover:bg-gold-400 text-emerald-950 px-8 py-3 rounded-full font-bold text-sm transition-all shadow-lg hover:-translate-y-0.5'
                         >
-                            {t('home.cta_register')}
+                            {isAuthenticated ? t('link.dashboard') : t('home.cta_register')}
                         </Link>
                         <Link
                             href='/quran'

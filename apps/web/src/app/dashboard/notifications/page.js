@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { notificationInboxApi } from '@/lib/api';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BsBell, BsBellFill, BsCheckAll } from 'react-icons/bs';
 
@@ -54,6 +55,8 @@ const NotificationsPage = () => {
                     is_read: readIds.includes('auto_muhasabah_today'),
                     local: true,
                     icon: '📝',
+                    actionHref: '/dashboard/muhasabah',
+                    actionLabel: t('notif.action_muhasabah'),
                 });
             }
         } catch {}
@@ -73,6 +76,8 @@ const NotificationsPage = () => {
                     is_read: readIds.includes('auto_prayer_today'),
                     local: true,
                     icon: '🕌',
+                    actionHref: '/dashboard/sholat-tracker',
+                    actionLabel: t('notif.action_prayer'),
                 });
             }
         } catch {}
@@ -91,6 +96,8 @@ const NotificationsPage = () => {
                     is_read: readIds.includes('auto_tilawah_today'),
                     local: true,
                     icon: '📖',
+                    actionHref: '/dashboard/tilawah',
+                    actionLabel: t('notif.action_tilawah'),
                 });
             }
         } catch {}
@@ -118,6 +125,8 @@ const NotificationsPage = () => {
                     is_read: readIds.includes('auto_muroja_urgent'),
                     local: true,
                     icon: '🔄',
+                    actionHref: '/dashboard/muroja-ah',
+                    actionLabel: t('notif.action_muroja'),
                 });
             }
         } catch {}
@@ -135,6 +144,8 @@ const NotificationsPage = () => {
                     const normalized = items.map((n) => ({
                         ...n,
                         date: n.created_at ? n.created_at.slice(0, 10) : todayStr(),
+                        actionHref: n.action_href ?? n.action_url ?? n.href ?? null,
+                        actionLabel: n.action_label ?? t('notif.open'),
                     }));
                     setNotifs([...buildLocalNotifs(), ...normalized]);
                 })
@@ -209,8 +220,7 @@ const NotificationsPage = () => {
                     {notifs.map((notif) => (
                         <li
                             key={notif.id}
-                            onClick={() => markRead(notif)}
-                            className={`bg-white dark:bg-slate-800 rounded-xl border p-4 cursor-pointer transition-all ${
+                            className={`bg-white dark:bg-slate-800 rounded-xl border p-4 transition-all ${
                                 notif.is_read
                                     ? 'border-gray-100 dark:border-slate-700'
                                     : 'border-emerald-200 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
@@ -234,7 +244,7 @@ const NotificationsPage = () => {
                                         </span>
                                     )}
                                 </div>
-                                <div className='min-w-0'>
+                                <div className='min-w-0 flex-1'>
                                     <p
                                         className={`text-sm font-semibold ${
                                             notif.is_read
@@ -261,6 +271,28 @@ const NotificationsPage = () => {
                                             )}
                                         </p>
                                     )}
+                                    <div className='mt-3 flex flex-wrap items-center gap-2'>
+                                        {notif.actionHref && (
+                                            <Link
+                                                href={notif.actionHref}
+                                                onClick={() => {
+                                                    if (!notif.is_read) markRead(notif);
+                                                }}
+                                                className='inline-flex items-center rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400'
+                                            >
+                                                {notif.actionLabel ?? t('notif.open')}
+                                            </Link>
+                                        )}
+                                        {!notif.is_read && (
+                                            <button
+                                                type='button'
+                                                onClick={() => markRead(notif)}
+                                                className='inline-flex items-center rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40'
+                                            >
+                                                {t('notif.mark_read')}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                                 {!notif.is_read && (
                                     <span className='w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1.5' />
