@@ -16,19 +16,22 @@ import {
     BsBookHalf,
     BsBookmark,
     BsCalendar3,
+    BsChatDots,
     BsFire,
     BsJournalCheck,
+    BsPeopleFill,
     BsSearch,
     BsStickyFill,
     BsTrophyFill,
 } from 'react-icons/bs';
 import { FaBrain, FaCalculator, FaGraduationCap, FaMoon, FaMosque, FaQuran } from 'react-icons/fa';
-import { GiCompass, GiOpenBook } from 'react-icons/gi';
+import { GiCompass, GiOpenBook, GiPrayerBeads } from 'react-icons/gi';
 import { ImBook } from 'react-icons/im';
 import {
     MdAccessTime,
     MdArticle,
     MdBookmark,
+    MdExplore,
     MdFlag,
     MdFormatListBulleted,
     MdMenuBook,
@@ -186,6 +189,8 @@ export default function Home() {
             color: 'gold',
             features: [
                 { icon: <ImBook />, labelKey: 'home.f.kitab_hadith', descKey: 'home.f.kitab_hadith_d', href: '/hadith' },
+                { icon: <BsPeopleFill />, labelKey: 'home.f.perawi', descKey: 'home.f.perawi_d', href: '/perawi' },
+                { icon: <BsPeopleFill />, labelKey: 'home.f.jarh_tadil', descKey: 'home.f.jarh_tadil_d', href: '/perawi' },
                 { icon: <MdBookmark />, labelKey: 'home.f.bm_hadith', descKey: 'home.f.bm_hadith_d', href: '/dashboard/bookmarks', personal: true },
             ],
         },
@@ -211,12 +216,17 @@ export default function Home() {
                 { icon: <MdSelfImprovement />, labelKey: 'home.f.doa', descKey: 'home.f.doa_d', href: '/doa' },
                 { icon: <GiOpenBook />, labelKey: 'home.f.dzikir', descKey: 'home.f.dzikir_d', href: '/dzikir' },
                 { icon: <GiOpenBook />, labelKey: 'home.f.wirid', descKey: 'home.f.wirid_d', href: '/wirid' },
+                { icon: <GiPrayerBeads />, labelKey: 'home.f.wirid_custom', descKey: 'home.f.wirid_custom_d', href: '/dashboard/wirid-custom', personal: true },
                 { icon: <BsBookHalf />, labelKey: 'home.f.tahlil', descKey: 'home.f.tahlil_d', href: '/tahlil' },
                 { icon: <MdOutlinePlayLesson />, labelKey: 'home.f.kajian', descKey: 'home.f.kajian_d', href: '/kajian' },
                 { icon: <MdStar />, labelKey: 'home.f.asmaul', descKey: 'home.f.asmaul_d', href: '/asmaul-husna' },
+                { icon: <MdStar />, labelKey: 'home.f.asmaul_flashcard', descKey: 'home.f.asmaul_flashcard_d', href: '/asmaul-husna/flashcard' },
                 { icon: <MdMenuBook />, labelKey: 'home.f.siroh', descKey: 'home.f.siroh_d', href: '/siroh' },
+                { icon: <BsPeopleFill />, labelKey: 'home.f.tokoh', descKey: 'home.f.tokoh_d', href: '/tokoh' },
                 { icon: <MdArticle />, labelKey: 'home.f.blog', descKey: 'home.f.blog_d', href: '/blog' },
                 { icon: <MdTimeline />, labelKey: 'home.f.sejarah', descKey: 'home.f.sejarah_d', href: '/sejarah' },
+                { icon: <MdExplore />, labelKey: 'home.f.peta', descKey: 'home.f.peta_d', href: '/peta' },
+                { icon: <BsChatDots />, labelKey: 'home.f.forum', descKey: 'home.f.forum_d', href: '/forum' },
             ],
         },
         {
@@ -436,6 +446,15 @@ export default function Home() {
                                                     <p className='text-sm font-semibold text-gray-800 dark:text-white leading-tight'>
                                                         {t(feat.labelKey)}
                                                     </p>
+                                                    <span
+                                                        className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                                                            feat.personal
+                                                                ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                                                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                                        }`}
+                                                    >
+                                                        {feat.personal ? t('home.feature_personal') : t('home.feature_public')}
+                                                    </span>
                                                     <p className='text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed'>
                                                         {t(feat.descKey)}
                                                     </p>

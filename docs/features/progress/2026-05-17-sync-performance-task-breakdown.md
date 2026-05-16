@@ -178,7 +178,8 @@ Completed: `2026-05-17`
 
 Priority: `P1`
 Area: `apps/web`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -201,8 +202,24 @@ Status: `TODO`
 
 ### Verification
 
-- `cd apps/web && npm run build`
-- Manual browser smoke landing page CTA.
+- `cd apps/web && npm run build` - `PASS`
+- Browser smoke `http://localhost:23001` - `PASS`
+  - `Forum Diskusi` -> `/forum`
+  - `Tokoh Tarikh` -> `/tokoh`
+  - `Peta Islam` -> `/peta`
+  - `Flashcard Asmaul Husna` -> `/asmaul-husna/flashcard`
+  - `Jarh wa Ta'dil` -> `/perawi`
+  - `Wirid Pribadi` guest -> `/auth/register?next=%2Fdashboard%2Fwirid-custom`
+
+### Implementation Notes
+
+- Landing feature grid sekarang memasukkan Forum, Tokoh Tarikh, Peta Islam,
+  Flashcard Asmaul Husna, Perawi/Jarh wa Ta'dil, dan Wirid Pribadi.
+- Feature card diberi marker `Publik` atau `Akun` agar user paham apakah CTA
+  bisa dibuka tanpa login atau masuk ke journey personal.
+- Personal feature `Wirid Pribadi` diarahkan ke dashboard intent melalui
+  `personalHref('/dashboard/wirid-custom')`, sehingga guest masuk ke register
+  dengan `next` yang tepat.
 
 ## Task 6 - Feature Manifest And Parity Check
 
