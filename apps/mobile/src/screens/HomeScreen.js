@@ -1231,6 +1231,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.sm,
+    marginBottom: spacing.lg,
     marginTop: spacing.md,
     padding: spacing.md,
     ...shadows.paper,
