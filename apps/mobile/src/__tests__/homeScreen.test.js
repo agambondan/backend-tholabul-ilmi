@@ -2,7 +2,7 @@ jest.mock('lucide-react-native', () => {
   const icons = {};
   const names = [
     'Bell', 'Book', 'Bookmark', 'BookOpen', 'BookOpenCheck', 'ChevronRight',
-    'CalendarDays', 'Clock3', 'Compass', 'FileText', 'Globe', 'Grid', 'HelpCircle',
+    'Clock3', 'Compass', 'FileText', 'Globe', 'Grid', 'HelpCircle',
     'ListChecks', 'MessageCircle', 'Moon', 'Scale', 'Search', 'Smile', 'Star',
     'Sun', 'Sunset', 'Users', 'Video',
   ];
@@ -117,6 +117,7 @@ const mockHadith = {
 
 const mockPrayerTimes = {
   fajr: '04:30',
+  sunrise: '05:45',
   dhuhr: '12:00',
   asr: '15:30',
   maghrib: '17:50',
@@ -187,8 +188,27 @@ describe('HomeScreen', () => {
     const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
 
     await waitFor(() => {
-      expect(getByText('Hari ini')).toBeTruthy();
       expect(getByText('1 Ramadan 1445 H')).toBeTruthy();
+    });
+  });
+
+  test('shows detailed prayer schedule when location prayer times are available', async () => {
+    Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    Location.getCurrentPositionAsync.mockResolvedValue({
+      coords: { latitude: -6.2, longitude: 106.8 },
+    });
+    Location.reverseGeocodeAsync.mockResolvedValue([{ city: 'Jakarta' }]);
+
+    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+
+    await waitFor(() => {
+      expect(getByText('Subuh')).toBeTruthy();
+      expect(getByText('Terbit')).toBeTruthy();
+      expect(getByText('Dzuhur')).toBeTruthy();
+      expect(getByText('Ashar')).toBeTruthy();
+      expect(getByText('Maghrib')).toBeTruthy();
+      expect(getByText('Isya')).toBeTruthy();
+      expect(getByText('05:45')).toBeTruthy();
     });
   });
 

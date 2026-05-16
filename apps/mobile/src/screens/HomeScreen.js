@@ -4,7 +4,6 @@ import {
   Bookmark,
   BookOpen,
   BookOpenCheck,
-  CalendarDays,
   ChevronRight,
   Clock3,
   Compass,
@@ -45,6 +44,15 @@ const prayerKeyLabels = {
   isha: 'Isya',
   maghrib: 'Maghrib',
 };
+
+const prayerScheduleItems = [
+  { Icon: Moon, key: 'fajr', label: 'Subuh' },
+  { Icon: Sun, key: 'sunrise', label: 'Terbit' },
+  { Icon: Sun, key: 'dhuhr', label: 'Dzuhur' },
+  { Icon: Sunset, key: 'asr', label: 'Ashar' },
+  { Icon: Sunset, key: 'maghrib', label: 'Maghrib' },
+  { Icon: Moon, key: 'isha', label: 'Isya' },
+];
 
 const homeDateFormatOptions = {
   day: 'numeric',
@@ -159,6 +167,25 @@ const formatCountdown = (secondsDelta) => {
   const minutes = `${Math.floor((secondsDelta % 3600) / 60)}`.padStart(2, '0');
   const seconds = `${secondsDelta % 60}`.padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
+};
+
+const formatPrayerSummary = (nextPrayer, hasPrayerSchedule) => {
+  if (!hasPrayerSchedule) return 'Jadwal adzan belum aktif untuk lokasimu.';
+
+  const label = prayerKeyLabels[nextPrayer.key] || 'Sholat';
+  const [hoursText, minutesText] = `${nextPrayer.countdown ?? ''}`.split(':');
+  const hours = Number(hoursText);
+  const minutes = Number(minutesText);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return `Menuju ${label}`;
+  }
+
+  if (hours > 0) {
+    return `${label} dalam ${hours} jam ${minutes} menit`;
+  }
+
+  return `${label} dalam ${minutes} menit`;
 };
 
 const formatHadisSource = (value = '') => {
@@ -287,6 +314,10 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const displayName = user?.name || 'Tamu';
   const hasPrayerSchedule = nextPrayer.time !== '--:--' && nextPrayer.countdown !== '--:--:--';
   const gregorianDate = useMemo(() => formatGregorianHomeDate(dateSnapshot), [dateSnapshot]);
+  const prayerSummary = useMemo(
+    () => formatPrayerSummary(nextPrayer, hasPrayerSchedule),
+    [hasPrayerSchedule, nextPrayer],
+  );
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)
@@ -595,32 +626,51 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
         </View>
       </View>
 
-      <View style={styles.dateCard}>
-        <View style={styles.dateBadge}>
-          <CalendarDays color={colors.onPrimary} size={16} strokeWidth={2.4} />
-          <Text style={styles.dateBadgeText}>Hari ini</Text>
-        </View>
-        <View style={styles.dateCopy}>
-          <Text style={styles.gregorianDate}>{gregorianDate}</Text>
-          <View style={styles.hijriRow}>
-            <Moon color="#f6d778" size={14} strokeWidth={2.3} />
-            <Text style={styles.hijriDate}>{hijriDate}</Text>
-          </View>
-        </View>
-      </View>
-
       <View style={styles.prayerCard}>
-        <View style={styles.prayerTop}>
-          <View>
-            <Text style={styles.prayerKicker}>{`Menuju ${prayerKeyLabels[nextPrayer.key] || 'Sholat'}`}</Text>
-            <Text style={styles.prayerTime}>{nextPrayer.time}</Text>
-            {prayerMessage ? <Text style={styles.prayerMessage}>{prayerMessage}</Text> : null}
+        <View style={styles.prayerHeader}>
+          <View style={styles.locationPill}>
+            <Compass color={colors.onPrimary} size={13} strokeWidth={2.4} />
+            <Text style={styles.locationPillText}>{locationLabel}</Text>
           </View>
+          <View style={styles.prayerDateStack}>
+            <Text style={styles.gregorianDate}>{gregorianDate}</Text>
+            <View style={styles.hijriRow}>
+              <Moon color="#f6d778" size={13} strokeWidth={2.3} />
+              <Text style={styles.hijriDate}>{hijriDate}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.prayerHero}>
+          <Text style={styles.prayerKicker}>{`Menuju ${prayerKeyLabels[nextPrayer.key] || 'Sholat'}`}</Text>
+          <Text style={styles.prayerTime}>{nextPrayer.time}</Text>
+          <Text style={styles.prayerSummary}>{prayerMessage || prayerSummary}</Text>
           <View style={styles.countdown}>
             <Clock3 color={colors.onPrimary} size={13} strokeWidth={2.4} />
             <Text style={styles.countdownText}>{hasPrayerSchedule ? nextPrayer.countdown : 'Belum aktif'}</Text>
           </View>
         </View>
+
+        <View style={styles.prayerTimeline} />
+        <View style={styles.prayerScheduleRow}>
+          {prayerScheduleItems.map(({ Icon, key, label }) => {
+            const isNext = key === nextPrayer.key && hasPrayerSchedule;
+            return (
+              <View key={key} style={styles.prayerScheduleItem}>
+                <Text style={[styles.prayerScheduleLabel, isNext ? styles.prayerScheduleActive : null]}>{label}</Text>
+                <Icon
+                  color={isNext ? '#f6d778' : '#e6e2d6'}
+                  size={16}
+                  strokeWidth={2.2}
+                />
+                <Text style={[styles.prayerScheduleTime, isNext ? styles.prayerScheduleActive : null]}>
+                  {prayerTimes?.[key] ?? '--:--'}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+
         <View style={styles.prayerFooter}>
           <Text style={styles.trackerTitle}>Tracker hari ini</Text>
           <View style={styles.tracker}>
@@ -893,20 +943,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-  dateCard: {
+  prayerHeader: {
     alignItems: 'center',
-    backgroundColor: colors.primaryDark,
-    borderColor: 'rgba(230, 226, 214, 0.18)',
-    borderRadius: radius.lg,
-    borderWidth: 1,
     flexDirection: 'row',
     gap: spacing.md,
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    ...shadows.paper,
+    marginBottom: spacing.lg,
   },
-  dateBadge: {
+  locationPill: {
     alignItems: 'center',
     backgroundColor: 'rgba(255, 250, 240, 0.12)',
     borderRadius: radius.sm,
@@ -914,14 +958,16 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
     paddingVertical: 7,
+    maxWidth: '48%',
   },
-  dateBadgeText: {
+  locationPillText: {
     color: colors.onPrimary,
-    fontSize: 12,
+    flexShrink: 1,
+    fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
-  dateCopy: {
+  prayerDateStack: {
     alignItems: 'flex-end',
     flex: 1,
     gap: 5,
@@ -947,11 +993,13 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   prayerCard: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#247080',
     borderRadius: radius.lg,
     marginBottom: spacing.md,
     overflow: 'hidden',
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     ...shadows.paper,
   },
   prayerTop: {
@@ -967,12 +1015,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     textTransform: 'uppercase',
   },
+  prayerHero: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   prayerTime: {
     color: colors.onPrimary,
     fontFamily: 'serif',
-    fontSize: 26,
+    fontSize: 42,
     fontWeight: '900',
     marginTop: spacing.xs,
+  },
+  prayerSummary: {
+    color: '#e6e2d6',
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 17,
+    marginTop: 2,
+    textAlign: 'center',
   },
   prayerMessage: {
     color: '#e6e2d6',
@@ -987,13 +1047,47 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     flexDirection: 'row',
     gap: 4,
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: 5,
   },
   countdownText: {
     color: colors.onPrimary,
     fontSize: 12,
     fontWeight: '800',
+  },
+  prayerTimeline: {
+    backgroundColor: 'rgba(230, 226, 214, 0.35)',
+    height: 1,
+    marginBottom: spacing.sm,
+    width: '100%',
+  },
+  prayerScheduleRow: {
+    flexDirection: 'row',
+    gap: 4,
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  prayerScheduleItem: {
+    alignItems: 'center',
+    flex: 1,
+    gap: 4,
+    minWidth: 0,
+  },
+  prayerScheduleLabel: {
+    color: '#e6e2d6',
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  prayerScheduleTime: {
+    color: colors.onPrimary,
+    fontSize: 10,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  prayerScheduleActive: {
+    color: '#f6d778',
   },
   prayerFooter: {
     alignItems: 'center',
