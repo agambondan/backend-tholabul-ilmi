@@ -138,7 +138,8 @@ Completed: `2026-05-17`
 
 Priority: `P1`
 Area: `apps/mobile`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -155,8 +156,23 @@ Status: `TODO`
 
 ### Verification
 
-- `cd apps/mobile && npm test -- --runInBand`
-- Device smoke Profile -> Achievements detail.
+- `node --check apps/mobile/src/screens/ProfileScreen.js` - `PASS`
+- `cd apps/mobile && npm test -- --runInBand src/__tests__/profileScreen.test.js src/__tests__/api-personal.test.js` - `PASS`
+- `cd apps/mobile && npm test -- --runInBand` - `PASS`
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-achievements-detail-export` - `PASS`
+- Device smoke Profile -> Achievements detail masih perlu dijalankan pada device fisik.
+
+### Implementation Notes
+
+- Summary `PENCAPAIAN` di Profile sekarang punya CTA `Lihat semua` dan badge
+  card bisa membuka detail.
+- Detail `Pencapaian` menampilkan total poin, jumlah badge diperoleh, daftar
+  earned/locked, progress untuk kategori streak/hafalan, dan reward poin.
+- State public list achievement tidak lagi dianggap otomatis unlocked hanya
+  karena payload punya field `achievement`; earned state digabung dari
+  `/achievements/mine`.
+- Detail memakai stack sub-screen `ProfileScreen`, sehingga Android back tetap
+  lewat `setBack`/`clearBack` yang sudah ada.
 
 ## Task 5 - Landing Web Feature Discovery Sync
 

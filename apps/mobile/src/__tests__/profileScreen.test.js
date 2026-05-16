@@ -17,7 +17,7 @@ jest.mock('lucide-react-native', () => {
   const names = [
     'ArrowLeft', 'Bell', 'BookOpen', 'ChevronRight', 'HardDrive',
     'Lock', 'LogOut', 'Palette', 'Settings', 'ShieldCheck',
-    'Target', 'Trophy', 'User',
+    'Sparkles', 'Target', 'Trophy', 'User',
   ];
   names.forEach((n) => { icons[n] = n; });
   return icons;
@@ -212,6 +212,64 @@ describe('ProfileScreen', () => {
       expect(getByText('Streak 7 Hari')).toBeTruthy();
       expect(getByText('Tilawah Perdana')).toBeTruthy();
     });
+  });
+
+  test('opens achievements detail with earned, locked, progress, and reward state', async () => {
+    useSession.mockReturnValue(loggedInSession);
+    personalApi.getMyPoints.mockResolvedValue({ total_points: 120 });
+    personalApi.getMyStreak.mockResolvedValue({ current_streak: 3 });
+    personalApi.getHafalanSummary.mockResolvedValue({ memorized_count: 1 });
+    personalApi.getAchievements.mockResolvedValue([
+      {
+        id: 1,
+        code: 'streak_7',
+        name: 'Seminggu Penuh',
+        description: 'Streak 7 hari',
+        icon: '⚡',
+        category: 'streak',
+        threshold: 7,
+      },
+      {
+        id: 2,
+        code: 'hafalan_5',
+        name: '5 Surah Hafal',
+        description: 'Hafal 5 surah',
+        icon: '🕌',
+        category: 'hafalan',
+        threshold: 5,
+      },
+    ]);
+    personalApi.getMyAchievements.mockResolvedValue([
+      {
+        achievement_id: 1,
+        earned_at: '2024-01-01',
+        achievement: {
+          id: 1,
+          code: 'streak_7',
+          name: 'Seminggu Penuh',
+          description: 'Streak 7 hari',
+          icon: '⚡',
+          category: 'streak',
+          threshold: 7,
+        },
+      },
+    ]);
+
+    const { getAllByText, getByText } = render(<ProfileScreen isActive />);
+    await waitFor(() => {
+      expect(getByText('Seminggu Penuh')).toBeTruthy();
+    });
+
+    fireEvent.press(getByText('Lihat semua'));
+
+    expect(getByText('Total Poin')).toBeTruthy();
+    expect(getByText('120')).toBeTruthy();
+    expect(getByText('1/2 badge diperoleh')).toBeTruthy();
+    expect(getByText('Diperoleh')).toBeTruthy();
+    expect(getByText('Terkunci')).toBeTruthy();
+    expect(getByText('3/7 hari')).toBeTruthy();
+    expect(getByText('1/5 surah')).toBeTruthy();
+    expect(getAllByText('Reward 10 poin')).toHaveLength(2);
   });
 
   test('achievements message shown when not logged in', async () => {

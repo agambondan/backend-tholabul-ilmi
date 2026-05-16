@@ -9,6 +9,7 @@ import {
     Palette,
     Settings,
     ShieldCheck,
+    Sparkles,
     Target,
     Trophy,
     User,
@@ -48,7 +49,7 @@ const DEFAULT_BADGES = [
     { code: 'streak_7', description: 'Jaga aktivitas belajar selama 7 hari.', icon: '🔥', label: 'Streak 7 Hari', unlocked: false },
 ];
 
-const normalizeAchievement = (item = {}) => {
+const normalizeAchievement = (item = {}, options = {}) => {
     const source = item.achievement ?? item;
     const code = source.code ?? `${source.id ?? item.achievement_id ?? source.name ?? 'achievement'}`;
     return {
@@ -58,8 +59,39 @@ const normalizeAchievement = (item = {}) => {
         icon: source.icon || '🏅',
         id: source.id ?? item.achievement_id ?? code,
         label: source.name ?? source.name_en ?? 'Pencapaian',
+        category: source.category ?? '',
+        rewardPoints: source.reward_points ?? source.points ?? 10,
         threshold: source.threshold ?? null,
-        unlocked: Boolean(item.earned_at || item.achievement || source.unlocked),
+        unlocked: Boolean(options.earned || item.earned_at || source.unlocked),
+    };
+};
+
+const getAchievementProgress = (achievement, stats) => {
+    const threshold = Number(achievement.threshold) || 0;
+    if (!threshold) return null;
+
+    if (achievement.category === 'streak') {
+        const current = Number(stats?.streak ?? 0);
+        return {
+            current,
+            label: `${Math.min(current, threshold)}/${threshold} hari`,
+            pct: Math.min(100, Math.round((current / threshold) * 100)),
+        };
+    }
+
+    if (achievement.category === 'hafalan') {
+        const current = Number(stats?.hafalanCount ?? 0);
+        return {
+            current,
+            label: `${Math.min(current, threshold)}/${threshold} surah`,
+            pct: Math.min(100, Math.round((current / threshold) * 100)),
+        };
+    }
+
+    return {
+        current: null,
+        label: `Target ${threshold}`,
+        pct: achievement.unlocked ? 100 : 0,
     };
 };
 
@@ -162,6 +194,127 @@ function SettingsList({ onNavigate }) {
     );
 }
 
+function AchievementsDetail({ achievements, loading, message, onBack, points, stats, user }) {
+    const earnedCount = achievements.filter((item) => item.unlocked).length;
+
+    return (
+        <SubScreen title="Pencapaian" onBack={onBack}>
+            <Card style={styles.achievementHero}>
+                <View style={styles.achievementHeroIcon}>
+                    <Trophy color={colors.accent} size={28} strokeWidth={2.4} />
+                </View>
+                <View style={styles.achievementHeroBody}>
+                    <Text style={styles.achievementHeroValue}>
+                        {user ? (points ?? 0).toLocaleString('id-ID') : '—'}
+                    </Text>
+                    <Text style={styles.achievementHeroLabel}>Total Poin</Text>
+                    <Text style={styles.achievementHeroMeta}>
+                        {earnedCount}/{achievements.length} badge diperoleh
+                    </Text>
+                </View>
+            </Card>
+
+            {!user ? (
+                <Card style={styles.emptyAchievementCard}>
+                    <Text style={styles.emptyAchievementIcon}>🏅</Text>
+                    <Text style={styles.emptyAchievementTitle}>Masuk untuk melihat pencapaian kamu.</Text>
+                    <Text style={styles.emptyAchievementText}>
+                        Badge yang terkunci tetap ditampilkan agar target belajarnya jelas.
+                    </Text>
+                </Card>
+            ) : null}
+
+            {message ? <Text style={styles.sectionHint}>{message}</Text> : null}
+            {loading ? <ActivityIndicator color={colors.primary} /> : null}
+
+            <View style={styles.achievementList}>
+                {achievements.map((achievement) => {
+                    const progress = getAchievementProgress(achievement, stats);
+                    return (
+                        <Card
+                            key={achievement.code ?? achievement.label}
+                            style={[
+                                styles.achievementDetailCard,
+                                !achievement.unlocked && styles.achievementDetailLocked,
+                            ]}
+                        >
+                            <View style={styles.achievementDetailTop}>
+                                <View
+                                    style={[
+                                        styles.achievementDetailIcon,
+                                        achievement.unlocked && styles.achievementDetailIconUnlocked,
+                                    ]}
+                                >
+                                    <Text style={styles.achievementDetailEmoji}>
+                                        {achievement.unlocked ? achievement.icon : '•'}
+                                    </Text>
+                                    {!achievement.unlocked ? (
+                                        <View style={styles.badgeLock}>
+                                            <Lock color={colors.muted} size={10} strokeWidth={2.4} />
+                                        </View>
+                                    ) : null}
+                                </View>
+                                <View style={styles.achievementDetailBody}>
+                                    <View style={styles.achievementDetailTitleRow}>
+                                        <Text style={styles.achievementDetailTitle}>{achievement.label}</Text>
+                                        <View
+                                            style={[
+                                                styles.achievementStatePill,
+                                                achievement.unlocked && styles.achievementStatePillUnlocked,
+                                            ]}
+                                        >
+                                            <Text
+                                                style={[
+                                                    styles.achievementStateText,
+                                                    achievement.unlocked && styles.achievementStateTextUnlocked,
+                                                ]}
+                                            >
+                                                {achievement.unlocked ? 'Diperoleh' : 'Terkunci'}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    {achievement.description ? (
+                                        <Text style={styles.achievementDetailDescription}>
+                                            {achievement.description}
+                                        </Text>
+                                    ) : null}
+                                </View>
+                            </View>
+
+                            {progress ? (
+                                <View style={styles.achievementProgressBlock}>
+                                    <View style={styles.achievementProgressHeader}>
+                                        <Text style={styles.achievementProgressLabel}>Progress</Text>
+                                        <Text style={styles.achievementProgressValue}>{progress.label}</Text>
+                                    </View>
+                                    <View style={styles.achievementProgressTrack}>
+                                        <View
+                                            style={[
+                                                styles.achievementProgressFill,
+                                                { width: `${achievement.unlocked ? 100 : progress.pct}%` },
+                                            ]}
+                                        />
+                                    </View>
+                                </View>
+                            ) : null}
+
+                            <View style={styles.achievementRewardRow}>
+                                <Sparkles color={colors.accent} size={14} strokeWidth={2.4} />
+                                <Text style={styles.achievementRewardText}>
+                                    Reward {achievement.rewardPoints} poin
+                                </Text>
+                                {achievement.earnedAt ? (
+                                    <Text style={styles.achievementEarnedDate}>Sudah diperoleh</Text>
+                                ) : null}
+                            </View>
+                        </Card>
+                    );
+                })}
+            </View>
+        </SubScreen>
+    );
+}
+
 export function ProfileScreen({ isActive, navigation, onOpenTab }) {
     const { loading: sessionLoading, session, signOut, user } = useSession();
     const [stack, setStack] = useState([]);
@@ -178,6 +331,9 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
         const routeView = navigation?.current?.view;
         if (routeView === 'settings') {
             setStack(['settings']);
+        }
+        if (routeView === 'achievements') {
+            setStack(['achievements']);
         }
         if (typeof routeView === 'string' && routeView.startsWith('settings-')) {
             setStack(['settings', routeView]);
@@ -270,11 +426,11 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
 
             const allAchievements =
                 allAchievementsRes.status === 'fulfilled'
-                    ? allAchievementsRes.value.map(normalizeAchievement)
+                    ? allAchievementsRes.value.map((item) => normalizeAchievement(item))
                     : DEFAULT_BADGES;
             const earnedAchievements =
                 myAchievementsRes.status === 'fulfilled'
-                    ? myAchievementsRes.value.map(normalizeAchievement)
+                    ? myAchievementsRes.value.map((item) => normalizeAchievement(item, { earned: true }))
                     : [];
             const earnedByCode = earnedAchievements.reduce((acc, item) => {
                 acc[item.code] = item;
@@ -308,6 +464,20 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
             <SubScreen title="Pengaturan" onBack={pop}>
                 <SettingsList onNavigate={push} />
             </SubScreen>
+        );
+    }
+
+    if (currentScreen === 'achievements') {
+        return (
+            <AchievementsDetail
+                achievements={achievements}
+                loading={achievementsLoading}
+                message={achievementsMessage}
+                onBack={pop}
+                points={stats?.points}
+                stats={stats}
+                user={user}
+            />
         );
     }
 
@@ -471,13 +641,26 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
             <View style={styles.badgeSection}>
                 <View style={styles.sectionHeaderRow}>
                     <Text style={styles.sectionLabel}>PENCAPAIAN</Text>
-                    {achievementsLoading ? <ActivityIndicator color={colors.primary} size="small" /> : null}
+                    <View style={styles.sectionHeaderActions}>
+                        {achievementsLoading ? <ActivityIndicator color={colors.primary} size="small" /> : null}
+                        <Pressable
+                            accessibilityLabel="Lihat semua pencapaian"
+                            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                            onPress={() => push('achievements')}
+                            style={styles.sectionLink}
+                        >
+                            <Text style={styles.sectionLinkText}>Lihat semua</Text>
+                            <ChevronRight color={colors.primary} size={14} strokeWidth={2.5} />
+                        </Pressable>
+                    </View>
                 </View>
                 {achievementsMessage ? <Text style={styles.sectionHint}>{achievementsMessage}</Text> : null}
                 <View style={styles.badgeGrid}>
                     {achievements.slice(0, 6).map((badge) => (
-                        <View
+                        <Pressable
                             key={badge.code ?? badge.label}
+                            android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                            onPress={() => push('achievements')}
                             style={[styles.badge, !badge.unlocked && styles.badgeLocked]}
                         >
                             <View style={[styles.badgeIconShell, badge.unlocked && styles.badgeIconShellUnlocked]}>
@@ -501,7 +684,7 @@ export function ProfileScreen({ isActive, navigation, onOpenTab }) {
                                     {badge.description}
                                 </Text>
                             ) : null}
-                        </View>
+                        </Pressable>
                     ))}
                 </View>
             </View>
@@ -680,6 +863,27 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: spacing.xs,
     },
+    sectionHeaderActions: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        gap: spacing.sm,
+    },
+    sectionLink: {
+        alignItems: 'center',
+        backgroundColor: colors.surfaceMuted,
+        borderColor: colors.faint,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        flexDirection: 'row',
+        gap: 2,
+        minHeight: 30,
+        paddingHorizontal: spacing.sm,
+    },
+    sectionLinkText: {
+        color: colors.primary,
+        fontSize: 11,
+        fontWeight: '900',
+    },
     sectionLabel: {
         color: colors.muted,
         fontSize: 11,
@@ -761,6 +965,186 @@ const styles = StyleSheet.create({
         lineHeight: 14,
         paddingHorizontal: spacing.xs,
         textAlign: 'center',
+    },
+    achievementHero: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        gap: spacing.md,
+    },
+    achievementHeroIcon: {
+        alignItems: 'center',
+        backgroundColor: colors.surfaceMuted,
+        borderColor: colors.faint,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        height: 58,
+        justifyContent: 'center',
+        width: 58,
+    },
+    achievementHeroBody: {
+        flex: 1,
+    },
+    achievementHeroValue: {
+        color: colors.primaryDark,
+        fontFamily: 'serif',
+        fontSize: 28,
+        fontWeight: '900',
+    },
+    achievementHeroLabel: {
+        color: colors.muted,
+        fontSize: 11,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+    },
+    achievementHeroMeta: {
+        color: colors.text,
+        fontSize: 12,
+        fontWeight: '700',
+        marginTop: spacing.xs,
+    },
+    emptyAchievementCard: {
+        alignItems: 'center',
+    },
+    emptyAchievementIcon: {
+        fontSize: 34,
+        marginBottom: spacing.sm,
+    },
+    emptyAchievementTitle: {
+        color: colors.ink,
+        fontSize: 14,
+        fontWeight: '900',
+        textAlign: 'center',
+    },
+    emptyAchievementText: {
+        color: colors.muted,
+        fontSize: 12,
+        lineHeight: 18,
+        marginTop: spacing.xs,
+        textAlign: 'center',
+    },
+    achievementList: {
+        gap: spacing.md,
+    },
+    achievementDetailCard: {
+        gap: spacing.md,
+    },
+    achievementDetailLocked: {
+        backgroundColor: colors.bg,
+    },
+    achievementDetailTop: {
+        alignItems: 'flex-start',
+        flexDirection: 'row',
+        gap: spacing.md,
+    },
+    achievementDetailIcon: {
+        alignItems: 'center',
+        backgroundColor: colors.bg,
+        borderColor: colors.faint,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        height: 48,
+        justifyContent: 'center',
+        width: 48,
+    },
+    achievementDetailIconUnlocked: {
+        backgroundColor: colors.surfaceMuted,
+        borderColor: colors.primary,
+    },
+    achievementDetailEmoji: {
+        color: colors.muted,
+        fontSize: 22,
+    },
+    achievementDetailBody: {
+        flex: 1,
+        minWidth: 0,
+    },
+    achievementDetailTitleRow: {
+        alignItems: 'flex-start',
+        flexDirection: 'row',
+        gap: spacing.sm,
+        justifyContent: 'space-between',
+    },
+    achievementDetailTitle: {
+        color: colors.ink,
+        flex: 1,
+        fontFamily: 'serif',
+        fontSize: 15,
+        fontWeight: '900',
+        lineHeight: 20,
+    },
+    achievementDetailDescription: {
+        color: colors.muted,
+        fontSize: 12,
+        lineHeight: 18,
+        marginTop: spacing.xs,
+    },
+    achievementStatePill: {
+        backgroundColor: colors.bg,
+        borderColor: colors.faint,
+        borderRadius: 999,
+        borderWidth: 1,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 4,
+    },
+    achievementStatePillUnlocked: {
+        backgroundColor: '#ecfdf5',
+        borderColor: '#bbf7d0',
+    },
+    achievementStateText: {
+        color: colors.muted,
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    achievementStateTextUnlocked: {
+        color: '#047857',
+    },
+    achievementProgressBlock: {
+        gap: spacing.xs,
+    },
+    achievementProgressHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    achievementProgressLabel: {
+        color: colors.muted,
+        fontSize: 11,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+    },
+    achievementProgressValue: {
+        color: colors.primaryDark,
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    achievementProgressTrack: {
+        backgroundColor: colors.faint,
+        borderRadius: 999,
+        height: 8,
+        overflow: 'hidden',
+    },
+    achievementProgressFill: {
+        backgroundColor: colors.primary,
+        borderRadius: 999,
+        height: '100%',
+    },
+    achievementRewardRow: {
+        alignItems: 'center',
+        borderTopColor: colors.faint,
+        borderTopWidth: 1,
+        flexDirection: 'row',
+        gap: spacing.xs,
+        paddingTop: spacing.sm,
+    },
+    achievementRewardText: {
+        color: colors.text,
+        flex: 1,
+        fontSize: 12,
+        fontWeight: '800',
+    },
+    achievementEarnedDate: {
+        color: colors.muted,
+        fontSize: 11,
+        fontWeight: '700',
     },
     menuRow: {
         alignItems: 'center',
