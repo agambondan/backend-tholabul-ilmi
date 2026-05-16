@@ -9,6 +9,7 @@ import (
 type TafsirService interface {
 	FindByAyahID(int) (*model.Tafsir, error)
 	FindBySurahNumber(int, int, int) ([]model.Tafsir, error)
+	Search(string, int, int) ([]model.Tafsir, error)
 	Save(*model.Tafsir) (*model.Tafsir, error)
 	UpdateByAyahID(int, *model.Tafsir) (*model.Tafsir, error)
 }
@@ -59,4 +60,8 @@ func (s *tafsirService) UpdateByAyahID(ayahID int, t *model.Tafsir) (*model.Tafs
 		s.cache.Invalidate("tafsir:*")
 	}
 	return result, err
+}
+
+func (s *tafsirService) Search(query string, limit, offset int) ([]model.Tafsir, error) {
+	return s.repo.Search(query, limit, offset)
 }

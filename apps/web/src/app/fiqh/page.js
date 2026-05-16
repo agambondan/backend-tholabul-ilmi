@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import { useLocale } from '@/context/Locale';
 import { fiqhApi } from '@/lib/api';
@@ -129,7 +130,7 @@ export default function FiqhPage() {
     return (
         <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
             <NavbarTailwindCss />
-            <div className='max-w-2xl flex-1 w-full mx-auto px-4 pt-24 pb-8'>
+            <ContentWidth compact='max-w-2xl' className='flex-1 px-4 pt-24 pb-8'>
                 {/* Header */}
                 <div className='mb-8 text-center'>
                     <div className='inline-flex items-center justify-center w-16 h-16 bg-teal-100 dark:bg-teal-900/40 rounded-2xl mb-4'>
@@ -273,7 +274,7 @@ export default function FiqhPage() {
                 <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-8'>
                     {t('fiqh.disclaimer')}
                 </p>
-            </div>
+            </ContentWidth>
             <Footer />
         </main>
     );

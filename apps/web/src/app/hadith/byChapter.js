@@ -11,7 +11,7 @@ import { getLocalizedTranslation } from '@/lib/translation';
 
 const normalizeItems = (data) => data?.items ?? data ?? [];
 
-const ByChapter = () => {
+const ByChapter = ({ basePath = '/hadith' }) => {
     const { t, lang } = useLocale();
     const router = useRouter();
     const [bookList, setBookList] = useState([]);
@@ -132,7 +132,7 @@ const ByChapter = () => {
 
                     {selectedBookSlug && (
                         <Link
-                            href={`/hadith/${selectedBookSlug}`}
+                            href={`${basePath}/${selectedBookSlug}`}
                             className='inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-700 text-white text-sm font-medium hover:bg-emerald-600 transition-colors'
                         >
                             {t('hadith.open_reader')}
@@ -209,7 +209,7 @@ const ByChapter = () => {
                                         key={chapter.id}
                                         onClick={() =>
                                             router.push(
-                                                `/hadith/${selectedBookSlug}?theme=${selectedThemeId}&chapter=${chapter.id}`,
+                                                `${basePath}/${selectedBookSlug}?theme=${selectedThemeId}&chapter=${chapter.id}`,
                                                 { scroll: false }
                                             )
                                         }

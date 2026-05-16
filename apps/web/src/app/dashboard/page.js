@@ -256,7 +256,9 @@ const DashboardPage = () => {
             </div>
             {/* Daily Ayah */}
             <div className='mb-4'>
-                <DailyAyahWidget basePath='/dashboard/quran' />
+                <DailyAyahWidget
+                    buildHref={({ surahSlug, ayahNum }) => `/dashboard/quran/${surahSlug}#${ayahNum}`}
+                />
             </div>
             {/* Daily Hadith */}
             <div className='mb-5'>

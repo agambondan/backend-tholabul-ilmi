@@ -19,11 +19,13 @@ import { MdOutlineAutoStories } from 'react-icons/md';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const TafsirSurahPage = props => {
-    const params = use(props.params);
+export const TafsirSurahContent = ({
+    slug,
+    tafsirBasePath = '/tafsir',
+    quranBasePath = '/quran/surah',
+}) => {
     const { t } = useLocale();
     const { isWide } = useLayoutMode();
-    const { slug } = params;
     const decodedSlug = decodeURIComponent(slug);
 
     const [surah, setSurah] = useState(null);
@@ -35,6 +37,8 @@ const TafsirSurahPage = props => {
     const [showLatin, setShowLatin] = useState(true);
     const [showTranslation, setShowTranslation] = useState(true);
     const [search, setSearch] = useState('');
+    const [kitabFilter, setKitabFilter] = useState('all');
+    const [sideBySide, setSideBySide] = useState(false);
 
     useEffect(() => {
         setIsLoadingAyah(true);
@@ -117,14 +121,11 @@ const TafsirSurahPage = props => {
     });
 
     return (
-        <main className='min-h-screen flex flex-col'>
-            <NavbarTailwindCss />
-            <Section>
-                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
+        <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-2xl'}>
                     {/* Back + header */}
                     <div className='flex items-center gap-3 mb-6'>
                         <Link
-                            href='/tafsir'
+                            href={tafsirBasePath}
                             className='p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors text-gray-500 dark:text-gray-400'
                         >
                             <BsChevronLeft />
@@ -162,6 +163,21 @@ const TafsirSurahPage = props => {
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${showTranslation ? 'bg-emerald-700 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
                         >
                             {t('tafsir.translation_toggle')}
+                        </button>
+                        <select
+                            value={kitabFilter}
+                            onChange={(e) => setKitabFilter(e.target.value)}
+                            className='px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-400'
+                        >
+                            <option value='all'>{t('tafsir.kitab_all') ?? 'Semua Tafsir'}</option>
+                            <option value='kemenag'>{t('tafsir.kitab_kemenag') ?? 'Tafsir Kemenag'}</option>
+                            <option value='ibnu_katsir'>{t('tafsir.kitab_ibnu_katsir') ?? 'Tafsir Al-Mishbah'}</option>
+                        </select>
+                        <button
+                            onClick={() => setSideBySide((v) => !v)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sideBySide ? 'bg-emerald-700 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
+                        >
+                            {t('tafsir.side_by_side') ?? 'Bandingkan'}
                         </button>
                         <div className='ml-auto flex gap-2'>
                             <button
@@ -246,7 +262,7 @@ const TafsirSurahPage = props => {
                                 {t('quran.not_found')}
                             </p>
                             <Link
-                                href='/tafsir'
+                                href={tafsirBasePath}
                                 className='mt-3 inline-block text-sm text-emerald-600 dark:text-emerald-400 hover:underline'
                             >
                                 {t('tafsir.back_to_surah_list')}
@@ -321,22 +337,42 @@ const TafsirSurahPage = props => {
                                                 )}
 
                                                 {/* Tafsir */}
-                                                {primaryTafsir || secondaryTafsir ? (
-                                                    <div className='space-y-3'>
-                                                        {primaryTafsir ? (
+                                                {(primaryTafsir || secondaryTafsir) ? (
+                                                    sideBySide && kitabFilter === 'all' && primaryTafsir && secondaryTafsir ? (
+                                                        <div className='grid grid-cols-2 gap-3'>
                                                             <div className='bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-4 py-3'>
                                                                 <p className='text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-1'>
-                                                                    Tafsir Jalalain
+                                                                    {t('tafsir.kitab_kemenag_label') ?? 'Tafsir Kemenag'}
+                                                                </p>
+                                                                <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
+                                                                    {primaryTafsir}
+                                                                </p>
+                                                            </div>
+                                                            <div className='bg-sky-50 dark:bg-sky-900/20 rounded-lg px-4 py-3'>
+                                                                <p className='text-xs font-semibold text-sky-700 dark:text-sky-400 uppercase tracking-wide mb-1'>
+                                                                    {t('tafsir.kitab_ibnu_katsir_label') ?? 'Tafsir Al-Mishbah'}
+                                                                </p>
+                                                                <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
+                                                                    {secondaryTafsir}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                    <div className='space-y-3'>
+                                                        {primaryTafsir && kitabFilter !== 'ibnu_katsir' ? (
+                                                            <div className='bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-4 py-3'>
+                                                                <p className='text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mb-1'>
+                                                                    {t('tafsir.kitab_kemenag_label') ?? 'Tafsir Kemenag'}
                                                                 </p>
                                                                 <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
                                                                     {primaryTafsir}
                                                                 </p>
                                                             </div>
                                                         ) : null}
-                                                        {secondaryTafsir ? (
+                                                        {secondaryTafsir && kitabFilter !== 'kemenag' ? (
                                                             <div className='bg-sky-50 dark:bg-sky-900/20 rounded-lg px-4 py-3'>
                                                                 <p className='text-xs font-semibold text-sky-700 dark:text-sky-400 uppercase tracking-wide mb-1'>
-                                                                    Tafsir Quraish Shihab
+                                                                    {t('tafsir.kitab_ibnu_katsir_label') ?? 'Tafsir Al-Mishbah'}
                                                                 </p>
                                                                 <p className='text-sm text-gray-700 dark:text-gray-300 leading-relaxed'>
                                                                     {secondaryTafsir}
@@ -344,6 +380,7 @@ const TafsirSurahPage = props => {
                                                             </div>
                                                         ) : null}
                                                     </div>
+                                                    )
                                                 ) : (
                                                     <div className='bg-gray-50 dark:bg-slate-700/40 rounded-lg px-4 py-3'>
                                                         <p className='text-xs text-gray-400 dark:text-gray-500 italic'>
@@ -354,7 +391,7 @@ const TafsirSurahPage = props => {
 
                                                 {/* Link to quran */}
                                                 <Link
-                                                    href={`/quran/surah/${encodeURIComponent(decodedSlug)}#${ayah.number}`}
+                                                    href={`${quranBasePath}/${encodeURIComponent(decodedSlug)}#${ayah.number}`}
                                                     className='text-xs text-emerald-600 dark:text-emerald-400 hover:underline'
                                                 >
                                                     {t('tafsir.read_in_quran')}
@@ -382,7 +419,18 @@ const TafsirSurahPage = props => {
                             </button>
                         </div>
                     )}
-                </div>
+        </div>
+    );
+};
+
+const TafsirSurahPage = props => {
+    const params = use(props.params);
+
+    return (
+        <main className='min-h-screen flex flex-col'>
+            <NavbarTailwindCss />
+            <Section>
+                <TafsirSurahContent slug={params.slug} />
             </Section>
             <Footer />
         </main>

@@ -11,6 +11,12 @@ import { useEffect, useState } from 'react';
 import { BsPlayCircle, BsSearch, BsYoutube } from 'react-icons/bs';
 import { MdOutlinePlayLesson } from 'react-icons/md';
 
+const getYouTubeId = (url) => {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+};
+
 const CATEGORIES = [
     { key: 'semua', labelKey: 'common.all' },
     { key: 'aqidah', labelKey: 'kajian.category_aqidah' },
@@ -194,9 +200,21 @@ const KajianPage = () => {
                                         >
                                             {t(CATEGORIES.find((cat) => cat.key === k.category)?.labelKey) || k.category}
                                         </span>
-                                        {k.platform === 'youtube' && (
-                                            <BsYoutube className='text-red-500 text-lg' />
-                                        )}
+                                        {k.platform === 'youtube' && <BsYoutube className='text-red-500 text-lg' />}
+                                    </div>
+                                    {getYouTubeId(k.url) && (
+                                        <div className='aspect-video rounded-lg overflow-hidden bg-black'>
+                                            <iframe
+                                                src={`https://www.youtube.com/embed/${getYouTubeId(k.url)}`}
+                                                title={k.title}
+                                                className='w-full h-full'
+                                                allowFullScreen
+                                            />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className='font-semibold text-gray-800 dark:text-gray-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1'>{k.title}</p>
+                                        <p className='text-xs text-gray-400 dark:text-gray-500'>{k.speaker} · {k.duration ? `${Math.floor(k.duration / 60)}m` : ''}</p>
                                     </div>
 
                                     {/* Title */}

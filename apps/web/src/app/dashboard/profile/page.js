@@ -109,8 +109,9 @@ const ProfileDashboardPage = () => {
                 <Link
                     href='/profile'
                     className='mt-4 text-sm text-emerald-600 dark:text-emerald-400 hover:underline font-medium'
+                    title='Membuka halaman akun lengkap di luar dashboard'
                 >
-                    {t('profile.edit')}
+                    {t('profile.edit')} (akun lengkap)
                 </Link>
             </div>
 

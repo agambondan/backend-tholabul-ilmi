@@ -9,7 +9,7 @@ export default async function SearchPage(props) {
         <main className='min-h-screen flex flex-col'>
             <NavbarTailwindCss />
             <Section>
-                <SearchClient initialQuery={searchParams?.q ?? ''} />
+                <SearchClient initialQuery={searchParams?.q ?? ''} initialType={searchParams?.type ?? 'all'} />
             </Section>
             <Footer />
         </main>

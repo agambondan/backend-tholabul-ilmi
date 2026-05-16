@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import { getLocalizedField } from '@/lib/translation';
+import Link from 'next/link';
 import { useState } from 'react';
 import { BsBookHalf, BsChevronDown, BsChevronUp } from 'react-icons/bs';
 
@@ -189,7 +190,7 @@ const SECTIONS = [
     },
 ];
 
-export const TahlilContent = () => {
+export const TahlilContent = ({ quranBasePath = '/quran' }) => {
     const { t, lang } = useLocale();
     const { isWide } = useLayoutMode();
     const [open, setOpen] = useState(new Set(['fatihah']));
@@ -315,9 +316,12 @@ export const TahlilContent = () => {
                     <div className='mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800/40'>
                         <p className='text-xs text-amber-700 dark:text-amber-400'>
                             <strong>{t('common.notes')}:</strong> {t('tahlil.note_text')}{' '}
-                            <a href='/quran/surah/Yasin' className='underline font-medium'>
+                            <Link
+                                href={quranBasePath.startsWith('/dashboard/quran') ? `${quranBasePath}/Yasin` : `${quranBasePath}/surah/Yasin`}
+                                className='underline font-medium'
+                            >
                                 Al-Quran — Surah Yasin
-                            </a>
+                            </Link>
                             .
                         </p>
                     </div>

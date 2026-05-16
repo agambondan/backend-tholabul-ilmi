@@ -15,7 +15,10 @@ const getDailyAyahNumber = () => {
     return (dayOfYear % TOTAL_AYAH) + 1;
 };
 
-export default function DailyAyahWidget({ basePath = '/quran' }) {
+export default function DailyAyahWidget({
+    basePath = '/quran',
+    buildHref = ({ surahSlug, ayahNum }) => `${basePath}/surah/${surahSlug}#${ayahNum}`,
+}) {
     const { t, lang } = useLocale();
     const [ayah, setAyah] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -53,6 +56,7 @@ export default function DailyAyahWidget({ basePath = '/quran' }) {
         '';
     const ayahNum = ayah.number ?? '';
     const surahSlug = ayah.surah?.translation?.latin_en?.toLowerCase() ?? '';
+    const readHref = surahSlug ? buildHref({ ayah, surahSlug, ayahNum }) : '';
 
     return (
         <div className='bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5'>
@@ -83,9 +87,9 @@ export default function DailyAyahWidget({ basePath = '/quran' }) {
                     {surahName}
                     {ayahNum ? `: ${ayahNum}` : ''}
                 </span>
-                {surahSlug && (
+                {readHref && (
                     <Link
-                        href={`${basePath}/surah/${surahSlug}#${ayahNum}`}
+                        href={readHref}
                         className='text-emerald-600 dark:text-emerald-400 hover:underline font-medium'
                     >
                         {t('hadith.read_more')} →

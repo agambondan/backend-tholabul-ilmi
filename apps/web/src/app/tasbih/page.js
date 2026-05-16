@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
@@ -147,7 +148,7 @@ export function TasbihContent() {
     };
 
     return (
-        <div className='container mx-auto px-4 max-w-3xl py-6'>
+        <ContentWidth compact='max-w-3xl' className='px-4 py-6'>
                     <div className='text-center mb-6'>
                         <p
                             className='text-3xl text-emerald-700 dark:text-emerald-400 mb-2'
@@ -339,7 +340,7 @@ export function TasbihContent() {
                             ))}
                         </div>
                     </div>
-                </div>
+                </ContentWidth>
     );
 }
 

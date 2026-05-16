@@ -11,7 +11,12 @@ import { BsBookHalf, BsSearch } from 'react-icons/bs';
 const getLatinName = (surah) =>
     surah.translation?.latin_en ?? surah.translation?.latin_idn ?? '';
 
-export default function QuranPageClient({ items, isError }) {
+export default function QuranPageClient({
+    items,
+    isError,
+    basePath = '/quran/surah',
+    mushafPath = '/quran/page-mushaf',
+}) {
     const { t, lang } = useLocale();
     const { isWide } = useLayoutMode();
     const [search, setSearch] = useState('');
@@ -69,7 +74,7 @@ export default function QuranPageClient({ items, isError }) {
 
             {/* Mushaf navigator shortcut */}
             <Link
-                href='/quran/page-mushaf'
+                href={mushafPath}
                 className='flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 mb-6 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors group'
             >
                 <BsBookHalf className='text-2xl text-emerald-600 dark:text-emerald-400 shrink-0' />
@@ -89,7 +94,7 @@ export default function QuranPageClient({ items, isError }) {
                     <Link
                         key={surat.number}
                         prefetch={false}
-                        href={`/quran/surah/${getLatinName(surat)}`}
+                        href={`${basePath}/${getLatinName(surat)}`}
                     >
                         <CardHorizontal surat={surat} lang={lang} ayahUnit={t('common.verse')} t={t} />
                     </Link>

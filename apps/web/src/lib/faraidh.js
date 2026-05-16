@@ -1,7 +1,7 @@
 // Kalkulator pembagian waris (faraidh) — kasus dasar Ashabul Furudh + Ashabah
 // Mendukung: suami/istri, anak L/P, ayah/ibu, kakek/nenek, saudara kandung L/P
-// Catatan: kasus kompleks (Musytarakah, Akdariyah, dll.) belum termasuk.
-// Output: { rows: [{key, count, fraction, share, amount}], total, residueAfterFurudh, applied: {aul?, radd?} }
+// Kasus khusus: Musytarakah (suami+ibu+2+saudara kandung L/P berbagi 1/3)
+// Output: { rows: [{key, count, fraction, share, amount}], total, residueAfterFurudh, applied: {aul?, radd?, musytarakah?} }
 
 const fr = (num, den) => ({ num, den });
 const frToDec = (f) => f.num / f.den;
@@ -32,6 +32,7 @@ export function calculateFaraidh(input, total) {
     const hasGrandfather = kakek > 0 && !hasFather;
     const hasMultipleSiblings = saudaraL + saudaraP >= 2;
     const grandmotherActive = nenek > 0 && ibu === 0;
+    const isMusytarakah = suami > 0 && ibu > 0 && !hasFather && !hasChildren && !hasGrandfather && (saudaraL >= 2 || (saudaraL + saudaraP) >= 2);
 
     const rows = [];
     const ashabah = [];
@@ -89,7 +90,14 @@ export function calculateFaraidh(input, total) {
     }
 
     if (!hasChildren && !hasFather && !hasGrandfather) {
-        if (saudaraL > 0) {
+        if (isMusytarakah) {
+            rows.push({
+                key: 'ibu_musytarakah',
+                count: 1 + saudaraL + saudaraP,
+                fraction: fr(1, 3),
+                note: 'Musytarakah: ibu + saudara kandung berbagi 1/3 bersama',
+            });
+        } else if (saudaraL > 0) {
             const totalShares = saudaraL * 2 + saudaraP;
             ashabah.push({
                 key: 'saudara_laki',
@@ -118,7 +126,11 @@ export function calculateFaraidh(input, total) {
     });
 
     let totalFurudhDec = rows.reduce((sum, r) => sum + frToDec(r.fraction), 0);
-    let applied = { aul: false, radd: false };
+    let applied = { aul: false, radd: false, musytarakah: false };
+
+    if (isMusytarakah) {
+        applied.musytarakah = true;
+    }
 
     if (totalFurudhDec > 1) {
         const adjustedTotal = totalFurudhDec;
@@ -193,4 +205,5 @@ export const HEIR_LABELS = {
     nenek: { idn: 'Nenek', en: 'Grandmother' },
     saudara_laki: { idn: 'Saudara Laki-laki', en: 'Brother' },
     saudara_perempuan: { idn: 'Saudara Perempuan', en: 'Sister' },
+    ibu_musytarakah: { idn: 'Ibu + Saudara (Musytarakah)', en: 'Mother + Siblings (Mushtarakah)' },
 };

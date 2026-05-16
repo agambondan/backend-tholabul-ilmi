@@ -16,6 +16,22 @@ const SURAH_COUNT = 114;
 const QUICK_SURAH = [1, 2, 4, 18, 36, 67, 112];
 
 const asbabunAyahStart = (item) => item?.ayah_number ?? item?.ayah_start ?? item?.ayah_refs?.[0]?.ayah_number;
+const asbabunSurahNumber = (item, fallback) =>
+    item?.surah_number ?? item?.ayah_refs?.[0]?.surah_number ?? item?.ayahs?.[0]?.surah?.number ?? fallback;
+const asbabunSurahSlug = (item) =>
+    item?.ayahs?.[0]?.surah?.translation?.latin_en?.toLowerCase() ??
+    item?.ayahs?.[0]?.surah?.translation?.latin_idn?.toLowerCase() ??
+    '';
+const asbabunQuranHref = (item, quranBasePath, fallbackSurahNumber) => {
+    const ayahNumber = asbabunAyahStart(item) ?? '';
+    if (quranBasePath.startsWith('/dashboard/quran')) {
+        const slug = asbabunSurahSlug(item);
+        return slug
+            ? `${quranBasePath}/${slug}#${ayahNumber}`
+            : `${quranBasePath}?surah=${asbabunSurahNumber(item, fallbackSurahNumber)}#${ayahNumber}`;
+    }
+    return `${quranBasePath}/${asbabunSurahNumber(item, fallbackSurahNumber)}/${ayahNumber}`;
+};
 const asbabunAyahLabel = (item, t) => {
     if (item?.display_ref) return item.display_ref;
     const start = asbabunAyahStart(item);
@@ -26,7 +42,7 @@ const asbabunAyahLabel = (item, t) => {
         : `${t('asbabun.ayah_prefix')} ${start}`;
 };
 
-export const AsbabunNuzulContent = () => {
+export const AsbabunNuzulContent = ({ quranBasePath = '/quran' }) => {
     const { t, lang } = useLocale();
     const { isWide } = useLayoutMode();
     const [surahNumber, setSurahNumber] = useState('');
@@ -151,7 +167,7 @@ export const AsbabunNuzulContent = () => {
                             >
                                 <div className='flex items-center gap-2 mb-3'>
                                     <Link
-                                        href={`/quran/${surahNumber}/${asbabunAyahStart(item) ?? ''}`}
+                                        href={asbabunQuranHref(item, quranBasePath, surahNumber)}
                                         className='text-xs px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium hover:bg-emerald-100 transition-colors'
                                     >
                                         {asbabunAyahLabel(item, t)}

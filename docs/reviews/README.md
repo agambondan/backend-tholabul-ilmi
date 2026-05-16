@@ -8,6 +8,8 @@ dipecah menjadi task implementasi.
 
 | Dokumen | Fokus |
 |---|---|
+| [2026-05-15-public-dashboard-parity-review.md](./2026-05-15-public-dashboard-parity-review.md) | Deep review parity fitur public vs dashboard customer, CTA leakage dashboard ke public route, dan pola `basePath` |
+| [2026-05-15-web-journey-cta-review.md](./2026-05-15-web-journey-cta-review.md) | Deep review user journey landing, dashboard customer, dashboard admin, dan CTA mismatch |
 | [2026-05-13-deep-review-summary.md](./2026-05-13-deep-review-summary.md) | Ringkasan prioritas dan urutan perbaikan |
 | [2026-05-13-contract-sync-review.md](./2026-05-13-contract-sync-review.md) | Drift kontrak API antara web, mobile, dan backend |
 | [2026-05-13-mobile-ui-ux-review.md](./2026-05-13-mobile-ui-ux-review.md) | Risiko bug dan polish UI/UX mobile |

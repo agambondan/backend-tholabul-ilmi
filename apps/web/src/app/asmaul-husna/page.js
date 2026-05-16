@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { BsPauseFill, BsPlayFill, BsSearch, BsVolumeUpFill } from 'react-icons/bs';
+import { GiPrayerBeads } from 'react-icons/gi';
 import { MdOutlineFlipCameraAndroid } from 'react-icons/md';
 
 
@@ -114,6 +115,23 @@ export const AsmaulHusnaContent = () => {
                             </p>
                         </div>
                         <span className='text-emerald-400 dark:text-emerald-600 text-sm'>›</span>
+                    </Link>
+
+                    {/* Wirid shortcut */}
+                    <Link
+                        href={pathname?.startsWith('/dashboard') ? '/dashboard/asmaul-husna/wirid' : '/asmaul-husna/wirid'}
+                        className='flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 mb-4 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors group'
+                    >
+                        <GiPrayerBeads className='text-2xl text-amber-600 dark:text-amber-400 shrink-0' />
+                        <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-semibold text-amber-800 dark:text-amber-300 group-hover:underline'>
+                                {t('asmaul.wirid_title') ?? 'Wirid Asmaul Husna'}
+                            </p>
+                            <p className='text-xs text-amber-600 dark:text-amber-500 truncate'>
+                                {t('asmaul.wirid_subtitle') ?? 'Hitung wirid dengan 99 nama Allah'}
+                            </p>
+                        </div>
+                        <span className='text-amber-400 dark:text-amber-600 text-sm'>›</span>
                     </Link>
 
                     <div className='flex items-center gap-2 mb-6 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 px-3 py-2'>

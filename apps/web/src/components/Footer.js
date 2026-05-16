@@ -21,12 +21,12 @@ const Footer = () => {
         {
             title: t('footer.tracker'),
             links: [
-                { label: t('link.memorization'), href: '/hafalan' },
-                { label: t('link.review'), href: '/muroja-ah' },
-                { label: t('link.recitation'), href: '/tilawah' },
-                { label: t('link.daily_deeds'), href: '/amalan' },
-                { label: t('link.statistics'), href: '/stats' },
-                { label: t('link.leaderboard'), href: '/leaderboard' },
+                { label: t('link.memorization'), href: '/dashboard/hafalan' },
+                { label: t('link.review'), href: '/dashboard/muroja-ah' },
+                { label: t('link.recitation'), href: '/dashboard/tilawah' },
+                { label: t('link.daily_deeds'), href: '/dashboard/amalan' },
+                { label: t('link.statistics'), href: '/dashboard/stats' },
+                { label: t('link.leaderboard'), href: '/dashboard/leaderboard' },
             ],
         },
         {
@@ -47,10 +47,10 @@ const Footer = () => {
                 { label: t('link.arabic_dict'), href: '/kamus' },
                 { label: t('link.hijri_calendar'), href: '/hijri' },
                 { label: t('link.quiz'), href: '/quiz' },
-                { label: t('link.notes'), href: '/notes' },
-                { label: t('link.bookmarks'), href: '/bookmarks' },
+                { label: t('link.notes'), href: '/dashboard/notes' },
+                { label: t('link.bookmarks'), href: '/dashboard/bookmarks' },
                 { label: t('link.search'), href: '/search' },
-                { label: t('link.notifications'), href: '/notifications' },
+                { label: t('link.notifications'), href: '/dashboard/notifications' },
             ],
         },
     ];

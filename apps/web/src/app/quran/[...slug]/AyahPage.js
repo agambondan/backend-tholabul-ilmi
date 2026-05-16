@@ -3,7 +3,7 @@
 import BookmarkButton from '@/components/BookmarkButton';
 import NoteButton from '@/components/NoteButton';
 import { PopUpIsCopied, ShareAyah } from '@/components/popup/ListImage';
-import { audioApi, mufrodatApi, tafsirApi } from '@/lib/api';
+import { audioApi, mufrodatApi, munasabahApi, tafsirApi } from '@/lib/api';
 import { useLocale } from '@/context/Locale';
 import { listMasjidImage } from '@/lib/const';
 import { NumberToArabic } from '@/lib/converter';
@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
     BsBook,
     BsFileEarmarkPlay,
+    BsLink45Deg,
     BsPauseFill,
     BsPlayFill,
     BsShare,
@@ -41,6 +42,10 @@ const AyahPage = ({ surah, ayah, newLimit, isLast, hafalanMode = 'off', selected
     const [mufrodatOpen, setMufrodatOpen] = useState(false);
     const [mufrodat, setMufrodat] = useState(null);
     const [mufrodatLoading, setMufrodatLoading] = useState(false);
+
+    const [munasabahOpen, setMunasabahOpen] = useState(false);
+    const [munasabah, setMunasabah] = useState(null);
+    const [munasabahLoading, setMunasabahLoading] = useState(false);
 
     const [audioUrls, setAudioUrls] = useState([]);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -102,6 +107,19 @@ const AyahPage = ({ surah, ayah, newLimit, isLast, hafalanMode = 'off', selected
                 .finally(() => setMufrodatLoading(false));
         }
         setMufrodatOpen((v) => !v);
+    };
+
+    const toggleMunasabah = () => {
+        if (!munasabahOpen && !munasabah) {
+            setMunasabahLoading(true);
+            munasabahApi
+                .byAyah(ayah.id)
+                .then((r) => r.json())
+                .then((data) => setMunasabah(data?.items ?? []))
+                .catch(() => setMunasabah([]))
+                .finally(() => setMunasabahLoading(false));
+        }
+        setMunasabahOpen((v) => !v);
     };
 
     const pickQariUrl = (urls) => {
@@ -239,6 +257,19 @@ const AyahPage = ({ surah, ayah, newLimit, isLast, hafalanMode = 'off', selected
                             }`}
                         >
                             <BsTranslate />
+                        </button>
+                    </li>
+                    <li className='flex justify-center'>
+                        <button
+                            title={t('munasabah.title') ?? 'Ayat Terkait'}
+                            onClick={toggleMunasabah}
+                            className={`p-2 rounded-lg text-lg transition-colors ${
+                                munasabahOpen
+                                    ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
+                                    : 'text-gray-400 dark:text-gray-500 hover:bg-purple-100 dark:hover:bg-slate-700'
+                            }`}
+                        >
+                            <BsLink45Deg />
                         </button>
                     </li>
                     <li className='flex justify-center'>
@@ -456,6 +487,30 @@ const AyahPage = ({ surah, ayah, newLimit, isLast, hafalanMode = 'off', selected
                             ))}
                         </div>
                     )}
+                </div>
+            )}
+
+            {munasabahOpen && (
+                <div className='bg-purple-50 dark:bg-purple-900/10 border-b border-purple-100 dark:border-purple-900/30 px-4 py-4'>
+                    <p className='text-xs font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wide mb-3'>
+                        {t('munasabah.title') ?? 'Ayat Terkait'} {surah.number}:{ayah.number}
+                    </p>
+                    {munasabahLoading && (
+                        <p className='text-sm text-gray-400 dark:text-gray-500'>{t('ayah.loading_tafsir') ?? 'Memuat...'}</p>
+                    )}
+                    {!munasabahLoading && Array.isArray(munasabah) && munasabah.length === 0 && (
+                        <p className='text-sm text-gray-500 dark:text-gray-400 italic'>
+                            {t('munasabah.empty') ?? 'Belum ada ayat terkait.'}
+                        </p>
+                    )}
+                    {!munasabahLoading && Array.isArray(munasabah) && munasabah.map((m, i) => (
+                        <div key={i} className='mb-3 last:mb-0 bg-white dark:bg-slate-800 rounded-lg p-3'>
+                            <p className='text-xs text-purple-600 dark:text-purple-400 font-medium mb-1'>
+                                {m.ayah_from?.surah?.translation?.latin_en ?? `QS ${m.ayah_from?.surah?.number}:${m.ayah_from?.number}`} ↔ {m.ayah_to?.surah?.translation?.latin_en ?? `QS ${m.ayah_to?.surah?.number}:${m.ayah_to?.number}`}
+                            </p>
+                            <p className='text-sm text-gray-700 dark:text-gray-300'>{m.description}</p>
+                        </div>
+                    ))}
                 </div>
             )}
 

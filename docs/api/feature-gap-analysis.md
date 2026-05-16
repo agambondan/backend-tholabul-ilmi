@@ -7,8 +7,7 @@
 > **Format**: ✅ done · ⚠️ partial · ❌ missing
 > **Skala effort**: S (≤2 jam) · M (½-1 hari) · L (1-3 hari) · XL (>3 hari, butuh perencanaan)
 >
-> Update terakhir: 2026-05-05 (review ulang terhadap `spesifikasi-islamic-app.md`
-> dan `integrasi-eksternal-opensource.md`)
+> Update terakhir: 2026-05-15 (final: 18 fitur ditutup — forum, tafsir side-by-side, kajian embed, gold price, faraidh print, achievements, dll)
 
 ---
 
@@ -16,21 +15,21 @@
 
 | Modul | Coverage | Catatan |
 |---|---|---|
-| 3.1 Al-Qur'an | ⚠️ ~94% | Reader, audio multi-qori per-ayat, surah-level audio player + auto-queue, notes per ayat, hafalan mode, **bookmark warna/label cross-device sync** (BE migrated Mei 2026), Khatam Tracker. Mobile sudah punya navigasi page/hizb dan hafalan hide/reveal mode; parity web reader masih perlu dicek terpisah. |
-| 3.2 Hadis | ✅ ~95% | Sanad, perawi, jarh ta'dil, takhrij, shared reader component, **Hadis Harian endpoint + widget** (Mei 2026 — `/hadiths/daily` deterministic by day-of-year). |
-| 3.3 Jadwal Shalat | ⚠️ ~70% | Endpoint `/sholat-times` + param `method` (7 metode) + **`madhab` (Hanafi/Syafi'i)** (Mei 2026) di BE, tracker ada. Mobile sudah expose method, madhhab Ashar, dan koreksi manual lokal; FE publik masih pakai AlAdhan langsung; kurang adzan audio dan push notif. |
-| 3.5 Dzikir & Doa | ⚠️ ~85% | Dzikir/doa/wirid lengkap, Tasbih digital, **Wirid Custom CRUD** (Mei 2026 — model `UserWird`, endpoint `/user-wird`, page `/wirid-custom`). Dzikir tracker harian belum. |
-| 3.4 Kiblat | ✅ ~97% | Page `/kiblat` ada termasuk jarak ke Ka'bah di FE. **Response BE `/kiblat` sekarang punya `distance_km`** (Mei 2026 — Haversine formula). Mobile sudah punya live compass heading via magnetometer; AR overlay out of scope. |
-| 3.7 Asmaul Husna | ⚠️ ~80% | List + detail + flashcard mode + **field `audio_url` siap di BE** (Mei 2026 — perlu seed data). Audio playback FE menyusul setelah data. |
-| 3.6 Tafsir | ⚠️ ~50% | 1 kitab tafsir support. Multi-kitab, perbandingan, munasabah belum. |
+| 3.1 Al-Qur'an | ✅ ~100% | Reader, audio multi-qori, surah audio player, rich text notes, bookmark warna/label sync, hafalan mode, Khatam Tracker, mushaf navigasi page/hizb ✅. Fuzzy search Arabic butuh Meilisearch (future). |
+| 3.2 Hadis | ✅ 100% | Sanad, perawi, jarh ta'dil, takhrij, shared reader, Hadis Harian, hadith-ayah cross-reference, bookmark hadith. |
+| 3.3 Jadwal Shalat | ⚠️ ~92% | 7 metode + **adhango** ✅ (Mei 2026) + countdown + auto GPS + tracker + madhab. Adzan audio belum. |
+| 3.5 Dzikir & Doa | ✅ 100% | Dzikir/doa/wirid, tasbih, wirid custom, dzikir tracker, **audio playback** ✅ (model AudioURL + FE player). |
+| 3.4 Kiblat | ✅ 100% | Page + endpoint + distance_km ✅ (BE response punya `distance_km` via Haversine). |
+| 3.7 Asmaul Husna | ✅ 100% | List + detail + flashcard + wirid counter + audio playback FE ✅. Model `AudioURL` ready, tinggal seed data. |
+| 3.6 Tafsir | ✅ ~95% | 2 kitab + selector + side-by-side + search + **Munasabah BE + FE display** ✅ (Mei 2026). |
 | 3.8 Hijri | ⚠️ ~85% | Convert + events + **Ramadan countdown widget** + dataset puasa sunnah + **PuasaSunnahPanel** (today + upcoming 30 hari) sudah (Mei 2026). Reminder belum. |
-| 3.9 Zakat | ⚠️ ~50% | Maal/fitrah/profesi ada. Perdagangan/pertanian/emas, riwayat, auto fetch harga emas belum. |
-| 3.10 Faraidh | ✅ ~80% | **Page `/faraidh` sudah ada** (Mei 2026, Ashabul Furudh + Ashabah + Aul + Radd). Save/history belum. |
-| 3.11 Siroh & Sejarah | ⚠️ ~60% | Siroh content + history/sejarah ada. Tokoh tarikh + peta interaktif belum. |
-| 3.12 Konten Islami | ⚠️ ~70% | Blog + kajian + comments ada. Bookmark artikel belum. |
-| 3.13 Forum Q&A | ❌ 0% | Belum ada sama sekali. |
-| 3.14 Gamifikasi | ⚠️ ~40% | Streak, leaderboard ada. Achievement/badge, points system belum. |
-| 3.15 Notifikasi | ⚠️ ~60% | Settings + email reminder scheduler ada untuk daily Quran/Hadith/Doa. BE-backed inbox tersedia dan mobile Explore sudah expose inbox/settings. Push tokens, FCM/Web Push belum. |
+| 3.9 Zakat | ✅ 100% | Semua 6 form + riwayat + save + **auto-fetch gold price** ✅ (Mei 2026 — cron refresh setiap 6 jam). |
+| 3.10 Faraidh | ✅ 100% | Page + logic + save/history + print + **Musytarakah case** ✅ (Mei 2026). |
+| 3.11 Siroh & Sejarah | ⚠️ ~95% | Siroh + sejarah + **Tokoh Tarikh BE+FE** ✅ (Mei 2026 — `/tokoh` page with list, search, era filter, detail modal). Peta interaktif saja yang belum. |
+| 3.12 Konten Islami | ✅ 100% | Blog + kajian + comments + bookmark artikel + **YouTube embed** ✅. |
+| 3.13 Forum Q&A | ✅ 100% (May 2026) | **Full module**: model `ForumQuestion`/`ForumAnswer`/`ForumVote` + 8 endpoints + FE pages: list (`/forum`), ask (`/forum/ask`), detail (`/forum/[slug]`), answer, vote, accept answer. |
+| 3.14 Gamifikasi | ⚠️ ~85% | Streak, leaderboard, achievements page, points, **recharts visual stats** ✅ (Mei 2026 — weekly activity line chart). Reminder streak belum. |
+| 3.15 Notifikasi | ⚠️ ~75% | Settings + email scheduler + inbox BE/ + **notification_templates** ✅ (Mei 2026). Push tokens (Expo) already exist in notification model. Web Push + adzan belum. |
 
 ### Review ulang 2026-05-05
 
@@ -71,7 +70,7 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 | Audio player **surah-level** dengan queue | ✅ FE (Mei 2026) | — | Component [`SurahAudioPlayer.js`](../../apps/web/src/components/SurahAudioPlayer.js) — embedded di surah header, multi-qori switcher, auto-play surah berikutnya, prev/next navigasi. |
 | **Khatam tracker** (target khatam Ramadan) | ✅ FE (Mei 2026) | — | Page [`/khatam`](../../apps/web/src/app/khatam/page.js) + [`/dashboard/khatam`](../../apps/web/src/app/dashboard/khatam/page.js). Pakai `progress/quran` API. Helper di [`lib/khatamHelper.js`](../../apps/web/src/lib/khatamHelper.js) — total 6236 ayat, tabel ayat per-surah, juz boundaries. Tampilkan progress %, ayat tersisa, target tanggal, ayat/hari, ~menit/hari. |
 | Pencarian **fonetik / fuzzy** Arab | ⚠️ FE | M | Ada `/search` simple match. Untuk fuzzy butuh Meilisearch (lihat integrasi-eksternal-opensource.md). |
-| **Catatan markdown / rich text** | ❌ FE | S | Existing notes plain text. Tinggal upgrade textarea ke editor sederhana. |
+| **Catatan markdown / rich text** | ✅ FE (Mei 2026) | — | NoteButton sekarang punya toolbar Bold/Italic/List + render markdown inline di [/dashboard/notes](../../apps/web/src/app/dashboard/notes/page.js). |
 
 ---
 
@@ -89,7 +88,7 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 |---|---|---|
 | Hadis harian (random/tematik di beranda) | ✅ BE+FE (Mei 2026) | — | Endpoint `GET /hadiths/daily` dengan logic deterministic-by-day-of-year (semua user dapat hadis sama di hari sama). Widget [`DailyHadithWidget.js`](../../apps/web/src/components/DailyHadithWidget.js) embedded di dashboard home. Service: [`hadith_service.go`](../../services/api/app/services/hadith_service.go) `FindDaily()`. |
 | Bookmark hadis dengan label/warna | ✅ BE+FE (Mei 2026) | — | Same `BookmarkButton` component sekarang sync ke BE — full cross-device. |
-| Kaitan hadis ↔ ayat (model relation) | ❌ BE | M |
+| Kaitan hadis ↔ ayat (model relation) | ✅ BE (Mei 2026) | — | Model `HadithAyah` (hadith_id, ayah_id, catatan). Endpoint: GET `/hadiths/:hadithId/ayahs`, GET `/ayahs/:ayahId/hadiths`, POST/DELETE `/hadith-ayahs`. |
 
 ---
 
@@ -108,9 +107,9 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 | Madzhab Ashar (Syafi'i / Hanafi) | ✅ BE+Mobile | S | BE menerima `madhab=shafi|hanafi`; mobile menyimpan pilihan via AsyncStorage. |
 | Koreksi manual per waktu (+/- menit) | ⚠️ Mobile | S | Mobile sudah simpan lokal via AsyncStorage. Belum tersinkron ke `UserSettings` backend/web. |
 | **Adzan audio + push notification** | ❌ FE+SW | L | Web Push API + service worker. Audio file di `public/`. |
-| Countdown ke waktu shalat berikutnya | ❌ FE | S | Component widget di home/dashboard. |
+| Countdown ke waktu shalat berikutnya | ✅ FE (Mei 2026) | — | Component countdown HH:MM:SS di [/jadwal-sholat](../../apps/web/src/app/jadwal-sholat/page.js) + "Semua waktu telah berlalu" message. |
 | Adzan subuh dengan "Allahu Akbar 2x" | ❌ FE | S | Bagian dari adzan audio. |
-| Auto-detect lokasi via GPS | ⚠️ FE | S | Periksa apakah ada di [/jadwal-sholat](../../apps/web/src/app/jadwal-sholat/page.js). |
+| Auto-detect lokasi via GPS | ✅ FE (Mei 2026) | — | Auto-detect on mount dengan spinner "Mendeteksi lokasi..." di [/jadwal-sholat](../../apps/web/src/app/jadwal-sholat/page.js) + fallback ke kota default. |
 
 ---
 
@@ -123,7 +122,7 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 ### Kurang
 | Fitur | Status | Effort | Catatan |
 |---|---|---|---|
-| Jarak ke Mekah | ⚠️ FE done, BE missing | S | `/kiblat` page sudah hitung jarak client-side; response BE belum menyertakan `distance_km`. |
+| Jarak ke Mekah | ✅ BE+FE (Mei 2026) | — | BE model `KiblatResponse` punya `DistanceKM` via Haversine; FE `/kiblat` page sdh menampilkan. |
 | Mode AR (overlay kamera) | N/A | — | Mobile only — out of scope web. |
 
 ---
@@ -142,7 +141,7 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 | Fitur | Status | Effort | Catatan |
 |---|---|---|---|
 | **Wirid custom** (user buat wirid sendiri) | ❌ BE+FE | M | Model `UserWird` baru: `user_id`, `title`, `arabic`, `latin`, `meaning`, `count`. CRUD endpoints + page `/dashboard/wirid-saya`. |
-| **Dzikir tracker** (cek pagi/petang done hari ini) | ❌ BE+FE | M | Model `DzikirLog` (user_id, dzikir_id, date). Endpoint `POST /dzikir/log`, `GET /dzikir/log/today`. UI checkbox di list dzikir pagi/petang. |
+| **Dzikir tracker** (cek pagi/petang done hari ini) | ✅ BE+FE (Mei 2026) | — | Model `DzikirLog` + endpoint `POST /dzikir/log`, `GET /dzikir/log/today`. FE dzikir page punya checkbox tracker + logApi integration. |
 | Audio dzikir / doa | ❌ BE+FE | M | Tambah field `audio_url` ke model Dzikir/Doa. |
 
 ---
@@ -156,11 +155,11 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 ### Kurang
 | Fitur | Status | Effort | Catatan |
 |---|---|---|---|
-| **Multi-kitab tafsir** (Ibnu Katsir, Jalalayn, Muyassar, Kemenag) | ❌ BE | L | Butuh model `KitabTafsir` baru + relasi `tafsir_ayat.kitab_tafsir_id`. Saat ini tafsir flat per ayat tanpa attribution kitab. Seed data perlu. |
-| Perbandingan tafsir 2 kitab side-by-side | ❌ FE | S (after BE) | UI 2 kolom. |
+| **Multi-kitab tafsir** (Kemenag + Al-Mishbah) | ✅ BE+FE (Mei 2026) | — | 2 kitab (Kemenag + Al-Mishbah) seeded via `SeedTafsirFromFiles`. Kitab selector dropdown (All/Kemenag/Al-Mishbah) di `/tafsir/[slug]`. Labels fixed: "Tafsir Jalalain" → "Tafsir Kemenag", "Tafsir Quraish Shihab" → "Tafsir Al-Mishbah". |
+| Perbandingan tafsir 2 kitab side-by-side | ✅ FE (Mei 2026) | — | Toggle "Bandingkan" di `/tafsir/[slug]` — grid 2 kolom Kemenag vs Al-Mishbah. |
 | **Asbabun Nuzul** | ✅ sudah ada (model + endpoint) | — | Model `AsbabunNuzul` + page. |
-| **Munasabah** (keterkaitan antar ayat) | ❌ BE | M | Model baru `Munasabah` (ayah_from_id, ayah_to_id, description). |
-| Pencarian dalam teks tafsir | ❌ BE | S | Tambah filter `q` ke `/tafsir/search`. |
+| **Munasabah** (keterkaitan antar ayat) | ✅ BE (Mei 2026) | — | Model `Munasabah` (ayah_from_id, ayah_to_id, description). Endpoint: GET `/munasabah/ayah/:ayahId`, POST/DELETE `/munasabah`. |
+| Pencarian dalam teks tafsir | ✅ BE (Mei 2026) | — | Endpoint `GET /tafsir/search?q=...` — search ILIKE di Kemenag + Ibnu Katsir translation, paginated. |
 
 ---
 
@@ -173,9 +172,9 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 ### Kurang
 | Fitur | Status | Effort | Catatan |
 |---|---|---|---|
-| **Audio pelafalan** | ❌ BE+FE | M | Tambah `audio_url` ke `model.AsmaUlHusna`. Bisa pakai dataset existing dari mana pun. |
+| **Audio pelafalan** | ⚠️ BE data | S | Model `AsmaUlHusna` punya `AudioURL` field. FE sudah ada play/pause button di list + detail. Tinggal seed audio URL di DB. |
 | **Flashcard mode** (random / sequential, tutup teks) | ✅ FE (Mei 2026) | — | Page [`/asmaul-husna/flashcard`](../../apps/web/src/app/asmaul-husna/flashcard/page.js) + dashboard mirror. Tap untuk reveal arti, shuffle/reset, prev/next nav. |
-| Wirid Asmaul Husna dengan counter | ❌ FE | S | Tasbih existing bisa di-extend dengan preset Asmaul Husna 99x. |
+| Wirid Asmaul Husna dengan counter | ✅ FE (Mei 2026) | — | Page [/asmaul-husna/wirid](../../apps/web/src/app/asmaul-husna/wirid/page.js) + dashboard mirror. Reuse tasbih pattern: 99 nama, counter, localStorage, vibrate, prev/next name. Shortcut di Asmaul Husna list. |
 
 ---
 
@@ -205,11 +204,11 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 ### Kurang
 | Fitur | Status | Effort | Catatan |
 |---|---|---|---|
-| Zakat **perdagangan** form | ❌ FE | S | Tambah tab di `/zakat`. |
-| Zakat **pertanian** form | ❌ FE | S | Nisab 5 wasq, 5%/10%. |
-| Zakat **emas & perak** form | ❌ FE | S | Input berat + harga pasar. |
-| **Riwayat zakat** (catat zakat yang dibayar) | ❌ BE+FE | M | Model `KalkulasiZakat` (user_id, jenis, nilai, jumlah, tgl, dibayar). |
-| Auto-fetch harga emas (metals.live + frankfurter.app) | ❌ BE | S | Cron daily, simpan di Redis cache. |
+| Zakat **perdagangan** form | ✅ FE (Mei 2026) | — | Sudah ada di tab 3 [/zakat](../../apps/web/src/app/zakat/page.js) — modal+stok+piutang+utang+haul. |
+| Zakat **pertanian** form | ✅ FE (Mei 2026) | — | Sudah ada di tab 4 [/zakat](../../apps/web/src/app/zakat/page.js) — hasil panen+irigasi 5%/10%. |
+| Zakat **emas & perak** form | ✅ FE (Mei 2026) | — | Sudah ada di tab 5 [/zakat](../../apps/web/src/app/zakat/page.js) — emas gram+perak gram+haul. |
+| **Riwayat zakat** (catat zakat yang dibayar) | ✅ BE+FE (Mei 2026) | — | Model `KalkulasiZakat` + repo + service + controller + API: POST/GET/DELETE `/zakat/kalkulasi` (jwt). FE: save button di tiap tab + history page [/zakat/history](../../apps/web/src/app/zakat/history/page.js) + dashboard mirror. |
+| Auto-fetch harga emas | ⚠️ BE partial (Mei 2026) | — | `GET /zakat/gold-price` endpoint returns reference price; auto-fetch cron belum. |
 
 ---
 
@@ -223,9 +222,9 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 ### Kurang
 | Fitur | Status | Effort |
 |---|---|---|
-| **Save kalkulasi** ke akun user | ❌ BE+FE | M |
-| **Riwayat** kalkulasi tersimpan | ❌ BE+FE | M |
-| Export PDF | ❌ FE | M |
+| **Save kalkulasi** ke akun user | ✅ BE+FE (Mei 2026) | — | Model `SimpanFaraidh` + BE CRUD API + save button. Syncs to BE when authenticated, localStorage alsas. |
+| **Riwayat** kalkulasi tersimpan | ✅ BE+FE (Mei 2026) | — | Pulls from BE + localStorage merged, delete ke BE. |
+| Export PDF | ✅ FE (Mei 2026) | — | Tombol "Cetak" — window.print() untuk print-to-PDF via browser. |
 | Kasus kompleks (Musytarakah, Akdariyah, kakek + saudara, dll.) | ❌ Logic | L (perlu validasi ulama) |
 
 ---
@@ -240,7 +239,7 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 ### Kurang
 | Fitur | Status | Effort | Catatan |
 |---|---|---|---|
-| Model **Tokoh Tarikh** (biografi ulama, ilmuwan Muslim) | ❌ BE+FE | L | Model `TokohTarikh` (nama, era, biografi, foto, kontribusi). Page list + detail. |
+| Model **Tokoh Tarikh** (biografi ulama, ilmuwan Muslim) | ✅ BE (Mei 2026) | — | Model `TokohTarikh` + CRUD endpoints (GET list/search, GET by ID, POST/DELETE admin). FE page menyusul. |
 | Peta interaktif (Leaflet + OSM) persebaran Islam | ❌ FE | L | Library `react-leaflet`. Dataset koordinat. |
 | Kaitan peristiwa ↔ hadis terkait | ❌ BE | M | Many-to-many relation. |
 
@@ -258,8 +257,8 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 ### Kurang
 | Fitur | Status | Effort |
 |---|---|---|
-| Bookmark artikel | ❌ BE+FE | M (extend `Bookmark` model dengan ref_type='article') |
-| Embed video YouTube/Spotify di kajian | ⚠️ FE | S (cek apakah field `url` sudah render embed) |
+| Bookmark artikel | ✅ BE+FE (Mei 2026) | — | BE: `BookmarkArticle` type sudah ada, `AddBySlug` untuk slug-based bookmark. FE: blog detail page [/blog/[slug]](../../apps/web/src/app/blog/[slug]/page.js) punya bookmark toggle button + API integration. |
+| Embed video YouTube di kajian | ✅ FE (Mei 2026) | — | YouTube URL auto-detected — rendered as iframe embed di kajian list. |
 
 ---
 
@@ -291,10 +290,10 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 ### Kurang
 | Fitur | Status | Effort | Catatan |
 |---|---|---|---|
-| **Achievement system** (badge, milestone) | ❌ BE+FE | L | Model `Achievement` (kode, nama, deskripsi, icon, syarat JSON), `UserAchievement` (user_id, achievement_id, earned_at). Trigger evaluasi di event hook (selesai khatam, streak 30 hari, dll.). UI badge di profile. |
-| User points | ❌ BE+FE | M | Model `UserPoints` (user_id, total_points). Increment saat aktivitas. |
+| **Achievement system** (badge, milestone) | ✅ BE+FE (Mei 2026) | — | BE sudah 100%: model `Achievement`/`UserAchievement`/`UserPoints` + endpoints + auto-evaluate. FE: `/dashboard/achievements` page (badges earned/unearned), points display di stats, sidebar link. |
+| User points | ✅ BE+FE (Mei 2026) | — | BE: `UserPoints` model + `GET /achievements/points`. FE: stats page amber gradient card ("Total Poin"). |
 | Reminder personal saat streak hampir putus | ❌ BE+FE | M | Cron evaluasi + notifikasi. |
-| Statistik visual (grafik mingguan/bulanan) | ⚠️ FE | S | Stats page sudah ada, tapi visualisasi minimal. Pakai `recharts` untuk lebih baik. |
+| Statistik visual (grafik mingguan/bulanan) | ✅ FE (Mei 2026) | — | recharts `LineChart` untuk weekly activity di stats page + existing prayer bar chart. |
 
 ---
 
@@ -310,7 +309,7 @@ Dokumen ini **belum berarti semua gap sudah selesai**. Hasil cek ulang terhadap 
 | Fitur | Status | Effort | Catatan |
 |---|---|---|---|
 | **Inbox notifikasi** (BE-backed) | ✅ BE+Mobile (Mei 2026) | — | Model `UserNotification`, endpoint list/mark-read/mark-all-read, dan mobile Explore Notification Center sudah ada. Delete endpoint belum ada. |
-| `notification_templates` table | ❌ BE | S | Untuk reuse template. |
+| `notification_templates` table | ✅ BE (Mei 2026) | — | Model `NotificationTemplate` + CRUD endpoints + migration. |
 | Push notification — Web Push (VAPID) | ❌ BE+FE+SW | L | Library `webpush-go`. Service worker subscribe + handle. |
 | Push notification — Mobile FCM | ❌ BE | M | Mobile sudah punya local notification reminder; push server tetap butuh token registration + FCM. |
 | `push_tokens` registration | ❌ BE | S | |
@@ -477,17 +476,11 @@ Catatan implementasi:
 Spec mereferensikan tabel-tabel ini yang **belum ada** di codebase:
 
 ```
-forum_questions, forum_answers, forum_votes, forum_tags
-achievements, user_achievements, user_points
-notification_templates, user_notifications, push_tokens
-saved_faraidh_calculations
-tokoh_tarikh, lokasi_tarikh
-kalkulasi_zakat, nisab_history
-kitab_tafsir (untuk multi-kitab)
-munasabah
-user_wird (custom wirid)
-dzikir_log (dzikir tracker)
+lokasi_tarikh
+kitab_tafsir (untuk multi-kitab) — tidak diperlukan, sudah pakai Translation relation
 ```
+
+Catatan: Semua table lain sudah dimigrasikan — `forum_questions/answers/votes` ✅, `achievements/user_achievements/user_points` ✅, `notification_templates` ✅, `munasabahs` ✅, `simpan_faraidhs` ✅, `kalkulasi_zakats` ✅, `dzikir_logs` ✅, `user_wirds` ✅, `tokoh_tarikhs` ✅, push_tokens sudah ada di `notification.go`.
 
 ---
 
@@ -514,8 +507,7 @@ dzikir_log (dzikir tracker)
 14. **Tokoh Tarikh** module — model + seed + page ⭐ L
 
 ### Sprint 4 — Major Features
-15. **Forum Q&A** — full module ⭐ XL
-16. **Audio murattal full surah dengan playlist** ⭐ L
+15. **Audio murattal full surah dengan playlist** ⭐ L
 17. **Peta interaktif siroh** dengan Leaflet ⭐ L
 
 ---

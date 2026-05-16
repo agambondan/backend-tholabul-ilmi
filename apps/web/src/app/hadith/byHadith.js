@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 
 const normalizeItems = (data) => data?.items ?? data ?? [];
 
-const ByHadith = () => {
+const ByHadith = ({ basePath = '/hadith' }) => {
     const { t, lang } = useLocale();
     const [bookList, setBookList] = useState([]);
     const [selectedBookSlug, setSelectedBookSlug] = useState('');
@@ -117,7 +117,7 @@ const ByHadith = () => {
     const jumpToHadith = () => {
         const number = query.trim();
         if (!number || !selectedBookSlug) return;
-        window.location.href = `/hadith/${selectedBookSlug}#${encodeURIComponent(number)}`;
+        window.location.href = `${basePath}/${selectedBookSlug}#${encodeURIComponent(`${selectedBookSlug}-${number}`)}`;
     };
 
     return (
@@ -158,7 +158,7 @@ const ByHadith = () => {
                     <div className='flex gap-2'>
                         {selectedBookSlug && (
                             <Link
-                                href={`/hadith/${selectedBookSlug}`}
+                                href={`${basePath}/${selectedBookSlug}`}
                                 className='inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-700 text-white text-sm font-medium hover:bg-emerald-600 transition-colors'
                             >
                                 {t('hadith.open_reader')}
@@ -211,7 +211,7 @@ const ByHadith = () => {
                         <div className='space-y-3'>
                             {hadiths.map((hadith) => (
                                 <Link
-                                    href={`/hadith/${selectedBookSlug}#${hadith.number}`}
+                                    href={`${basePath}/${selectedBookSlug}#${selectedBookSlug}-${hadith.number}`}
                                     key={hadith.id}
                                     className={classNames(
                                         'block rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-700 transition-all'

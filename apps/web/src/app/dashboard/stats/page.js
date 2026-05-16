@@ -34,6 +34,7 @@ import {
     writeLocalPrayerLog,
 } from '@/lib/personalSync';
 import { useEffect, useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const isSameWeek = (dateStr) => {
     const d = new Date(dateStr + 'T00:00:00');
@@ -352,6 +353,23 @@ const StatsPage = () => {
                     })}
                 </div>
             </div>
+
+            {/* Streak line chart */}
+            {last7.length > 0 && (
+                <div className='bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 mt-6'>
+                    <p className='text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4'>
+                        {t('stats.weekly_activity') ?? 'Aktivitas Mingguan'}
+                    </p>
+                    <ResponsiveContainer width='100%' height={200}>
+                        <LineChart data={last7.map((r) => ({ date: r.date.slice(5), count: r.count }))}>
+                            <XAxis dataKey='date' tick={{ fontSize: 11 }} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                            <Tooltip />
+                            <Line type='monotone' dataKey='count' stroke='#10b981' strokeWidth={2} dot={{ fill: '#10b981' }} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
         </div>
     );
 };

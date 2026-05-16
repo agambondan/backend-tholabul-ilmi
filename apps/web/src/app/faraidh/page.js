@@ -1,12 +1,15 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { faraidhSimpanApi } from '@/lib/api';
 import { calculateFaraidh, HEIR_LABELS } from '@/lib/faraidh';
 import { useEffect, useMemo, useState } from 'react';
-import { BsCalculator, BsClockHistory, BsFloppyFill, BsInfoCircle, BsTrash } from 'react-icons/bs';
+import { BsCalculator, BsClockHistory, BsCloudCheck, BsFloppyFill, BsInfoCircle, BsPrinter, BsTrash } from 'react-icons/bs';
 
 const HEIR_FIELDS = [
     { key: 'suami', max: 1, group: 'spouse' },
@@ -54,6 +57,7 @@ const fmtFrac = (f) => (f ? `${f.num}/${f.den}` : '—');
 
 export function FaraidhContent() {
     const { t, lang } = useLocale();
+    const { isAuthenticated } = useAuth();
     const [wealth, setWealth] = useState('');
     const [debt, setDebt] = useState('');
     const [funeral, setFuneral] = useState('');
@@ -101,12 +105,37 @@ export function FaraidhContent() {
 
     const [history, setHistory] = useState([]);
     const [showHistory, setShowHistory] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         try {
             setHistory(JSON.parse(localStorage.getItem('tholabul_faraidh_history') ?? '[]'));
         } catch {}
     }, []);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        faraidhSimpanApi
+            .list()
+            .then((r) => r.json())
+            .then((data) => {
+                const items = (data?.items ?? []).map((item) => ({
+                    id: item.id,
+                    _beId: item.id,
+                    date: item.created_at ? item.created_at.slice(0, 10) : '',
+                    wealth: String(item.wealth || ''),
+                    debt: String(item.debt || ''),
+                    funeral: String(item.funeral || ''),
+                    will: String(item.will || ''),
+                    heirs: JSON.parse(item.heirs_json || '{}'),
+                }));
+                setHistory((prev) => {
+                    const localOnly = prev.filter((e) => !e._beId);
+                    return [...items, ...localOnly].slice(0, 20);
+                });
+            })
+            .catch(() => {});
+    }, [isAuthenticated]);
 
     const persistHistory = (updated) => {
         setHistory(updated);
@@ -115,7 +144,7 @@ export function FaraidhContent() {
         } catch {}
     };
 
-    const saveCalculation = () => {
+    const saveCalculation = async () => {
         const entry = {
             id: Date.now().toString(),
             date: new Date().toISOString().slice(0, 10),
@@ -125,7 +154,34 @@ export function FaraidhContent() {
             will,
             heirs,
         };
-        persistHistory([entry, ...history].slice(0, 20));
+        const updated = [entry, ...history].slice(0, 20);
+        persistHistory(updated);
+
+        if (isAuthenticated && totalNet > 0) {
+            setSaving(true);
+            const summary = result?.distribution
+                ? result.distribution
+                      .filter((d) => d.shareAmount > 0)
+                      .map((d) => `${heirRowLabel(d.key, lang)}: ${fmtNumber(d.shareAmount, lang)}`)
+                      .join('; ')
+                : '';
+            try {
+                const res = await faraidhSimpanApi.save({
+                    wealth: Number(wealth) || 0,
+                    debt: Number(debt) || 0,
+                    funeral: Number(funeral) || 0,
+                    will: Number(will) || 0,
+                    heirs_json: JSON.stringify(heirs),
+                    result_summary: summary,
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    entry._beId = data?.id;
+                    persistHistory(updated.map((e) => (e.id === entry.id ? entry : e)));
+                }
+            } catch {}
+            setSaving(false);
+        }
     };
 
     const loadHistory = (entry) => {
@@ -138,14 +194,22 @@ export function FaraidhContent() {
     };
 
     const deleteHistory = (id) => {
+        const entry = history.find((h) => h.id === id);
+        if (entry?._beId && isAuthenticated) {
+            faraidhSimpanApi.delete(entry._beId).catch(() => {});
+        }
         persistHistory(history.filter((h) => h.id !== id));
+    };
+
+    const handlePrint = () => {
+        if (typeof window !== 'undefined') window.print();
     };
 
     const willCap = Math.max(0, ((Number(wealth) || 0) - (Number(debt) || 0) - (Number(funeral) || 0)) / 3);
     const totalHeirs = Object.values(heirs).reduce((s, n) => s + n, 0);
 
     return (
-        <div className='container mx-auto px-4 max-w-4xl py-6'>
+        <ContentWidth compact='max-w-4xl' className='px-4 py-6'>
                     <div className='text-center mb-6'>
                         <p
                             className='text-3xl text-emerald-700 dark:text-emerald-400 mb-2'
@@ -283,10 +347,26 @@ export function FaraidhContent() {
                                 {totalHeirs > 0 && result.rows.length > 0 && (
                                     <button
                                         onClick={saveCalculation}
-                                        className='flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 text-white text-xs font-medium hover:bg-emerald-800 transition-colors'
+                                        disabled={saving}
+                                        className='flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 text-white text-xs font-medium hover:bg-emerald-800 transition-colors disabled:opacity-50'
                                     >
-                                        <BsFloppyFill />
-                                        {t('common.save') ?? 'Simpan'}
+                                        {saving ? (
+                                            <span className='w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin' />
+                                        ) : isAuthenticated ? (
+                                            <BsCloudCheck />
+                                        ) : (
+                                            <BsFloppyFill />
+                                        )}
+                                        {saving ? (t('common.saving') ?? 'Menyimpan...') : t('common.save') ?? 'Simpan'}
+                                    </button>
+                                )}
+                                {totalHeirs > 0 && result.rows.length > 0 && (
+                                    <button
+                                        onClick={handlePrint}
+                                        className='flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors'
+                                    >
+                                        <BsPrinter />
+                                        {t('faraidh.print') ?? 'Cetak'}
                                     </button>
                                 )}
                             </div>
@@ -452,7 +532,7 @@ export function FaraidhContent() {
                             </ul>
                         </div>
                     )}
-                </div>
+                </ContentWidth>
     );
 }
 

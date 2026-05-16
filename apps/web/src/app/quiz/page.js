@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedField, getLocalizedOption } from '@/lib/translation';
@@ -93,7 +94,7 @@ export default function QuizPage() {
         return (
             <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
                 <NavbarTailwindCss />
-                <div className='max-w-lg flex-1 w-full flex-1 w-full mx-auto px-4 pt-24 pb-8 text-center'>
+                <ContentWidth compact='max-w-lg' className='flex-1 px-4 pt-24 pb-8 text-center'>
                     <div className='inline-flex items-center justify-center w-20 h-20 bg-purple-100 dark:bg-purple-900/40 rounded-3xl mb-6'>
                         <FaBrain className='text-4xl text-purple-600 dark:text-purple-400' />
                     </div>
@@ -118,7 +119,7 @@ export default function QuizPage() {
                     >
                         {isLoading ? t('common.loading') : t('quiz.start')}
                     </button>
-                </div>
+                </ContentWidth>
                 <Footer />
             </main>
         );
@@ -129,7 +130,7 @@ export default function QuizPage() {
         return (
             <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
                 <NavbarTailwindCss />
-                <div className='max-w-lg flex-1 w-full flex-1 w-full mx-auto px-4 pt-24 pb-8 text-center'>
+                <ContentWidth compact='max-w-lg' className='flex-1 px-4 pt-24 pb-8 text-center'>
                     <div className='text-7xl mb-4'>{emoji}</div>
                     <h2 className='text-3xl font-extrabold text-emerald-900 dark:text-emerald-100 mb-2'>
                         {t('quiz.finished')}
@@ -183,7 +184,7 @@ export default function QuizPage() {
                     >
                         <MdRefresh /> {isLoading ? t('common.loading') : t('quiz.retry')}
                     </button>
-                </div>
+                </ContentWidth>
                 <Footer />
             </main>
         );
@@ -194,7 +195,7 @@ export default function QuizPage() {
     return (
         <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
             <NavbarTailwindCss />
-            <div className='max-w-lg flex-1 w-full mx-auto px-4 pt-24 pb-8'>
+            <ContentWidth compact='max-w-lg' className='flex-1 px-4 pt-24 pb-8'>
                 {/* Progress */}
                 <div className='flex items-center justify-between mb-2'>
                     <span className='text-sm font-semibold text-gray-500 dark:text-gray-400'>
@@ -277,7 +278,7 @@ export default function QuizPage() {
                         {current + 1 < questions.length ? t('quiz.next_question') : t('quiz.see_result')}
                     </button>
                 )}
-            </div>
+            </ContentWidth>
             <Footer />
         </main>
     );

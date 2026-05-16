@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import TajweedTable from '@/components/table/Tajweed';
 import { useLocale } from '@/context/Locale';
@@ -251,7 +252,7 @@ export default function Home() {
 
             {/* ── Semua Fitur ───────────────────────────────────────── */}
             <section className='py-20 px-6 bg-parchment-50 dark:bg-slate-900'>
-                <div className='max-w-6xl mx-auto'>
+                <ContentWidth compact='max-w-6xl'>
                     <div className='text-center mb-14'>
                         <span className='inline-block text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-3'>
                             {t('home.features_badge')}
@@ -311,12 +312,12 @@ export default function Home() {
                             );
                         })}
                     </div>
-                </div>
+                </ContentWidth>
             </section>
 
             {/* ── Tajweed Guide ─────────────────────────────────────── */}
             <section className='py-16 px-6 bg-white dark:bg-slate-900 border-t border-parchment-200 dark:border-slate-700'>
-                <div className='max-w-5xl mx-auto'>
+                <ContentWidth compact='max-w-5xl'>
                     <div className='text-center mb-10'>
                         <h2 className='text-2xl font-bold text-emerald-900 dark:text-emerald-300 mb-2'>
                             {t('home.tajweed_heading')}
@@ -328,12 +329,12 @@ export default function Home() {
                     <div className='flex justify-center'>
                         <TajweedTable />
                     </div>
-                </div>
+                </ContentWidth>
             </section>
 
             {/* ── CTA ───────────────────────────────────────────────── */}
             <section className='py-16 px-6 bg-gradient-to-br from-emerald-900 to-emerald-950 text-white'>
-                <div className='max-w-2xl mx-auto text-center'>
+                <ContentWidth compact='max-w-2xl' className='text-center'>
                     <p
                         className='text-2xl text-gold-300 mb-3 leading-loose'
                         style={{ fontFamily: 'Amiri, serif', direction: 'rtl' }}
@@ -357,7 +358,7 @@ export default function Home() {
                             {t('home.cta_read')}
                         </Link>
                     </div>
-                </div>
+                </ContentWidth>
             </section>
 
             <Footer />

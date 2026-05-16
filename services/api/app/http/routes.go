@@ -101,6 +101,13 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newLeaderboardController := controllers.NewLeaderboardController(newServices)
 	newShareController := controllers.NewShareController(newServices)
 	newZakatController := controllers.NewZakatController(newServices)
+	newKalkulasiZakatController := controllers.NewKalkulasiZakatController(newServices)
+	newSimpanFaraidhController := controllers.NewSimpanFaraidhController(newServices)
+	newHadithAyahController := controllers.NewHadithAyahController(newServices)
+	newForumController := controllers.NewForumController(newServices)
+	newMunasabahController := controllers.NewMunasabahController(newServices)
+	newNotificationTemplateController := controllers.NewNotificationTemplateController(newServices)
+	newTokohTarikhController := controllers.NewTokohTarikhController(newServices)
 	newSholatController := controllers.NewSholatController(newServices)
 	newMurojaahController := controllers.NewMurojaahController(newServices)
 	newFiqhController := controllers.NewFiqhController(newServices)
@@ -347,6 +354,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	// Tafsir (public read, editor/admin write)
 	master.Get("/tafsir/ayah/:id", newTafsirController.FindByAyahID)
 	master.Get("/tafsir/surah/:number", newTafsirController.FindBySurahNumber)
+	master.Get("/tafsir/search", newTafsirController.Search)
 	master.Post("/tafsir", middlewares.EditorOrAdminMiddleware(), newTafsirController.Save)
 	master.Put("/tafsir/ayah/:id", middlewares.EditorOrAdminMiddleware(), newTafsirController.UpdateByAyahID)
 
@@ -449,6 +457,17 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Post("/zakat/maal", newZakatController.CalculateMaal)
 	master.Post("/zakat/fitrah", newZakatController.CalculateFitrah)
 	master.Get("/zakat/nishab", newZakatController.GetNishab)
+	master.Get("/zakat/gold-price", newZakatController.GetGoldPrice)
+
+	// Zakat Calculation History (protected)
+	master.Post("/zakat/kalkulasi", jwt, newKalkulasiZakatController.Create)
+	master.Get("/zakat/kalkulasi", jwt, newKalkulasiZakatController.List)
+	master.Delete("/zakat/kalkulasi/:id", jwt, newKalkulasiZakatController.Delete)
+
+	// Faraidh Calculation History (protected)
+	master.Post("/faraidh/simpan", jwt, newSimpanFaraidhController.Create)
+	master.Get("/faraidh/simpan", jwt, newSimpanFaraidhController.List)
+	master.Delete("/faraidh/simpan/:id", jwt, newSimpanFaraidhController.Delete)
 
 	// Prayer Tracker / Sholat (protected user; panduan: public)
 	master.Put("/sholat/today", jwt, newSholatController.LogPrayer)
@@ -656,6 +675,38 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	// hadith sub-resources (sanad & takhrij)
 	master.Get("/hadiths/:id/sanad", newSanadController.FindByHadithID)
 	master.Get("/hadiths/:id/takhrij", newTakhrijController.FindByHadithID)
+
+	// Hadith-Ayah cross-reference (public read, editor/admin write)
+	master.Get("/hadiths/:hadithId/ayahs", newHadithAyahController.FindByHadithID)
+	master.Get("/ayahs/:ayahId/hadiths", newHadithAyahController.FindByAyahID)
+	master.Post("/hadith-ayahs", middlewares.EditorOrAdminMiddleware(), newHadithAyahController.Create)
+	master.Delete("/hadith-ayahs/:id", middlewares.EditorOrAdminMiddleware(), newHadithAyahController.Delete)
+
+	// Forum Q&A
+	master.Get("/forum/questions", newForumController.ListQuestions)
+	master.Get("/forum/questions/:slug", newForumController.GetQuestion)
+	master.Post("/forum/questions", jwt, newForumController.CreateQuestion)
+	master.Delete("/forum/questions/:id", jwt, newForumController.DeleteQuestion)
+	master.Post("/forum/questions/:id/answers", jwt, newForumController.CreateAnswer)
+	master.Put("/forum/questions/:id/answers/:answerId/accept", jwt, newForumController.AcceptAnswer)
+	master.Delete("/forum/answers/:id", jwt, newForumController.DeleteAnswer)
+	master.Post("/forum/votes", jwt, newForumController.Vote)
+
+	// Munasabah (public read, editor/admin write)
+	master.Get("/munasabah/ayah/:ayahId", newMunasabahController.FindByAyahID)
+	master.Post("/munasabah", middlewares.EditorOrAdminMiddleware(), newMunasabahController.Create)
+	master.Delete("/munasabah/:id", middlewares.EditorOrAdminMiddleware(), newMunasabahController.Delete)
+
+	// Notification Templates (admin)
+	master.Get("/notification-templates", admin, newNotificationTemplateController.FindAll)
+	master.Post("/notification-templates", admin, newNotificationTemplateController.Create)
+	master.Delete("/notification-templates/:id", admin, newNotificationTemplateController.Delete)
+
+	// Tokoh Tarikh (public read, admin write)
+	master.Get("/tokoh-tarikh", newTokohTarikhController.FindAll)
+	master.Get("/tokoh-tarikh/:id", newTokohTarikhController.FindByID)
+	master.Post("/tokoh-tarikh", admin, newTokohTarikhController.Create)
+	master.Delete("/tokoh-tarikh/:id", admin, newTokohTarikhController.Delete)
 
 	// #53 Sanad & Mata Sanad (public read, editor/admin write)
 	master.Get("/sanad/:id", newSanadController.FindByID)

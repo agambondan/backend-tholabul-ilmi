@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import { useLocale } from '@/context/Locale';
 import { useEffect, useRef, useState } from 'react';
@@ -128,7 +129,7 @@ export function KiblatContent() {
         Math.abs(((qiblaAngle - compassHeading + 540) % 360) - 180) < 10;
 
     return (
-        <div className='max-w-lg flex-1 w-full mx-auto px-4 pt-6 pb-8'>
+        <ContentWidth compact='max-w-lg' className='flex-1 px-4 pt-6 pb-8'>
                 {/* Header */}
                 <div className='mb-8 text-center'>
                     <div className='inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-2xl mb-4'>
@@ -294,7 +295,7 @@ export function KiblatContent() {
                 <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-6'>
                     {t('qibla.gps_note')}
                 </p>
-            </div>
+            </ContentWidth>
     );
 }
 

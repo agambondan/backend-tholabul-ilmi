@@ -5,6 +5,9 @@
 
 const STORAGE_KEY = 'tholabul_bookmark_meta';
 
+export const normalizeBookmarkRefType = (refType) =>
+    refType === 'quran' ? 'ayah' : refType;
+
 export const BOOKMARK_COLORS = [
     { id: 'emerald', tw: 'bg-emerald-500', label_id: 'Hijau', label_en: 'Green' },
     { id: 'amber', tw: 'bg-amber-500', label_id: 'Amber', label_en: 'Amber' },
@@ -32,13 +35,16 @@ const safeWrite = (data) => {
 
 export const getBookmarkMeta = (refType, refId) => {
     const all = safeRead();
-    return all[`${refType}:${refId}`] ?? null;
+    const rawKey = `${refType}:${refId}`;
+    const normalizedKey = `${normalizeBookmarkRefType(refType)}:${refId}`;
+    return all[rawKey] ?? all[normalizedKey] ?? null;
 };
 
 export const setBookmarkMeta = (refType, refId, meta) => {
     const all = safeRead();
-    all[`${refType}:${refId}`] = {
-        ...(all[`${refType}:${refId}`] ?? {}),
+    const key = `${normalizeBookmarkRefType(refType)}:${refId}`;
+    all[key] = {
+        ...(all[key] ?? {}),
         ...meta,
         updatedAt: new Date().toISOString(),
     };
@@ -56,6 +62,7 @@ export const setBookmarkMeta = (refType, refId, meta) => {
 export const clearBookmarkMeta = (refType, refId) => {
     const all = safeRead();
     delete all[`${refType}:${refId}`];
+    delete all[`${normalizeBookmarkRefType(refType)}:${refId}`];
     safeWrite(all);
 };
 

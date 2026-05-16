@@ -2,13 +2,15 @@
 
 import { listTajweed } from '@/lib/const';
 import { useLocale } from '@/context/Locale';
+import { useLayoutMode } from '@/lib/useLayoutMode';
 
 export default function TajweedTable() {
     const { lang } = useLocale();
+    const { isWide } = useLayoutMode();
 
     return (
-        <div className='w-full max-w-5xl'>
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+        <div className={isWide ? 'w-full' : 'w-full max-w-5xl'}>
+            <div className='grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3'>
                 {listTajweed.map((tajweed) => (
                     <div
                         key={tajweed.Type}

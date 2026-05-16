@@ -44,6 +44,7 @@ const BookmarkButton = require('@/components/BookmarkButton').default;
 describe('BookmarkButton', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    window.history.pushState({}, '', '/');
     mockList.mockResolvedValue({ json: async () => ({ items: [] }) });
     mockAdd.mockResolvedValue({ ok: true, json: async () => ({ id: 'bm1' }) });
     mockRemove.mockResolvedValue({ ok: true });
@@ -57,7 +58,7 @@ describe('BookmarkButton', () => {
   test('redirects to login when guest clicks bookmark', () => {
     render(<BookmarkButton refType="ayah" refId="1" />);
     fireEvent.click(screen.getByTitle('bookmarks.save'));
-    expect(mockPush).toHaveBeenCalledWith('/auth/login');
+    expect(mockPush).toHaveBeenCalledWith('/auth/login?next=%2F');
   });
 
   test('toggles bookmark when authenticated', async () => {

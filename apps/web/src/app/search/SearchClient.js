@@ -21,20 +21,53 @@ const SECTION_LABELS = {
     perawi: 'Perawi',
 };
 
-const SECTION_HREFS = {
-    ayah: (q) => `/search?q=${encodeURIComponent(q)}&type=ayah`,
-    hadith: (q) => `/search?q=${encodeURIComponent(q)}&type=hadith`,
-    dictionary: (q) => `/kamus?q=${encodeURIComponent(q)}`,
-    doa: (q) => `/doa?q=${encodeURIComponent(q)}`,
-    kajian: (q) => `/kajian?q=${encodeURIComponent(q)}`,
-    perawi: (q) => `/perawi?q=${encodeURIComponent(q)}`,
+const TYPE_VALUES = ['all', 'ayah', 'hadith', 'doa', 'dictionary', 'kajian', 'perawi'];
+
+const searchHref = (basePath, q, type) =>
+    `${basePath}?q=${encodeURIComponent(q)}&type=${type}`;
+
+const PUBLIC_ROUTES = {
+    section: {
+        ayah: (q) => searchHref('/search', q, 'ayah'),
+        hadith: (q) => searchHref('/search', q, 'hadith'),
+        dictionary: (q) => `/kamus?q=${encodeURIComponent(q)}`,
+        doa: (q) => `/doa?q=${encodeURIComponent(q)}`,
+        kajian: (q) => `/kajian?q=${encodeURIComponent(q)}`,
+        perawi: (q) => `/perawi?q=${encodeURIComponent(q)}`,
+    },
+    ayah: ({ surahSlug, number }) => `/quran/surah/${surahSlug}#${number}`,
+    hadith: ({ bookSlug, number }) => `/hadith/${bookSlug}#${number}`,
+    doa: ({ id }) => `/doa#${id}`,
+    dictionary: ({ term }) => `/kamus?q=${encodeURIComponent(term ?? '')}`,
+    kajian: ({ id }) => `/kajian/${id}`,
+    perawi: ({ id }) => `/perawi/${id}`,
 };
+
+const DASHBOARD_ROUTES = {
+    section: {
+        ayah: (q) => searchHref('/dashboard/search', q, 'ayah'),
+        hadith: (q) => searchHref('/dashboard/search', q, 'hadith'),
+        dictionary: (q) => searchHref('/dashboard/search', q, 'dictionary'),
+        doa: (q) => searchHref('/dashboard/search', q, 'doa'),
+        kajian: (q) => searchHref('/dashboard/search', q, 'kajian'),
+        perawi: (q) => searchHref('/dashboard/search', q, 'perawi'),
+    },
+    ayah: ({ surahSlug, number }) => `/dashboard/quran/${surahSlug}#${number}`,
+    hadith: ({ bookSlug, number }) => `/dashboard/hadith/${bookSlug}#${number}`,
+    doa: ({ id }) => `/dashboard/doa#${id}`,
+    dictionary: ({ term }) => `/dashboard/kamus?q=${encodeURIComponent(term ?? '')}`,
+    kajian: ({ id }) => `/dashboard/kajian#${id}`,
+    perawi: ({ id }) => `/dashboard/perawi/${id}`,
+};
+
+const getRouteMap = (routeScope) =>
+    routeScope === 'dashboard' ? DASHBOARD_ROUTES : PUBLIC_ROUTES;
 
 const getTotal = (data, key) => data?.[`${key}_total`] ?? 0;
 
 const getItems = (data, key) => data?.[key] ?? data?.[`${key}s`] ?? [];
 
-const AyahCard = ({ item, lang }) => {
+const AyahCard = ({ item, lang, hrefBuilder }) => {
     const surahName = getLocalizedTranslation(item?.surah?.translation, lang) || item?.surah?.translation?.latin_en || '';
     const number = item?.number ?? '';
     const arabic = item?.translation?.ar ?? item?.ar ?? '';
@@ -44,7 +77,7 @@ const AyahCard = ({ item, lang }) => {
 
     return (
         <Link
-            href={`/quran/surah/${surahSlug}#${number}`}
+            href={hrefBuilder({ item, surahSlug, number })}
             className='block p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
         >
             <span className='text-xs font-medium text-emerald-600 dark:text-emerald-400'>{surahName} : {number}</span>
@@ -55,7 +88,7 @@ const AyahCard = ({ item, lang }) => {
     );
 };
 
-const HadithCard = ({ item, lang }) => {
+const HadithCard = ({ item, lang, hrefBuilder }) => {
     const bookName = getLocalizedTranslation(item?.book?.translation, lang) || item?.book?.slug || '';
     const number = item?.number ?? '';
     const arabic = item?.translation?.ar ?? item?.ar ?? '';
@@ -65,7 +98,7 @@ const HadithCard = ({ item, lang }) => {
 
     return (
         <Link
-            href={`/hadith/${bookSlug}#${number}`}
+            href={hrefBuilder({ item, bookSlug, number })}
             className='block p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
         >
             <div className='flex justify-between items-start mb-2'>
@@ -118,9 +151,10 @@ function ResultSection({ label, total, items, renderCard, seeAllHref, type, onLo
     );
 }
 
-export default function SearchClient({ initialQuery = '' }) {
+export default function SearchClient({ initialQuery = '', initialType = 'all', routeScope = 'public' }) {
     const { t, lang } = useLocale();
     const { isWide } = useLayoutMode();
+    const routeMap = getRouteMap(routeScope);
     const TYPES = [
         { value: 'all', label: t('search.type.all') },
         { value: 'ayah', label: t('search.type.ayah') },
@@ -131,7 +165,7 @@ export default function SearchClient({ initialQuery = '' }) {
         { value: 'perawi', label: 'Perawi' },
     ];
     const [query, setQuery] = useState(initialQuery);
-    const [type, setType] = useState('all');
+    const [type, setType] = useState(TYPE_VALUES.includes(initialType) ? initialType : 'all');
     const [results, setResults] = useState(null);
     const [page, setPage] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
@@ -246,15 +280,15 @@ export default function SearchClient({ initialQuery = '' }) {
                                 label={t('search.type.ayah')}
                                 total={getTotal(results, 'ayah')}
                                 items={getItems(results, 'ayah')}
-                                renderCard={(item) => <AyahCard key={item.id} item={item} lang={lang} />}
-                                seeAllHref={SECTION_HREFS.ayah(query)}
+                                renderCard={(item) => <AyahCard key={item.id} item={item} lang={lang} hrefBuilder={routeMap.ayah} />}
+                                seeAllHref={routeMap.section.ayah(query)}
                             />
                             <ResultSection
                                 label={t('search.type.hadith')}
                                 total={getTotal(results, 'hadith')}
                                 items={getItems(results, 'hadith')}
-                                renderCard={(item) => <HadithCard key={item.id} item={item} lang={lang} />}
-                                seeAllHref={SECTION_HREFS.hadith(query)}
+                                renderCard={(item) => <HadithCard key={item.id} item={item} lang={lang} hrefBuilder={routeMap.hadith} />}
+                                seeAllHref={routeMap.section.hadith(query)}
                             />
                             <ResultSection
                                 label='Doa'
@@ -265,10 +299,10 @@ export default function SearchClient({ initialQuery = '' }) {
                                         key={item.id}
                                         title={item.title || getLocalizedTranslation(item?.translation, lang)}
                                         excerpt={item.translation?.idn || item.translation?.en}
-                                        href={`/doa#${item.id}`}
+                                        href={routeMap.doa({ item, id: item.id })}
                                     />
                                 )}
-                                seeAllHref={SECTION_HREFS.doa(query)}
+                                seeAllHref={routeMap.section.doa(query)}
                             />
                             <ResultSection
                                 label='Kamus'
@@ -279,10 +313,10 @@ export default function SearchClient({ initialQuery = '' }) {
                                         key={item.id}
                                         title={item.term}
                                         excerpt={item.definition}
-                                        href={`/kamus?q=${encodeURIComponent(item.term)}`}
+                                        href={routeMap.dictionary({ item, term: item.term })}
                                     />
                                 )}
-                                seeAllHref={SECTION_HREFS.dictionary(query)}
+                                seeAllHref={routeMap.section.dictionary(query)}
                             />
                             <ResultSection
                                 label='Kajian'
@@ -293,10 +327,10 @@ export default function SearchClient({ initialQuery = '' }) {
                                         key={item.id}
                                         title={item.title || getLocalizedTranslation(item?.translation, lang)}
                                         excerpt={item.speaker || item.description}
-                                        href={`/kajian/${item.id}`}
+                                        href={routeMap.kajian({ item, id: item.id })}
                                     />
                                 )}
-                                seeAllHref={SECTION_HREFS.kajian(query)}
+                                seeAllHref={routeMap.section.kajian(query)}
                             />
                             <ResultSection
                                 label='Perawi'
@@ -307,10 +341,10 @@ export default function SearchClient({ initialQuery = '' }) {
                                         key={item.id}
                                         title={item.nama_latin || item.nama_arab}
                                         excerpt={item.nama_lengkap}
-                                        href={`/perawi/${item.id}`}
+                                        href={routeMap.perawi({ item, id: item.id })}
                                     />
                                 )}
-                                seeAllHref={SECTION_HREFS.perawi(query)}
+                                seeAllHref={routeMap.section.perawi(query)}
                             />
                         </>
                     ) : (
@@ -320,7 +354,7 @@ export default function SearchClient({ initialQuery = '' }) {
                                     label={t('search.type.ayah')}
                                     total={getTotal(results, 'ayah')}
                                     items={getItems(results, 'ayah')}
-                                    renderCard={(item) => <AyahCard key={item.id} item={item} lang={lang} />}
+                                    renderCard={(item) => <AyahCard key={item.id} item={item} lang={lang} hrefBuilder={routeMap.ayah} />}
                                     hasMore={getItems(results, 'ayah').length < getTotal(results, 'ayah')}
                                     onLoadMore={handleLoadMore}
                                 />
@@ -330,7 +364,7 @@ export default function SearchClient({ initialQuery = '' }) {
                                     label={t('search.type.hadith')}
                                     total={getTotal(results, 'hadith')}
                                     items={getItems(results, 'hadith')}
-                                    renderCard={(item) => <HadithCard key={item.id} item={item} lang={lang} />}
+                                    renderCard={(item) => <HadithCard key={item.id} item={item} lang={lang} hrefBuilder={routeMap.hadith} />}
                                     hasMore={getItems(results, 'hadith').length < getTotal(results, 'hadith')}
                                     onLoadMore={handleLoadMore}
                                 />
@@ -345,7 +379,7 @@ export default function SearchClient({ initialQuery = '' }) {
                                             key={item.id}
                                             title={item.title || getLocalizedTranslation(item?.translation, lang)}
                                             excerpt={item.translation?.idn || item.translation?.en}
-                                            href={`/doa#${item.id}`}
+                                            href={routeMap.doa({ item, id: item.id })}
                                         />
                                     )}
                                     hasMore={getItems(results, 'doas').length < getTotal(results, 'doa')}
@@ -362,7 +396,7 @@ export default function SearchClient({ initialQuery = '' }) {
                                             key={item.id}
                                             title={item.term}
                                             excerpt={item.definition}
-                                            href={`/kamus?q=${encodeURIComponent(item.term)}`}
+                                            href={routeMap.dictionary({ item, term: item.term })}
                                         />
                                     )}
                                     hasMore={getItems(results, 'dictionaries').length < getTotal(results, 'dictionary')}
@@ -379,7 +413,7 @@ export default function SearchClient({ initialQuery = '' }) {
                                             key={item.id}
                                             title={item.title || getLocalizedTranslation(item?.translation, lang)}
                                             excerpt={item.speaker || item.description}
-                                            href={`/kajian/${item.id}`}
+                                            href={routeMap.kajian({ item, id: item.id })}
                                         />
                                     )}
                                     hasMore={getItems(results, 'kajians').length < getTotal(results, 'kajian')}
@@ -396,7 +430,7 @@ export default function SearchClient({ initialQuery = '' }) {
                                             key={item.id}
                                             title={item.nama_latin || item.nama_arab}
                                             excerpt={item.nama_lengkap}
-                                            href={`/perawi/${item.id}`}
+                                            href={routeMap.perawi({ item, id: item.id })}
                                         />
                                     )}
                                     hasMore={getItems(results, 'perawis').length < getTotal(results, 'perawi')}

@@ -9,6 +9,7 @@ import (
 type TafsirRepository interface {
 	FindByAyahID(int) (*model.Tafsir, error)
 	FindBySurahNumber(int, int, int) ([]model.Tafsir, error)
+	Search(string, int, int) ([]model.Tafsir, error)
 	Save(*model.Tafsir) (*model.Tafsir, error)
 	UpdateByAyahID(int, *model.Tafsir) (*model.Tafsir, error)
 }
@@ -70,4 +71,26 @@ func (r *tafsirRepo) UpdateByAyahID(ayahID int, t *model.Tafsir) (*model.Tafsir,
 		return nil, err
 	}
 	return r.FindByAyahID(ayahID)
+}
+
+func (r *tafsirRepo) Search(query string, limit, offset int) ([]model.Tafsir, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	var list []model.Tafsir
+	err := r.db.
+		Preload("KemenagTranslation").
+		Preload("IbnuKatsirTranslation").
+		Preload("Ayah").Preload("Ayah.Translation").Preload("Ayah.Surah").
+		Joins("LEFT JOIN translation AS kemenag_t ON kemenag_t.id = tafsir.kemenag_translation_id").
+		Joins("LEFT JOIN translation AS ibnu_katsir_t ON ibnu_katsir_t.id = tafsir.ibnu_katsir_translation_id").
+		Where("kemenag_t.idn ILIKE ? OR kemenag_t.en ILIKE ? OR ibnu_katsir_t.idn ILIKE ? OR ibnu_katsir_t.en ILIKE ?",
+			"%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%").
+		Limit(limit).
+		Offset(offset).
+		Find(&list).Error
+	return list, err
 }

@@ -13,7 +13,7 @@ import { MdOutlineAutoStories } from 'react-icons/md';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const TafsirIndexPage = () => {
+export const TafsirIndexContent = ({ tafsirBasePath = '/tafsir' }) => {
     const { t, lang } = useLocale();
     const { isWide } = useLayoutMode();
     const [surahs, setSurahs] = useState([]);
@@ -42,10 +42,7 @@ const TafsirIndexPage = () => {
     });
 
     return (
-        <main className='min-h-screen flex flex-col'>
-            <NavbarTailwindCss />
-            <Section>
-                <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-3xl'}>
+        <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-3xl'}>
                     {/* Header */}
                     <div className='flex items-center gap-3 mb-6'>
                         <div className='w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center'>
@@ -100,7 +97,7 @@ const TafsirIndexPage = () => {
                             {filtered.map((s) => (
                                 <Link
                                     key={s.number}
-                                    href={`/tafsir/${encodeURIComponent(s.translation?.latin_en ?? s.number)}`}
+                                    href={`${tafsirBasePath}/${encodeURIComponent(s.translation?.latin_en ?? s.number)}`}
                                     className='group flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm transition-all'
                                 >
                                     <span className='w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center justify-center flex-shrink-0'>
@@ -118,11 +115,18 @@ const TafsirIndexPage = () => {
                             ))}
                         </div>
                     )}
-                </div>
-            </Section>
-            <Footer />
-        </main>
+        </div>
     );
 };
+
+const TafsirIndexPage = () => (
+    <main className='min-h-screen flex flex-col'>
+        <NavbarTailwindCss />
+        <Section>
+            <TafsirIndexContent />
+        </Section>
+        <Footer />
+    </main>
+);
 
 export default TafsirIndexPage;

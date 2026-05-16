@@ -1,5 +1,6 @@
 'use client';
 
+import ContentWidth from '@/components/layout/ContentWidth';
 import { useLocale } from '@/context/Locale';
 import { useEffect, useState } from 'react';
 import { BsCalendar3, BsGeoAlt } from 'react-icons/bs';
@@ -110,7 +111,7 @@ export default function ImsakiyahPage() {
         <main className='min-h-screen bg-parchment-50 dark:bg-slate-900 pb-12'>
             {/* Header */}
             <div className='bg-gradient-to-br from-emerald-900 to-emerald-800 text-white px-6 pt-10 pb-8'>
-                <div className='max-w-5xl mx-auto'>
+                <ContentWidth compact='max-w-5xl'>
                     <div className='flex items-center gap-2 mb-1'>
                         <BsCalendar3 className='text-emerald-300' />
                         <span className='text-xs font-semibold uppercase tracking-widest text-emerald-300'>
@@ -122,10 +123,10 @@ export default function ImsakiyahPage() {
                         {t('imsakiyah.subtitle')} — {cityName},{' '}
                         {monthNames[month - 1]} {year}
                     </p>
-                </div>
+                </ContentWidth>
             </div>
 
-            <div className='max-w-5xl mx-auto px-4 pt-6 space-y-5'>
+            <ContentWidth compact='max-w-5xl' className='px-4 pt-6 space-y-5'>
                 {/* Controls */}
                 <div className='bg-white dark:bg-slate-800 rounded-2xl p-5 border border-gray-100 dark:border-slate-700 space-y-4'>
                     {/* Month navigator */}
@@ -306,7 +307,7 @@ export default function ImsakiyahPage() {
                         </div>
                     </div>
                 ) : null}
-            </div>
+            </ContentWidth>
         </main>
     );
 }

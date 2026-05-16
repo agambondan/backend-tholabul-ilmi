@@ -5,6 +5,49 @@ const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL;
 const getToken = () =>
     typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
 
+const mutationMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+const adminMutationFallback = (method) =>
+    method === 'DELETE'
+        ? 'Gagal menghapus data. Periksa koneksi atau coba lagi.'
+        : 'Gagal menyimpan perubahan. Periksa input atau coba lagi.';
+
+const parseErrorMessage = async (res, method) => {
+    try {
+        const data = await res.clone().json();
+        return data?.message ?? data?.error ?? adminMutationFallback(method);
+    } catch {
+        return adminMutationFallback(method);
+    }
+};
+
+const notifyAdminMutationError = (message) => {
+    if (typeof window === 'undefined') return;
+    if (!window.location.pathname.startsWith('/admin')) return;
+
+    window.dispatchEvent(
+        new CustomEvent('admin:mutation-error', {
+            detail: { message },
+        }),
+    );
+};
+
+const ensureMutationOk = async (res, method) => {
+    if (res.ok || !mutationMethods.has(method)) return res;
+    if (
+        typeof window === 'undefined' ||
+        !window.location.pathname.startsWith('/admin')
+    ) {
+        return res;
+    }
+
+    const message = await parseErrorMessage(res, method);
+    notifyAdminMutationError(message);
+    const error = new Error(message);
+    error.adminMutationNotified = true;
+    throw error;
+};
+
 const refreshAccessToken = async () => {
     try {
         const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
@@ -24,32 +67,46 @@ const refreshAccessToken = async () => {
 
 export const authFetch = async (path, options = {}) => {
     const token = getToken();
-    const res = await fetch(`${API_URL}${path}`, {
-        ...options,
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...options.headers,
-        },
-    });
+    const method = (options.method ?? 'GET').toUpperCase();
+    try {
+        const res = await fetch(`${API_URL}${path}`, {
+            ...options,
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                ...options.headers,
+            },
+        });
 
-    if (res.status === 401) {
-        const newToken = await refreshAccessToken();
-        if (newToken) {
-            return fetch(`${API_URL}${path}`, {
-                ...options,
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${newToken}`,
-                    ...options.headers,
-                },
-            });
+        if (res.status === 401) {
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+                const retry = await fetch(`${API_URL}${path}`, {
+                    ...options,
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${newToken}`,
+                        ...options.headers,
+                    },
+                });
+                return ensureMutationOk(retry, method);
+            }
         }
-    }
 
-    return res;
+        return ensureMutationOk(res, method);
+    } catch (error) {
+        if (
+            !error.adminMutationNotified &&
+            mutationMethods.has(method) &&
+            typeof window !== 'undefined' &&
+            window.location.pathname.startsWith('/admin')
+        ) {
+            notifyAdminMutationError(error.message || adminMutationFallback(method));
+        }
+        throw error;
+    }
 };
 
 export const userApi = {
@@ -144,6 +201,19 @@ export const asmaulHusnaApi = {
 export const tafsirApi = {
     byAyah: (ayahId) => fetch(`${API_URL}/api/v1/tafsir/ayah/${ayahId}`),
     bySurah: (number) => fetch(`${API_URL}/api/v1/tafsir/surah/${number}`),
+    search: (q) => fetch(`${API_URL}/api/v1/tafsir/search?q=${encodeURIComponent(q)}`),
+};
+
+export const munasabahApi = {
+    byAyah: (ayahId) => fetch(`${API_URL}/api/v1/munasabah/ayah/${ayahId}`),
+};
+
+export const tokohTarikhApi = {
+    list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return fetch(`${API_URL}/api/v1/tokoh-tarikh${qs ? '?' + qs : ''}`);
+    },
+    detail: (id) => fetch(`${API_URL}/api/v1/tokoh-tarikh/${id}`),
 };
 
 export const mufrodatApi = {
@@ -559,6 +629,52 @@ export const achievementApi = {
 export const quranApi = {
     byPage: (page) => fetch(`${API_URL}/api/v1/ayah/page/${page}`),
     byHizb: (hizb) => fetch(`${API_URL}/api/v1/ayah/hizb/${hizb}`),
+};
+
+export const kalkulasiZakatApi = {
+    save: (data) => authFetch('/api/v1/zakat/kalkulasi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    }),
+    list: () => authFetch('/api/v1/zakat/kalkulasi'),
+    delete: (id) => authFetch(`/api/v1/zakat/kalkulasi/${id}`, { method: 'DELETE' }),
+};
+
+export const faraidhSimpanApi = {
+    save: (data) => authFetch('/api/v1/faraidh/simpan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    }),
+    list: () => authFetch('/api/v1/faraidh/simpan'),
+    delete: (id) => authFetch(`/api/v1/faraidh/simpan/${id}`, { method: 'DELETE' }),
+};
+
+export const forumApi = {
+    list: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return fetch(`${API_URL}/api/v1/forum/questions${qs ? '?' + qs : ''}`);
+    },
+    get: (slug) => fetch(`${API_URL}/api/v1/forum/questions/${slug}`),
+    create: (data) => authFetch('/api/v1/forum/questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    }),
+    delete: (id) => authFetch(`/api/v1/forum/questions/${id}`, { method: 'DELETE' }),
+    answer: (questionId, data) => authFetch(`/api/v1/forum/questions/${questionId}/answers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    }),
+    acceptAnswer: (questionId, answerId) => authFetch(`/api/v1/forum/questions/${questionId}/answers/${answerId}/accept`, { method: 'PUT' }),
+    deleteAnswer: (id) => authFetch(`/api/v1/forum/answers/${id}`, { method: 'DELETE' }),
+    vote: (data) => authFetch('/api/v1/forum/votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    }),
 };
 
 export const notificationInboxApi = {

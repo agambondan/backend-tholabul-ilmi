@@ -172,7 +172,12 @@ function HadithCard({ h, idx, lang, t, slug }) {
     const firstAudioSource = audioSources[0] ?? '';
     const arabicText = h.translation?.ar ?? h.arab ?? '';
     const hadithText = getLocalizedTranslation(h.translation, lang) || h.indonesia || '';
-    const cardId = `hadith-${h.id ?? idx}`;
+    const cardId = `${slug}-${h.number ?? h.id ?? idx}`;
+
+    const getCardUrl = () => {
+        if (typeof window === 'undefined') return '';
+        return `${window.location.origin}${window.location.pathname}${window.location.search}#${cardId}`;
+    };
 
     const copyText = (value) => {
         CopyToClipboard(value);
@@ -283,7 +288,7 @@ function HadithCard({ h, idx, lang, t, slug }) {
                                         type='button'
                                         className='flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-left text-gray-700 dark:text-gray-300'
                                         onClick={() => {
-                                            copyText(`${window.location.href}`);
+                                            copyText(getCardUrl());
                                             setSettingPopUp(false);
                                         }}
                                     >
@@ -479,6 +484,20 @@ export function HadithDetailContent({ params, basePath = '/dashboard/hadith' }) 
             loadHadiths(nextPage, selectedTheme, selectedChapter.id);
         }
     };
+
+    useEffect(() => {
+        if (!hadiths.length || typeof window === 'undefined') return;
+
+        const targetId = decodeURIComponent(window.location.hash.replace('#', ''));
+        if (!targetId) return;
+
+        requestAnimationFrame(() => {
+            document.getElementById(targetId)?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+            });
+        });
+    }, [hadiths]);
 
     return (
         <div className='p-4'>

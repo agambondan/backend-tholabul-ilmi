@@ -196,6 +196,8 @@ const AdminStudiesPage = () => {
                                             )}
                                             <button
                                                 onClick={() => openEdit(item)}
+                                                aria-label={t('common.edit')}
+                                                title={t('common.edit')}
                                                 className='p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded'
                                             >
                                                 <BsPencil />
@@ -204,6 +206,8 @@ const AdminStudiesPage = () => {
                                                 onClick={() =>
                                                     setDeleteId(item.id ?? item._id)
                                                 }
+                                                aria-label={t('common.delete')}
+                                                title={t('common.delete')}
                                                 className='p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded'
                                             >
                                                 <BsTrash />

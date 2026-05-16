@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { buildRegisterHref, getSafeNextPath } from '@/lib/authRedirect';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -18,7 +19,7 @@ const LoginPage = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const nextUrl = searchParams.get('next') || '/dashboard';
+    const nextUrl = getSafeNextPath(searchParams.get('next'), '/dashboard');
     const registered = searchParams.get('registered') === '1';
 
     useEffect(() => {
@@ -122,7 +123,7 @@ const LoginPage = () => {
                     <p className='mt-5 text-center text-sm text-gray-500 dark:text-gray-400'>
                         {t('auth.no_account')}{' '}
                         <Link
-                            href='/auth/register'
+                            href={buildRegisterHref(nextUrl)}
                             className='text-emerald-600 dark:text-emerald-400 font-medium hover:underline'
                         >
                             {t('auth.register_now')}

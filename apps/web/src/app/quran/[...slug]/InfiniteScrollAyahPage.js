@@ -4,7 +4,6 @@
 import AyahPage from '@/app/quran/[...slug]/AyahPage';
 import AutoScrollButton from '@/components/popup/AutoScrollButton';
 import ScrollableComponent from '@/components/popup/ScrollableButton';
-import SettingButton from '@/components/popup/SettingButton';
 import { SkeletonReader } from '@/components/skeleton/Skeleton';
 import SurahAudioPlayer from '@/components/SurahAudioPlayer';
 import { useLocale } from '@/context/Locale';
@@ -312,7 +311,6 @@ const InfiniteScrollAyahPage = ({ params, searchParams, basePath = '/quran/surah
 				</div>
 			</ScrollableComponent>
 			<AutoScrollButton />
-			<SettingButton />
 		</div>
 	);
 };

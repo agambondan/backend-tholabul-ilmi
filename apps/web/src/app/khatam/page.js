@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useAuth } from '@/context/Auth';
@@ -81,7 +82,7 @@ export function KhatamContent({ basePath = '/quran' }) {
 
     if (!isAuthenticated) {
         return (
-            <div className='container mx-auto px-4 max-w-2xl py-10 text-center'>
+            <ContentWidth compact='max-w-2xl' className='px-4 py-10 text-center'>
                 <FaQuran className='mx-auto text-5xl text-emerald-300 dark:text-emerald-700 mb-4' />
                 <h1 className='text-xl font-bold text-emerald-900 dark:text-white mb-2'>
                     {t('khatam.title') ?? 'Khatam Tracker'}
@@ -96,7 +97,7 @@ export function KhatamContent({ basePath = '/quran' }) {
                 >
                     {t('auth.login_btn') ?? 'Masuk'}
                 </Link>
-            </div>
+            </ContentWidth>
         );
     }
 
@@ -109,7 +110,7 @@ export function KhatamContent({ basePath = '/quran' }) {
     const juzList = juzProgress(progress.surahNumber, progress.ayahNumber);
 
     return (
-        <div className='container mx-auto px-4 max-w-3xl py-6'>
+        <ContentWidth compact='max-w-3xl' className='px-4 py-6'>
             <div className='text-center mb-6'>
                 <FaQuran className='mx-auto text-3xl text-emerald-600 dark:text-emerald-400 mb-2' />
                 <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>
@@ -280,7 +281,7 @@ export function KhatamContent({ basePath = '/quran' }) {
                     {t('khatam.continue_reading') ?? 'Lanjutkan baca'}
                 </Link>
             </div>
-        </div>
+        </ContentWidth>
     );
 }
 

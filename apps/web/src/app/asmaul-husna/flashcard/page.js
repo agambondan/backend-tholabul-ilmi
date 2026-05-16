@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
@@ -19,7 +20,7 @@ const shuffleArray = (arr) => {
     return a;
 };
 
-export function AsmaulHusnaFlashcardContent() {
+export function AsmaulHusnaFlashcardContent({ basePath = '/asmaul-husna' }) {
     const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [order, setOrder] = useState([]);
@@ -89,10 +90,10 @@ export function AsmaulHusnaFlashcardContent() {
     }
 
     return (
-        <div className='container mx-auto px-4 max-w-2xl py-6'>
+        <ContentWidth compact='max-w-2xl' className='px-4 py-6'>
             <div className='text-center mb-6'>
                 <Link
-                    href='/asmaul-husna'
+                    href={basePath}
                     className='text-sm text-emerald-700 dark:text-emerald-400 hover:underline'
                 >
                     ← {t('asmaul.back_to_list') ?? 'Kembali ke Daftar'}
@@ -209,7 +210,7 @@ export function AsmaulHusnaFlashcardContent() {
                     <BsArrowRight />
                 </button>
             </div>
-        </div>
+        </ContentWidth>
     );
 }
 

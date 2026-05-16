@@ -3,9 +3,10 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { notesApi } from '@/lib/api';
+import { buildLoginHref } from '@/lib/authRedirect';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { BsSticky, BsStickyFill, BsTrash, BsX } from 'react-icons/bs';
+import { useEffect, useRef, useState } from 'react';
+import { BsSticky, BsStickyFill, BsTrash, BsX, BsTypeBold, BsTypeItalic, BsListUl } from 'react-icons/bs';
 
 const NoteButton = ({ refType, refId, className = '' }) => {
     const { isAuthenticated } = useAuth();
@@ -15,6 +16,26 @@ const NoteButton = ({ refType, refId, className = '' }) => {
     const [showModal, setShowModal] = useState(false);
     const [content, setContent] = useState('');
     const [saving, setSaving] = useState(false);
+    const textareaRef = useRef(null);
+
+    const insertFormat = (prefix, suffix = '') => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const selected = content.substring(start, end);
+        const before = content.substring(0, start);
+        const after = content.substring(end);
+        const formatted = prefix + selected + suffix;
+        setContent(before + formatted + after);
+        setTimeout(() => {
+            el.focus();
+            el.setSelectionRange(
+                start + prefix.length,
+                start + formatted.length,
+            );
+        }, 0);
+    };
 
     useEffect(() => {
         if (!isAuthenticated || !refId) return;
@@ -38,7 +59,11 @@ const NoteButton = ({ refType, refId, className = '' }) => {
 
     const openModal = () => {
         if (!isAuthenticated) {
-            router.push('/auth/login');
+            const currentPath =
+                typeof window === 'undefined'
+                    ? '/dashboard'
+                    : `${window.location.pathname}${window.location.search}`;
+            router.push(buildLoginHref(currentPath));
             return;
         }
         setContent(note?.content ?? '');
@@ -119,7 +144,37 @@ const NoteButton = ({ refType, refId, className = '' }) => {
                                 <BsX className='text-xl' />
                             </button>
                         </div>
+                        <div className='flex items-center gap-1 mb-2 border-b border-gray-100 dark:border-slate-700 pb-2'>
+                            <button
+                                type='button'
+                                title={t('notes.bold') ?? 'Tebal'}
+                                onClick={() => insertFormat('**', '**')}
+                                className='p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors'
+                            >
+                                <BsTypeBold />
+                            </button>
+                            <button
+                                type='button'
+                                title={t('notes.italic') ?? 'Miring'}
+                                onClick={() => insertFormat('*', '*')}
+                                className='p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors'
+                            >
+                                <BsTypeItalic />
+                            </button>
+                            <button
+                                type='button'
+                                title={t('notes.list') ?? 'Daftar'}
+                                onClick={() => insertFormat('\n- ')}
+                                className='p-1.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors'
+                            >
+                                <BsListUl />
+                            </button>
+                            <span className='text-[10px] text-gray-400 dark:text-gray-600 ml-auto'>
+                                Markdown
+                            </span>
+                        </div>
                         <textarea
+                            ref={textareaRef}
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             rows={6}

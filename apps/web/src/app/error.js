@@ -1,11 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { useLocale } from '@/context/Locale';
 
+const recoveryBase = (pathname) => {
+    if (pathname?.startsWith('/admin')) return '/admin';
+    if (pathname?.startsWith('/dashboard')) return '/dashboard';
+    return '/';
+};
+
 export default function GlobalError({ error, reset }) {
     const { t } = useLocale();
+    const pathname = usePathname();
+    const homeHref = recoveryBase(pathname);
 
     useEffect(() => {
         console.error(error);
@@ -31,7 +40,7 @@ export default function GlobalError({ error, reset }) {
                         {t('common.try_again')}
                     </button>
                     <Link
-                        href='/'
+                        href={homeHref}
                         className='border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-sm px-5 py-2 rounded-full transition-colors'
                     >
                         {t('not_found.home')}

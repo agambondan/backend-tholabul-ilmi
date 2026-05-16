@@ -10,6 +10,7 @@ type ZakatController interface {
 	CalculateMaal(ctx *fiber.Ctx) error
 	CalculateFitrah(ctx *fiber.Ctx) error
 	GetNishab(ctx *fiber.Ctx) error
+	GetGoldPrice(ctx *fiber.Ctx) error
 }
 
 type zakatController struct {
@@ -64,4 +65,8 @@ func (c *zakatController) CalculateFitrah(ctx *fiber.Ctx) error {
 // @Router /zakat/nishab [get]
 func (c *zakatController) GetNishab(ctx *fiber.Ctx) error {
 	return lib.OK(ctx, c.svc.GetNishab())
+}
+
+func (c *zakatController) GetGoldPrice(ctx *fiber.Ctx) error {
+	return lib.OK(ctx, fiber.Map{"price_per_gram": c.svc.GetGoldPrice(), "currency": "IDR"})
 }

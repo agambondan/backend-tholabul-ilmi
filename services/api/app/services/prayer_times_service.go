@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/agambondan/islamic-explorer/app/model"
+	"github.com/mnadev/adhango/pkg/calc"
+	"github.com/mnadev/adhango/pkg/data"
+	"github.com/mnadev/adhango/pkg/util"
 )
 
 type PrayerTimesService interface {
@@ -90,6 +93,9 @@ func hoursToTime(h float64, tz int) string {
 }
 
 func (s *prayerTimesService) calculate(lat, lng float64, date time.Time, method, madhab string) model.PrayerTime {
+	if method == "adhango" {
+		return s.calculateAdhango(lat, lng, date, madhab)
+	}
 	m, ok := methods[method]
 	if !ok {
 		m = methods["kemenag"]
@@ -202,4 +208,23 @@ func (s *prayerTimesService) GetImsakiyah(lat, lng float64, year, month int, met
 		Madhab: madhab,
 		Rows:   rows,
 	}, nil
+}
+
+func (s *prayerTimesService) calculateAdhango(lat, lng float64, date time.Time, madhab string) model.PrayerTime {
+	coords := &util.Coordinates{Latitude: lat, Longitude: lng}
+	dc := &data.DateComponents{Year: date.Year(), Month: int(date.Month()), Day: date.Day()}
+	cb := calc.NewCalculationParametersBuilder().SetMethod(calc.MUSLIM_WORLD_LEAGUE)
+	if madhab == "hanafi" {
+		cb.SetMadhab(calc.HANAFI)
+	}
+	pt, err := calc.NewPrayerTimes(coords, dc, cb.Build())
+	if err != nil {
+		return model.PrayerTime{}
+	}
+	f := func(t time.Time) string { return t.Format("15:04") }
+	return model.PrayerTime{
+		Fajr: f(pt.Fajr), Sunrise: f(pt.Sunrise), Dhuhr: f(pt.Dhuhr),
+		Asr: f(pt.Asr), Maghrib: f(pt.Maghrib), Isha: f(pt.Isha),
+		Imsak: f(pt.Fajr.Add(-10 * time.Minute)),
+	}
 }

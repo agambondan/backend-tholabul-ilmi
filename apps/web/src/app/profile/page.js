@@ -200,8 +200,8 @@ const ProfilePage = () => {
                             <Link
                                 href={
                                     quranProgress.surah_latin
-                                        ? `/quran/surah/${quranProgress.surah_latin}#${quranProgress.ayah_number}`
-                                        : '/quran'
+                                        ? `/dashboard/quran/${quranProgress.surah_latin}#${quranProgress.ayah_number}`
+                                        : '/dashboard/quran'
                                 }
                                 className='p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                             >
@@ -225,8 +225,8 @@ const ProfilePage = () => {
                             <Link
                                 href={
                                     hadithProgress.book_slug
-                                        ? `/hadith/${hadithProgress.book_slug}#${hadithProgress.hadith_id}`
-                                        : '/hadith'
+                                        ? `/dashboard/hadith/${hadithProgress.book_slug}#${hadithProgress.hadith_id}`
+                                        : '/dashboard/hadith'
                                 }
                                 className='p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                             >
@@ -251,7 +251,7 @@ const ProfilePage = () => {
                     {/* Quick links */}
                     <div className='grid grid-cols-2 gap-3 mb-6'>
                         <Link
-                            href='/bookmarks'
+                            href='/dashboard/bookmarks'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <BsBookmark className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -260,7 +260,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/hafalan'
+                            href='/dashboard/hafalan'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <BsCheckCircle className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -276,7 +276,7 @@ const ProfilePage = () => {
                             </div>
                         </Link>
                         <Link
-                            href='/tilawah'
+                            href='/dashboard/tilawah'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <BsJournalCheck className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -285,7 +285,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/amalan'
+                            href='/dashboard/amalan'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <MdFormatListBulleted className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -294,7 +294,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/muroja-ah'
+                            href='/dashboard/muroja-ah'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <MdRefresh className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -303,7 +303,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/notes'
+                            href='/dashboard/notes'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <BsStickyFill className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -312,7 +312,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/jadwal-sholat'
+                            href='/dashboard/jadwal-sholat'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <MdAccessTime className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -321,7 +321,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/zakat'
+                            href='/dashboard/zakat'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <FaCalculator className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -330,7 +330,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/kiblat'
+                            href='/dashboard/kiblat'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <GiCompass className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -339,7 +339,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/kamus'
+                            href='/dashboard/kamus'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <BsBook className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -348,7 +348,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/sholat-tracker'
+                            href='/dashboard/sholat-tracker'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <MdMosque className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -357,7 +357,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/muhasabah'
+                            href='/dashboard/muhasabah'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <MdSelfImprovement className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -366,7 +366,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/goals'
+                            href='/dashboard/goals'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <MdFlag className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -375,7 +375,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/kajian'
+                            href='/dashboard/kajian'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <MdOutlinePlayLesson className='text-emerald-600 dark:text-emerald-400 text-xl' />
@@ -384,7 +384,7 @@ const ProfilePage = () => {
                             </span>
                         </Link>
                         <Link
-                            href='/notifications'
+                            href='/dashboard/notifications'
                             className='flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors'
                         >
                             <BsBell className='text-emerald-600 dark:text-emerald-400 text-xl' />

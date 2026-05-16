@@ -12,6 +12,7 @@ const (
 	NotificationTypeDailyQuran  NotificationType = "daily_quran"
 	NotificationTypeDailyHadith NotificationType = "daily_hadith"
 	NotificationTypeDoa         NotificationType = "doa"
+	NotificationTypeStreakRisk  NotificationType = "streak_risk"
 )
 
 type NotificationSetting struct {
@@ -25,7 +26,7 @@ type NotificationSetting struct {
 }
 
 type NotificationSettingRequest struct {
-	Type     NotificationType `json:"type" validate:"required,oneof=daily_quran daily_hadith doa"`
+	Type     NotificationType `json:"type" validate:"required,oneof=daily_quran daily_hadith doa streak_risk"`
 	Time     string           `json:"time" validate:"required"`
 	IsActive *bool            `json:"is_active" validate:"required"`
 }

@@ -17,6 +17,7 @@ describe('useRequireAuth', () => {
   beforeEach(() => {
     mockPush.mockClear();
     mockUseAuth.mockClear();
+    window.history.pushState({}, '', '/dashboard/quran?surah=1');
   });
 
   test('redirects to login when not authenticated and not loading', () => {
@@ -28,7 +29,7 @@ describe('useRequireAuth', () => {
     });
 
     renderHook(() => useRequireAuth());
-    expect(mockPush).toHaveBeenCalledWith('/auth/login');
+    expect(mockPush).toHaveBeenCalledWith('/auth/login?next=%2Fdashboard%2Fquran%3Fsurah%3D1');
   });
 
   test('does not redirect when loading', () => {

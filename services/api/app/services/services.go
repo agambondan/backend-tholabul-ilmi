@@ -39,6 +39,13 @@ type Services struct {
 	Achievement       AchievementService
 	Leaderboard       LeaderboardService
 	Zakat             ZakatService
+	KalkulasiZakat    KalkulasiZakatService
+	SimpanFaraidh     SimpanFaraidhService
+	HadithAyah        HadithAyahService
+	Forum             ForumService
+	Munasabah         MunasabahService
+	NotificationTemplate NotificationTemplateService
+	TokohTarikh        TokohTarikhService
 	Sholat            SholatService
 	Murojaah          MurojaahService
 	Fiqh              FiqhService
@@ -116,6 +123,13 @@ func NewServices(repo *repository.Repositories) *Services {
 		Achievement:       NewAchievementService(repo.Achievement),
 		Leaderboard:       NewLeaderboardService(repo.Leaderboard),
 		Zakat:             NewZakatService(),
+		KalkulasiZakat:    NewKalkulasiZakatService(repo.KalkulasiZakat),
+		SimpanFaraidh:     NewSimpanFaraidhService(repo.SimpanFaraidh),
+		HadithAyah:        NewHadithAyahService(repo.HadithAyah),
+		Forum:             NewForumService(repo.Forum),
+		Munasabah:         NewMunasabahService(repo.Munasabah),
+		NotificationTemplate: NewNotificationTemplateService(repo.NotificationTemplate),
+		TokohTarikh:        NewTokohTarikhService(repo.TokohTarikh),
 		Sholat:            NewSholatService(repo.Sholat),
 		Murojaah:          NewMurojaahService(repo.Murojaah, repo.Hafalan),
 		Fiqh:              NewFiqhServiceWithCache(repo.Fiqh, cache),

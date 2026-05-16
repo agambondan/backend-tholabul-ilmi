@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useAuth } from '@/context/Auth';
@@ -97,7 +98,7 @@ export function WiridCustomContent() {
 
     if (!isAuthenticated) {
         return (
-            <div className='container mx-auto px-4 max-w-2xl py-10 text-center'>
+            <ContentWidth compact='max-w-2xl' className='px-4 py-10 text-center'>
                 <GiOpenBook className='mx-auto text-5xl text-emerald-300 dark:text-emerald-700 mb-4' />
                 <h1 className='text-xl font-bold text-emerald-900 dark:text-white mb-2'>
                     {t('wirid_custom.title') ?? 'Wirid Pribadi'}
@@ -111,12 +112,12 @@ export function WiridCustomContent() {
                 >
                     {t('auth.login_btn') ?? 'Masuk'}
                 </Link>
-            </div>
+            </ContentWidth>
         );
     }
 
     return (
-        <div className='container mx-auto px-4 max-w-3xl py-6'>
+        <ContentWidth compact='max-w-3xl' className='px-4 py-6'>
             <div className='flex items-center justify-between mb-6'>
                 <div>
                     <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-0.5'>
@@ -340,7 +341,7 @@ export function WiridCustomContent() {
                     </div>
                 </div>
             )}
-        </div>
+        </ContentWidth>
     );
 }
 

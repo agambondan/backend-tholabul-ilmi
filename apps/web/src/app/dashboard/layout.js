@@ -3,13 +3,13 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { ConvertFLagLanguage } from '@/lib/converter';
-import SettingButton from '@/components/popup/SettingButton';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
     BsArrowRepeat,
+    BsAward,
     BsBarChart,
     BsBell,
     BsBook,
@@ -179,6 +179,7 @@ const DashboardLayout = ({ children }) => {
                 { labelKey: 'link.search', href: '/dashboard/search', icon: <BsSearch /> },
                 { labelKey: 'link.quiz', href: '/dashboard/quiz', icon: <FaBrain /> },
                 { labelKey: 'link.leaderboard', href: '/dashboard/leaderboard', icon: <BsTrophyFill /> },
+                { labelKey: 'link.achievements', href: '/dashboard/achievements', icon: <BsAward /> },
                 { labelKey: 'link.imsakiyah', href: '/dashboard/imsakiyah', icon: <BsCalendar3 /> },
             ],
         },
@@ -475,7 +476,6 @@ const DashboardLayout = ({ children }) => {
                 <div className={isWide ? 'w-full' : 'max-w-5xl mx-auto'}>
                     {children}
                 </div>
-                <SettingButton isShowFixedComponent={true} />
             </main>
         </div>
     );

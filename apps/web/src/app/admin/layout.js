@@ -2,9 +2,9 @@
 
 import { useAuth } from '@/context/Auth';
 import { Spinner3 } from '@/components/spinner/Spinner';
+import AdminMutationToast from '@/components/admin/AdminMutationToast';
 import { useLocale } from '@/context/Locale';
 import { ConvertFLagLanguage } from '@/lib/converter';
-import SettingButton from '@/components/popup/SettingButton';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -144,6 +144,7 @@ const AdminLayout = ({ children }) => {
 
     return (
         <div className='min-h-screen flex bg-gray-50 dark:bg-gray-950'>
+            <AdminMutationToast />
             <aside
                 className={`${sidebarWidth} shrink-0 bg-emerald-900 dark:bg-gray-900 text-white flex flex-col fixed inset-y-0 left-0 z-40 transition-[width] duration-200`}
             >
@@ -339,7 +340,6 @@ const AdminLayout = ({ children }) => {
                 <div className={isWide ? 'w-full' : 'max-w-5xl mx-auto'}>
                     {children}
                 </div>
-                <SettingButton isShowFixedComponent={true} />
             </main>
         </div>
     );

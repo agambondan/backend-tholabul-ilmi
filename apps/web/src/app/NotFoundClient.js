@@ -2,6 +2,7 @@
 
 import { useLocale } from '@/context/Locale';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const QUICK_LINKS = [
     { href: '/quran', labelKey: 'link.quran' },
@@ -11,8 +12,21 @@ const QUICK_LINKS = [
     { href: '/blog', labelKey: 'link.blog' },
 ];
 
+const recoveryBase = (pathname) => {
+    if (pathname?.startsWith('/admin')) return '/admin';
+    if (pathname?.startsWith('/dashboard')) return '/dashboard';
+    return '/';
+};
+
+const scopedHref = (href, basePath) => {
+    if (basePath === '/dashboard') return `/dashboard${href}`;
+    return href;
+};
+
 export default function NotFoundClient() {
     const { t } = useLocale();
+    const pathname = usePathname();
+    const homeHref = recoveryBase(pathname);
 
     return (
         <div className='min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4'>
@@ -31,7 +45,7 @@ export default function NotFoundClient() {
                     {QUICK_LINKS.map((link) => (
                         <Link
                             key={link.href}
-                            href={link.href}
+                            href={scopedHref(link.href, homeHref)}
                             className='text-xs px-4 py-2 rounded-full border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors'
                         >
                             {t(link.labelKey)}
@@ -40,7 +54,7 @@ export default function NotFoundClient() {
                 </div>
 
                 <Link
-                    href='/'
+                    href={homeHref}
                     className='inline-block bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-6 py-2.5 rounded-full transition-colors font-medium'
                 >
                     {t('not_found.home')}

@@ -1,7 +1,7 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --no-optional && yarn cache clean
+COPY package.json package-lock.json ./
+RUN npm ci --omit=optional --legacy-peer-deps && npm cache clean --force
 
 FROM node:24-alpine AS builder
 WORKDIR /app
@@ -10,7 +10,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_API_URL=http://localhost:9900
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-RUN yarn build && rm -rf node_modules
+RUN npm run build && rm -rf node_modules
 
 FROM node:24-alpine AS runner
 WORKDIR /app

@@ -1,11 +1,12 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import { useLocale } from '@/context/Locale';
-import { useEffect, useState } from 'react';
-import { BsGeoAlt } from 'react-icons/bs';
-import { MdAccessTime } from 'react-icons/md';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BsBell, BsBellFill, BsGeoAlt } from 'react-icons/bs';
+import { MdAccessTime, MdTimer } from 'react-icons/md';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -39,6 +40,7 @@ const CITIES = [
 
 const METHODS = [
     { value: 'kemenag', label: 'Kemenag (Indonesia)' },
+    { value: 'adhango', label: 'AdhanGo (MWL)' },
     { value: 'jakim', label: 'JAKIM (Malaysia)' },
     { value: 'mwl', label: 'MWL' },
     { value: 'isna', label: 'ISNA (Amerika)' },
@@ -71,11 +73,72 @@ export default function JadwalSholatPage() {
     const [method, setMethod] = useState('kemenag');
     const [madhab, setMadhab] = useState('shafi');
     const [showSettings, setShowSettings] = useState(false);
+    const [gpsStatus, setGpsStatus] = useState('idle');
+    const [countdown, setCountdown] = useState('');
+    const [adzanEnabled, setAdzanEnabled] = useState(false);
+    const [notifGranted, setNotifGranted] = useState(false);
+    const gpsTriedRef = useRef(false);
+    const audioRef = useRef(null);
+    const lastNotifRef = useRef('');
 
     useEffect(() => {
         const iv = setInterval(() => setNow(new Date()), 15000);
         return () => clearInterval(iv);
     }, []);
+
+    useEffect(() => {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            setNotifGranted(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (gpsTriedRef.current || gpsStatus !== 'idle') return;
+        if (!navigator.geolocation) return;
+        gpsTriedRef.current = true;
+        setGpsStatus('detecting');
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                fetchByCoords(pos.coords.latitude, pos.coords.longitude, t('geo.my_location'));
+                setGpsStatus('done');
+            },
+            () => setGpsStatus('error'),
+            { timeout: 10000, maximumAge: 300000 },
+        );
+    }, [city.lat, city.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (!prayers) return;
+        const tick = () => {
+            const n = new Date();
+            for (const p of PRAYERS.filter((p) => !p.info)) {
+                const pt = parseTimeStr(prayers[p.key]);
+                if (pt && pt > n) {
+                    const diff = pt - n;
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    const s = Math.floor((diff % 60000) / 1000);
+                    if (diff < 10000 && adzanEnabled && lastNotifRef.current !== p.key) {
+                        lastNotifRef.current = p.key;
+                        if (audioRef.current) audioRef.current.play().catch(() => {});
+                        if (notifGranted) {
+                            new Notification(`${t('prayer_schedule.adzan') ?? 'Waktu'} ${t(p.labelKey)}`, {
+                                body: `${t('prayer_schedule.adzan_body') ?? 'Sudah masuk waktu'} ${t(p.labelKey)}`,
+                                icon: '/icon.png',
+                            });
+                        }
+                    }
+                    setCountdown(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+                    return;
+                }
+            }
+            setCountdown('');
+            lastNotifRef.current = '';
+        };
+        tick();
+        const iv = setInterval(tick, 1000);
+        return () => clearInterval(iv);
+    }, [prayers, adzanEnabled]);
 
     const fetchByCoords = (lat, lng, label) => {
         setLoading(true);
@@ -138,7 +201,7 @@ export default function JadwalSholatPage() {
     return (
         <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
             <NavbarTailwindCss />
-            <div className='max-w-lg flex-1 w-full mx-auto px-4 pt-24 pb-8'>
+            <ContentWidth compact='max-w-lg' className='flex-1 px-4 pt-24 pb-8'>
                 {/* Header */}
                 <div className='mb-6 text-center'>
                     <div className='inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-2xl mb-4'>
@@ -184,6 +247,12 @@ export default function JadwalSholatPage() {
                     {geoLabel && (
                         <p className='text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1'>
                             <BsGeoAlt /> {geoLabel}
+                        </p>
+                    )}
+                    {gpsStatus === 'detecting' && (
+                        <p className='text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-1'>
+                            <span className='w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin' />
+                            {t('geo.auto_detecting') ?? 'Mendeteksi lokasi...'}
                         </p>
                     )}
 
@@ -232,6 +301,21 @@ export default function JadwalSholatPage() {
                             </div>
                         </div>
                     )}
+                    {showSettings && (
+                        <div className='mt-3 flex items-center gap-3'>
+                            {!notifGranted && typeof Notification !== 'undefined' && Notification.permission !== 'denied' && (
+                                <button onClick={() => Notification.requestPermission().then((p) => { if (p === 'granted') setNotifGranted(true); })}
+                                    className='flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-medium'>
+                                    <BsBell /> {t('prayer_schedule.enable_notif') ?? 'Aktifkan Notifikasi'}
+                                </button>
+                            )}
+                            <button onClick={() => setAdzanEnabled((v) => !v)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${adzanEnabled ? 'bg-emerald-700 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-500'}`}>
+                                {adzanEnabled ? <BsBellFill /> : <BsBell />}
+                                {adzanEnabled ? (t('prayer_schedule.adzan_on') ?? 'Adzan On') : (t('prayer_schedule.adzan_off') ?? 'Adzan Off')}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Current time display */}
@@ -242,6 +326,23 @@ export default function JadwalSholatPage() {
                             minute: '2-digit',
                         })}
                     </span>
+                    {countdown && nextPrayer && (
+                        <div className='mt-2 flex items-center justify-center gap-2'>
+                            <MdTimer className='text-emerald-500 dark:text-emerald-400 text-lg' />
+                            <span className='text-sm text-gray-500 dark:text-gray-400'>
+                                {t('prayer_schedule.towards') ?? 'Menuju'}{' '}
+                                {t(PRAYERS.find((p) => p.key === nextPrayer)?.labelKey)}{' '}
+                            </span>
+                            <span className='text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums'>
+                                {countdown}
+                            </span>
+                        </div>
+                    )}
+                    {!countdown && prayers && !nextPrayer && (
+                        <p className='mt-1 text-xs text-gray-400 dark:text-gray-500'>
+                            {t('prayer_schedule.all_passed') ?? 'Semua waktu sholat hari ini telah berlalu'}
+                        </p>
+                    )}
                 </div>
 
                 {/* Timings */}
@@ -313,8 +414,9 @@ export default function JadwalSholatPage() {
                     {t('prayer_schedule.source_note_be') ??
                         `Metode: ${METHODS.find((m) => m.value === method)?.label} · Madhab: ${MADHABS.find((m) => m.value === madhab)?.label}`}
                 </p>
-            </div>
+            </ContentWidth>
             <Footer />
+            {adzanEnabled && <audio ref={audioRef} src='https://www.islamcan.com/audio/adzan/azan1.mp3' preload='auto' />}
         </main>
     );
 }

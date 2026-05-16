@@ -12,6 +12,7 @@ import (
 type TafsirController interface {
 	FindByAyahID(ctx *fiber.Ctx) error
 	FindBySurahNumber(ctx *fiber.Ctx) error
+	Search(ctx *fiber.Ctx) error
 	Save(ctx *fiber.Ctx) error
 	UpdateByAyahID(ctx *fiber.Ctx) error
 }
@@ -68,6 +69,34 @@ func (c *tafsirController) FindBySurahNumber(ctx *fiber.Ctx) error {
 		limit = 100
 	}
 	list, err := c.svc.FindBySurahNumber(number, lib.FetchLimitForMeta(ctx, limit), offset)
+	if err != nil {
+		return lib.ErrorInternal(ctx)
+	}
+	list, hasMore := lib.TrimPaginationItems(list, limit)
+	return lib.OKPaginated(ctx, list, limit, offset, hasMore)
+}
+
+// Search tafsir
+// @Summary Search tafsir text
+// @Description Search across tafsir (Kemenag + Ibnu Katsir) by keyword
+// @Accept json
+// @Produce json
+// @Param q query string true "Search keyword"
+// @Param size query int false "Limit (default 20, max 100)"
+// @Param page query int false "Page (0-based)"
+// @Success 200 {object} lib.Response
+// @Router /tafsir/search [get]
+// @Tags Tafsir
+func (c *tafsirController) Search(ctx *fiber.Ctx) error {
+	q := ctx.Query("q")
+	if q == "" {
+		return lib.ErrorBadRequest(ctx, "query parameter 'q' is required")
+	}
+	limit, offset := lib.GetLimitOffset(ctx)
+	if limit > 100 {
+		limit = 100
+	}
+	list, err := c.svc.Search(q, lib.FetchLimitForMeta(ctx, limit), offset)
 	if err != nil {
 		return lib.ErrorInternal(ctx)
 	}

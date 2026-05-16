@@ -1,5 +1,6 @@
 import './globals.css';
 import { AuthProvider } from '@/context/Auth';
+import SettingButton from '@/components/popup/SettingButton';
 import { LocaleProvider } from '@/context/Locale';
 
 const SITE_URL =
@@ -79,7 +80,10 @@ export default function RootLayout({ children }) {
                     }}
                 />
                 <LocaleProvider>
-                    <AuthProvider>{children}</AuthProvider>
+                    <AuthProvider>
+                        {children}
+                        <SettingButton />
+                    </AuthProvider>
                 </LocaleProvider>
             </body>
         </html>

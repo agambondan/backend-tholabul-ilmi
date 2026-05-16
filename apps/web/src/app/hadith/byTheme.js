@@ -1,12 +1,13 @@
 'use client';
 
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-const ByTheme = () => {
+const ByTheme = ({ themeBasePath = '/hadith/theme' }) => {
     const { t, lang } = useLocale();
     const [isLoading, SetIsLoading] = useState(true);
     const [isError, setIsError] = useState(false);
@@ -49,7 +50,7 @@ const ByTheme = () => {
         );
 
     return (
-        <div className='container mx-auto grid xl:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4 px-4'>
+        <ContentWidth compact='max-w-6xl' className='grid xl:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4 px-4'>
             {(themes?.items ?? []).map((theme) => {
                 const themeLabel = getThemeLabel(theme);
                 const themeSlug = themeLabel.trim().toLowerCase().replace(/\s+/g, '-');
@@ -64,7 +65,7 @@ const ByTheme = () => {
 
                 return (
                     <Link
-                        href={`/hadith/theme/${themeSlug}`}
+                        href={`${themeBasePath}/${themeSlug}`}
                         key={theme.id}
                         className='flex flex-row bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-700 transition-all overflow-hidden'
                     >
@@ -84,7 +85,7 @@ const ByTheme = () => {
                     </Link>
                 );
             })}
-        </div>
+        </ContentWidth>
     );
 };
 

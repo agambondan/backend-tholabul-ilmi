@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { bookmarkApi } from '@/lib/api';
+import { buildLoginHref } from '@/lib/authRedirect';
 import {
     BOOKMARK_COLORS,
     clearBookmarkMeta,
@@ -14,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BsBookmark, BsBookmarkFill, BsCheck2, BsX } from 'react-icons/bs';
 
-const BookmarkButton = ({ refType, refId, className = '' }) => {
+const BookmarkButton = ({ refType, refId, refSlug = '', extra = {}, className = '' }) => {
     const { isAuthenticated } = useAuth();
     const { t, lang } = useLocale();
     const router = useRouter();
@@ -34,7 +35,8 @@ const BookmarkButton = ({ refType, refId, className = '' }) => {
                 const found = (data?.items ?? []).find(
                     (b) =>
                         b.ref_type === refType &&
-                        String(b.ref_id) === String(refId),
+                        (String(b.ref_id) === String(refId) ||
+                            (refSlug && b.ref_slug === refSlug)),
                 );
                 if (found) {
                     setIsBookmarked(true);
@@ -54,11 +56,15 @@ const BookmarkButton = ({ refType, refId, className = '' }) => {
                 }
             })
             .catch(() => {});
-    }, [isAuthenticated, refType, refId]);
+    }, [isAuthenticated, refType, refId, refSlug]);
 
     const toggleBookmark = async () => {
         if (!isAuthenticated) {
-            router.push('/auth/login');
+            const currentPath =
+                typeof window === 'undefined'
+                    ? '/dashboard'
+                    : `${window.location.pathname}${window.location.search}`;
+            router.push(buildLoginHref(currentPath));
             return;
         }
         setIsLoading(true);
@@ -74,7 +80,10 @@ const BookmarkButton = ({ refType, refId, className = '' }) => {
                 setLabelDraft('');
                 setShowMenu(false);
             } else {
-                const res = await bookmarkApi.add(refType, refId);
+                const res = await bookmarkApi.add(refType, refId, {
+                    ...extra,
+                    ...(refSlug ? { ref_slug: refSlug } : {}),
+                });
                 if (!res.ok) throw new Error('bookmark failed');
                 const data = await res.json();
                 setIsBookmarked(true);

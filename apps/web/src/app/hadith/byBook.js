@@ -2,12 +2,13 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { SkeletonInline } from '@/components/skeleton/Skeleton';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedTranslation } from '@/lib/translation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-const ByBook = () => {
+const ByBook = ({ basePath = '/hadith' }) => {
     const { t, lang } = useLocale();
     const [isLoading, SetIsLoading] = useState(true);
     const [isError, setIsError] = useState(false);
@@ -45,7 +46,7 @@ const ByBook = () => {
         );
 
     return (
-        <div className='container mx-auto grid xl:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4 px-4'>
+        <ContentWidth compact='max-w-6xl' className='grid xl:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-4 px-4'>
             {(books?.items ?? []).map((book) => {
                 const label = getLocalizedTranslation(book?.translation, lang) || book.slug;
                 return (
@@ -68,7 +69,7 @@ const ByBook = () => {
                                 </p>
                             </div>
                             <Link
-                                href={`/hadith/${book.slug}`}
+                                href={`${basePath}/${book.slug}`}
                                 className='bg-emerald-700 hover:bg-emerald-600 text-white text-sm text-center py-1.5 px-3 rounded-lg transition-colors'
                             >
                                 {t('hadith.open_reader')}
@@ -77,7 +78,7 @@ const ByBook = () => {
                     </div>
                 );
             })}
-        </div>
+        </ContentWidth>
     );
 };
 

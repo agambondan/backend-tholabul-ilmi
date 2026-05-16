@@ -5,7 +5,6 @@ import HadithPage from '@/app/hadith/[slug]/HadithPage';
 import Select, { SelectOptionWithLabel } from '@/components/select/Select';
 import { SkeletonReader } from '@/components/skeleton/Skeleton';
 import AutoScrollButton from '@/components/popup/AutoScrollButton';
-import SettingButton from '@/components/popup/SettingButton';
 import { useLocale } from '@/context/Locale';
 import { progressApi, streakApi } from '@/lib/api';
 import { getLocalizedTranslation } from '@/lib/translation';
@@ -13,7 +12,7 @@ import { useLayoutMode } from '@/lib/useLayoutMode';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
-const InfiniteScrollHadithPage = ({ params, searchParams }) => {
+const InfiniteScrollHadithPage = ({ params, searchParams, basePath = '/hadith' }) => {
 	const { t, lang } = useLocale();
 	const { isWide } = useLayoutMode();
 	const router = useRouter();
@@ -52,8 +51,10 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 		let size = 10;
 		if (hash.length > 1) {
 			if (page === 0) {
-				const hashNum = parseInt(hash[1], 10);
-				size = hashNum + (hashNum % 10);
+				const hashNum = parseInt(hash[1].split('-').pop(), 10);
+				if (!Number.isNaN(hashNum)) {
+					size = hashNum + (hashNum % 10);
+				}
 			} else {
 				page = ((hadiths?.items?.length ?? 0) / 10).toFixed();
 			}
@@ -196,7 +197,7 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 					label={t('hadith.select_narrator')}
 					customClassName={''}
 					callbackOnChange={(event) => {
-						router.push(`/hadith/${event.target.value}`);
+						router.push(`${basePath}/${event.target.value}`);
 					}}
 					defaultValue={params.slug}
 				>
@@ -251,7 +252,6 @@ const InfiniteScrollHadithPage = ({ params, searchParams }) => {
 			</div>
 			{isLoadingMoreHadith ? <SkeletonReader /> : <></>}
 			<AutoScrollButton />
-			<SettingButton />
 		</div>
 	);
 };

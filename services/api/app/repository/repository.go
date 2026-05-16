@@ -61,6 +61,13 @@ type Repositories struct {
 	Comment           CommentRepository
 	APIKey            APIKeyRepository
 	IslamicEvent      IslamicEventRepository
+	KalkulasiZakat    KalkulasiZakatRepository
+	SimpanFaraidh     SimpanFaraidhRepository
+	HadithAyah        HadithAyahRepository
+	Forum              ForumRepository
+	Munasabah          MunasabahRepository
+	NotificationTemplate NotificationTemplateRepository
+	TokohTarikh        TokohTarikhRepository
 	AsbabunNuzul      AsbabunNuzulRepository
 	Perawi            PerawiRepository
 	JarhTadil         JarhTadilRepository
@@ -132,6 +139,13 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 		Comment:           NewCommentRepository(db),
 		APIKey:            NewAPIKeyRepository(db),
 		IslamicEvent:      NewIslamicEventRepository(db),
+		KalkulasiZakat:    NewKalkulasiZakatRepository(db),
+		SimpanFaraidh:     NewSimpanFaraidhRepository(db),
+		HadithAyah:        NewHadithAyahRepository(db),
+		Forum:             NewForumRepository(db),
+		Munasabah:         NewMunasabahRepository(db),
+		NotificationTemplate: NewNotificationTemplateRepository(db),
+		TokohTarikh:        NewTokohTarikhRepository(db),
 		AsbabunNuzul:      NewAsbabunNuzulRepository(db),
 		Perawi:            NewPerawiRepository(db, pg),
 		JarhTadil:         NewJarhTadilRepository(db),

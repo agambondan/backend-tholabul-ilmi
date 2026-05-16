@@ -256,6 +256,9 @@ func reminderMessage(notificationType model.NotificationType) reminderContent {
 	case model.NotificationTypeDoa:
 		title = "Pengingat Doa Harian"
 		description = "Perbarui dzikir dan doa harian Anda untuk menjaga hati tetap terhubung."
+	case model.NotificationTypeStreakRisk:
+		title = "Streak Hampir Putus!"
+		description = "Jangan sampai streak ibadah kamu putus. Luangkan waktu sejenak untuk menjaga konsistensi."
 	}
 
 	body := fmt.Sprintf(`

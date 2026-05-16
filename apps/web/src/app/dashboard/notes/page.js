@@ -17,6 +17,22 @@ import {
 import { useEffect, useState } from 'react';
 import { BsPencilSquare, BsTrash, BsX } from 'react-icons/bs';
 
+const renderMarkdownInline = (text) => {
+    if (!text) return '';
+    let html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/\n/g, '<br/>');
+    if (html.includes('<li>')) {
+        html = '<ul class="list-disc list-inside">' + html + '</ul>';
+    }
+    return html;
+};
+
 const NotesPage = () => {
     const { t, lang } = useLocale();
     const { isAuthenticated } = useAuth();
@@ -218,11 +234,14 @@ const NotesPage = () => {
                                             : ''}
                                     </p>
                                     {note.content && (
-                                        <p className='text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed'>
-                                            {note.content.length > 60
-                                                ? note.content.slice(0, 60) + '...'
-                                                : note.content}
-                                        </p>
+                                        <div
+                                            className='text-sm text-gray-600 dark:text-gray-400 mt-1 leading-relaxed'
+                                            dangerouslySetInnerHTML={{
+                                                __html: note.content.length > 100
+                                                    ? renderMarkdownInline(note.content.slice(0, 100)) + '...'
+                                                    : renderMarkdownInline(note.content),
+                                            }}
+                                        />
                                     )}
                                     {(note.tags ?? []).length > 0 && (
                                         <div className='flex flex-wrap gap-1 mt-2'>

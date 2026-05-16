@@ -1,9 +1,14 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
+import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { kalkulasiZakatApi } from '@/lib/api';
+import Link from 'next/link';
 import { useState } from 'react';
+import { BsBookmarkPlus } from 'react-icons/bs';
 import { FaCalculator } from 'react-icons/fa';
 import { MdInfo } from 'react-icons/md';
 
@@ -19,8 +24,9 @@ const TABS = [
 const NISAB_SILVER_GRAM = 595; // 595 gram silver
 const NISAB_GRAM = 85;
 
-export function ZakatContent() {
+export function ZakatContent({ basePath = '/zakat' }) {
     const { t, lang } = useLocale();
+    const { isAuthenticated } = useAuth();
     const [tab, setTab] = useState(0);
     const [goldPrice, setGoldPrice] = useState(1050000);
     const [totalWealth, setTotalWealth] = useState('');
@@ -79,6 +85,33 @@ export function ZakatContent() {
             maximumFractionDigits: 0,
         }).format(n);
 
+    const [saving, setSaving] = useState(false);
+    const [savedMsg, setSavedMsg] = useState('');
+
+    const handleSave = async (jenis, namaJenis, jumlahZakat, nilaiHarta = 0, nisabVal = 0, rate = 2.5, haulVal = true, catatan = '') => {
+        if (!isAuthenticated || jumlahZakat <= 0) return;
+        setSaving(true);
+        setSavedMsg('');
+        try {
+            await kalkulasiZakatApi.save({
+                jenis,
+                nama_jenis: namaJenis,
+                jumlah_zakat: jumlahZakat,
+                nilai_harta: nilaiHarta,
+                nisab: nisabVal,
+                rate,
+                haul: haulVal,
+                catatan,
+            });
+            setSavedMsg(t('common.saved') ?? 'Tersimpan!');
+            setTimeout(() => setSavedMsg(''), 2500);
+        } catch {
+            setSavedMsg(t('common.save_error') ?? 'Gagal menyimpan');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const InputField = ({ label, value, onChange, placeholder, hint }) => (
         <div>
             <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1'>
@@ -124,7 +157,7 @@ export function ZakatContent() {
     );
 
     return (
-        <div className='max-w-xl flex-1 w-full mx-auto px-4 pt-6 pb-8'>
+        <ContentWidth compact='max-w-xl' className='flex-1 px-4 pt-6 pb-8'>
                 <div className='mb-8 text-center'>
                     <div className='inline-flex items-center justify-center w-16 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-2xl mb-4'>
                         <FaCalculator className='text-3xl text-emerald-600 dark:text-emerald-400' />
@@ -207,6 +240,16 @@ export function ZakatContent() {
                             amount={zakatMaal}
                             label={t('zakat.maal_result')}
                         />
+                        {isAuthenticated && zakatMaal > 0 && (
+                            <button
+                                onClick={() => handleSave('maal', t('zakat.maal') ?? 'Zakat Maal', zakatMaal, wealth, nisab, 2.5, haul)}
+                                disabled={saving}
+                                className='w-full mt-3 flex items-center justify-center gap-2 py-2 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50'
+                            >
+                                <BsBookmarkPlus />
+                                {saving ? t('common.saving') ?? 'Menyimpan...' : t('zakat.save') ?? 'Simpan'}
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -257,6 +300,16 @@ export function ZakatContent() {
                             label={t('zakat.fitrah_result')}
                             note={`${familyCount} ${t('zakat.person_unit')} × 2,5 kg × ${fmt(ricePrice)}/kg`}
                         />
+                        {isAuthenticated && zakatFitrah > 0 && (
+                            <button
+                                onClick={() => handleSave('fitrah', t('zakat.fitrah') ?? 'Zakat Fitrah', zakatFitrah, 0, 0, 0, true, `${familyCount} orang × Rp${ricePrice}/kg`)}
+                                disabled={saving}
+                                className='w-full mt-3 flex items-center justify-center gap-2 py-2 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 rounded-xl text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors disabled:opacity-50'
+                            >
+                                <BsBookmarkPlus />
+                                {saving ? t('common.saving') ?? 'Menyimpan...' : t('zakat.save') ?? 'Simpan'}
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -293,6 +346,16 @@ export function ZakatContent() {
                             color='blue'
                             label={t('zakat.profession_result')}
                         />
+                        {isAuthenticated && zakatProfesi > 0 && (
+                            <button
+                                onClick={() => handleSave('profesi', t('zakat.profession') ?? 'Zakat Profesi', zakatProfesi, income, nisabMonthly)}
+                                disabled={saving}
+                                className='w-full mt-3 flex items-center justify-center gap-2 py-2 border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50'
+                            >
+                                <BsBookmarkPlus />
+                                {saving ? t('common.saving') ?? 'Menyimpan...' : t('zakat.save') ?? 'Simpan'}
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -355,6 +418,16 @@ export function ZakatContent() {
                             color='emerald'
                             label={t('zakat.trade_result') ?? 'Zakat Perdagangan'}
                         />
+                        {isAuthenticated && zakatTrade > 0 && (
+                            <button
+                                onClick={() => handleSave('perdagangan', t('zakat.trade') ?? 'Zakat Perdagangan', zakatTrade, tradeNet, nisab, 2.5, tradeHaul)}
+                                disabled={saving}
+                                className='w-full mt-3 flex items-center justify-center gap-2 py-2 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50'
+                            >
+                                <BsBookmarkPlus />
+                                {saving ? t('common.saving') ?? 'Menyimpan...' : t('zakat.save') ?? 'Simpan'}
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -399,6 +472,16 @@ export function ZakatContent() {
                             label={t('zakat.agri_result') ?? 'Zakat Pertanian'}
                             note={harvest >= NISAB_HARVEST_KG ? `${harvestRate * 100}% × ${harvest} kg × ${fmt(riceKgPrice)}/kg` : undefined}
                         />
+                        {isAuthenticated && zakatAgriculture > 0 && (
+                            <button
+                                onClick={() => handleSave('pertanian', t('zakat.agriculture') ?? 'Zakat Pertanian', zakatAgriculture, 0, 0, harvestRate * 100, true, `${harvest} kg, irigasi: ${harvestIrrigated ? '5%' : '10%'}`)}
+                                disabled={saving}
+                                className='w-full mt-3 flex items-center justify-center gap-2 py-2 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-medium hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors disabled:opacity-50'
+                            >
+                                <BsBookmarkPlus />
+                                {saving ? t('common.saving') ?? 'Menyimpan...' : t('zakat.save') ?? 'Simpan'}
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -451,13 +534,38 @@ export function ZakatContent() {
                             label={t('zakat.gold_result') ?? 'Zakat Emas & Perak'}
                             note={zakatGold > 0 ? `2,5% × ${fmt(goldValue + silverValue)}` : undefined}
                         />
+                        {isAuthenticated && zakatGold > 0 && (
+                            <button
+                                onClick={() => handleSave('emas_perak', t('zakat.gold') ?? 'Zakat Emas & Perak', zakatGold, goldValue + silverValue, goldNisabValue, 2.5, goldHaul, `${goldGrams || 0}g emas, ${silverGrams || 0}g perak`)}
+                                disabled={saving}
+                                className='w-full mt-3 flex items-center justify-center gap-2 py-2 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 rounded-xl text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors disabled:opacity-50'
+                            >
+                                <BsBookmarkPlus />
+                                {saving ? t('common.saving') ?? 'Menyimpan...' : t('zakat.save') ?? 'Simpan'}
+                            </button>
+                        )}
                     </div>
                 )}
 
+                {savedMsg && (
+                    <p className='text-center text-sm text-emerald-600 dark:text-emerald-400 mt-4 font-medium'>
+                        {savedMsg}
+                    </p>
+                )}
+                {isAuthenticated && (
+                    <div className='text-center mt-4'>
+                        <Link
+                            href={`${basePath}/history`}
+                            className='text-sm text-emerald-600 dark:text-emerald-400 hover:underline'
+                        >
+                            {t('zakat.view_history') ?? 'Lihat Riwayat Zakat'} →
+                        </Link>
+                    </div>
+                )}
                 <p className='text-center text-xs text-gray-400 dark:text-gray-500 mt-6'>
                     {t('zakat.disclaimer')}
                 </p>
-            </div>
+            </ContentWidth>
     );
 }
 

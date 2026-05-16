@@ -1,5 +1,6 @@
 import HadithPage from '@/app/hadith/[slug]/HadithPage';
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import HadithThemeError from './HadithThemeError';
@@ -39,13 +40,13 @@ const Page = async props => {
 				{isError ? (
 					<HadithThemeError />
 				) : (
-				<div className='max-w-4xl mx-auto dark:text-white'>
+				<ContentWidth compact='max-w-4xl' className='dark:text-white'>
 					<div className='flex flex-col pt-4'>
 						{hadiths.map((hadith) => (
 							<HadithPage params={params} book={hadith.book} hadith={hadith} key={hadith.id} />
 						))}
 					</div>
-				</div>
+				</ContentWidth>
 				)}
 			</Section>
 			<Footer />

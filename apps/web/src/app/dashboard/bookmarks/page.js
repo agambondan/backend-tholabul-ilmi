@@ -3,12 +3,13 @@
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
 import { bookmarkApi } from '@/lib/api';
-import { colorById, getBookmarkMeta } from '@/lib/bookmarkLabels';
+import { colorById, getBookmarkMeta, normalizeBookmarkRefType } from '@/lib/bookmarkLabels';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BsBookmark, BsBookmarkFill, BsTrash } from 'react-icons/bs';
 
 const REF_LABEL_KEY = {
+    ayah: 'bookmarks.type_quran',
     quran: 'bookmarks.type_quran',
     hadith: 'bookmarks.type_hadith',
     doa: 'bookmarks.type_doa',
@@ -18,6 +19,7 @@ const REF_LABEL_KEY = {
 };
 
 const REF_ICON = {
+    ayah: '📖',
     quran: '📖',
     hadith: '📚',
     doa: '🤲',
@@ -26,13 +28,32 @@ const REF_ICON = {
     article: '📰',
 };
 
-const refHref = (refType, refId, refSlug) => {
-    if (refType === 'quran') return `/dashboard/quran?surah=${refId}`;
-    if (refType === 'hadith') return `/dashboard/hadith`;
-    if (refType === 'doa') return `/dashboard/doa`;
-    if (refType === 'dzikir') return `/dashboard/dzikir`;
-    if (refType === 'asmaul_husna') return `/dashboard/asmaul-husna`;
-    if (refType === 'article' && refSlug) return `/blog/${refSlug}`;
+const slugify = (value) => String(value ?? '').trim().toLowerCase();
+
+const refHref = (bookmark) => {
+    const refType = normalizeBookmarkRefType(bookmark.ref_type);
+    const refId = bookmark.ref_id;
+    const refSlug = bookmark.ref_slug;
+
+    if (refType === 'ayah') {
+        const surahSlug =
+            refSlug ||
+            slugify(bookmark.ayah?.surah?.translation?.latin_en) ||
+            slugify(bookmark.ayah?.surah_latin);
+        const ayahNumber = bookmark.ayah?.number ?? refId;
+        return surahSlug ? `/dashboard/quran/${surahSlug}#${ayahNumber}` : '/dashboard/quran';
+    }
+
+    if (refType === 'hadith') {
+        const bookSlug = refSlug || bookmark.hadith?.book?.slug || bookmark.hadith?.book_slug;
+        const number = bookmark.hadith?.number ?? refId;
+        return bookSlug ? `/dashboard/hadith/${bookSlug}#${number}` : '/dashboard/hadith';
+    }
+
+    if (refType === 'doa') return refId ? `/dashboard/doa#${refId}` : '/dashboard/doa';
+    if (refType === 'dzikir') return refId ? `/dashboard/dzikir#${refId}` : '/dashboard/dzikir';
+    if (refType === 'asmaul_husna') return refId ? `/dashboard/asmaul-husna#${refId}` : '/dashboard/asmaul-husna';
+    if (refType === 'article' && refSlug) return `/dashboard/blog/${refSlug}`;
     return '/dashboard';
 };
 
@@ -66,7 +87,7 @@ const BookmarksPage = () => {
     };
 
     const grouped = bookmarks.reduce((acc, b) => {
-        const type = b.ref_type ?? 'other';
+        const type = normalizeBookmarkRefType(b.ref_type ?? 'other');
         if (!acc[type]) acc[type] = [];
         acc[type].push(b);
         return acc;
@@ -122,8 +143,9 @@ const BookmarksPage = () => {
                             <ul className='space-y-2'>
                                 {items.map((b) => {
                                     const id = b.id ?? b._id;
-                                    const href = refHref(b.ref_type, b.ref_id, b.ref_slug);
-                                    const localMeta = getBookmarkMeta(b.ref_type, b.ref_id);
+                                    const normalizedType = normalizeBookmarkRefType(b.ref_type ?? 'other');
+                                    const href = refHref(b);
+                                    const localMeta = getBookmarkMeta(normalizedType, b.ref_id);
                                     const meta = {
                                         color: b.color || localMeta?.color,
                                         label: b.label || localMeta?.label,
@@ -144,7 +166,7 @@ const BookmarksPage = () => {
                                                             className='text-sm font-semibold text-gray-800 dark:text-white hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors truncate block'
                                                         >
                                                             {b.title ||
-                                                                `${typeLabel(b.ref_type)} #${b.ref_id}`}
+                                                                `${typeLabel(normalizedType)} #${b.ref_id}`}
                                                         </Link>
                                                         {meta?.label && (
                                                             <span className='inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'>

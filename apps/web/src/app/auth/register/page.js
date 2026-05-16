@@ -2,26 +2,29 @@
 
 import { useAuth } from '@/context/Auth';
 import { useLocale } from '@/context/Locale';
+import { buildLoginHref, getSafeNextPath } from '@/lib/authRedirect';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { BsEye, BsEyeSlash } from 'react-icons/bs';
 
 const RegisterPage = () => {
     const { register, isAuthenticated, isLoading: authLoading } = useAuth();
     const { t } = useLocale();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const nextUrl = getSafeNextPath(searchParams.get('next'), '/dashboard');
 
     useEffect(() => {
         if (authLoading) return;
-        if (isAuthenticated) router.replace('/');
-    }, [isAuthenticated, authLoading, router]);
+        if (isAuthenticated) router.replace(nextUrl);
+    }, [isAuthenticated, authLoading, nextUrl, router]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -29,7 +32,7 @@ const RegisterPage = () => {
         setIsLoading(true);
         try {
             await register(name, email, password);
-            router.push('/auth/login?registered=1');
+            router.push(`${buildLoginHref(nextUrl)}&registered=1`);
         } catch (err) {
             setError(err.message);
             setIsLoading(false);
@@ -127,7 +130,7 @@ const RegisterPage = () => {
                     <p className='mt-5 text-center text-sm text-gray-500 dark:text-gray-400'>
                         {t('auth.have_account')}{' '}
                         <Link
-                            href='/auth/login'
+                            href={buildLoginHref(nextUrl)}
                             className='text-emerald-600 dark:text-emerald-400 font-medium hover:underline'
                         >
                             {t('auth.login_here')}
@@ -139,4 +142,10 @@ const RegisterPage = () => {
     );
 };
 
-export default RegisterPage;
+export default function RegisterPageWrapper() {
+    return (
+        <Suspense>
+            <RegisterPage />
+        </Suspense>
+    );
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
@@ -36,7 +37,7 @@ const PageMushafContent = () => {
     const minLabel = t(mode === 'page' ? 'mushaf.go_to_page' : 'mushaf.go_to_hizb');
 
     return (
-        <div className='container mx-auto px-4 max-w-3xl'>
+        <ContentWidth compact='max-w-3xl' className='px-4'>
             <div className='text-center mb-8'>
                 <h1 className='text-2xl font-bold text-emerald-900 dark:text-white mb-1'>
                     {t('mushaf.title')}
@@ -150,7 +151,7 @@ const PageMushafContent = () => {
                     </p>
                 </div>
             )}
-        </div>
+        </ContentWidth>
     );
 };
 

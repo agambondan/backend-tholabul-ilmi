@@ -33,6 +33,7 @@ const NoteButton = require('@/components/NoteButton').default;
 describe('NoteButton', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    window.history.pushState({}, '', '/');
     mockList.mockResolvedValue({ json: async () => [] });
     mockCreate.mockResolvedValue({ ok: true, json: async () => ({ id: 'note1', content: 'test' }) });
   });
@@ -45,7 +46,7 @@ describe('NoteButton', () => {
   test('redirects to login when guest clicks', () => {
     render(<NoteButton refType="ayah" refId="1" />);
     fireEvent.click(screen.getByTitle('notes.add'));
-    expect(mockPush).toHaveBeenCalledWith('/auth/login');
+    expect(mockPush).toHaveBeenCalledWith('/auth/login?next=%2F');
   });
 
   test('opens modal when authenticated', async () => {

@@ -1,6 +1,12 @@
 package service
 
-import "math"
+import (
+	"encoding/json"
+	"math"
+	"net/http"
+	"sync"
+	"time"
+)
 
 type ZakatMaalRequest struct {
 	TotalWealth    float64 `json:"total_wealth" validate:"min=0"`
@@ -39,12 +45,55 @@ type ZakatService interface {
 	CalculateMaal(req *ZakatMaalRequest) *ZakatMaalResult
 	CalculateFitrah(req *ZakatFitrahRequest) *ZakatFitrahResult
 	GetNishab() *NishabInfo
+	GetGoldPrice() float64
 }
 
-type zakatService struct{}
+type zakatService struct {
+	goldMu    sync.RWMutex
+	goldPrice float64
+	goldAt    time.Time
+}
 
 func NewZakatService() ZakatService {
-	return &zakatService{}
+	s := &zakatService{goldPrice: 1400000.0}
+	go s.refreshGoldLoop()
+	return s
+}
+
+func (s *zakatService) refreshGoldLoop() {
+	for {
+		s.fetchGoldPrice()
+		time.Sleep(6 * time.Hour)
+	}
+}
+
+func (s *zakatService) fetchGoldPrice() {
+	resp, err := http.Get("https://api.exchangerate-api.com/v4/latest/USD")
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	var data struct {
+		Rates struct {
+			IDR float64 `json:"IDR"`
+		} `json:"rates"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil || data.Rates.IDR == 0 {
+		return
+	}
+	usdToIdr := data.Rates.IDR
+	goldOunce := 2400.0
+	goldPerGram := (goldOunce * usdToIdr) / 31.1035
+	s.goldMu.Lock()
+	s.goldPrice = math.Round(goldPerGram/100) * 100
+	s.goldAt = time.Now()
+	s.goldMu.Unlock()
+}
+
+func (s *zakatService) GetGoldPrice() float64 {
+	s.goldMu.RLock()
+	defer s.goldMu.RUnlock()
+	return s.goldPrice
 }
 
 const (

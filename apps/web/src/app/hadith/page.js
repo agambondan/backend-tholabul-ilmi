@@ -12,14 +12,14 @@ import { hadithTabList } from '@/lib/const';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
-const HadithContent = () => {
+export const HadithContent = ({ basePath = '/hadith', themeBasePath = '/hadith/theme' }) => {
     const searchParams = useSearchParams();
     const router = useRouter();
     const tab = searchParams.get('tab') || 'book';
     const activeTab = `#${tab}`;
 
     const showContent = (menu) => {
-        router.push(`/hadith?tab=${menu.replace('#', '')}`, { scroll: false });
+        router.push(`${basePath}?tab=${menu.replace('#', '')}`, { scroll: false });
     };
 
     return (
@@ -31,7 +31,7 @@ const HadithContent = () => {
                 activeTab={activeTab}
             />
             <div className='py-4' />
-            <SwitchComponent activeTab={activeTab} />
+            <SwitchComponent activeTab={activeTab} basePath={basePath} themeBasePath={themeBasePath} />
         </>
     );
 };
@@ -52,16 +52,16 @@ const Page = () => {
 
 export default Page;
 
-const SwitchComponent = ({ activeTab }) => {
+const SwitchComponent = ({ activeTab, basePath, themeBasePath }) => {
     switch (activeTab) {
         case '#book':
-            return <ByBook />;
+            return <ByBook basePath={basePath} />;
         case '#theme':
-            return <ByTheme />;
+            return <ByTheme themeBasePath={themeBasePath} />;
         case '#chapter':
-            return <ByChapter />;
+            return <ByChapter basePath={basePath} />;
         case '#hadith':
-            return <ByHadith />;
+            return <ByHadith basePath={basePath} />;
         default:
             return <></>;
     }
