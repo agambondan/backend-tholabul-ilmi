@@ -16,6 +16,7 @@ import { Card } from '../components/Card';
 import { CompactRow, SectionHeader } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { spacing } from '../theme';
+import { KhatamScreen } from './KhatamScreen';
 import { PrayerScreen } from './PrayerScreen';
 import { QiblaScreen } from './QiblaScreen';
 
@@ -149,7 +150,7 @@ const sections = [
         key: 'khatam',
         subtitle: 'Tracker khatam Quran',
         title: 'Khatam',
-        tab: 'quran',
+        view: 'khatam',
       },
     ],
   },
@@ -207,6 +208,10 @@ export function IbadahScreen({ isActive, navigation, onOpenTab }) {
 
   if (view === 'prayer' || view === 'settings') {
     return <PrayerScreen isActive={isActive} navigation={navigation} />;
+  }
+
+  if (view === 'khatam') {
+    return <KhatamScreen isActive={isActive} navigation={navigation} onOpenTab={onOpenTab} />;
   }
 
   return <IbadahHub navigation={navigation} onOpenTab={onOpenTab} />;

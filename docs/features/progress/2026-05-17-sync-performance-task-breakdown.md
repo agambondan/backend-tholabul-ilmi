@@ -55,7 +55,8 @@ Completed: `2026-05-17`
 
 Priority: `P1`
 Area: `apps/mobile`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -77,8 +78,18 @@ Status: `TODO`
 
 ### Verification
 
-- `cd apps/mobile && npm test -- --runInBand`
-- Device smoke dari tab Ibadah ke Khatam.
+- `cd apps/mobile && npm test -- --runInBand` - `PASS`
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-khatam-mobile-export` - `PASS`
+- Device smoke dari tab Ibadah ke Khatam masih perlu dijalankan pada device fisik.
+
+### Implementation Notes
+
+- Item `Khatam` di tab Ibadah sekarang membuka sub-view `Khatam`, bukan lagi
+  redirect langsung ke tab Quran.
+- Mobile Khatam membaca `/api/v1/progress/quran`, menampilkan progress ayat,
+  sisa ayat, target 30 hari, progress per juz, dan CTA `Lanjutkan baca`.
+- CTA `Lanjutkan baca` membuka Quran ke surah/ayat progress terakhir.
+- Guest dan akun tanpa progress mendapat empty state eksplisit.
 
 ## Task 3 - Mobile Asmaul Husna Flashcard
 

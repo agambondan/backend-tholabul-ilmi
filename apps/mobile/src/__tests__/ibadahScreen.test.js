@@ -66,6 +66,13 @@ jest.mock('../screens/QiblaScreen', () => ({
   },
 }));
 
+jest.mock('../screens/KhatamScreen', () => ({
+  KhatamScreen: () => {
+    const { View, Text } = require('react-native');
+    return <View><Text testID="khatam-screen">KhatamScreen</Text></View>;
+  },
+}));
+
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { IbadahScreen } from '../screens/IbadahScreen';
@@ -172,14 +179,17 @@ describe('IbadahScreen', () => {
     expect(navigation.open).toHaveBeenCalledWith('ibadah', 'qibla');
   });
 
-  test('section items with tab property call onOpenTab with tab name', () => {
-    const onOpenTab = jest.fn();
+  test('khatam item opens dedicated ibadah sub-view', () => {
+    const navigation = {
+      ...defaultNavigation,
+      open: jest.fn(),
+    };
     const { getByText } = render(
-      <IbadahScreen isActive navigation={defaultNavigation} onOpenTab={onOpenTab} />,
+      <IbadahScreen isActive navigation={navigation} onOpenTab={jest.fn()} />,
     );
 
     fireEvent.press(getByText('Khatam'));
-    expect(onOpenTab).toHaveBeenCalledWith('quran');
+    expect(navigation.open).toHaveBeenCalledWith('ibadah', 'khatam');
   });
 
   test('renders all 5 section cards', () => {
@@ -211,5 +221,17 @@ describe('IbadahScreen', () => {
       <IbadahScreen isActive navigation={navigation} onOpenTab={jest.fn()} />,
     );
     expect(getByTestId('prayer-screen')).toBeTruthy();
+  });
+
+  test('renders KhatamScreen sub-view when view is khatam', () => {
+    const navigation = {
+      ...defaultNavigation,
+      current: { view: 'khatam', params: {} },
+      close: jest.fn(),
+    };
+    const { getByTestId } = render(
+      <IbadahScreen isActive navigation={navigation} onOpenTab={jest.fn()} />,
+    );
+    expect(getByTestId('khatam-screen')).toBeTruthy();
   });
 });

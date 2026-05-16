@@ -1,0 +1,136 @@
+import React from 'react';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+
+jest.mock('lucide-react-native', () => ({
+  ArrowLeft: 'ArrowLeft',
+  BookOpenCheck: 'BookOpenCheck',
+  RefreshCw: 'RefreshCw',
+}));
+
+jest.mock('../components/Screen', () => {
+  const { View, Text, ActivityIndicator } = require('react-native');
+  return {
+    Screen: ({ actions, children, refreshing, subtitle, title }) => (
+      <View>
+        <Text testID="screen-title">{title}</Text>
+        {subtitle ? <Text testID="screen-subtitle">{subtitle}</Text> : null}
+        <View testID="screen-actions">{actions}</View>
+        {refreshing ? <ActivityIndicator testID="screen-loader" /> : null}
+        {children}
+      </View>
+    ),
+  };
+});
+
+jest.mock('../components/Card', () => {
+  const { View, Text } = require('react-native');
+  return {
+    Card: ({ children }) => <View testID="card">{children}</View>,
+    CardTitle: ({ children, meta }) => (
+      <View>
+        <Text testID="card-title">{children}</Text>
+        {meta ? <Text testID="card-meta">{meta}</Text> : null}
+      </View>
+    ),
+  };
+});
+
+jest.mock('../components/Paper', () => {
+  const { Pressable, Text, View } = require('react-native');
+  return {
+    EmptyState: ({ action, description, title }) => (
+      <View testID="empty-state">
+        <Text>{title}</Text>
+        {description ? <Text>{description}</Text> : null}
+        {action}
+      </View>
+    ),
+    IconActionButton: ({ label, onPress, disabled }) => (
+      <Pressable disabled={disabled} onPress={onPress} testID={`action-${label}`}>
+        <Text>{label}</Text>
+      </Pressable>
+    ),
+  };
+});
+
+jest.mock('../context/SessionContext', () => ({
+  useSession: jest.fn(),
+}));
+
+jest.mock('../api/personal', () => ({
+  getQuranProgress: jest.fn(),
+}));
+
+import { KhatamScreen } from '../screens/KhatamScreen';
+import { useSession } from '../context/SessionContext';
+import { getQuranProgress } from '../api/personal';
+
+const navigation = {
+  clearBack: jest.fn(),
+  close: jest.fn(),
+  closeAndOpen: jest.fn(),
+  setBack: jest.fn(),
+};
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+describe('KhatamScreen', () => {
+  test('shows login state for guest', async () => {
+    useSession.mockReturnValue({ user: null });
+
+    const { getByText } = render(
+      <KhatamScreen isActive navigation={navigation} onOpenTab={jest.fn()} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText('Masuk untuk melacak Khatam')).toBeTruthy();
+    });
+    expect(getQuranProgress).not.toHaveBeenCalled();
+  });
+
+  test('renders khatam progress for signed in user', async () => {
+    useSession.mockReturnValue({ user: { id: '1' } });
+    getQuranProgress.mockResolvedValue({
+      data: {
+        ayah_number: 75,
+        last_read_at: '2026-05-17T00:00:00Z',
+        surah_number: 18,
+      },
+    });
+
+    const { getByText } = render(
+      <KhatamScreen isActive navigation={navigation} onOpenTab={jest.fn()} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText('Progress saat ini')).toBeTruthy();
+    });
+    expect(getByText(/QS\. 18:75/)).toBeTruthy();
+    expect(getByText('Lanjutkan baca')).toBeTruthy();
+  });
+
+  test('continue reading opens Quran at saved position', async () => {
+    useSession.mockReturnValue({ user: { id: '1' } });
+    getQuranProgress.mockResolvedValue({
+      surah_number: 2,
+      ayah_number: 20,
+    });
+
+    const { getByText } = render(
+      <KhatamScreen isActive navigation={navigation} onOpenTab={jest.fn()} />,
+    );
+
+    await waitFor(() => {
+      expect(getByText('Lanjutkan baca')).toBeTruthy();
+    });
+
+    fireEvent.press(getByText('Lanjutkan baca'));
+    expect(navigation.closeAndOpen).toHaveBeenCalledWith('ibadah', 'quran', {
+      ayahNumber: 20,
+      surahNumber: 2,
+      surahSlug: '2',
+    });
+  });
+});
