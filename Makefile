@@ -304,8 +304,12 @@ mobile-dev-all: mobile-tools-check mobile-watchers-check
 		ss -ltn 2>/dev/null | grep -q ":$(EXPO_PORT)\\b" && break; \
 		sleep 1; \
 	done; \
-	$(ADB) shell am force-stop host.exp.exponent >/dev/null 2>&1 || true; \
-	$(ADB) shell am start -a android.intent.action.VIEW -d "$(EXPO_URL)"; \
+	if $(ADB) shell pm path host.exp.exponent >/dev/null 2>&1; then \
+		$(ADB) shell am force-stop host.exp.exponent >/dev/null 2>&1 || true; \
+		$(ADB) shell am start -a android.intent.action.VIEW -d "$(EXPO_URL)"; \
+	else \
+		echo 'Expo Go belum terinstall di device. Install Expo Go/dev client lalu buka $(EXPO_URL) atau scan QR Metro.'; \
+	fi; \
 	echo 'Mobile dev berjalan. Tekan Ctrl+C untuk stop Expo dan API yang dijalankan target ini.'; \
 	wait "$$expo_pid"
 
@@ -314,8 +318,12 @@ mobile-dev-docker: API_URL := http://localhost:$(DOCKER_API_PORT)
 mobile-dev-docker: mobile-dev
 
 mobile-open: mobile-reverse
-	@$(ADB) shell am force-stop host.exp.exponent >/dev/null 2>&1 || true
-	@$(ADB) shell am start -a android.intent.action.VIEW -d "$(EXPO_URL)"
+	@if $(ADB) shell pm path host.exp.exponent >/dev/null 2>&1; then \
+		$(ADB) shell am force-stop host.exp.exponent >/dev/null 2>&1 || true; \
+		$(ADB) shell am start -a android.intent.action.VIEW -d "$(EXPO_URL)"; \
+	else \
+		echo 'Expo Go belum terinstall di device. Install Expo Go/dev client lalu buka $(EXPO_URL) atau scan QR Metro.'; \
+	fi
 
 mobile-start: mobile-dev
 

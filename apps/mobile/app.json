@@ -41,12 +41,6 @@
       "expo-audio",
       "expo-asset",
       "expo-sqlite",
-      [
-        "react-native-maps",
-        {
-          "locationWhenInUsePermission": "Tunjukkan lokasi Islami di peta"
-        }
-      ],
       "@react-native-community/datetimepicker",
       [
         "expo-font",
