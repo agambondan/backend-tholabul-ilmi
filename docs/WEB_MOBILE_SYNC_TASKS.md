@@ -143,13 +143,15 @@
 ## 8. Munasabah — S (1 sub-task)
 
 **Web ref:** Toggle di `AyahPage.js` — BsLink45Deg button → purple section with related ayahs
-**Endpoint:** `GET /api/v1/munasabah/:ayahId`
+**Endpoint:** `GET /api/v1/munasabah/ayah/:ayahId`
 
 ### [F-8.1] Munasabah di QuranScreen (S)
-- [ ] Tambah button "Ayat Terkait" di detail ayah view dalam `QuranScreen`
-- [ ] Fetch `GET /api/v1/munasabah/:ayahId`
-- [ ] Show hasil di bottom-sheet (ikut pattern modal popup existing)
-- [ ] Test: minimal 1 positive case render
+- [x] Tambah button "Ayat Terkait" di detail ayah view dalam `QuranScreen`
+- [x] Fetch `GET /api/v1/munasabah/ayah/:ayahId`
+- [x] Show hasil di bottom-sheet (ikut pattern modal popup existing)
+- [x] Test: minimal 1 positive case render
+
+**Status 2026-05-16:** Selesai. `QuranScreen` sudah memakai action detail ayah + `AppModalSheet`; test positif ditambahkan di `quranScreen.test.js`.
 
 ---
 
@@ -158,10 +160,12 @@
 **Endpoint:** `GET /hadiths/:hadithId/ayahs`, `GET /ayahs/:ayahId/hadiths`
 
 ### [F-9.1] Tampilkan di detail hadis & ayah (S)
-- [ ] Di `HadithScreen` detail view: tambah section "Ayat Terkait"
-- [ ] Di `QuranScreen` detail ayah: tambah section "Hadis Terkait"
-- [ ] Fetch dari endpoint masing-masing, render sebagai list of chips/links
-- [ ] Tap chip → open di screen terkait
+- [x] Di `HadithScreen` detail view: tambah section "Ayat Terkait"
+- [x] Di `QuranScreen` detail ayah: tambah section "Hadis Terkait"
+- [x] Fetch dari endpoint masing-masing, render sebagai list of chips/links
+- [x] Tap chip → open di screen terkait
+
+**Status 2026-05-16:** Selesai. Detail hadis punya tab `Ayat`; item terkait sekarang bisa membuka tab Quran dengan `surahNumber`, `ayahNumber`, dan `ayahId`. Sisi detail ayah Quran sudah membuka bottom-sheet `Hadis Terkait`.
 
 ---
 
@@ -187,10 +191,12 @@
 **Existing mobile:** `NotificationCenter` component sudah render semua inbox dari BE
 
 ### [F-11.1] Pastiin streak_risk terender (S)
-- [ ] Cek `NotificationCenter` — sudah generic render berdasarkan `type` field
-- [ ] Pastiin `DispatchDueReminders` di backend kirim notif dengan `type: 'streak_risk'`
-- [ ] Kalo perlu, tambah render case khusus di `NotificationCenter` untuk streak_risk (icon 🔥, message ajakan)
-- [ ] Test: mock `streak_risk` notif renders correctly
+- [x] Cek `NotificationCenter` — sudah generic render berdasarkan `type` field
+- [x] Pastiin `DispatchDueReminders` di backend kirim notif dengan `type: 'streak_risk'`
+- [x] Kalo perlu, tambah render case khusus di `NotificationCenter` untuk streak_risk (icon khusus, message ajakan)
+- [x] Test: mock `streak_risk` notif renders correctly
+
+**Status 2026-05-16:** Selesai. `NotificationCenter` punya presentation khusus `streak_risk` dengan fallback title/body, tetap menghormati title/body dari backend, dan sudah ditutup test.
 
 ---
 

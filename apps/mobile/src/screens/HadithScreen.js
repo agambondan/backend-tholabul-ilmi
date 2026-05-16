@@ -420,6 +420,17 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     );
   };
 
+  const openRelatedAyah = (item) => {
+    const ayah = item?.ayah;
+    if (!ayah?.surahNumber && !ayah?.number) return;
+
+    navigation?.closeAndOpen?.('hadith', 'quran', {
+      ayahId: ayah.id,
+      ayahNumber: ayah.number,
+      surahNumber: ayah.surahNumber,
+    });
+  };
+
   const savedHadiths = bookmarkItems
     .map((item) => item.hadith ?? item.Hadith)
     .filter(Boolean)
@@ -817,7 +828,18 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
               <Text style={styles.emptyText}>Ayat terkait untuk hadis ini belum tersedia.</Text>
             ) : (
               hadithAyahs.map((item) => (
-                <View key={item.id} style={styles.referenceRow}>
+                <Pressable
+                  accessibilityLabel={
+                    item.ayah
+                      ? `Buka ${item.ayah.surahName || 'surah'} ayat ${item.ayah.number} di Al-Quran`
+                      : 'Ayat terkait'
+                  }
+                  accessibilityRole="button"
+                  android_ripple={{ color: 'rgba(91, 110, 91, 0.08)', borderless: false }}
+                  key={item.id}
+                  onPress={() => openRelatedAyah(item)}
+                  style={styles.referenceRow}
+                >
                   {item.ayah ? (
                     <Text style={styles.referenceTitle}>
                       {item.ayah.surahName} · Ayat {item.ayah.number}
@@ -832,7 +854,8 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
                   {item.catatan ? (
                     <Text style={styles.detailNote}>{item.catatan}</Text>
                   ) : null}
-                </View>
+                  <Text style={styles.referenceMeta}>Ketuk untuk membuka ayat di Al-Qur'an.</Text>
+                </Pressable>
               ))
             )}
           </Card>

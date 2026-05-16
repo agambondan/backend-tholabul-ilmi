@@ -11,6 +11,8 @@ jest.mock('../api/client', () => ({
   getAyahsForHizb: jest.fn().mockResolvedValue([]),
   getAyahsForPage: jest.fn().mockResolvedValue([]),
   getFirstAyahForSurah: jest.fn().mockResolvedValue(null),
+  getHadithsForAyah: jest.fn().mockResolvedValue([]),
+  getMunasabahForAyah: jest.fn().mockResolvedValue([]),
   getMufrodatByPage: jest.fn().mockResolvedValue([]),
   getTafsirForAyah: jest.fn().mockResolvedValue([]),
   getAsbabForAyah: jest.fn().mockResolvedValue([]),
@@ -426,6 +428,53 @@ describe('QuranScreen', () => {
     await waitFor(() => {
       expect(getByTestId('action-Menu baca')).toBeTruthy();
       expect(getByTestId('action-Kembali ke daftar surah')).toBeTruthy();
+    });
+  });
+
+  it('renders munasabah results from ayah detail bottom sheet', async () => {
+    client.getMunasabahForAyah.mockResolvedValue([
+      {
+        id: 'm-1',
+        ayahFrom: mockAyah(1, 1),
+        ayahTo: mockAyah(2, 1),
+        description: 'Keterkaitan tema hidayah antar ayat.',
+      },
+    ]);
+
+    const { findByText, getAllByText, getByText } = render(
+      <QuranScreen isActive navigation={mockNavigation} />,
+    );
+
+    fireEvent.press(await findByText('Surah 1'));
+    fireEvent.press((await waitFor(() => getAllByText('Ketuk untuk membaca lengkap')))[0]);
+    fireEvent.press(await findByText('Ayat Terkait'));
+
+    await waitFor(() => {
+      expect(client.getMunasabahForAyah).toHaveBeenCalledWith(1);
+      expect(getByText('Keterkaitan tema hidayah antar ayat.')).toBeTruthy();
+    });
+  });
+
+  it('renders hadith cross references from ayah detail bottom sheet', async () => {
+    client.getHadithsForAyah.mockResolvedValue([
+      {
+        id: 'ha-1',
+        catatan: 'Rujukan niat.',
+        hadith: { book: 'Shahih Bukhari', number: 1, translation: 'Setiap amal tergantung niat.' },
+      },
+    ]);
+
+    const { findByText, getAllByText, getByText } = render(
+      <QuranScreen isActive navigation={mockNavigation} />,
+    );
+
+    fireEvent.press(await findByText('Surah 1'));
+    fireEvent.press((await waitFor(() => getAllByText('Ketuk untuk membaca lengkap')))[0]);
+    fireEvent.press(await findByText('Hadis Terkait'));
+
+    await waitFor(() => {
+      expect(client.getHadithsForAyah).toHaveBeenCalledWith(1);
+      expect(getByText('Setiap amal tergantung niat.')).toBeTruthy();
     });
   });
 });

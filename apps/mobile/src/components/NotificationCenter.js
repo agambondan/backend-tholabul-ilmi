@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BellRing } from 'lucide-react-native';
+import { BellRing, Flame } from 'lucide-react-native';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
@@ -40,6 +40,23 @@ const defaultSettings = [
 const defaultQuietHours = { end: '05:00', is_active: false, start: '22:00' };
 
 const labelForType = (type) => defaultSettings.find((item) => item.type === type)?.label ?? type;
+const presentationForNotification = (item) => {
+  if (item.type === 'streak_risk') {
+    return {
+      Icon: Flame,
+      body: item.body || 'Streak belajarmu berisiko putus. Buka satu sesi singkat hari ini.',
+      label: 'Streak Risk',
+      title: item.title || 'Streak Belajar Berisiko',
+    };
+  }
+
+  return {
+    Icon: BellRing,
+    body: item.body,
+    label: labelForType(item.type),
+    title: item.title || labelForType(item.type),
+  };
+};
 const cleanPushMessage = (value = '') =>
   `${value}`
     .replace(/backend/gi, 'cloud')
@@ -708,24 +725,36 @@ export function NotificationCenter() {
         <CardTitle meta={`${unreadCount} belum dibaca`}>Kotak Masuk</CardTitle>
         {loading ? <ActivityIndicator color={colors.primary} /> : null}
         {!loading && inbox.length === 0 ? <Text style={styles.body}>Belum ada notifikasi masuk.</Text> : null}
-        {inbox.map((item) => (
-          <Pressable
-            android_ripple={{ color: 'rgba(91, 110, 91, 0.08)', borderless: false }}
-            key={item.id}
-            onPress={() => markRead(item.id)}
-            style={[styles.inboxItem, !item.is_read ? styles.unreadItem : null]}
-          >
-            <SectionHeader
-              meta={item.is_read ? 'Terbaca' : 'Baru'}
-              metaStyle={styles.inboxType}
-              style={styles.inboxHeader}
-              title={item.title || labelForType(item.type)}
-              titleStyle={styles.inboxTitle}
-            />
-            {item.body ? <Text style={styles.body}>{item.body}</Text> : null}
-            <Text style={styles.settingMeta}>{[labelForType(item.type), item.ref_id].filter(Boolean).join(' · ')}</Text>
-          </Pressable>
-        ))}
+        {inbox.map((item) => {
+          const presentation = presentationForNotification(item);
+          const InboxIcon = presentation.Icon;
+
+          return (
+            <Pressable
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.08)', borderless: false }}
+              key={item.id}
+              onPress={() => markRead(item.id)}
+              style={[styles.inboxItem, !item.is_read ? styles.unreadItem : null]}
+            >
+              <View style={styles.inboxRow}>
+                <View style={styles.inboxIcon}>
+                  <InboxIcon color={colors.primary} size={17} strokeWidth={2.3} />
+                </View>
+                <View style={styles.inboxCopy}>
+                  <SectionHeader
+                    meta={item.is_read ? 'Terbaca' : 'Baru'}
+                    metaStyle={styles.inboxType}
+                    style={styles.inboxHeader}
+                    title={presentation.title}
+                    titleStyle={styles.inboxTitle}
+                  />
+                  {presentation.body ? <Text style={styles.body}>{presentation.body}</Text> : null}
+                  <Text style={styles.settingMeta}>{[presentation.label, item.ref_id].filter(Boolean).join(' · ')}</Text>
+                </View>
+              </View>
+            </Pressable>
+          );
+        })}
         {inbox.length ? (
           <Pressable android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }} onPress={markAllRead} style={styles.secondaryButton}>
             <Text style={styles.secondaryText}>Tandai semua terbaca</Text>
@@ -782,6 +811,25 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.faint,
     borderBottomWidth: 1,
     paddingVertical: spacing.md,
+  },
+  inboxCopy: {
+    flex: 1,
+  },
+  inboxIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    height: 34,
+    justifyContent: 'center',
+    marginTop: 1,
+    width: 34,
+  },
+  inboxRow: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   inboxTitle: {
     color: colors.ink,

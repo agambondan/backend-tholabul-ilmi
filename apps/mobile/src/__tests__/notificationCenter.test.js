@@ -108,6 +108,39 @@ describe('NotificationCenter', () => {
     expect(await findByText('Body 1')).toBeTruthy();
   });
 
+  test('renders streak risk inbox item with fallback copy', async () => {
+    getNotificationInbox.mockResolvedValue({
+      items: [{ id: 'streak-1', type: 'streak_risk', is_read: false }],
+      unreadCount: 1,
+    });
+    const { findByText } = render(<NotificationCenter />);
+
+    fireEvent.press(await findByText('Kotak Masuk'));
+
+    expect(await findByText('Streak Belajar Berisiko')).toBeTruthy();
+    expect(await findByText(/Streak belajarmu berisiko putus/)).toBeTruthy();
+    expect(await findByText('Streak Risk')).toBeTruthy();
+  });
+
+  test('keeps backend streak risk title and body when provided', async () => {
+    getNotificationInbox.mockResolvedValue({
+      items: [{
+        body: 'Murojaah satu ayat sebelum tidur.',
+        id: 'streak-2',
+        title: 'Streak hampir putus',
+        type: 'streak_risk',
+        is_read: false,
+      }],
+      unreadCount: 1,
+    });
+    const { findByText } = render(<NotificationCenter />);
+
+    fireEvent.press(await findByText('Kotak Masuk'));
+
+    expect(await findByText('Streak hampir putus')).toBeTruthy();
+    expect(await findByText('Murojaah satu ayat sebelum tidur.')).toBeTruthy();
+  });
+
   test('shows local notice when no session', () => {
     useSession.mockReturnValue({ session: null });
     const { getByText } = render(<NotificationCenter />);

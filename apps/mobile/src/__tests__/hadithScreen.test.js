@@ -7,6 +7,7 @@ jest.mock('../context/FeedbackContext', () => ({
 }));
 
 jest.mock('../api/client', () => ({
+  getAyahsForHadith: jest.fn(),
   getHadithBooks: jest.fn(),
   getHadithPage: jest.fn(),
   getHadithDetail: jest.fn(),
@@ -189,6 +190,15 @@ beforeEach(() => {
     hasMore: false,
     total: 2,
   });
+  clientApi.getAyahsForHadith.mockResolvedValue([]);
+  clientApi.getHadithDetail.mockResolvedValue(mockHadithItem(1));
+  clientApi.getHadithSanad.mockResolvedValue([]);
+  clientApi.getHadithTakhrij.mockResolvedValue([]);
+  clientApi.getRelatedHadiths.mockResolvedValue([]);
+  clientApi.getPerawiDetail.mockResolvedValue(null);
+  clientApi.getPerawiJarhTadil.mockResolvedValue([]);
+  clientApi.getPerawiGuru.mockResolvedValue([]);
+  clientApi.getPerawiMurid.mockResolvedValue([]);
   personalApi.getBookmarks.mockResolvedValue([]);
   personalApi.getNotesByType.mockResolvedValue([]);
 });
@@ -330,5 +340,43 @@ describe('HadithScreen', () => {
     fireEvent.press(cards[0]);
 
     expect(await findByText('Detailed translation text here')).toBeTruthy();
+  });
+
+  test('opens related ayah from hadith detail in quran tab', async () => {
+    const navigation = { clearBack: jest.fn(), closeAndOpen: jest.fn(), setBack: jest.fn() };
+    clientApi.getHadithDetail.mockResolvedValue({
+      id: 1, book: 'Shahih Bukhari', bookSlug: 'bukhari',
+      number: 1, grade: 'Shahih', translation: 'Detail text',
+    });
+    clientApi.getAyahsForHadith.mockResolvedValue([
+      {
+        id: 'ha-1',
+        catatan: 'Tema niat.',
+        ayah: {
+          id: 7,
+          number: 7,
+          surahName: 'Al-Fatihah',
+          surahNumber: 1,
+          translation: 'Jalan orang-orang yang Engkau beri nikmat.',
+        },
+      },
+    ]);
+
+    const { findAllByTestId, findByText, getByText } = render(
+      <HadithScreen isActive navigation={navigation} />,
+    );
+    const cards = await findAllByTestId('content-card');
+
+    fireEvent.press(cards[0]);
+    fireEvent.press(await findByText('Ayat'));
+    fireEvent.press(getByText('Al-Fatihah · Ayat 7'));
+
+    await waitFor(() => {
+      expect(navigation.closeAndOpen).toHaveBeenCalledWith('hadith', 'quran', {
+        ayahId: 7,
+        ayahNumber: 7,
+        surahNumber: 1,
+      });
+    });
   });
 });
