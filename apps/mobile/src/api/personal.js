@@ -199,3 +199,23 @@ export const createUserWird = async (payload) => postJson('/api/v1/user-wird', p
 export const updateUserWird = async (id, payload) => putJson(`/api/v1/user-wird/${id}`, payload, { auth: true });
 
 export const deleteUserWird = async (id) => deleteJson(`/api/v1/user-wird/${id}`, { auth: true });
+
+export const saveFaraidh = async (data) =>
+  postJson('/api/v1/faraidh/simpan', data, { auth: true });
+
+export const getFaraidhHistory = async () => {
+  const payload = await requestJson('/api/v1/faraidh/simpan', { auth: true });
+  return pickItems(payload);
+};
+
+export const deleteFaraidh = async (id) => deleteJson(`/api/v1/faraidh/simpan/${id}`, { auth: true });
+
+export const saveKalkulasiZakat = async (data) =>
+  postJson('/api/v1/zakat/kalkulasi', data, { auth: true });
+
+export const getKalkulasiZakat = async () => {
+  const payload = await requestJson('/api/v1/zakat/kalkulasi', { auth: true });
+  return pickItems(payload);
+};
+
+export const deleteKalkulasiZakat = async (id) => deleteJson(`/api/v1/zakat/kalkulasi/${id}`, { auth: true });

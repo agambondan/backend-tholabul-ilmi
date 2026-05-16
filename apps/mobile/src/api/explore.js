@@ -215,6 +215,11 @@ export const getQuizQuestions = async () => {
   return pickItems(payload).map(normalizeExploreItem);
 };
 
+export const getAsmaulNames = async () => {
+  const payload = await requestJson('/api/v1/asmaul-husna');
+  return pickItems(payload);
+};
+
 export const getHijriOverview = async () => {
   const [today, events] = await Promise.allSettled([
     requestJson('/api/v1/hijri/today'),

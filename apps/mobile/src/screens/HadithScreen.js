@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
+  getAyahsForHadith,
   getHadithBooks,
   getHadithDetail,
   getHadithPage,
@@ -34,6 +35,7 @@ const HADITH_DETAIL_TABS = [
   { key: 'sanad', label: 'Sanad' },
   { key: 'narrators', label: 'Perawi' },
   { key: 'takhrij', label: 'Takhrij' },
+  { key: 'ayat', label: 'Ayat' },
   { key: 'notes', label: 'Catatan' },
 ];
 
@@ -138,6 +140,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
   const [selectedHadith, setSelectedHadith] = useState(null);
   const [sanad, setSanad] = useState([]);
   const [takhrij, setTakhrij] = useState([]);
+  const [hadithAyahs, setHadithAyahs] = useState([]);
   const [relatedHadiths, setRelatedHadiths] = useState([]);
   const [selectedPerawi, setSelectedPerawi] = useState(null);
   const [perawiPanel, setPerawiPanel] = useState({ guru: [], jarhTadil: [], loading: false, murid: [] });
@@ -299,6 +302,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
     setPerawiPanel({ guru: [], jarhTadil: [], loading: false, murid: [] });
     setExpandedPerawiList({ guru: false, murid: false });
     setRelatedHadiths([]);
+    setHadithAyahs([]);
     setDetailTab('text');
 
     try {
@@ -311,6 +315,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
       setSelectedHadith(nextHadith);
       setSanad(sanadItems);
       setTakhrij(takhrijItems);
+      setHadithAyahs(await getAyahsForHadith(nextHadith.id));
       setRelatedHadiths(await getRelatedHadiths(nextHadith));
       await loadBookmarks();
       await loadNoteCounts();
@@ -318,6 +323,7 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
       setMessage(err?.message ?? 'Detail hadis belum bisa dimuat.');
       setSanad([]);
       setTakhrij([]);
+      setHadithAyahs([]);
       setRelatedHadiths([]);
     } finally {
       setDetailLoading(false);
@@ -796,6 +802,36 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
                     {[item.nomor_hadis_kitab, item.jilid, item.halaman].filter(Boolean).join(' · ') || 'Rujukan'}
                   </Text>
                   {item.catatan ? <Text style={styles.detailNote}>{item.catatan}</Text> : null}
+                </View>
+              ))
+            )}
+          </Card>
+        ) : null}
+
+        {detailTab === 'ayat' ? (
+          <Card>
+            <CardTitle meta={`${hadithAyahs.length} ayat`}>Ayat Terkait</CardTitle>
+            {detailLoading && hadithAyahs.length === 0 ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : hadithAyahs.length === 0 ? (
+              <Text style={styles.emptyText}>Ayat terkait untuk hadis ini belum tersedia.</Text>
+            ) : (
+              hadithAyahs.map((item) => (
+                <View key={item.id} style={styles.referenceRow}>
+                  {item.ayah ? (
+                    <Text style={styles.referenceTitle}>
+                      {item.ayah.surahName} · Ayat {item.ayah.number}
+                    </Text>
+                  ) : null}
+                  {item.ayah?.arabic ? (
+                    <Text style={styles.arabic}>{item.ayah.arabic}</Text>
+                  ) : null}
+                  {item.ayah?.translation ? (
+                    <Text style={styles.translation}>{item.ayah.translation}</Text>
+                  ) : null}
+                  {item.catatan ? (
+                    <Text style={styles.detailNote}>{item.catatan}</Text>
+                  ) : null}
                 </View>
               ))
             )}

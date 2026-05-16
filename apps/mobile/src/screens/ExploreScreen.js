@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, Heart, HelpCircle, ListChecks, MessageCircle, Pencil, Scale, Star, StickyNote, Trash2, UserCircle, Users, Video } from 'lucide-react-native';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import {
   getAllNotes,
+  getAsmaulNames,
   getBookmarkItems,
   getFeatureItemPage,
   getHijriOverview,
@@ -10,6 +11,15 @@ import {
   searchDictionary,
 } from '../api/explore';
 import { createComment, getCommentsByRef, getFeedPostPage, likeFeedPost } from '../api/social';
+import {
+  acceptForumAnswer,
+  createForumAnswer,
+  createForumQuestion,
+  deleteForumAnswer,
+  getForumQuestion,
+  getForumQuestions,
+  voteForum,
+} from '../api/forum';
 import { AppActionSheet, ActionSheetRow } from '../components/AppActionSheet';
 import { Card, CardTitle } from '../components/Card';
 import { ContentCard } from '../components/ContentCard';
@@ -22,13 +32,31 @@ import { useSession } from '../context/SessionContext';
 import { allFeatures, belajarFeatureGroups } from '../data/mobileFeatures';
 import { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinnedFeature } from '../storage/recentFeatures';
 import { colors, radius, spacing } from '../theme';
-import { addBookmark, createUserWird, deleteBookmark, deleteUserWird, getBookmarks, getTodayPrayerLog, getUserWirds, savePrayerLog, updateUserWird } from '../api/personal';
+import {
+  addBookmark,
+  createUserWird,
+  deleteBookmark,
+  deleteFaraidh,
+  deleteKalkulasiZakat,
+  deleteUserWird,
+  getBookmarks,
+  getFaraidhHistory,
+  getKalkulasiZakat,
+  getTodayPrayerLog,
+  getUserWirds,
+  saveFaraidh,
+  saveKalkulasiZakat,
+  savePrayerLog,
+  updateUserWird,
+} from '../api/personal';
 import { getAyahById, getSurahs } from '../api/client';
+import { calculateFaraidh, HEIR_LABELS } from '../lib/faraidh';
 import { hapticMedium, hapticTap } from '../utils/haptics';
+import { HistoricalMapContent } from './HistoricalMapScreen';
 
 const quizOptions = ['A', 'B', 'C', 'D'];
 
-const localTools = ['tasbih', 'zakat', 'faraidh', 'notifications', 'surah-content', 'sholat-tracker'];
+const localTools = ['tasbih', 'zakat', 'faraidh', 'notifications', 'surah-content', 'sholat-tracker', 'asmaul-wirid', 'forum', 'historical-map'];
 const EXPLORE_PAGE_SIZE = 20;
 
 const belajarFeatureIcons = {
@@ -178,8 +206,40 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [focusDictionaryInput, setFocusDictionaryInput] = useState(false);
   const [dictionaryQuery, setDictionaryQuery] = useState('');
   const [tasbih, setTasbih] = useState({ count: 0, target: 33 });
+  const [asmaulNames, setAsmaulNames] = useState([]);
+  const [asmaulIndex, setAsmaulIndex] = useState(0);
+  const [asmaulCounts, setAsmaulCounts] = useState({});
+  const [asmaulLoading, setAsmaulLoading] = useState(false);
   const [zakat, setZakat] = useState({ assets: '', debts: '', nisab: '85000000' });
-  const [faraidh, setFaraidh] = useState({ estate: '', debts: '', bequest: '', heirs: 'Suami/istri, orang tua, anak' });
+  const [zakatTab, setZakatTab] = useState(0);
+  const [zakatGoldPrice, setZakatGoldPrice] = useState('1050000');
+  const [zakatRicePrice, setZakatRicePrice] = useState('16000');
+  const [zakatFamilyCount, setZakatFamilyCount] = useState(1);
+  const [zakatMonthlyIncome, setZakatMonthlyIncome] = useState('');
+  const [zakatTradeCapital, setZakatTradeCapital] = useState('');
+  const [zakatTradeStock, setZakatTradeStock] = useState('');
+  const [zakatTradeReceivable, setZakatTradeReceivable] = useState('');
+  const [zakatTradeDebt, setZakatTradeDebt] = useState('');
+  const [zakatHarvestWeight, setZakatHarvestWeight] = useState('');
+  const [zakatHarvestIrrigated, setZakatHarvestIrrigated] = useState(false);
+  const [zakatRiceKgPrice, setZakatRiceKgPrice] = useState('16000');
+  const [zakatGoldGrams, setZakatGoldGrams] = useState('');
+  const [zakatSilverPrice, setZakatSilverPrice] = useState('14000');
+  const [zakatSilverGrams, setZakatSilverGrams] = useState('');
+  const [zakatHaul, setZakatHaul] = useState(true);
+  const [zakatTradeHaul, setZakatTradeHaul] = useState(true);
+  const [zakatGoldHaul, setZakatGoldHaul] = useState(true);
+  const [zakatHistory, setZakatHistory] = useState([]);
+  const [zakatSaving, setZakatSaving] = useState(false);
+  const [zakatSavedMsg, setZakatSavedMsg] = useState('');
+  const [faraidh, setFaraidh] = useState({
+    estate: '', debts: '', bequest: '',
+    heirs: { suami: 0, istri: 0, anakL: 0, anakP: 0, ayah: 0, ibu: 0, kakek: 0, nenek: 0, saudaraL: 0, saudaraP: 0 },
+  });
+  const [faraidhHistory, setFaraidhHistory] = useState([]);
+  const [savingFaraidh, setSavingFaraidh] = useState(false);
+  const [showFaraidhHistory, setShowFaraidhHistory] = useState(false);
+  const [faraidhCatatan, setFaraidhCatatan] = useState('');
   const [answers, setAnswers] = useState({});
   const [bookmarks, setBookmarks] = useState({});
   const [selectedItem, setSelectedItem] = useState(null);
@@ -197,6 +257,24 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [surahs, setSurahs] = useState([]);
   const [selectedSurahNumber, setSelectedSurahNumber] = useState(null);
   const [surahSearch, setSurahSearch] = useState('');
+  const [tafsirMode, setTafsirMode] = useState('all');
+  const [forumView, setForumView] = useState('list');
+  const [forumQuestions, setForumQuestions] = useState([]);
+  const [forumTotal, setForumTotal] = useState(0);
+  const [forumPage, setForumPage] = useState(0);
+  const [forumHasMore, setForumHasMore] = useState(false);
+  const [forumLoading, setForumLoading] = useState(false);
+  const [forumSearch, setForumSearch] = useState('');
+  const [forumSlug, setForumSlug] = useState('');
+  const [forumDetail, setForumDetail] = useState(null);
+  const [forumAnswers, setForumAnswers] = useState([]);
+  const [forumAskTitle, setForumAskTitle] = useState('');
+  const [forumAskBody, setForumAskBody] = useState('');
+  const [forumAskTags, setForumAskTags] = useState('');
+  const [forumAnswerDraft, setForumAnswerDraft] = useState('');
+  const [forumSaving, setForumSaving] = useState(false);
+  const [forumVotingId, setForumVotingId] = useState('');
+  const [forumError, setForumError] = useState('');
   const [sholatLog, setSholatLog] = useState({});
   const [pagination, setPagination] = useState({ page: 0, hasMore: false, loadingMore: false });
   const loadingMoreRef = useRef(false);
@@ -318,6 +396,40 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
             setSholatLog({});
           } finally {
             setLoading(false);
+          }
+        }
+
+        if (feature.type === 'asmaul-wirid' && asmaulNames.length === 0) {
+          setAsmaulLoading(true);
+          try {
+            const items = await getAsmaulNames();
+            setAsmaulNames(items ?? []);
+            setAsmaulIndex(0);
+          } catch { /* silent */ }
+          setAsmaulLoading(false);
+        }
+
+        if (feature.type === 'forum') {
+          setForumView('list');
+          setForumSearch('');
+          setForumPage(0);
+          setForumQuestions([]);
+          setForumTotal(0);
+          setForumHasMore(false);
+          setForumDetail(null);
+          setForumAnswers([]);
+          setForumError('');
+          setForumLoading(true);
+          try {
+            const result = await getForumQuestions({ page: 0, size: 10 });
+            setForumQuestions(result.items);
+            setForumTotal(result.total);
+            setForumPage(0);
+            setForumHasMore(result.hasMore);
+          } catch (err) {
+            setForumError(err?.message ?? 'Forum belum bisa dimuat.');
+          } finally {
+            setForumLoading(false);
           }
         }
 
@@ -1080,11 +1192,65 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     );
   };
 
+  const tafsirModes = [
+    { key: 'all', label: 'Semua' },
+    { key: 'jalalain', label: 'Jalalain' },
+    { key: 'quraish', label: 'Quraish' },
+  ];
+  const tafsirLayouts = [
+    { key: 'stacked', label: 'Tumpuk' },
+    { key: 'side', label: 'Samping' },
+  ];
+  const [tafsirLayout, setTafsirLayout] = useState('stacked');
+  const isTafsirDetail = activeFeature?.type === 'surah-content';
+  const hasBothTafsir = isTafsirDetail && selectedItem?.tafsir && selectedItem?.secondaryTafsir;
+
   const renderDetailScreen = () => {
     if (!selectedItem) return null;
     const ref = getItemRef(activeFeature, selectedItem);
     const noteKey = refKey(ref.refType, ref.refId);
-    const isTafsirDetail = activeFeature?.type === 'surah-content';
+
+    const renderTafsirPanel = (tafsirText, source, isSecondary) => {
+      if (!tafsirText) return null;
+      return (
+        <View style={[styles.detailTafsirPanel, isSecondary && styles.tafsirPanelSecondary]}>
+          <Text style={[styles.tafsirSource, isSecondary && styles.tafsirSourceSecondary]}>
+            Tafsir {source}
+          </Text>
+          <Text style={styles.detailBody}>{tafsirText}</Text>
+        </View>
+      );
+    };
+
+    const renderTafsirContent = () => {
+      if (!isTafsirDetail) return null;
+      if (hasBothTafsir && tafsirLayout === 'side' && (tafsirMode === 'all' || tafsirMode === 'jalalain' || tafsirMode === 'quraish')) {
+        const showFirst = tafsirMode === 'all' || tafsirMode === 'jalalain';
+        const showSecond = tafsirMode === 'all' || tafsirMode === 'quraish';
+        return (
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            {showFirst ? (
+              <View style={{ flex: 1 }}>
+                {renderTafsirPanel(selectedItem.tafsir, 'Jalalain', false)}
+              </View>
+            ) : null}
+            {showSecond ? (
+              <View style={{ flex: 1 }}>
+                {renderTafsirPanel(selectedItem.secondaryTafsir, 'Quraish Shihab', true)}
+              </View>
+            ) : null}
+          </View>
+        );
+      }
+      if (tafsirMode === 'jalalain') return renderTafsirPanel(selectedItem.tafsir, 'Jalalain', false);
+      if (tafsirMode === 'quraish') return renderTafsirPanel(selectedItem.secondaryTafsir, 'Quraish Shihab', true);
+      return (
+        <>
+          {renderTafsirPanel(selectedItem.tafsir, 'Jalalain', false)}
+          {renderTafsirPanel(selectedItem.secondaryTafsir, 'Quraish Shihab', true)}
+        </>
+      );
+    };
 
     return (
       <Screen
@@ -1107,18 +1273,31 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
               <Text style={isTafsirDetail ? styles.detailTranslation : styles.detailBody}>{selectedItem.body}</Text>
             </View>
           ) : null}
-          {selectedItem.tafsir ? (
-            <View style={styles.detailTafsirPanel}>
-              <Text style={styles.tafsirSource}>Tafsir Jalalain</Text>
-              <Text style={styles.detailBody}>{selectedItem.tafsir}</Text>
+          {hasBothTafsir ? (
+            <View style={{ marginBottom: spacing.sm }}>
+              <View style={{ flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs }}>
+                {tafsirModes.map((m) => (
+                  <ActionPill
+                    key={m.key}
+                    active={tafsirMode === m.key}
+                    label={m.label}
+                    onPress={() => setTafsirMode(m.key)}
+                  />
+                ))}
+              </View>
+              <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                {tafsirLayouts.map((l) => (
+                  <ActionPill
+                    key={l.key}
+                    active={tafsirLayout === l.key}
+                    label={l.label}
+                    onPress={() => setTafsirLayout(l.key)}
+                  />
+                ))}
+              </View>
             </View>
           ) : null}
-          {selectedItem.secondaryTafsir ? (
-            <View style={[styles.detailTafsirPanel, styles.tafsirPanelSecondary]}>
-              <Text style={[styles.tafsirSource, styles.tafsirSourceSecondary]}>Tafsir Quraish Shihab</Text>
-              <Text style={styles.detailBody}>{selectedItem.secondaryTafsir}</Text>
-            </View>
-          ) : null}
+          {renderTafsirContent()}
           <View style={styles.detailMetaPanel}>
             <Text style={styles.detailTitle}>Info</Text>
             <Text style={styles.detailLine}>{selectedItem.meta || activeFeature?.title}</Text>
@@ -1284,6 +1463,69 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       );
     }
 
+    if (activeFeature.type === 'asmaul-wirid') {
+      const currentName = asmaulNames[asmaulIndex];
+      const currentCount = asmaulCounts[currentName?.id] ?? 0;
+      const isComplete = currentCount >= 33;
+
+      const incrementName = () => {
+        hapticTap();
+        setAsmaulCounts((prev) => ({
+          ...prev,
+          [currentName.id]: (prev[currentName.id] ?? 0) + 1,
+        }));
+      };
+
+      return (
+        <Card>
+          <CardTitle meta={asmaulLoading ? 'Memuat...' : `${asmaulIndex + 1}/${asmaulNames.length}`}>
+            {activeFeature.title}
+          </CardTitle>
+          {asmaulLoading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : currentName ? (
+            <>
+              <View style={styles.asmaulHeader}>
+                <Pressable
+                  disabled={asmaulIndex === 0}
+                  onPress={() => { setAsmaulIndex((i) => Math.max(0, i - 1)); setAsmaulCounts((prev) => ({ ...prev, [currentName.id]: 0 })); }}
+                  style={[styles.heirButton, asmaulIndex === 0 && styles.heirButtonDisabled]}
+                >
+                  <Text style={styles.heirButtonText}>←</Text>
+                </Pressable>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={styles.asmaulArabic}>{currentName.arabic ?? currentName.name ?? ''}</Text>
+                  <Text style={styles.asmaulLatin}>{currentName.latin ?? currentName.transliteration ?? ''}</Text>
+                  <Text style={styles.asmaulArti}>{currentName.translation ?? currentName.meaning ?? ''}</Text>
+                </View>
+                <Pressable
+                  disabled={asmaulIndex >= asmaulNames.length - 1}
+                  onPress={() => { setAsmaulIndex((i) => Math.min(asmaulNames.length - 1, i + 1)); setAsmaulCounts((prev) => ({ ...prev, [currentName.id]: 0 })); }}
+                  style={[styles.heirButton, asmaulIndex >= asmaulNames.length - 1 && styles.heirButtonDisabled]}
+                >
+                  <Text style={styles.heirButtonText}>→</Text>
+                </Pressable>
+              </View>
+              <View style={{ height: 6, backgroundColor: colors.faint, borderRadius: 3, marginVertical: spacing.md }}>
+                <View style={{ height: 6, backgroundColor: isComplete ? colors.primary : colors.muted, borderRadius: 3, width: `${Math.min(100, (currentCount / 33) * 100)}%` }} />
+              </View>
+              <Pressable onPress={incrementName} style={styles.counter}>
+                <Text style={styles.counterNumber}>{currentCount}</Text>
+                <Text style={styles.counterLabel}>{isComplete ? 'Sempurna!' : 'Tap untuk hitung'}</Text>
+              </Pressable>
+              <View style={styles.answerRow}>
+                <Pressable onPress={() => setAsmaulCounts((prev) => ({ ...prev, [currentName.id]: 0 }))} style={styles.answerButton}>
+                  <Text style={styles.answerText}>Reset</Text>
+                </Pressable>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.body}>Daftar Asmaul Husna belum tersedia.</Text>
+          )}
+        </Card>
+      );
+    }
+
     if (activeFeature.type === 'surah-content') {
       return (
         <Card>
@@ -1325,113 +1567,869 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     }
 
     if (activeFeature.type === 'zakat') {
+      const NISAB_GRAM = 85;
+      const NISAB_SILVER_GRAM = 595;
+      const NISAB_HARVEST_KG = 653;
+      const goldPrice = parseNumericInput(zakatGoldPrice) || 1050000;
+      const nisab = NISAB_GRAM * goldPrice;
+      const nisabMonthly = nisab / 12;
       const assets = parseNumericInput(zakat.assets);
       const debts = parseNumericInput(zakat.debts);
-      const nisab = parseNumericInput(zakat.nisab);
       const net = Math.max(0, assets - debts);
-      const isZakatDue = nisab > 0 && net >= nisab;
-      const due = isZakatDue ? net * 0.025 : 0;
+      const zakatMaal = net >= nisab && zakatHaul ? net * 0.025 : 0;
+      const ricePrice = parseNumericInput(zakatRicePrice) || 16000;
+      const zakatFitrah = 2.5 * ricePrice * zakatFamilyCount;
+      const income = parseNumericInput(zakatMonthlyIncome) || 0;
+      const zakatProfesi = income >= nisabMonthly ? income * 0.025 : 0;
+      const tradeNet =
+        (parseNumericInput(zakatTradeCapital) || 0) +
+        (parseNumericInput(zakatTradeStock) || 0) +
+        (parseNumericInput(zakatTradeReceivable) || 0) -
+        (parseNumericInput(zakatTradeDebt) || 0);
+      const zakatTrade = tradeNet >= nisab && zakatTradeHaul ? tradeNet * 0.025 : 0;
+      const harvest = parseNumericInput(zakatHarvestWeight) || 0;
+      const riceKgPrice = parseNumericInput(zakatRiceKgPrice) || 16000;
+      const harvestRate = zakatHarvestIrrigated ? 0.05 : 0.1;
+      const zakatAgriculture = harvest >= NISAB_HARVEST_KG ? harvest * harvestRate * riceKgPrice : 0;
+      const goldG = parseNumericInput(zakatGoldGrams) || 0;
+      const silverPriceNum = parseNumericInput(zakatSilverPrice) || 14000;
+      const silverG = parseNumericInput(zakatSilverGrams) || 0;
+      const goldValue = goldG * goldPrice;
+      const silverValue = silverG * silverPriceNum;
+      const goldNisabValue = NISAB_GRAM * goldPrice;
+      const silverNisabValue = NISAB_SILVER_GRAM * silverPriceNum;
+      const zakatGold =
+        zakatGoldHaul && (goldValue >= goldNisabValue || silverValue >= silverNisabValue)
+          ? (goldValue + silverValue) * 0.025
+          : 0;
+
+      const ZAKAT_TABS = [
+        { key: 'maal', label: 'Maal' },
+        { key: 'fitrah', label: 'Fitrah' },
+        { key: 'profesi', label: 'Profesi' },
+        { key: 'dagang', label: 'Dagang' },
+        { key: 'tani', label: 'Tani' },
+        { key: 'emas', label: 'Emas' },
+        { key: 'riwayat', label: 'Riwayat' },
+      ];
+
+      const handleZakatSave = async (jenis, namaJenis, jumlahZakat, nilaiHarta = 0, nisabVal = 0) => {
+        if (!session?.token || jumlahZakat <= 0) return;
+        setZakatSaving(true);
+        setZakatSavedMsg('');
+        try {
+          await saveKalkulasiZakat({
+            jenis,
+            nama_jenis: namaJenis,
+            jumlah_zakat: jumlahZakat,
+            nilai_harta: nilaiHarta,
+            nisab: nisabVal,
+            rate: 2.5,
+            haul: true,
+            catatan: '',
+          });
+          setZakatSavedMsg('Tersimpan!');
+        } catch {
+          setZakatSavedMsg('Gagal menyimpan');
+        }
+        setZakatSaving(false);
+        setTimeout(() => setZakatSavedMsg(''), 2500);
+      };
+
+      const loadZakatHistory = useCallback(async () => {
+        if (!session?.token) return;
+        try {
+          const items = await getKalkulasiZakat();
+          setZakatHistory(items);
+        } catch { /* silent */ }
+      }, [session?.token]);
+
+      useEffect(() => {
+        if (zakatTab === 6) loadZakatHistory();
+      }, [zakatTab, loadZakatHistory]);
+
+      const renderZakatResult = (amount, label, color = 'primary') => (
+        <View style={[styles.resultPanel, { borderColor: color === 'amber' ? '#F59E0B' : color === 'blue' ? '#3B82F6' : colors.primary, borderWidth: 1, marginTop: spacing.md }]}>
+          <Text style={[styles.resultLabel, { textAlign: 'center', fontSize: 13 }]}>{label}</Text>
+          <Text style={[styles.resultValueStrong, { textAlign: 'center', fontSize: 24 }]}>{formatCurrency(amount)}</Text>
+        </View>
+      );
+
       return (
         <Card>
-          <CardTitle meta={isZakatDue ? 'Wajib Zakat' : 'Belum Mencapai Nisab'}>{activeFeature.title}</CardTitle>
-          <Text style={styles.body}>Masukkan harta dan kewajiban yang jatuh tempo. Nilai zakat dihitung 2,5% dari harta bersih.</Text>
-          {renderCurrencyInput({
-            label: 'Total harta',
-            value: zakat.assets,
-            placeholder: '0',
-            onChangeText: (assetsValue) => setZakat((current) => ({ ...current, assets: assetsValue })),
-          })}
-          {renderCurrencyInput({
-            label: 'Utang jatuh tempo',
-            value: zakat.debts,
-            placeholder: '0',
-            onChangeText: (debtsValue) => setZakat((current) => ({ ...current, debts: debtsValue })),
-          })}
-          {renderCurrencyInput({
-            label: 'Nisab',
-            value: zakat.nisab,
-            placeholder: '85.000.000',
-            onChangeText: (nisabValue) => setZakat((current) => ({ ...current, nisab: nisabValue })),
-          })}
-          <View style={styles.resultPanel}>
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Harta bersih</Text>
-              <Text style={styles.resultValue}>{formatCurrency(net)}</Text>
-            </View>
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Nisab</Text>
-              <Text style={styles.resultValue}>{formatCurrency(nisab)}</Text>
-            </View>
-            <View style={styles.resultDivider} />
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabelStrong}>Zakat maal 2,5%</Text>
-              <Text style={styles.resultValueStrong}>{formatCurrency(due)}</Text>
-            </View>
-            <Text style={[styles.statusNote, isZakatDue && styles.statusNoteActive]}>
-              {isZakatDue ? 'Harta bersih sudah mencapai nisab.' : 'Harta bersih belum mencapai nisab.'}
-            </Text>
+          <CardTitle>{activeFeature.title}</CardTitle>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md }}>
+            {ZAKAT_TABS.map((t, i) => (
+              <ActionPill
+                key={t.key}
+                active={zakatTab === i}
+                label={t.label}
+                onPress={() => setZakatTab(i)}
+              />
+            ))}
           </View>
+
+          {/* Zakat Maal */}
+          {zakatTab === 0 && (
+            <>
+              <Text style={styles.body}>Zakat 2,5% dari harta bersih yang sudah mencapai nisab dan haul.</Text>
+              <Text style={[styles.body, { fontSize: 12, color: colors.muted, marginBottom: spacing.sm }]}>
+                Nisab: {formatCurrency(nisab)} (85g emas × Rp{formatCurrency(goldPrice)}/g)
+              </Text>
+              {renderCurrencyInput({ label: 'Total harta', value: zakat.assets, placeholder: '0', onChangeText: (v) => setZakat((c) => ({ ...c, assets: v })) })}
+              {renderCurrencyInput({ label: 'Utang jatuh tempo', value: zakat.debts, placeholder: '0', onChangeText: (v) => setZakat((c) => ({ ...c, debts: v })) })}
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleLabel}>Sudah haul (1 tahun)</Text>
+                <Switch
+                  value={zakatHaul}
+                  onValueChange={setZakatHaul}
+                  trackColor={{ false: colors.faint, true: colors.primary }}
+                  thumbColor={colors.surface}
+                />
+              </View>
+              <View style={styles.resultPanel}>
+                <View style={styles.resultRow}><Text style={styles.resultLabel}>Harta bersih</Text><Text style={styles.resultValue}>{formatCurrency(net)}</Text></View>
+                <View style={styles.resultRow}><Text style={styles.resultLabel}>Nisab</Text><Text style={styles.resultValue}>{formatCurrency(nisab)}</Text></View>
+                <View style={styles.resultDivider} />
+                <View style={styles.resultRow}><Text style={styles.resultLabelStrong}>Zakat maal 2,5%</Text><Text style={styles.resultValueStrong}>{formatCurrency(zakatMaal)}</Text></View>
+              </View>
+              {session?.token && zakatMaal > 0 && (
+                <Pressable disabled={zakatSaving} onPress={() => handleZakatSave('maal', 'Zakat Maal', zakatMaal, net, nisab)} style={[styles.answerButton, { marginTop: spacing.sm, alignSelf: 'stretch' }]}>
+                  <Text style={styles.answerText}>{zakatSaving ? 'Menyimpan...' : 'Simpan'}</Text>
+                </Pressable>
+              )}
+            </>
+          )}
+
+          {/* Zakat Fitrah */}
+          {zakatTab === 1 && (
+            <>
+              <Text style={styles.body}>Zakat fitrah 1 sha' (±2,5 kg) makanan pokok per jiwa.</Text>
+              {renderCurrencyInput({ label: 'Harga beras/kg', value: zakatRicePrice, placeholder: '16000', onChangeText: setZakatRicePrice })}
+              <View style={styles.heirGrid}>
+                <Pressable onPress={() => setZakatFamilyCount(Math.max(1, zakatFamilyCount - 1))} style={styles.heirButton}><Text style={styles.heirButtonText}>−</Text></Pressable>
+                <View style={{ alignItems: 'center', paddingHorizontal: spacing.md }}>
+                  <Text style={[styles.resultValueStrong, { fontSize: 22 }]}>{zakatFamilyCount}</Text>
+                  <Text style={[styles.resultLabel, { fontSize: 11 }]}>Jiwa</Text>
+                </View>
+                <Pressable onPress={() => setZakatFamilyCount(zakatFamilyCount + 1)} style={styles.heirButton}><Text style={styles.heirButtonText}>+</Text></Pressable>
+              </View>
+              {renderZakatResult(zakatFitrah, 'Zakat Fitrah', 'amber')}
+              {session?.token && zakatFitrah > 0 && (
+                <Pressable disabled={zakatSaving} onPress={() => handleZakatSave('fitrah', 'Zakat Fitrah', zakatFitrah)} style={[styles.answerButton, { marginTop: spacing.sm, alignSelf: 'stretch' }]}>
+                  <Text style={styles.answerText}>{zakatSaving ? 'Menyimpan...' : 'Simpan'}</Text>
+                </Pressable>
+              )}
+            </>
+          )}
+
+          {/* Zakat Profesi */}
+          {zakatTab === 2 && (
+            <>
+              <Text style={styles.body}>Zakat profesi 2,5% dari penghasilan bulanan jika mencapai nisab per bulan.</Text>
+              <Text style={[styles.body, { fontSize: 12, color: colors.muted, marginBottom: spacing.sm }]}>
+                Nisab bulanan: {formatCurrency(nisabMonthly)}
+              </Text>
+              {renderCurrencyInput({ label: 'Penghasilan per bulan', value: zakatMonthlyIncome, placeholder: '0', onChangeText: setZakatMonthlyIncome })}
+              {income > 0 && income < nisabMonthly && (
+                <Text style={[styles.statusNote, { color: '#D97706', marginBottom: spacing.sm }]}>Penghasilan belum mencapai nisab bulanan.</Text>
+              )}
+              {renderZakatResult(zakatProfesi, 'Zakat Profesi', 'blue')}
+              {session?.token && zakatProfesi > 0 && (
+                <Pressable disabled={zakatSaving} onPress={() => handleZakatSave('profesi', 'Zakat Profesi', zakatProfesi, income, nisabMonthly)} style={[styles.answerButton, { marginTop: spacing.sm, alignSelf: 'stretch' }]}>
+                  <Text style={styles.answerText}>{zakatSaving ? 'Menyimpan...' : 'Simpan'}</Text>
+                </Pressable>
+              )}
+            </>
+          )}
+
+          {/* Zakat Perdagangan */}
+          {zakatTab === 3 && (
+            <>
+              <Text style={styles.body}>Zakat perdagangan 2,5% dari (modal + stok + piutang − utang) jika ≥ nisab.</Text>
+              {renderCurrencyInput({ label: 'Modal usaha (Rp)', value: zakatTradeCapital, placeholder: '0', onChangeText: setZakatTradeCapital })}
+              {renderCurrencyInput({ label: 'Nilai stok barang (Rp)', value: zakatTradeStock, placeholder: '0', onChangeText: setZakatTradeStock })}
+              {renderCurrencyInput({ label: 'Piutang bisa ditagih (Rp)', value: zakatTradeReceivable, placeholder: '0', onChangeText: setZakatTradeReceivable })}
+              {renderCurrencyInput({ label: 'Utang usaha (Rp)', value: zakatTradeDebt, placeholder: '0', onChangeText: setZakatTradeDebt })}
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleLabel}>Sudah haul (1 tahun)</Text>
+                <Switch
+                  value={zakatTradeHaul}
+                  onValueChange={setZakatTradeHaul}
+                  trackColor={{ false: colors.faint, true: colors.primary }}
+                  thumbColor={colors.surface}
+                />
+              </View>
+              <View style={styles.resultPanel}>
+                <View style={styles.resultRow}><Text style={styles.resultLabel}>Aset bersih</Text><Text style={styles.resultValue}>{formatCurrency(tradeNet)}</Text></View>
+                <View style={styles.resultDivider} />
+                <View style={styles.resultRow}><Text style={styles.resultLabelStrong}>Zakat dagang 2,5%</Text><Text style={styles.resultValueStrong}>{formatCurrency(zakatTrade)}</Text></View>
+              </View>
+              {session?.token && zakatTrade > 0 && (
+                <Pressable disabled={zakatSaving} onPress={() => handleZakatSave('perdagangan', 'Zakat Perdagangan', zakatTrade, tradeNet, nisab)} style={[styles.answerButton, { marginTop: spacing.sm, alignSelf: 'stretch' }]}>
+                  <Text style={styles.answerText}>{zakatSaving ? 'Menyimpan...' : 'Simpan'}</Text>
+                </Pressable>
+              )}
+            </>
+          )}
+
+          {/* Zakat Pertanian */}
+          {zakatTab === 4 && (
+            <>
+              <Text style={styles.body}>Nisab 5 wasq ({NISAB_HARVEST_KG} kg). Irigasi: 5%, tadah hujan: 10%. Wajib tiap panen.</Text>
+              {renderCurrencyInput({ label: 'Hasil panen (kg)', value: zakatHarvestWeight, placeholder: '0', onChangeText: setZakatHarvestWeight })}
+              {renderCurrencyInput({ label: 'Harga gabah/kg (Rp)', value: zakatRiceKgPrice, placeholder: '16000', onChangeText: setZakatRiceKgPrice })}
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleLabel}>Pakai irigasi (tarif 5%)</Text>
+                <Switch
+                  value={zakatHarvestIrrigated}
+                  onValueChange={setZakatHarvestIrrigated}
+                  trackColor={{ false: colors.faint, true: colors.primary }}
+                  thumbColor={colors.surface}
+                />
+              </View>
+              {harvest > 0 && harvest < NISAB_HARVEST_KG && (
+                <Text style={[styles.statusNote, { color: '#D97706', marginBottom: spacing.sm }]}>Panen kurang dari nisab ({NISAB_HARVEST_KG} kg), belum wajib zakat.</Text>
+              )}
+              {renderZakatResult(zakatAgriculture, 'Zakat Pertanian', 'primary')}
+              {session?.token && zakatAgriculture > 0 && (
+                <Pressable disabled={zakatSaving} onPress={() => handleZakatSave('pertanian', 'Zakat Pertanian', zakatAgriculture)} style={[styles.answerButton, { marginTop: spacing.sm, alignSelf: 'stretch' }]}>
+                  <Text style={styles.answerText}>{zakatSaving ? 'Menyimpan...' : 'Simpan'}</Text>
+                </Pressable>
+              )}
+            </>
+          )}
+
+          {/* Zakat Emas & Perak */}
+          {zakatTab === 5 && (
+            <>
+              <Text style={styles.body}>Nisab emas 85g, perak 595g. Wajib setelah 1 haul. Tarif 2,5%.</Text>
+              {renderCurrencyInput({ label: 'Harga emas/gram (Rp)', value: zakatGoldPrice, placeholder: '1050000', onChangeText: setZakatGoldPrice })}
+              {renderCurrencyInput({ label: 'Berat emas (gram)', value: zakatGoldGrams, placeholder: '0', onChangeText: setZakatGoldGrams })}
+              {renderCurrencyInput({ label: 'Harga perak/gram (Rp)', value: zakatSilverPrice, placeholder: '14000', onChangeText: setZakatSilverPrice })}
+              {renderCurrencyInput({ label: 'Berat perak (gram)', value: zakatSilverGrams, placeholder: '0', onChangeText: setZakatSilverGrams })}
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleLabel}>Sudah haul (1 tahun)</Text>
+                <Switch
+                  value={zakatGoldHaul}
+                  onValueChange={setZakatGoldHaul}
+                  trackColor={{ false: colors.faint, true: colors.primary }}
+                  thumbColor={colors.surface}
+                />
+              </View>
+              {renderZakatResult(zakatGold, 'Zakat Emas & Perak', 'amber')}
+              {session?.token && zakatGold > 0 && (
+                <Pressable disabled={zakatSaving} onPress={() => handleZakatSave('emas_perak', 'Zakat Emas & Perak', zakatGold, goldValue + silverValue, goldNisabValue)} style={[styles.answerButton, { marginTop: spacing.sm, alignSelf: 'stretch' }]}>
+                  <Text style={styles.answerText}>{zakatSaving ? 'Menyimpan...' : 'Simpan'}</Text>
+                </Pressable>
+              )}
+            </>
+          )}
+
+          {/* Riwayat */}
+          {zakatTab === 6 && (
+            <>
+              <Text style={styles.body}>Riwayat kalkulasi zakat tersimpan.</Text>
+              {!session?.token ? (
+                <Text style={[styles.statusNote, { marginTop: spacing.sm }]}>Buka Profil untuk masuk dan melihat riwayat.</Text>
+              ) : zakatHistory.length === 0 ? (
+                <Text style={[styles.statusNote, { marginTop: spacing.sm }]}>Belum ada riwayat.</Text>
+              ) : (
+                <ScrollView style={{ maxHeight: 300 }}>
+                  {zakatHistory.map((item) => (
+                    <View key={item.id} style={[styles.faraidhHistoryCard, { marginTop: spacing.xs }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: '700', color: colors.ink }}>{item.nama_jenis}</Text>
+                        <Text style={[styles.resultValue, { fontSize: 13 }]}>{formatCurrency(item.jumlah_zakat)}</Text>
+                        <Text style={{ fontSize: 11, color: colors.muted }}>{new Date(item.created_at ?? item.createdAt).toLocaleDateString('id-ID')}</Text>
+                      </View>
+                      <Pressable onPress={async () => { try { await deleteKalkulasiZakat(item.id); loadZakatHistory(); } catch { /* silent */ } }} style={[styles.heirButton, { borderColor: colors.danger }]}>
+                        <Text style={[styles.heirButtonText, { color: colors.danger }]}>Hapus</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+            </>
+          )}
+
+          {zakatSavedMsg ? (
+            <Text style={{ textAlign: 'center', fontSize: 13, color: colors.primary, marginTop: spacing.sm }}>{zakatSavedMsg}</Text>
+          ) : null}
         </Card>
       );
     }
 
     if (activeFeature.type === 'faraidh') {
-      const estate = parseNumericInput(faraidh.estate);
+      const HEIR_FIELDS = [
+        { key: 'suami', max: 1, label: 'Suami' },
+        { key: 'istri', max: 4, label: 'Istri' },
+        { key: 'anakL', max: 20, label: 'Anak Lk' },
+        { key: 'anakP', max: 20, label: 'Anak Pr' },
+        { key: 'ayah', max: 1, label: 'Ayah' },
+        { key: 'ibu', max: 1, label: 'Ibu' },
+        { key: 'kakek', max: 1, label: 'Kakek' },
+        { key: 'nenek', max: 4, label: 'Nenek' },
+        { key: 'saudaraL', max: 20, label: 'Sdr Lk' },
+        { key: 'saudaraP', max: 20, label: 'Sdr Pr' },
+      ];
+
+      const setHeir = (key, delta) => {
+        const field = HEIR_FIELDS.find((f) => f.key === key);
+        setFaraidh((current) => {
+          const currentVal = current.heirs[key] ?? 0;
+          const next = Math.min(field?.max ?? 20, Math.max(0, currentVal + delta));
+          return { ...current, heirs: { ...current.heirs, [key]: next } };
+        });
+      };
+
+      const wealth = parseNumericInput(faraidh.estate);
       const debts = parseNumericInput(faraidh.debts);
       const requestedBequest = parseNumericInput(faraidh.bequest);
-      const maxBequest = Math.floor(estate / 3);
+      const maxBequest = Math.floor(wealth / 3);
       const bequest = Math.min(requestedBequest, maxBequest);
-      const distributable = Math.max(0, estate - debts - bequest);
-      const bequestCapped = estate > 0 && requestedBequest > maxBequest;
+      const distributable = Math.max(0, wealth - debts - bequest);
+      const bequestCapped = wealth > 0 && requestedBequest > maxBequest;
+      const calculation = distributable > 0 ? calculateFaraidh(faraidh.heirs, distributable) : null;
+
+      const handleSaveFaraidh = async () => {
+        if (!session?.token) {
+          showInfo('Buka Profil untuk masuk dan menyimpan kalkulasi.');
+          return;
+        }
+        setSavingFaraidh(true);
+        try {
+          await saveFaraidh({
+            wealth,
+            debt: debts,
+            funeral: 0,
+            will: bequest,
+            heirs_json: JSON.stringify(faraidh.heirs),
+            result_summary: calculation
+              ? calculation.rows.map((r) => {
+                  const label = HEIR_LABELS[r.key]?.idn ?? r.key;
+                  return `${label}: ${Math.round(r.share * 100)}%`;
+                }).join(', ')
+              : '',
+            catatan: faraidhCatatan,
+          });
+          showSuccess('Kalkulasi faraidh tersimpan.');
+          setFaraidhCatatan('');
+        } catch (err) {
+          showError(err?.message ?? 'Gagal menyimpan.');
+        } finally {
+          setSavingFaraidh(false);
+        }
+      };
+
+      const handleLoadFaraidhHistory = async () => {
+        if (!session?.token) {
+          showInfo('Buka Profil untuk melihat riwayat.');
+          return;
+        }
+        try {
+          const items = await getFaraidhHistory();
+          setFaraidhHistory(items);
+          setShowFaraidhHistory(true);
+        } catch {
+          showError('Riwayat belum bisa dimuat.');
+        }
+      };
+
+      const handleDeleteFaraidh = async (id) => {
+        try {
+          await deleteFaraidh(id);
+          setFaraidhHistory((current) => current.filter((item) => item.id !== id));
+          showSuccess('Item riwayat dihapus.');
+        } catch {
+          showError('Gagal menghapus.');
+        }
+      };
+
+      if (showFaraidhHistory) {
+        return (
+          <Card>
+            <CardTitle
+              meta={`${faraidhHistory.length} item`}
+              actions={(
+                <ActionPill
+                  label="Kembali"
+                  onPress={() => setShowFaraidhHistory(false)}
+                />
+              )}
+            >
+              Riwayat Faraidh
+            </CardTitle>
+            {!session?.token ? (
+              <Text style={styles.body}>Buka Profil untuk masuk dan melihat riwayat kalkulasi.</Text>
+            ) : faraidhHistory.length === 0 ? (
+              <Text style={styles.body}>Belum ada kalkulasi yang tersimpan.</Text>
+            ) : (
+              faraidhHistory.map((item) => (
+                <View key={item.id} style={styles.trackerRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.faraidhHistoryAmount}>{formatCurrency(item.wealth ?? 0)}</Text>
+                    {item.result_summary ? (
+                      <Text style={styles.detailLine}>{item.result_summary}</Text>
+                    ) : null}
+                    <Text style={styles.detailLine}>
+                      {new Date(item.created_at ?? item.createdAt ?? '').toLocaleDateString('id-ID')}
+                    </Text>
+                  </View>
+                  <Pressable
+                    android_ripple={{ color: 'rgba(220, 80, 80, 0.12)', borderless: false }}
+                    onPress={() => handleDeleteFaraidh(item.id)}
+                    style={styles.secondaryButton}
+                  >
+                    <Text style={[styles.secondaryButtonText, { color: colors.danger }]}>Hapus</Text>
+                  </Pressable>
+                </View>
+              ))
+            )}
+          </Card>
+        );
+      }
+
       return (
         <Card>
           <CardTitle meta="Perencana Waris">{activeFeature.title}</CardTitle>
-          <Text style={styles.body}>Hitung harta bersih yang siap dibagikan setelah utang dan wasiat. Wasiat otomatis dibatasi maksimal 1/3 harta.</Text>
+          <Text style={styles.body}>Hitung pembagian waris sesuai syariah. Pilih ahli waris, atur jumlahnya, dan lihat hasil bagi.</Text>
+
           {renderCurrencyInput({
             label: 'Harta warisan',
             value: faraidh.estate,
             placeholder: '0',
-            onChangeText: (estateValue) => setFaraidh((current) => ({ ...current, estate: estateValue })),
+            onChangeText: (v) => setFaraidh((current) => ({ ...current, estate: v })),
           })}
           {renderCurrencyInput({
             label: 'Utang dan biaya',
             value: faraidh.debts,
             placeholder: '0',
-            onChangeText: (debtValue) => setFaraidh((current) => ({ ...current, debts: debtValue })),
+            onChangeText: (v) => setFaraidh((current) => ({ ...current, debts: v })),
           })}
           {renderCurrencyInput({
             label: 'Wasiat',
             value: faraidh.bequest,
             placeholder: '0',
-            onChangeText: (bequestValue) => setFaraidh((current) => ({ ...current, bequest: bequestValue })),
+            onChangeText: (v) => setFaraidh((current) => ({ ...current, bequest: v })),
           })}
-          <Text style={styles.inputLabel}>Ahli waris</Text>
-          <TextInput
-            onChangeText={(heirsValue) => setFaraidh((current) => ({ ...current, heirs: heirsValue }))}
-            placeholder="Daftar ahli waris (cth: suami, ibu, anak)"
-            placeholderTextColor={colors.muted}
-            style={styles.input}
-            value={faraidh.heirs}
-          />
-          <View style={styles.resultPanel}>
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Harta awal</Text>
-              <Text style={styles.resultValue}>{formatCurrency(estate)}</Text>
+
+          <Text style={[styles.inputLabel, { marginTop: spacing.md }]}>Ahli Waris</Text>
+          <View style={styles.heirGrid}>
+            {HEIR_FIELDS.map((field) => {
+              const count = faraidh.heirs[field.key] ?? 0;
+              return (
+                <View key={field.key} style={styles.heirItem}>
+                  <Text style={styles.heirLabel}>{field.label}</Text>
+                  <Text style={styles.heirCount}>{count}</Text>
+                  <View style={styles.heirActions}>
+                    <Pressable
+                      onPress={() => setHeir(field.key, -1)}
+                      disabled={count === 0}
+                      style={[styles.heirButton, count === 0 && styles.heirButtonDisabled]}
+                    >
+                      <Text style={styles.heirButtonText}>−</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setHeir(field.key, 1)}
+                      disabled={count >= field.max}
+                      style={[styles.heirButton, count >= field.max && styles.heirButtonDisabled]}
+                    >
+                      <Text style={styles.heirButtonText}>+</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          {calculation ? (
+            <View style={styles.resultPanel}>
+              {calculation.applied.musytarakah ? (
+                <Text style={[styles.statusNote, styles.statusNoteActive]}>
+                  Musytarakah: suami + ibu + saudara berbagi 1/3 bersama.
+                </Text>
+              ) : null}
+              {calculation.applied.aul ? (
+                <Text style={[styles.statusNote, styles.statusNoteWarning]}>
+                  Aul: penyebut dinaikkan agar total bagian tidak melebihi 1.
+                </Text>
+              ) : null}
+              {calculation.applied.radd ? (
+                <Text style={[styles.statusNote, styles.statusNoteActive]}>
+                  Radd: sisa harta dikembalikan ke ahli waris (selain suami/istri).
+                </Text>
+              ) : null}
+              <View style={styles.resultRow}>
+                <Text style={styles.resultLabel}>Harta awal</Text>
+                <Text style={styles.resultValue}>{formatCurrency(wealth)}</Text>
+              </View>
+              <View style={styles.resultRow}>
+                <Text style={styles.resultLabel}>Wasiat</Text>
+                <Text style={styles.resultValue}>{formatCurrency(bequest)}</Text>
+              </View>
+              <View style={styles.resultDivider} />
+              <View style={styles.resultRow}>
+                <Text style={styles.resultLabelStrong}>Harta dibagikan</Text>
+                <Text style={styles.resultValueStrong}>{formatCurrency(distributable)}</Text>
+              </View>
+              {bequestCapped ? (
+                <Text style={[styles.statusNote, styles.statusNoteWarning]}>
+                  Wasiat melebihi batas, dihitung maksimal {formatCurrency(maxBequest)}.
+                </Text>
+              ) : null}
+              <View style={styles.resultDivider} />
+              <Text style={[styles.inputLabel, { marginTop: 0 }]}>Hasil Bagi</Text>
+              {calculation.rows.map((row) => {
+                const label = HEIR_LABELS[row.key]?.idn ?? row.key;
+                return (
+                  <View key={row.key} style={styles.resultRow}>
+                    <Text style={styles.resultLabel}>
+                      {label}{row.count > 1 ? ` (${row.count} org)` : ''}
+                    </Text>
+                    <Text style={styles.resultValue}>
+                      {row.fraction ? `${row.fraction.num}/${row.fraction.den}` : 'Sisa'}
+                      {' '}
+                      {Math.round(row.share * 100)}%
+                    </Text>
+                    <Text style={[styles.resultValue, { minWidth: 90 }]}>{formatCurrency(row.amount)}</Text>
+                  </View>
+                );
+              })}
             </View>
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabel}>Wasiat dihitung</Text>
-              <Text style={styles.resultValue}>{formatCurrency(bequest)}</Text>
-            </View>
-            <View style={styles.resultDivider} />
-            <View style={styles.resultRow}>
-              <Text style={styles.resultLabelStrong}>Harta dibagikan</Text>
-              <Text style={styles.resultValueStrong}>{formatCurrency(distributable)}</Text>
-            </View>
-            <Text style={[styles.statusNote, bequestCapped && styles.statusNoteWarning]}>
-              {bequestCapped
-                ? `Wasiat melebihi batas, dihitung maksimal ${formatCurrency(maxBequest)}.`
-                : `Ahli waris: ${faraidh.heirs || '-'}`}
+          ) : (
+            <Text style={[styles.statusNote, { marginTop: spacing.md }]}>
+              Pilih total harta dan ahli waris untuk melihat hasil pembagian.
             </Text>
+          )}
+
+          <View style={[styles.formActions, { marginTop: spacing.md }]}>
+            <Pressable
+              accessibilityLabel="Simpan kalkulasi faraidh"
+              accessibilityRole="button"
+              android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
+              disabled={!session?.token || savingFaraidh || distributable <= 0}
+              onPress={handleSaveFaraidh}
+              style={[styles.primaryButton, styles.formPrimaryButton, (!session?.token || savingFaraidh || distributable <= 0) && styles.disabledButton]}
+            >
+              <Text style={styles.primaryButtonText}>
+                {savingFaraidh ? 'Menyimpan...' : 'Simpan'}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityLabel="Riwayat kalkulasi faraidh"
+              accessibilityRole="button"
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+              onPress={handleLoadFaraidhHistory}
+              style={styles.secondaryButton}
+            >
+              <Text style={styles.secondaryButtonText}>Riwayat</Text>
+            </Pressable>
+          </View>
+        </Card>
+      );
+    }
+
+    if (activeFeature.type === 'forum') {
+      if (forumView === 'ask') {
+        return (
+          <Card>
+            <CardTitle
+              actions={(
+                <ActionPill label="Kembali" onPress={() => { setForumView('list'); setForumError(''); }} />
+              )}
+            >
+              Ajukan Pertanyaan
+            </CardTitle>
+            <TextInput
+              onChangeText={setForumAskTitle}
+              placeholder="Judul pertanyaan (min 10 karakter)"
+              placeholderTextColor={colors.muted}
+              style={styles.inputField}
+              value={forumAskTitle}
+            />
+            <TextInput
+              multiline
+              onChangeText={setForumAskBody}
+              placeholder="Isi pertanyaan (min 20 karakter)"
+              placeholderTextColor={colors.muted}
+              style={[styles.inputField, { minHeight: 120 }]}
+              textAlignVertical="top"
+              value={forumAskBody}
+            />
+            <TextInput
+              autoCapitalize="none"
+              onChangeText={setForumAskTags}
+              placeholder="Tag (pisahkan dengan koma, opsional)"
+              placeholderTextColor={colors.muted}
+              style={styles.inputField}
+              value={forumAskTags}
+            />
+            {forumError ? <Text style={[styles.statusNote, { color: colors.danger }]}>{forumError}</Text> : null}
+            <Pressable
+              android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
+              disabled={forumSaving || forumAskTitle.length < 10 || forumAskBody.length < 20}
+              onPress={async () => {
+                if (!session?.token) { showInfo('Buka Profil untuk masuk dan bertanya.'); return; }
+                setForumSaving(true);
+                setForumError('');
+                try {
+                  const result = await createForumQuestion({
+                    title: forumAskTitle.trim(),
+                    body: forumAskBody.trim(),
+                    tags: forumAskTags.trim(),
+                  });
+                  const slug = result?.slug ?? '';
+                  setForumAskTitle('');
+                  setForumAskBody('');
+                  setForumAskTags('');
+                  if (slug) {
+                    setForumLoading(true);
+                    try {
+                      const detail = await getForumQuestion(slug);
+                      setForumDetail(detail.question);
+                      setForumAnswers(detail.answers);
+                      setForumSlug(slug);
+                      setForumView('detail');
+                    } finally {
+                      setForumLoading(false);
+                    }
+                  } else {
+                    setForumView('list');
+                  }
+                } catch (err) {
+                  setForumError(err?.message ?? 'Gagal mengirim pertanyaan.');
+                } finally {
+                  setForumSaving(false);
+                }
+              }}
+              style={[styles.primaryButton, (forumSaving || forumAskTitle.length < 10 || forumAskBody.length < 20) && styles.disabledButton]}
+            >
+              <Text style={styles.primaryButtonText}>
+                {forumSaving ? 'Mengirim...' : 'Kirim Pertanyaan'}
+              </Text>
+            </Pressable>
+          </Card>
+        );
+      }
+
+      if (forumView === 'detail') {
+        return (
+          <Card>
+            <CardTitle
+              actions={(
+                <ActionPill label="Kembali" onPress={() => { setForumView('list'); setForumDetail(null); setForumAnswers([]); }} />
+              )}
+            >
+              {forumDetail?.title ?? 'Detail'}
+            </CardTitle>
+            {forumLoading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : !forumDetail ? (
+              <Text style={styles.body}>Pertanyaan tidak ditemukan.</Text>
+            ) : (
+              <>
+                <Text style={styles.body}>{forumDetail.body}</Text>
+                {forumDetail.tags?.length > 0 ? (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: spacing.sm }}>
+                    {forumDetail.tags.map((tag) => (
+                      <View key={tag} style={styles.badge}>
+                        <Text style={styles.badgeText}>{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+                <Text style={[styles.statusNote, { marginTop: spacing.sm }]}>
+                  {forumDetail.user?.name} · {forumDetail.answerCount} jawaban · {forumDetail.voteCount} suara
+                </Text>
+
+                {forumAnswers.length === 0 ? (
+                  <Text style={[styles.statusNote, { marginTop: spacing.md }]}>Belum ada jawaban.</Text>
+                ) : (
+                  forumAnswers.map((answer) => (
+                    <View key={answer.id} style={[styles.trackerRow, { alignItems: 'flex-start', marginTop: spacing.sm }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.body}>{answer.body}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 }}>
+                          <Text style={styles.statusNote}>{answer.user?.name}</Text>
+                          {answer.isAccepted ? (
+                            <Text style={[styles.badgeText, { color: '#16a34a' }]}>Diterima</Text>
+                          ) : null}
+                        </View>
+                      </View>
+                      <Pressable
+                        android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                        disabled={forumVotingId === answer.id}
+                        onPress={async () => {
+                          if (!session?.token) { showInfo('Buka Profil untuk memberi suara.'); return; }
+                          setForumVotingId(answer.id);
+                          try {
+                            await voteForum({ targetType: 'answer', targetId: answer.id, value: 1 });
+                            setForumAnswers((prev) => prev.map((a) => a.id === answer.id ? { ...a, voteCount: a.voteCount + 1 } : a));
+                          } catch {
+                            showError('Gagal memberi suara.');
+                          }
+                          setForumVotingId('');
+                        }}
+                        style={{ alignItems: 'center', minWidth: 40 }}
+                      >
+                        <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>▲</Text>
+                        <Text style={{ color: colors.text, fontSize: 12 }}>{answer.voteCount}</Text>
+                      </Pressable>
+                    </View>
+                  ))
+                )}
+
+                {session?.token ? (
+                  <>
+                    <TextInput
+                      multiline
+                      onChangeText={setForumAnswerDraft}
+                      placeholder="Tulis jawaban..."
+                      placeholderTextColor={colors.muted}
+                      style={[styles.inputField, { minHeight: 80, marginTop: spacing.md }]}
+                      textAlignVertical="top"
+                      value={forumAnswerDraft}
+                    />
+                    <Pressable
+                      android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
+                      disabled={forumSaving || forumAnswerDraft.trim().length < 10}
+                      onPress={async () => {
+                        setForumSaving(true);
+                        try {
+                          await createForumAnswer(forumDetail.id, { body: forumAnswerDraft.trim() });
+                          setForumAnswerDraft('');
+                          const updated = await getForumQuestion(forumSlug);
+                          setForumDetail(updated.question);
+                          setForumAnswers(updated.answers);
+                        } catch {
+                          showError('Gagal mengirim jawaban.');
+                        }
+                        setForumSaving(false);
+                      }}
+                      style={[styles.primaryButton, (forumSaving || forumAnswerDraft.trim().length < 10) && styles.disabledButton]}
+                    >
+                      <Text style={styles.primaryButtonText}>
+                        {forumSaving ? 'Mengirim...' : 'Kirim Jawaban'}
+                      </Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <Text style={[styles.statusNote, { marginTop: spacing.md }]}>
+                    Buka Profil untuk masuk dan menjawab pertanyaan.
+                  </Text>
+                )}
+              </>
+            )}
+          </Card>
+        );
+      }
+
+      return (
+        <Card>
+          <CardTitle meta={`${forumTotal} pertanyaan`}>{activeFeature.title}</CardTitle>
+          <TextInput
+            onChangeText={(v) => { setForumSearch(v); }}
+            onSubmitEditing={async () => {
+              setForumLoading(true);
+              setForumError('');
+              try {
+                const result = await getForumQuestions({ page: 0, size: 10, q: forumSearch.trim() });
+                setForumQuestions(result.items);
+                setForumTotal(result.total);
+                setForumPage(0);
+                setForumHasMore(result.hasMore);
+              } catch (err) {
+                setForumError(err?.message ?? 'Pencarian gagal.');
+              }
+              setForumLoading(false);
+            }}
+            placeholder="Cari pertanyaan..."
+            placeholderTextColor={colors.muted}
+            returnKeyType="search"
+            style={styles.inputField}
+            value={forumSearch}
+          />
+          {forumError ? <Text style={[styles.statusNote, { color: colors.danger }]}>{forumError}</Text> : null}
+          {forumLoading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : forumQuestions.length === 0 ? (
+            <Text style={[styles.statusNote, { marginTop: spacing.md }]}>Belum ada pertanyaan.</Text>
+          ) : (
+            forumQuestions.map((q) => (
+              <Pressable
+                key={q.id}
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                onPress={async () => {
+                  setForumLoading(true);
+                  setForumError('');
+                  try {
+                    const detail = await getForumQuestion(q.slug);
+                    setForumDetail(detail.question);
+                    setForumAnswers(detail.answers);
+                    setForumSlug(q.slug);
+                    setForumView('detail');
+                  } catch (err) {
+                    setForumError(err?.message ?? 'Detail belum bisa dimuat.');
+                  }
+                  setForumLoading(false);
+                }}
+                style={[styles.trackerRow, { alignItems: 'flex-start' }]}
+              >
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.inputLabel, { flex: 1, marginBottom: 0 }]} numberOfLines={2}>
+                      {q.title}
+                    </Text>
+                    {q.isAnswered ? <Text style={{ color: '#16a34a', fontSize: 11, fontWeight: '700' }}>Terjawab</Text> : null}
+                  </View>
+                  <Text style={[styles.statusNote, { marginTop: 2 }]} numberOfLines={2}>{q.body}</Text>
+                  {q.tags?.length > 0 ? (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                      {q.tags.slice(0, 3).map((tag) => (
+                        <View key={tag} style={styles.badge}>
+                          <Text style={styles.badgeText}>{tag}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                  <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: 4 }}>
+                    <Text style={[styles.statusNote, { fontSize: 11 }]}>{q.user?.name}</Text>
+                    <Text style={[styles.statusNote, { fontSize: 11 }]}>{q.answerCount} jawaban</Text>
+                    <Text style={[styles.statusNote, { fontSize: 11 }]}>{q.voteCount} suara</Text>
+                  </View>
+                </View>
+              </Pressable>
+            ))
+          )}
+          {forumHasMore ? (
+            <Pressable
+              android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+              onPress={async () => {
+                const nextPage = forumPage + 1;
+                setForumLoading(true);
+                try {
+                  const result = await getForumQuestions({ page: nextPage, size: 10, q: forumSearch.trim() });
+                  setForumQuestions((prev) => [...prev, ...result.items]);
+                  setForumTotal(result.total);
+                  setForumPage(nextPage);
+                  setForumHasMore(result.hasMore);
+                } catch { /* silent */ }
+                setForumLoading(false);
+              }}
+              style={styles.secondaryButton}
+            >
+              <Text style={styles.secondaryButtonText}>Muat lebih banyak</Text>
+            </Pressable>
+          ) : null}
+          <View style={{ marginTop: spacing.md }}>
+            <Pressable
+              android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
+              onPress={() => { setForumView('ask'); setForumAskTitle(''); setForumAskBody(''); setForumAskTags(''); setForumError(''); }}
+              style={styles.primaryButton}
+            >
+              <Text style={styles.primaryButtonText}>Ajukan Pertanyaan</Text>
+            </Pressable>
           </View>
         </Card>
       );
@@ -1468,6 +2466,15 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
 
     if (activeFeature.type === 'notifications') {
       return <NotificationCenter />;
+    }
+
+    if (activeFeature.type === 'historical-map') {
+      return (
+        <Card>
+          <CardTitle meta="11 lokasi bersejarah">Peta Islam Interaktif</CardTitle>
+          <HistoricalMapContent />
+        </Card>
+      );
     }
 
     return null;
@@ -2296,5 +3303,114 @@ const styles = StyleSheet.create({
   actionSheetSubtitleActive: {
     color: colors.onPrimary,
     opacity: 0.8,
+  },
+  heirGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  heirItem: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    minWidth: 72,
+    padding: spacing.sm,
+  },
+  heirLabel: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  heirCount: {
+    color: colors.ink,
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  heirActions: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 4,
+  },
+  heirButton: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    justifyContent: 'center',
+    minHeight: 28,
+    minWidth: 28,
+  },
+  heirButtonDisabled: {
+    opacity: 0.3,
+  },
+  heirButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  faraidhHistoryAmount: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  asmaulHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  asmaulArabic: {
+    color: colors.ink,
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  asmaulLatin: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 2,
+    textAlign: 'center',
+  },
+  asmaulArti: {
+    color: colors.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  toggleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: spacing.sm,
+  },
+  toggleLabel: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 14,
+  },
+  faraidhHistoryCard: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    padding: spacing.sm,
+  },
+  badge: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  badgeText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '600',
   },
 });

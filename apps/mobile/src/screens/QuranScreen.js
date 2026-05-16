@@ -7,6 +7,7 @@ import {
     BookmarkCheck,
     CheckCircle2,
     Info,
+    Link,
     Minus,
     MoreVertical,
     Pause,
@@ -36,7 +37,9 @@ import {
     getAyahsForPage,
     getAyahsForSurahPage,
     getFirstAyahForSurah,
+    getHadithsForAyah,
     getMufrodatByPage,
+    getMunasabahForAyah,
     getSurahs,
     getTafsirForAyah,
 } from '../api/client';
@@ -513,6 +516,8 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const [settingsVisible, setSettingsVisible] = useState(false);
     const [tajweedVisible, setTajweedVisible] = useState(false);
     const [referenceModal, setReferenceModal] = useState({ visible: false, type: null, ayah: null });
+    const [munasabahModal, setMunasabahModal] = useState({ visible: false, ayah: null, items: [], loading: false, error: '' });
+    const [hadithAyahModal, setHadithAyahModal] = useState({ visible: false, ayah: null, items: [], loading: false, error: '' });
     const [ayahActionSheet, setAyahActionSheet] = useState({ visible: false, ayah: null });
     const [selectedDetailAyah, setSelectedDetailAyah] = useState(null);
     const [readerMenuVisible, setReaderMenuVisible] = useState(false);
@@ -563,6 +568,44 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             setReferenceState((current) => ({
                 ...current,
                 [key]: { items: [], loading: false, error: err?.message ?? 'Rujukan belum bisa dimuat.' },
+            }));
+        }
+    };
+
+    const openMunasabahModal = async (ayah) => {
+        setMunasabahModal({ visible: true, ayah, items: [], loading: true, error: '' });
+        try {
+            const items = await getMunasabahForAyah(ayah.id);
+            setMunasabahModal((current) => ({
+                ...current,
+                items,
+                loading: false,
+                error: items.length ? '' : 'Tidak ada ayat terkait untuk ayat ini.',
+            }));
+        } catch (err) {
+            setMunasabahModal((current) => ({
+                ...current,
+                loading: false,
+                error: err?.message ?? 'Data munasabah belum bisa dimuat.',
+            }));
+        }
+    };
+
+    const openHadithAyahModal = async (ayah) => {
+        setHadithAyahModal({ visible: true, ayah, items: [], loading: true, error: '' });
+        try {
+            const items = await getHadithsForAyah(ayah.id);
+            setHadithAyahModal((current) => ({
+                ...current,
+                items,
+                loading: false,
+                error: items.length ? '' : 'Belum ada hadis terkait untuk ayat ini.',
+            }));
+        } catch (err) {
+            setHadithAyahModal((current) => ({
+                ...current,
+                loading: false,
+                error: err?.message ?? 'Data hadis terkait belum bisa dimuat.',
             }));
         }
     };
@@ -2057,6 +2100,75 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         );
     };
 
+    const renderMunasabahModal = () => {
+        const { visible, ayah, items, loading, error } = munasabahModal;
+
+        return (
+            <AppModalSheet
+                onClose={() => setMunasabahModal((m) => ({ ...m, visible: false }))}
+                subtitle={ayah ? `${selectedSurah?.name} · Ayat ${ayah.number}` : ''}
+                title="Ayat Terkait"
+                visible={visible}
+            >
+                {loading ? (
+                    <ActivityIndicator color={colors.primary} style={styles.modalLoader} />
+                ) : null}
+                {error && !loading ? (
+                    <Text style={styles.referenceEmpty}>{error}</Text>
+                ) : null}
+                {items.map((item) => (
+                    <View key={item.id} style={styles.referenceItem}>
+                        {item.ayahFrom && item.ayahTo ? (
+                            <Text style={styles.referenceTitle}>
+                                {item.ayahFrom.surahName} · Ayat {item.ayahFrom.number} → {item.ayahTo.surahName} · Ayat {item.ayahTo.number}
+                            </Text>
+                        ) : item.ayahTo ? (
+                            <Text style={styles.referenceTitle}>
+                                {item.ayahTo.surahName} · Ayat {item.ayahTo.number}
+                            </Text>
+                        ) : null}
+                        <Text style={styles.referenceBody}>{item.description}</Text>
+                    </View>
+                ))}
+            </AppModalSheet>
+        );
+    };
+
+    const renderHadithAyahModal = () => {
+        const { visible, ayah, items, loading, error } = hadithAyahModal;
+
+        return (
+            <AppModalSheet
+                onClose={() => setHadithAyahModal((m) => ({ ...m, visible: false }))}
+                subtitle={ayah ? `${selectedSurah?.name} · Ayat ${ayah.number}` : ''}
+                title="Hadis Terkait"
+                visible={visible}
+            >
+                {loading ? (
+                    <ActivityIndicator color={colors.primary} style={styles.modalLoader} />
+                ) : null}
+                {error && !loading ? (
+                    <Text style={styles.referenceEmpty}>{error}</Text>
+                ) : null}
+                {items.map((item) => (
+                    <View key={item.id} style={styles.referenceItem}>
+                        {item.hadith ? (
+                            <Text style={styles.referenceTitle}>
+                                {item.hadith.book || 'Hadis'} · {item.hadith.number || ''}
+                            </Text>
+                        ) : null}
+                        <Text style={styles.referenceBody}>
+                            {item.hadith?.translation || item.catatan || ''}
+                        </Text>
+                        {item.catatan ? (
+                            <Text style={styles.referenceMeta}>{item.catatan}</Text>
+                        ) : null}
+                    </View>
+                ))}
+            </AppModalSheet>
+        );
+    };
+
     const renderAyahDetailScreen = () => {
         if (!selectedDetailAyah) return null;
 
@@ -2072,6 +2184,8 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                 {renderReferenceModal()}
                 {renderAyahActionSheet()}
                 {renderTajweedModal()}
+                {renderMunasabahModal()}
+                {renderHadithAyahModal()}
                 <Screen
                     actions={(
                         <IconActionButton
@@ -2122,6 +2236,16 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                             Icon={BookOpen}
                             label="Asbabun"
                             onPress={() => openReferenceModal(selectedDetailAyah, 'asbab')}
+                        />
+                        <ActionPill
+                            Icon={Link}
+                            label="Ayat Terkait"
+                            onPress={() => openMunasabahModal(selectedDetailAyah)}
+                        />
+                        <ActionPill
+                            Icon={BookOpen}
+                            label="Hadis Terkait"
+                            onPress={() => openHadithAyahModal(selectedDetailAyah)}
                         />
                         {user ? (
                             <>
@@ -2866,6 +2990,8 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                     {renderAyahActionSheet()}
                     {renderAyahNotesModal()}
                     {renderTajweedModal()}
+                    {renderMunasabahModal()}
+                    {renderHadithAyahModal()}
                     <ScrollView
                         contentContainerStyle={styles.mushafScrollContent}
                         directionalLockEnabled
@@ -2907,6 +3033,8 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                 {renderAyahActionSheet()}
                 {renderAyahNotesModal()}
                 {renderTajweedModal()}
+                {renderMunasabahModal()}
+                {renderHadithAyahModal()}
                 <FlatList
                     key={`${selectedSurah.key ?? selectedSurah.number}:${displayMode}:${targetAyah?.id ?? targetAyah?.number ?? 'top'}:${ayahs.length ? 'ready' : 'loading'}`}
                     ref={readerListRef}

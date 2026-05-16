@@ -383,6 +383,46 @@ export const getAsbabForAyah = async (ayahId) => {
   }
 };
 
+export const getMunasabahForAyah = async (ayahId) => {
+  try {
+    const payload = await requestJson(`/api/v1/munasabah/ayah/${ayahId}`);
+    return pickItems(payload).map((item) => ({
+      id: item.id,
+      ayahFrom: item.ayah_from ? normalizeAyah(item.ayah_from) : null,
+      ayahTo: item.ayah_to ? normalizeAyah(item.ayah_to) : null,
+      description: item.description,
+    }));
+  } catch {
+    return [];
+  }
+};
+
+export const getAyahsForHadith = async (hadithId) => {
+  try {
+    const payload = await requestJson(`/api/v1/hadiths/${hadithId}/ayahs`);
+    return pickItems(payload).map((item) => ({
+      id: item.id,
+      catatan: item.catatan,
+      ayah: item.ayah ? normalizeAyah(item.ayah) : null,
+    }));
+  } catch {
+    return [];
+  }
+};
+
+export const getHadithsForAyah = async (ayahId) => {
+  try {
+    const payload = await requestJson(`/api/v1/ayahs/${ayahId}/hadiths`);
+    return pickItems(payload).map((item) => ({
+      id: item.id,
+      catatan: item.catatan,
+      hadith: item.hadith ? normalizeHadith(item.hadith) : null,
+    }));
+  } catch {
+    return [];
+  }
+};
+
 export const getSurahs = async () => {
   const payload = await requestJson('/api/v1/surah?size=114&sort=number');
   const items = pickItems(payload);

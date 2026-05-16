@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
-import { ArrowLeft, RefreshCw, Settings } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { ArrowLeft, Play, RefreshCw, Settings, Square } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { getPrayerTimes } from '../api/client';
 import { getPrayerStats, getTodayPrayerLog, savePrayerLog } from '../api/personal';
@@ -115,6 +116,11 @@ export function PrayerScreen({ isActive, navigation }) {
   const [offlineBusy, setOfflineBusy] = useState(false);
   const [offlineProgress, setOfflineProgress] = useState(0);
   const [offlineMessage, setOfflineMessage] = useState('Simpan jadwal 30 hari berikutnya untuk akses offline.');
+  const [countdown, setCountdown] = useState(null);
+  const [nextPrayerKey, setNextPrayerKey] = useState(null);
+  const [adzanPlaying, setAdzanPlaying] = useState(false);
+  const playerRef = useRef(null);
+  const countdownRef = useRef(null);
 
   useEffect(() => {
     if (navigation?.current?.view === 'settings') {
@@ -320,6 +326,98 @@ export function PrayerScreen({ isActive, navigation }) {
         [key]: minutes === null ? raw : formatMinutes(minutes + (nextAdjustments[key] ?? 0)),
       };
     }, {});
+
+  const toSeconds = (val) => {
+    if (!val) return null;
+    const parts = val.split(':');
+    if (parts.length < 2) return null;
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    if (isNaN(h) || isNaN(m)) return null;
+    return h * 3600 + m * 60;
+  };
+
+  const findNextPrayer = () => {
+    if (!prayers) return null;
+    const now = new Date();
+    const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    let next = null;
+    let nextDiff = Infinity;
+    for (const [key] of scheduleRows) {
+      const secs = toSeconds(adjustedPrayerTime(key));
+      if (secs === null) continue;
+      const diff = secs - nowSec;
+      if (diff > 0 && diff < nextDiff) {
+        nextDiff = diff;
+        next = { key, remaining: diff };
+      }
+    }
+    if (!next) {
+      for (const [key] of scheduleRows) {
+        const secs = toSeconds(adjustedPrayerTime(key));
+        if (secs === null) continue;
+        const diff = 86400 - nowSec + secs;
+        if (diff < nextDiff) {
+          nextDiff = diff;
+          next = { key, remaining: diff };
+        }
+      }
+    }
+    return next;
+  };
+
+  const playAdzan = useCallback(async (prayerKey) => {
+    try {
+      await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true });
+      const fileName = prayerKey === 'fajr' ? 'subuh' : 'standard';
+      const url = `https://raw.githubusercontent.com/syamilmj/Adzan/refs/heads/master/adzan/${fileName}.mp3`;
+      if (!playerRef.current) {
+        playerRef.current = createAudioPlayer(url, { downloadFirst: true });
+      } else {
+        playerRef.current.source = url;
+      }
+      playerRef.current.play();
+      setAdzanPlaying(true);
+      setTimeout(() => stopAdzan(), 30000);
+    } catch {}
+  }, []);
+
+  const stopAdzan = useCallback(() => {
+    if (playerRef.current) {
+      try { playerRef.current.stop(); } catch {}
+    }
+    setAdzanPlaying(false);
+  }, []);
+
+  const nextPrayerRef = useRef(null);
+  useEffect(() => {
+    if (!prayers) return;
+    const next = findNextPrayer();
+    if (next) {
+      nextPrayerRef.current = next.key;
+      setNextPrayerKey(next.key);
+      setCountdown(next.remaining);
+    }
+    clearInterval(countdownRef.current);
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => (prev !== null && prev > 0) ? prev - 1 : prev);
+    }, 1000);
+    return () => clearInterval(countdownRef.current);
+  }, [prayers, adjustments]);
+
+  useEffect(() => {
+    if (countdown === 0 && prayers && nextPrayerRef.current) {
+      playAdzan(nextPrayerRef.current);
+    }
+  }, [countdown, prayers]);
+
+  const formatCountdown = (secs) => {
+    if (secs === null) return '--:--:--';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
 
   const syncPrayerReminders = async ({
     enabled = reminderEnabled,
@@ -723,6 +821,30 @@ export function PrayerScreen({ isActive, navigation }) {
         </Card>
       ) : null}
 
+      {prayers && countdown !== null ? (
+        <Card>
+          <View style={styles.countdownRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.countdownLabel}>
+                {countdown === 0
+                  ? `Waktu ${scheduleRows.find(([k]) => k === nextPrayerKey)?.[1] ?? 'Sholat'} telah tiba`
+                  : `Menuju ${scheduleRows.find(([k]) => k === nextPrayerKey)?.[1] ?? 'sholat'}`
+                }
+              </Text>
+              <Text style={styles.countdownTime}>
+                {countdown === 0 ? '✧ Waktunya sholat! ✧' : formatCountdown(countdown)}
+              </Text>
+            </View>
+            {adzanPlaying ? (
+              <Pressable onPress={stopAdzan} style={styles.adzanStopBtn}>
+                <Square size={20} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 12 }}>Stop</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </Card>
+      ) : null}
+
       <Card>
         <CardTitle
           meta={`${methods.find(([key]) => key === method)?.[1] ?? method} · ${madhabs.find(([key]) => key === madhab)?.[1] ?? madhab}`}
@@ -1071,5 +1193,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     minHeight: 44,
     paddingHorizontal: spacing.md,
+  },
+  countdownRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  countdownLabel: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  countdownTime: {
+    color: colors.primary,
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  adzanStopBtn: {
+    alignItems: 'center',
+    backgroundColor: '#ef4444',
+    borderRadius: 999,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
   },
 });

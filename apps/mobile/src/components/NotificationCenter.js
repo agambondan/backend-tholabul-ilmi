@@ -32,6 +32,7 @@ import { preferenceKeys, readPreference, writePreference } from '../storage/pref
 const defaultSettings = [
   { body: 'Buka satu ayat untuk memulai hari.', is_active: true, label: 'Quran Harian', serverSync: true, time: '06:00', type: 'daily_quran' },
   { body: 'Satu hadis ringkas untuk pengingat harian.', is_active: true, label: 'Hadis Harian', serverSync: true, time: '07:00', type: 'daily_hadith' },
+  { body: 'Jaga streak belajarmu agar tidak putus.', is_active: true, label: 'Streak Risk', serverSync: true, time: '20:00', type: 'streak_risk' },
   { body: 'Baca doa harian pilihanmu.', is_active: true, label: 'Doa Harian', serverSync: true, time: '18:00', type: 'doa' },
   { body: 'Lanjutkan sesi belajar kajian.', is_active: false, label: 'Kajian', serverSync: false, time: '19:30', type: 'kajian' },
   { body: 'Waktu murojaah singkat hari ini.', is_active: false, label: 'Murojaah', serverSync: false, time: '20:15', type: 'murojaah' },
