@@ -195,6 +195,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const { showError, showInfo, showSuccess } = useFeedback();
   const handledDeepLinkId = useRef(null);
   const dictionaryInputRef = useRef(null);
+  const zakatTimerRef = useRef(null);
   const [featureSearch, setFeatureSearch] = useState('');
   const [activeFeature, setActiveFeature] = useState(null);
   const [featureReturnRoute, setFeatureReturnRoute] = useState(null);
@@ -848,6 +849,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       returnTo: deepLinkTarget?.params?.returnTo ?? null,
     });
   }, [deepLinkTarget?.id, loadFeature]);
+
+  useEffect(() => {
+    return () => {
+      if (zakatTimerRef.current) clearTimeout(zakatTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (activeFeature?.type !== 'kamus' || !focusDictionaryInput) return;
@@ -1633,7 +1640,8 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           setZakatSavedMsg('Gagal menyimpan');
         }
         setZakatSaving(false);
-        setTimeout(() => setZakatSavedMsg(''), 2500);
+        if (zakatTimerRef.current) clearTimeout(zakatTimerRef.current);
+        zakatTimerRef.current = setTimeout(() => setZakatSavedMsg(''), 2500);
       };
 
       const loadZakatHistory = useCallback(async () => {

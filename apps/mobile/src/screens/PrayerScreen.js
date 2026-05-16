@@ -120,6 +120,7 @@ export function PrayerScreen({ isActive, navigation }) {
   const [nextPrayerKey, setNextPrayerKey] = useState(null);
   const [adzanPlaying, setAdzanPlaying] = useState(false);
   const playerRef = useRef(null);
+  const adzanTimerRef = useRef(null);
   const countdownRef = useRef(null);
 
   useEffect(() => {
@@ -378,11 +379,13 @@ export function PrayerScreen({ isActive, navigation }) {
       }
       playerRef.current.play();
       setAdzanPlaying(true);
-      setTimeout(() => stopAdzan(), 30000);
+      if (adzanTimerRef.current) clearTimeout(adzanTimerRef.current);
+      adzanTimerRef.current = setTimeout(() => stopAdzan(), 30000);
     } catch {}
   }, []);
 
   const stopAdzan = useCallback(() => {
+    if (adzanTimerRef.current) clearTimeout(adzanTimerRef.current);
     if (playerRef.current) {
       try { playerRef.current.stop(); } catch {}
     }
