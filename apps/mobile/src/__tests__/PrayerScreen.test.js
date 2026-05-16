@@ -63,11 +63,6 @@ jest.mock('../components/Paper', () => {
   };
 });
 
-jest.mock('../context/SessionContext', () => ({
-  useSession: jest.fn(),
-  SessionProvider: ({ children }) => children,
-}));
-
 jest.mock('../context/FeedbackContext', () => ({
   useFeedback: jest.fn(),
   FeedbackProvider: ({ children }) => children,
@@ -75,12 +70,6 @@ jest.mock('../context/FeedbackContext', () => ({
 
 jest.mock('../api/client', () => ({
   getPrayerTimes: jest.fn(),
-}));
-
-jest.mock('../api/personal', () => ({
-  getTodayPrayerLog: jest.fn(),
-  getPrayerStats: jest.fn(),
-  savePrayerLog: jest.fn(),
 }));
 
 jest.mock('../storage/offlineContent', () => ({
@@ -111,14 +100,8 @@ jest.mock('../utils/prayerNotifications', () => ({
 }));
 
 import { PrayerScreen } from '../screens/PrayerScreen';
-import { useSession } from '../context/SessionContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { getPrayerTimes } from '../api/client';
-import {
-  getTodayPrayerLog,
-  getPrayerStats,
-  savePrayerLog,
-} from '../api/personal';
 import { readPreference, writePreference } from '../storage/preferences';
 import { getPrayerOfflineOverview } from '../storage/offlineContent';
 
@@ -149,7 +132,6 @@ describe('PrayerScreen', () => {
       coords: { latitude: -6.2, longitude: 106.8 },
     });
 
-    useSession.mockReturnValue({ user: null });
     useFeedback.mockReturnValue({
       showError: jest.fn(),
       showInfo: jest.fn(),
@@ -239,81 +221,14 @@ describe('PrayerScreen', () => {
     expect(queryByText('Lokasi Manual')).toBeNull();
   });
 
-  test('shows login prompt for non-logged-in user', async () => {
+  test('does not show prayer log inside schedule screen', async () => {
     getPrayerTimes.mockResolvedValue(mockPrayerTimes);
     getPrayerOfflineOverview.mockResolvedValue({
       supported: false,
       days: 0,
-    });
-
-    const { getByText } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
-
-    await waitFor(() => {
-      expect(
-        getByText(
-          'Buka Profil untuk masuk dan mencatat status sholat harian.',
-        ),
-      ).toBeTruthy();
-    });
-  });
-
-  test('shows prayer log for logged in user', async () => {
-    useSession.mockReturnValue({
-      user: { id: '1', name: 'Test User' },
-    });
-    getPrayerTimes.mockResolvedValue(mockPrayerTimes);
-    getPrayerOfflineOverview.mockResolvedValue({
-      supported: false,
-      days: 0,
-    });
-    getTodayPrayerLog.mockResolvedValue({
-      date: '2026-05-14',
-      prayers: { subuh: { status: 'berjamaah' } },
-    });
-    getPrayerStats.mockResolvedValue({
-      total_days: 10,
-      berjamaah_pct: 80,
     });
 
     const { getByText, queryByText } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
-
-    await waitFor(() => {
-      expect(getByText('Log Sholat')).toBeTruthy();
-    });
-
-    expect(getByText('10 hari tercatat · 80% jamaah')).toBeTruthy();
-    expect(
-      queryByText(
-        'Buka Profil untuk masuk dan mencatat status sholat harian.',
-      ),
-    ).toBeNull();
-  });
-
-  test('saves prayer log on status press', async () => {
-    useSession.mockReturnValue({
-      user: { id: '1', name: 'Test User' },
-    });
-    getPrayerTimes.mockResolvedValue(mockPrayerTimes);
-    getPrayerOfflineOverview.mockResolvedValue({
-      supported: false,
-      days: 0,
-    });
-    getTodayPrayerLog.mockResolvedValue({
-      date: '2026-05-14',
-      prayers: {},
-    });
-    getPrayerStats
-      .mockResolvedValueOnce({ total_days: 0, berjamaah_pct: 0 })
-      .mockResolvedValueOnce({ total_days: 1, berjamaah_pct: 100 });
-    savePrayerLog.mockResolvedValue({ status: 'berjamaah' });
-
-    const { showSuccess } = useFeedback();
-
-    const { getByText, getAllByText } = render(
       <PrayerScreen isActive={true} navigation={defaultNavigation} />,
     );
 
@@ -321,37 +236,8 @@ describe('PrayerScreen', () => {
       expect(getByText('Subuh')).toBeTruthy();
     });
 
-    fireEvent.press(getAllByText('Jamaah')[0]);
-
-    await waitFor(() => {
-      expect(savePrayerLog).toHaveBeenCalledWith({
-        date: expect.any(String),
-        prayer: 'subuh',
-        status: 'berjamaah',
-      });
-      expect(showSuccess).toHaveBeenCalled();
-    });
-  });
-
-  test('shows login prompt instead of log buttons for guest', async () => {
-    getPrayerTimes.mockResolvedValue(mockPrayerTimes);
-    getPrayerOfflineOverview.mockResolvedValue({
-      supported: false,
-      days: 0,
-    });
-
-    const { getByText, queryByText } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
-
-    await waitFor(() => {
-      expect(
-        getByText(
-          'Buka Profil untuk masuk dan mencatat status sholat harian.',
-        ),
-      ).toBeTruthy();
-    });
-
+    expect(queryByText('Log Sholat')).toBeNull();
+    expect(queryByText('Buka Profil untuk masuk dan mencatat status sholat harian.')).toBeNull();
     expect(queryByText('Jamaah')).toBeNull();
   });
 

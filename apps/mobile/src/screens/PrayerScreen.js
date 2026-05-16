@@ -4,12 +4,10 @@ import { ArrowLeft, Play, RefreshCw, Settings, Square } from 'lucide-react-nativ
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { getPrayerTimes } from '../api/client';
-import { getPrayerStats, getTodayPrayerLog, savePrayerLog } from '../api/personal';
 import { Card, CardTitle } from '../components/Card';
 import { IconActionButton } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { useFeedback } from '../context/FeedbackContext';
-import { useSession } from '../context/SessionContext';
 import {
   buildPrayerOfflinePack,
   clearPrayerOfflinePack,
@@ -28,21 +26,6 @@ const scheduleRows = [
   ['asr', 'Asr'],
   ['maghrib', 'Maghrib'],
   ['isha', 'Isya'],
-];
-
-const logRows = [
-  ['subuh', 'Subuh'],
-  ['dzuhur', 'Dzuhur'],
-  ['ashar', 'Ashar'],
-  ['maghrib', 'Maghrib'],
-  ['isya', 'Isya'],
-];
-
-const statuses = [
-  ['berjamaah', 'Jamaah'],
-  ['munfarid', 'Sendiri'],
-  ['qadha', 'Qadha'],
-  ['missed', 'Terlewat'],
 ];
 
 const methods = [
@@ -92,15 +75,11 @@ const formatMinutes = (value) => {
 };
 
 export function PrayerScreen({ isActive, navigation }) {
-  const { user } = useSession();
   const { showError, showInfo, showSuccess } = useFeedback();
   const [coords, setCoords] = useState(null);
   const [prayers, setPrayers] = useState(null);
-  const [dailyLog, setDailyLog] = useState(null);
-  const [stats, setStats] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [savingPrayer, setSavingPrayer] = useState(null);
   const [method, setMethod] = useState('kemenag');
   const [madhab, setMadhab] = useState('shafi');
   const [adjustments, setAdjustments] = useState(defaultAdjustments);
@@ -224,62 +203,9 @@ export function PrayerScreen({ isActive, navigation }) {
     }
   }, [loadPrayerOfflineStatus, madhab, manualLatInput, manualLngInput, method]);
 
-  const loadLog = useCallback(async () => {
-    if (!user) {
-      setDailyLog(null);
-      setStats(null);
-      return;
-    }
-
-    try {
-      const [nextLog, nextStats] = await Promise.all([getTodayPrayerLog(), getPrayerStats()]);
-      setDailyLog(nextLog);
-      setStats(nextStats);
-    } catch {
-      setDailyLog(null);
-      setStats(null);
-    }
-  }, [user]);
-
   const refreshAll = useCallback(async () => {
     await load();
-    await loadLog();
-  }, [load, loadLog]);
-
-  const setPrayerStatus = async (prayer, status) => {
-    if (!user) {
-      showInfo('Masuk dari Profil untuk mencatat log sholat.');
-      return;
-    }
-
-    setSavingPrayer(`${prayer}:${status}`);
-    setMessage('');
-
-    try {
-      const log = await savePrayerLog({ date: today(), prayer, status });
-      setDailyLog((current) => ({
-        date: current?.date ?? today(),
-        prayers: {
-          ...(current?.prayers ?? {}),
-          [prayer]: log,
-        },
-      }));
-      const nextMessage = `${prayerLabels[prayer] ?? prayer} disimpan sebagai ${status}.`;
-      setMessage(nextMessage);
-      showSuccess(nextMessage);
-      try {
-        setStats(await getPrayerStats());
-      } catch {
-        // The log itself is already saved; stats can refresh on next pull.
-      }
-    } catch (err) {
-      const nextMessage = err?.message ?? 'Log sholat belum bisa disimpan.';
-      setMessage(nextMessage);
-      showError(nextMessage);
-    } finally {
-      setSavingPrayer(null);
-    }
-  };
+  }, [load]);
 
   const selectMethod = async (nextMethod) => {
     setMethod(nextMethod);
@@ -776,7 +702,7 @@ export function PrayerScreen({ isActive, navigation }) {
   return (
     <Screen
       title="Jadwal Sholat"
-      subtitle="Lihat jadwal sholat hari ini dan catat progres ibadah."
+      subtitle="Lihat jadwal sholat hari ini sesuai lokasi dan metode."
       refreshing={loading}
       onRefresh={refreshAll}
       actions={
@@ -879,47 +805,6 @@ export function PrayerScreen({ isActive, navigation }) {
           })
         )}
       </Card>
-
-      {user ? (
-        <Card>
-          <CardTitle meta={dailyLog?.date ?? today()}>Log Sholat</CardTitle>
-          {stats ? (
-            <Text style={styles.statsText}>
-              {stats.total_days || 0} hari tercatat · {Math.round(stats.berjamaah_pct || 0)}% jamaah
-            </Text>
-          ) : null}
-          {logRows.map(([prayer, label]) => {
-            const selected = dailyLog?.prayers?.[prayer]?.status;
-            return (
-              <View key={prayer} style={styles.logBlock}>
-                <View style={styles.logHeader}>
-                  <Text style={styles.prayerLabel}>{label}</Text>
-                  <Text style={styles.currentStatus}>{selected || 'belum dicatat'}</Text>
-                </View>
-                <View style={styles.statusGrid}>
-                  {statuses.map(([status, labelText]) => (
-                    <Pressable
-                      disabled={savingPrayer === `${prayer}:${status}`}
-                      key={status}
-                      onPress={() => setPrayerStatus(prayer, status)}
-                      style={[styles.statusButton, selected === status ? styles.statusButtonActive : null]}
-                    >
-                      <Text style={[styles.statusText, selected === status ? styles.statusTextActive : null]}>
-                        {savingPrayer === `${prayer}:${status}` ? '...' : labelText}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-            );
-          })}
-        </Card>
-      ) : (
-        <Card>
-          <CardTitle meta="Masuk akun">Log Sholat</CardTitle>
-          <Text style={styles.statsText}>Buka Profil untuk masuk dan mencatat status sholat harian.</Text>
-        </Card>
-      )}
     </Screen>
   );
 }
@@ -1012,50 +897,6 @@ const styles = StyleSheet.create({
   },
   methodTextActive: {
     color: '#ffffff',
-  },
-  logBlock: {
-    borderTopColor: colors.faint,
-    borderTopWidth: 1,
-    paddingVertical: spacing.md,
-  },
-  logHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  currentStatus: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'capitalize',
-  },
-  statusGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  statusButton: {
-    alignItems: 'center',
-    borderColor: colors.faint,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    flexBasis: '48%',
-    minHeight: 34,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  statusButtonActive: {
-    backgroundColor: colors.surfaceMuted,
-    borderColor: colors.primary,
-  },
-  statusText: {
-    color: colors.text,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  statusTextActive: {
-    color: colors.primaryDark,
   },
   correctionRow: {
     alignItems: 'center',
