@@ -4,6 +4,7 @@ import {
   Bookmark,
   BookOpen,
   BookOpenCheck,
+  CalendarDays,
   ChevronRight,
   Clock3,
   Compass,
@@ -13,6 +14,7 @@ import {
   HelpCircle,
   ListChecks,
   MessageCircle,
+  Moon,
   Scale,
   Search,
   Smile,
@@ -25,7 +27,7 @@ import {
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { getDailyAyah, getDailyHadith, getPrayerTimes } from '../api/client';
+import { getDailyAyah, getDailyHadith, getHijriToday, getPrayerTimes } from '../api/client';
 import { ContentCard } from '../components/ContentCard';
 import { DetailHeader } from '../components/DetailHeader';
 import { useSession } from '../context/SessionContext';
@@ -42,6 +44,46 @@ const prayerKeyLabels = {
   fajr: 'Subuh',
   isha: 'Isya',
   maghrib: 'Maghrib',
+};
+
+const homeDateFormatOptions = {
+  day: 'numeric',
+  month: 'long',
+  weekday: 'long',
+  year: 'numeric',
+};
+
+const formatGregorianHomeDate = (date) => {
+  try {
+    return new Intl.DateTimeFormat('id-ID', homeDateFormatOptions).format(date);
+  } catch {
+    return date.toLocaleDateString();
+  }
+};
+
+const formatFallbackHijriHomeDate = (date) => {
+  const locales = ['id-ID-u-ca-islamic-umalqura', 'id-ID-u-ca-islamic'];
+  for (const locale of locales) {
+    try {
+      const formatter = new Intl.DateTimeFormat(locale, homeDateFormatOptions);
+      if (formatter.resolvedOptions().calendar !== 'gregory') {
+        return formatter.format(date);
+      }
+    } catch {
+      // Some React Native runtimes do not ship non-Gregorian Intl calendars.
+    }
+  }
+  return 'Tanggal Hijriah belum tersedia';
+};
+
+const formatHijriHomeDate = (hijri, fallbackDate) => {
+  if (hijri?.dateStr) return hijri.dateStr;
+  const parts = [
+    hijri?.day,
+    hijri?.monthName,
+    hijri?.year ? `${hijri.year} H` : hijri?.yearStr,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' ') : formatFallbackHijriHomeDate(fallbackDate);
 };
 
 const trackerTemplate = [
@@ -175,6 +217,8 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const mountedRef = useRef(true);
   const [dailyHadith, setDailyHadith] = useState(null);
   const [dailyAyah, setDailyAyah] = useState(null);
+  const [dateSnapshot, setDateSnapshot] = useState(() => new Date());
+  const [hijriDate, setHijriDate] = useState('Memuat tanggal Hijriah');
   const [locationLabel, setLocationLabel] = useState('Memuat lokasi');
   const [nextPrayer, setNextPrayer] = useState({ countdown: '--:--:--', key: 'asr', time: '--:--' });
   const [prayerTimes, setPrayerTimes] = useState(null);
@@ -242,6 +286,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
 
   const displayName = user?.name || 'Tamu';
   const hasPrayerSchedule = nextPrayer.time !== '--:--' && nextPrayer.countdown !== '--:--:--';
+  const gregorianDate = useMemo(() => formatGregorianHomeDate(dateSnapshot), [dateSnapshot]);
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)
@@ -250,6 +295,9 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     .join('');
 
   const loadHomeData = useCallback(async ({ refresh = false } = {}) => {
+    const currentDate = new Date();
+    setDateSnapshot(currentDate);
+
     if (refresh) {
       setRefreshing(true);
     } else {
@@ -291,9 +339,10 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       }
     }
 
-    const [hadithResult, ayahResult, prayersResult, prayerLogResult] = await Promise.allSettled([
+    const [hadithResult, ayahResult, hijriResult, prayersResult, prayerLogResult] = await Promise.allSettled([
       getDailyHadith(),
       getDailyAyah(),
+      getHijriToday(),
       coords ? getPrayerTimes({ ...coords, madhab: 'shafi', method: 'kemenag' }) : Promise.resolve(null),
       user ? getTodayPrayerLog() : Promise.resolve(null),
     ]);
@@ -316,6 +365,12 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     } else {
       setDailyAyah(null);
       setDailyMessage('Bacaan harian belum tersedia dari server.');
+    }
+
+    if (hijriResult.status === 'fulfilled') {
+      setHijriDate(formatHijriHomeDate(hijriResult.value, currentDate));
+    } else {
+      setHijriDate(formatFallbackHijriHomeDate(currentDate));
     }
 
     if (prayersResult.status === 'fulfilled' && prayersResult.value) {
@@ -537,6 +592,20 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
           <Pressable android_ripple={{ color: 'rgba(91, 110, 91, 0.16)', borderless: true }} onPress={() => onOpenTab('belajar', { featureKey: 'notifications' })}>
             <Bell color={colors.muted} size={18} strokeWidth={2.2} />
           </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.dateCard}>
+        <View style={styles.dateBadge}>
+          <CalendarDays color={colors.onPrimary} size={16} strokeWidth={2.4} />
+          <Text style={styles.dateBadgeText}>Hari ini</Text>
+        </View>
+        <View style={styles.dateCopy}>
+          <Text style={styles.gregorianDate}>{gregorianDate}</Text>
+          <View style={styles.hijriRow}>
+            <Moon color="#f6d778" size={14} strokeWidth={2.3} />
+            <Text style={styles.hijriDate}>{hijriDate}</Text>
+          </View>
         </View>
       </View>
 
@@ -823,6 +892,59 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: spacing.md,
+  },
+  dateCard: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryDark,
+    borderColor: 'rgba(230, 226, 214, 0.18)',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    ...shadows.paper,
+  },
+  dateBadge: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 250, 240, 0.12)',
+    borderRadius: radius.sm,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+  },
+  dateBadgeText: {
+    color: colors.onPrimary,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  dateCopy: {
+    alignItems: 'flex-end',
+    flex: 1,
+    gap: 5,
+  },
+  gregorianDate: {
+    color: colors.onPrimary,
+    fontSize: 13,
+    fontWeight: '900',
+    textAlign: 'right',
+  },
+  hijriRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+    justifyContent: 'flex-end',
+  },
+  hijriDate: {
+    color: '#f6d778',
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: '800',
+    textAlign: 'right',
   },
   prayerCard: {
     backgroundColor: colors.primary,

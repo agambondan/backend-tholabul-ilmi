@@ -250,6 +250,19 @@ export const getDailyAyah = async () => {
   return normalizeAyah(payload?.data ?? payload?.item ?? payload);
 };
 
+export const getHijriToday = async () => {
+  const payload = await requestJson('/api/v1/hijri/today');
+  const data = payload?.data ?? payload;
+  return {
+    dateStr: data?.date_str ?? data?.dateStr ?? '',
+    day: data?.day,
+    month: data?.month,
+    monthName: data?.month_name ?? data?.monthName ?? '',
+    year: data?.year,
+    yearStr: data?.year_str ?? data?.yearStr ?? '',
+  };
+};
+
 export const searchGlobal = async (query, { limit = 12, page = 0, type = 'all' } = {}) => {
   const normalizedQuery = `${query ?? ''}`.trim();
   if (!normalizedQuery) {

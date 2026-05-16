@@ -2,8 +2,8 @@ jest.mock('lucide-react-native', () => {
   const icons = {};
   const names = [
     'Bell', 'Book', 'Bookmark', 'BookOpen', 'BookOpenCheck', 'ChevronRight',
-    'Clock3', 'Compass', 'FileText', 'Globe', 'Grid', 'HelpCircle',
-    'ListChecks', 'MessageCircle', 'Scale', 'Search', 'Smile', 'Star',
+    'CalendarDays', 'Clock3', 'Compass', 'FileText', 'Globe', 'Grid', 'HelpCircle',
+    'ListChecks', 'MessageCircle', 'Moon', 'Scale', 'Search', 'Smile', 'Star',
     'Sun', 'Sunset', 'Users', 'Video',
   ];
   names.forEach((n) => { icons[n] = n; });
@@ -29,6 +29,7 @@ jest.mock('expo-location', () => ({
 jest.mock('../api/client', () => ({
   getDailyAyah: jest.fn(),
   getDailyHadith: jest.fn(),
+  getHijriToday: jest.fn(),
   getPrayerTimes: jest.fn(),
 }));
 
@@ -145,6 +146,7 @@ beforeEach(() => {
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });
   clientApi.getDailyAyah.mockResolvedValue(mockAyah);
   clientApi.getDailyHadith.mockResolvedValue(mockHadith);
+  clientApi.getHijriToday.mockResolvedValue({ dateStr: '1 Ramadan 1445 H' });
   clientApi.getPrayerTimes.mockResolvedValue(mockPrayerTimes);
   personalApi.getTodayPrayerLog.mockResolvedValue({ prayers: { subuh: true, dzuhur: false, ashar: true, maghrib: false, isya: true } });
   readPinnedFeatures.mockResolvedValue([]);
@@ -178,6 +180,15 @@ describe('HomeScreen', () => {
     await waitFor(() => {
       expect(getByText('Ayat Hari Ini')).toBeTruthy();
       expect(getByText(mockAyah.translation)).toBeTruthy();
+    });
+  });
+
+  test('shows hijri and gregorian dates on home', async () => {
+    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+
+    await waitFor(() => {
+      expect(getByText('Hari ini')).toBeTruthy();
+      expect(getByText('1 Ramadan 1445 H')).toBeTruthy();
     });
   });
 
