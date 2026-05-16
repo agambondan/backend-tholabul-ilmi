@@ -66,6 +66,13 @@ export const featureGroups = [
         endpoint: '/api/v1/asmaul-husna',
       },
       {
+        key: 'asmaul-flashcard',
+        title: 'Flashcard Asmaul Husna',
+        subtitle: 'Latihan hafalan 99 nama Allah',
+        badges: ['Baru'],
+        type: 'asmaul-flashcard',
+      },
+      {
         key: 'tafsir',
         title: 'Tafsir',
         subtitle: 'Tafsir per surah',
@@ -338,7 +345,7 @@ export const belajarFeatureGroups = [
     key: 'referensi',
     label: 'Referensi',
     meta: 'Kamus dan katalog',
-    features: pickFeatures(['kamus', 'tafsir', 'asbabun-nuzul', 'perawi', 'jarh-tadil', 'asmaul-husna']),
+    features: pickFeatures(['kamus', 'tafsir', 'asbabun-nuzul', 'perawi', 'jarh-tadil', 'asmaul-husna', 'asmaul-flashcard']),
   },
   {
     key: 'evaluasi',

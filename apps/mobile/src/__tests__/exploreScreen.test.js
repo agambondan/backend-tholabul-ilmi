@@ -20,6 +20,7 @@ jest.mock('../context/FeedbackContext', () => ({
 
 jest.mock('../api/explore', () => ({
   getAllNotes: jest.fn(),
+  getAsmaulNames: jest.fn(),
   getBookmarkItems: jest.fn(),
   getFeatureItemPage: jest.fn(),
   getHijriOverview: jest.fn(),
@@ -180,6 +181,7 @@ jest.mock('../components/NotificationCenter', () => ({
 jest.mock('../data/mobileFeatures', () => {
   const allFeatures = [
     { key: 'tafsir', title: 'Tafsir', subtitle: 'Tafsir per surah', group: 'Ilmu', type: 'surah-content', contentType: 'tafsir' },
+    { key: 'asmaul-flashcard', title: 'Flashcard Asmaul Husna', subtitle: 'Latihan hafalan', group: 'Ilmu', type: 'asmaul-flashcard' },
     { key: 'kamus', title: 'Kamus Arab', subtitle: 'Cari kosakata Arab', group: 'Alat', type: 'kamus' },
     { key: 'quiz', title: 'Quiz Islami', subtitle: 'Latihan soal', group: 'Alat', type: 'quiz' },
     { key: 'hijri', title: 'Kalender Hijri', subtitle: 'Hari ini', group: 'Alat', type: 'hijri' },
@@ -204,7 +206,7 @@ jest.mock('../data/mobileFeatures', () => {
       key: 'referensi',
       label: 'Referensi',
       meta: 'Kamus dan katalog',
-      features: allFeatures.filter((f) => ['kamus', 'tafsir'].includes(f.key)),
+      features: allFeatures.filter((f) => ['kamus', 'tafsir', 'asmaul-flashcard'].includes(f.key)),
     },
     {
       key: 'evaluasi',
@@ -351,6 +353,32 @@ describe('ExploreScreen', () => {
     await waitFor(() => {
       expect(exploreApi.getQuizQuestions).toHaveBeenCalled();
     });
+  });
+
+  test('loads Asmaul Husna flashcard mode and reveals meaning', async () => {
+    exploreApi.getAsmaulNames.mockResolvedValue([
+      {
+        id: 1,
+        number: 1,
+        arabic: 'الرَّحْمَنُ',
+        transliteration: 'Ar-Rahman',
+        indonesian: 'Maha Pengasih',
+      },
+    ]);
+
+    const { getByText } = render(
+      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
+    );
+
+    fireEvent.press(getByText('Flashcard Asmaul Husna'));
+
+    await waitFor(() => {
+      expect(exploreApi.getAsmaulNames).toHaveBeenCalled();
+      expect(getByText('Ar-Rahman')).toBeTruthy();
+    });
+
+    fireEvent.press(getByText('Lihat arti'));
+    expect(getByText('Maha Pengasih')).toBeTruthy();
   });
 
   test('toggle pinned feature calls togglePinnedFeature', async () => {

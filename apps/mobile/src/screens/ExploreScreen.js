@@ -56,11 +56,12 @@ import { HistoricalMapContent } from './HistoricalMapScreen';
 
 const quizOptions = ['A', 'B', 'C', 'D'];
 
-const localTools = ['tasbih', 'zakat', 'faraidh', 'notifications', 'surah-content', 'sholat-tracker', 'asmaul-wirid', 'forum', 'historical-map'];
+const localTools = ['tasbih', 'zakat', 'faraidh', 'notifications', 'surah-content', 'sholat-tracker', 'asmaul-wirid', 'asmaul-flashcard', 'forum', 'historical-map'];
 const EXPLORE_PAGE_SIZE = 20;
 
 const belajarFeatureIcons = {
   'asbabun-nuzul': BookOpen,
+  'asmaul-flashcard': Star,
   'asmaul-husna': Star,
   blog: BookOpen,
   bookmarks: Bookmark,
@@ -122,6 +123,14 @@ const formatNumericInput = (value = '') => {
   return Number(normalized).toLocaleString('id-ID');
 };
 const formatCurrency = (value = 0) => `Rp ${Math.round(Number(value) || 0).toLocaleString('id-ID')}`;
+const pickText = (...values) => values.find((value) => typeof value === 'string' && value.trim()) ?? '';
+const normalizeAsmaulName = (item = {}, index = 0) => ({
+  arabic: pickText(item.arabic, item.translation?.arab, item.translation?.ar, item.name),
+  id: item.id ?? item.number ?? index + 1,
+  meaning: pickText(item.indonesian, item.meaning, item.translation?.idn, item.translation?.en, item.english),
+  number: item.number ?? index + 1,
+  transliteration: pickText(item.transliteration, item.latin, item.translation?.latin_idn, item.translation?.latin_en),
+});
 const normalizePrayerLog = (payload = {}) => {
   const prayers = payload?.prayers ?? payload;
   return PRAYER_ITEMS.reduce((acc, item) => {
@@ -210,6 +219,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [asmaulNames, setAsmaulNames] = useState([]);
   const [asmaulIndex, setAsmaulIndex] = useState(0);
   const [asmaulCounts, setAsmaulCounts] = useState({});
+  const [asmaulFlashcardRevealed, setAsmaulFlashcardRevealed] = useState(false);
   const [asmaulLoading, setAsmaulLoading] = useState(false);
   const [zakat, setZakat] = useState({ assets: '', debts: '', nisab: '85000000' });
   const [zakatTab, setZakatTab] = useState(0);
@@ -365,6 +375,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       setEditingUserWirdId('');
       setUserWirdForm(emptyUserWirdForm);
       setError('');
+      setAsmaulFlashcardRevealed(false);
       loadingMoreRef.current = false;
       setPagination({ page: 0, hasMore: false, loadingMore: false });
       setFocusDictionaryInput(Boolean(options.focusSearch && feature?.type === 'kamus'));
@@ -400,11 +411,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           }
         }
 
-        if (feature.type === 'asmaul-wirid' && asmaulNames.length === 0) {
+        if (['asmaul-wirid', 'asmaul-flashcard'].includes(feature.type) && asmaulNames.length === 0) {
           setAsmaulLoading(true);
           try {
             const items = await getAsmaulNames();
-            setAsmaulNames(items ?? []);
+            setAsmaulNames((items ?? []).map(normalizeAsmaulName));
             setAsmaulIndex(0);
           } catch { /* silent */ }
           setAsmaulLoading(false);
@@ -1523,6 +1534,74 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
               <View style={styles.answerRow}>
                 <Pressable onPress={() => setAsmaulCounts((prev) => ({ ...prev, [currentName.id]: 0 }))} style={styles.answerButton}>
                   <Text style={styles.answerText}>Reset</Text>
+                </Pressable>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.body}>Daftar Asmaul Husna belum tersedia.</Text>
+          )}
+        </Card>
+      );
+    }
+
+    if (activeFeature.type === 'asmaul-flashcard') {
+      const currentName = asmaulNames[asmaulIndex];
+      const canGoPrev = asmaulIndex > 0;
+      const canGoNext = asmaulIndex < asmaulNames.length - 1;
+      const moveFlashcard = (delta) => {
+        hapticTap();
+        setAsmaulFlashcardRevealed(false);
+        setAsmaulIndex((current) => Math.max(0, Math.min(asmaulNames.length - 1, current + delta)));
+      };
+
+      return (
+        <Card>
+          <CardTitle meta={asmaulLoading ? 'Memuat...' : `${asmaulIndex + 1}/${asmaulNames.length}`}>
+            {activeFeature.title}
+          </CardTitle>
+          {asmaulLoading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : currentName ? (
+            <>
+              <Pressable
+                accessibilityLabel="Balik kartu Asmaul Husna"
+                accessibilityRole="button"
+                android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+                onPress={() => {
+                  hapticTap();
+                  setAsmaulFlashcardRevealed((value) => !value);
+                }}
+                style={styles.flashcard}
+              >
+                <Text style={styles.flashcardNumber}>Nama {currentName.number}</Text>
+                <Text style={styles.flashcardArabic}>{currentName.arabic}</Text>
+                <Text style={styles.flashcardLatin}>{currentName.transliteration}</Text>
+                {asmaulFlashcardRevealed ? (
+                  <Text style={styles.flashcardMeaning}>{currentName.meaning}</Text>
+                ) : (
+                  <Text style={styles.flashcardHint}>Tap untuk melihat arti</Text>
+                )}
+              </Pressable>
+              <View style={styles.answerRow}>
+                <Pressable
+                  disabled={!canGoPrev}
+                  onPress={() => moveFlashcard(-1)}
+                  style={[styles.answerButton, !canGoPrev && styles.disabledButton]}
+                >
+                  <Text style={styles.answerText}>Sebelumnya</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setAsmaulFlashcardRevealed((value) => !value)}
+                  style={styles.answerButton}
+                >
+                  <Text style={styles.answerText}>{asmaulFlashcardRevealed ? 'Sembunyikan arti' : 'Lihat arti'}</Text>
+                </Pressable>
+                <Pressable
+                  disabled={!canGoNext}
+                  onPress={() => moveFlashcard(1)}
+                  style={[styles.answerButton, !canGoNext && styles.disabledButton]}
+                >
+                  <Text style={styles.answerText}>Berikutnya</Text>
                 </Pressable>
               </View>
             </>
@@ -3389,6 +3468,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'center',
+  },
+  flashcard: {
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    justifyContent: 'center',
+    marginTop: spacing.md,
+    minHeight: 250,
+    padding: spacing.lg,
+  },
+  flashcardArabic: {
+    color: colors.ink,
+    fontSize: 34,
+    fontWeight: '900',
+    lineHeight: 48,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  flashcardHint: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: spacing.md,
+  },
+  flashcardLatin: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: '900',
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  flashcardMeaning: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 22,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
+  flashcardNumber: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: '900',
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
   },
   toggleRow: {
     alignItems: 'center',

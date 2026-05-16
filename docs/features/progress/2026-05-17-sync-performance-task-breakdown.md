@@ -95,7 +95,8 @@ Completed: `2026-05-17`
 
 Priority: `P1`
 Area: `apps/mobile`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -115,9 +116,23 @@ Status: `TODO`
 
 ### Verification
 
-- `cd apps/mobile && npm test -- --runInBand`
-- `node --check apps/mobile/src/screens/ExploreScreen.js`
-- Device smoke fitur Asmaul Husna Flashcard.
+- `node --check apps/mobile/src/screens/ExploreScreen.js` - `PASS`
+- `node --check apps/mobile/src/data/mobileFeatures.js` - `PASS`
+- `cd apps/mobile && npm test -- --runInBand src/__tests__/exploreScreen.test.js src/__tests__/mobileFeatures.test.js` - `PASS`
+- `cd apps/mobile && npm test -- --runInBand` - `PASS`
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-asmaul-flashcard-export` - `PASS`
+- Device smoke fitur Asmaul Husna Flashcard masih perlu dijalankan pada device fisik.
+
+### Implementation Notes
+
+- `Flashcard Asmaul Husna` ditambahkan ke katalog Belajar > Referensi sebagai
+  mode terpisah dari list Asmaul Husna.
+- Mode flashcard memakai detail view `ExploreScreen` yang sudah mengikuti back
+  handling parent, bukan inline expand/collapse di list katalog.
+- Data memakai `getAsmaulNames()` yang sama dengan mode wirid, lalu dinormalisasi
+  agar toleran pada variasi field API.
+- CTA `Lihat arti`, `Sembunyikan arti`, `Sebelumnya`, dan `Berikutnya` dibuat
+  eksplisit sesuai journey latihan hafalan.
 
 ## Task 4 - Mobile Achievements Detail Journey
 
