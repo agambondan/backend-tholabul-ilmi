@@ -31,7 +31,6 @@ import { ContentCard } from '../components/ContentCard';
 import { DetailHeader } from '../components/DetailHeader';
 import { useSession } from '../context/SessionContext';
 import { useTabActivity } from '../context/TabActivityContext';
-import { getTodayPrayerLog } from '../api/personal';
 import { GlobalSearchScreen } from './GlobalSearchScreen';
 import { featureGroups } from '../data/mobileFeatures';
 import { readPinnedFeatures, readRecentFeatures } from '../storage/recentFeatures';
@@ -93,14 +92,6 @@ const formatHijriHomeDate = (hijri, fallbackDate) => {
   ].filter(Boolean);
   return parts.length ? parts.join(' ') : formatFallbackHijriHomeDate(fallbackDate);
 };
-
-const trackerTemplate = [
-  { key: 'subuh', label: 'Subuh', short: 'S' },
-  { key: 'dzuhur', label: 'Dzuhur', short: 'D' },
-  { key: 'ashar', label: 'Ashar', short: 'A' },
-  { key: 'maghrib', label: 'Maghrib', short: 'M' },
-  { key: 'isya', label: 'Isya', short: 'I' },
-];
 
 const menuItems = [
   { Icon: Compass, key: 'ibadah', label: 'Kiblat', params: { view: 'qibla' } },
@@ -249,7 +240,6 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const [locationLabel, setLocationLabel] = useState('Memuat lokasi');
   const [nextPrayer, setNextPrayer] = useState({ countdown: '--:--:--', key: 'asr', time: '--:--' });
   const [prayerTimes, setPrayerTimes] = useState(null);
-  const [tracker, setTracker] = useState(trackerTemplate.map((item) => ({ ...item, done: false })));
   const [loadingDaily, setLoadingDaily] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dailyMessage, setDailyMessage] = useState('');
@@ -370,12 +360,11 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       }
     }
 
-    const [hadithResult, ayahResult, hijriResult, prayersResult, prayerLogResult] = await Promise.allSettled([
+    const [hadithResult, ayahResult, hijriResult, prayersResult] = await Promise.allSettled([
       getDailyHadith(),
       getDailyAyah(),
       getHijriToday(),
       coords ? getPrayerTimes({ ...coords, madhab: 'shafi', method: 'kemenag' }) : Promise.resolve(null),
-      user ? getTodayPrayerLog() : Promise.resolve(null),
     ]);
 
     if (!mountedRef.current) return;
@@ -415,23 +404,11 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       }
     }
 
-    if (prayerLogResult.status === 'fulfilled' && prayerLogResult.value?.prayers) {
-      const prayers = prayerLogResult.value.prayers;
-      setTracker(
-        trackerTemplate.map((item) => ({
-          ...item,
-          done: Boolean(prayers[item.key]),
-        })),
-      );
-    } else {
-      setTracker(trackerTemplate.map((item) => ({ ...item, done: false })));
-    }
-
     if (mountedRef.current) {
       setLoadingDaily(false);
       setRefreshing(false);
     }
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -629,13 +606,13 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       <View style={styles.prayerCard}>
         <View style={styles.prayerHeader}>
           <View style={styles.locationPill}>
-            <Compass color={colors.onPrimary} size={13} strokeWidth={2.4} />
+            <Compass color={colors.primary} size={13} strokeWidth={2.4} />
             <Text style={styles.locationPillText}>{locationLabel}</Text>
           </View>
           <View style={styles.prayerDateStack}>
             <Text style={styles.gregorianDate}>{gregorianDate}</Text>
             <View style={styles.hijriRow}>
-              <Moon color="#f6d778" size={13} strokeWidth={2.3} />
+              <Moon color={colors.accent} size={13} strokeWidth={2.3} />
               <Text style={styles.hijriDate}>{hijriDate}</Text>
             </View>
           </View>
@@ -646,7 +623,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
           <Text style={styles.prayerTime}>{nextPrayer.time}</Text>
           <Text style={styles.prayerSummary}>{prayerMessage || prayerSummary}</Text>
           <View style={styles.countdown}>
-            <Clock3 color={colors.onPrimary} size={13} strokeWidth={2.4} />
+            <Clock3 color={colors.primary} size={13} strokeWidth={2.4} />
             <Text style={styles.countdownText}>{hasPrayerSchedule ? nextPrayer.countdown : 'Belum aktif'}</Text>
           </View>
         </View>
@@ -659,7 +636,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
               <View key={key} style={styles.prayerScheduleItem}>
                 <Text style={[styles.prayerScheduleLabel, isNext ? styles.prayerScheduleActive : null]}>{label}</Text>
                 <Icon
-                  color={isNext ? '#f6d778' : '#e6e2d6'}
+                  color={isNext ? colors.accent : colors.primary}
                   size={16}
                   strokeWidth={2.2}
                 />
@@ -670,18 +647,6 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
             );
           })}
         </View>
-
-        <View style={styles.prayerFooter}>
-          <Text style={styles.trackerTitle}>Tracker hari ini</Text>
-          <View style={styles.tracker}>
-            {tracker.map((item) => (
-              <View key={item.short} style={[styles.trackerDot, item.done ? styles.trackerDotDone : null]}>
-                <Text style={[styles.trackerText, item.done ? styles.trackerTextDone : null]}>{item.short}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-        <Text style={styles.trackerLegend}>S=Subuh · D=Dzuhur · A=Ashar · M=Maghrib · I=Isya</Text>
       </View>
 
       <View style={styles.menuGrid}>
@@ -704,6 +669,41 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
             <Text style={styles.menuLabel}>{label}</Text>
           </Pressable>
         ))}
+      </View>
+
+      <View style={styles.dailyCard}>
+        <View style={styles.dailyHeader}>
+          <Text style={styles.dailyTitle}>Bacaan Hari Ini</Text>
+          <Text style={styles.dailyMeta}>Quran & Hadis</Text>
+        </View>
+        <Pressable
+          android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
+          onPress={() => onOpenTab('quran', { surahNumber: 1 })}
+          style={styles.dailyItem}
+        >
+          <View style={styles.dailyAccent} />
+          <View style={styles.dailyBody}>
+            <Text style={styles.dailyLabel}>Ayat Hari Ini</Text>
+            {dailyAyah?.arabic ? <Text style={styles.dailyArabic}>{dailyAyah.arabic}</Text> : null}
+            <Text style={styles.dailyText}>
+              {loadingDaily ? 'Memuat ayat harian...' : dailyAyah?.translation || dailyMessage || 'Ayat harian belum tersedia.'}
+            </Text>
+            {dailyAyah?.ref ? <Text style={styles.dailySource}>{dailyAyah.ref}</Text> : null}
+          </View>
+        </Pressable>
+        <Pressable android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }} onPress={() => onOpenTab('hadith')} style={styles.dailyItem}>
+          <View style={styles.dailyAccent} />
+          <View style={styles.dailyBody}>
+            <Text style={styles.dailyLabel}>Hadis Hari Ini</Text>
+            {dailyHadith?.arabic ? <Text style={styles.dailyArabic}>{dailyHadith.arabic}</Text> : null}
+            <Text style={styles.dailyText}>
+              {loadingDaily
+                ? 'Memuat hadis harian...'
+                : dailyHadith?.translation || 'Hadis harian belum tersedia dari server.'}
+            </Text>
+            {dailyHadith?.book ? <Text style={styles.dailySource}>{formatHadisSource(dailyHadith.book)}</Text> : null}
+          </View>
+        </Pressable>
       </View>
 
       {contextualShortcuts.length ? (
@@ -792,40 +792,6 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
         trailing={<ChevronRight color={colors.muted} size={18} strokeWidth={2.4} />}
       />
 
-      <View style={styles.dailyCard}>
-        <View style={styles.dailyHeader}>
-          <Text style={styles.dailyTitle}>Bacaan Hari Ini</Text>
-          <Text style={styles.dailyMeta}>Quran & Hadis</Text>
-        </View>
-        <Pressable
-          android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }}
-          onPress={() => onOpenTab('quran', { surahNumber: 1 })}
-          style={styles.dailyItem}
-        >
-          <View style={styles.dailyAccent} />
-          <View style={styles.dailyBody}>
-            <Text style={styles.dailyLabel}>Ayat Hari Ini</Text>
-            {dailyAyah?.arabic ? <Text style={styles.dailyArabic}>{dailyAyah.arabic}</Text> : null}
-            <Text style={styles.dailyText}>
-              {loadingDaily ? 'Memuat ayat harian...' : dailyAyah?.translation || dailyMessage || 'Ayat harian belum tersedia.'}
-            </Text>
-            {dailyAyah?.ref ? <Text style={styles.dailySource}>{dailyAyah.ref}</Text> : null}
-          </View>
-        </Pressable>
-        <Pressable android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: false }} onPress={() => onOpenTab('hadith')} style={styles.dailyItem}>
-          <View style={styles.dailyAccent} />
-          <View style={styles.dailyBody}>
-            <Text style={styles.dailyLabel}>Hadis Hari Ini</Text>
-            {dailyHadith?.arabic ? <Text style={styles.dailyArabic}>{dailyHadith.arabic}</Text> : null}
-            <Text style={styles.dailyText}>
-              {loadingDaily
-                ? 'Memuat hadis harian...'
-                : dailyHadith?.translation || 'Hadis harian belum tersedia dari server.'}
-            </Text>
-            {dailyHadith?.book ? <Text style={styles.dailySource}>{formatHadisSource(dailyHadith.book)}</Text> : null}
-          </View>
-        </Pressable>
-      </View>
     </ScrollView>
   );
 }
@@ -952,7 +918,9 @@ const styles = StyleSheet.create({
   },
   locationPill: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 250, 240, 0.12)',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderWidth: 1,
     borderRadius: radius.sm,
     flexDirection: 'row',
     gap: spacing.xs,
@@ -961,7 +929,7 @@ const styles = StyleSheet.create({
     maxWidth: '48%',
   },
   locationPillText: {
-    color: colors.onPrimary,
+    color: colors.primary,
     flexShrink: 1,
     fontSize: 11,
     fontWeight: '900',
@@ -973,7 +941,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   gregorianDate: {
-    color: colors.onPrimary,
+    color: colors.ink,
     fontSize: 13,
     fontWeight: '900',
     textAlign: 'right',
@@ -986,14 +954,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   hijriDate: {
-    color: '#f6d778',
+    color: colors.accent,
     flexShrink: 1,
     fontSize: 12,
     fontWeight: '800',
     textAlign: 'right',
   },
   prayerCard: {
-    backgroundColor: '#247080',
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderWidth: 1,
     borderRadius: radius.lg,
     marginBottom: spacing.md,
     overflow: 'hidden',
@@ -1002,14 +972,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     ...shadows.paper,
   },
-  prayerTop: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
   prayerKicker: {
-    color: '#e6e2d6',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0,
@@ -1020,30 +984,25 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   prayerTime: {
-    color: colors.onPrimary,
+    color: colors.ink,
     fontFamily: 'serif',
     fontSize: 42,
     fontWeight: '900',
     marginTop: spacing.xs,
   },
   prayerSummary: {
-    color: '#e6e2d6',
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '700',
     lineHeight: 17,
     marginTop: 2,
     textAlign: 'center',
   },
-  prayerMessage: {
-    color: '#e6e2d6',
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: spacing.xs,
-    maxWidth: 210,
-  },
   countdown: {
     alignItems: 'center',
-    backgroundColor: 'rgba(44, 51, 44, 0.45)',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderWidth: 1,
     borderRadius: radius.sm,
     flexDirection: 'row',
     gap: 4,
@@ -1052,12 +1011,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   countdownText: {
-    color: colors.onPrimary,
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '800',
   },
   prayerTimeline: {
-    backgroundColor: 'rgba(230, 226, 214, 0.35)',
+    backgroundColor: colors.faint,
     height: 1,
     marginBottom: spacing.sm,
     width: '100%',
@@ -1075,64 +1034,19 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   prayerScheduleLabel: {
-    color: '#e6e2d6',
+    color: colors.muted,
     fontSize: 10,
     fontWeight: '800',
     textAlign: 'center',
   },
   prayerScheduleTime: {
-    color: colors.onPrimary,
+    color: colors.ink,
     fontSize: 10,
     fontWeight: '900',
     textAlign: 'center',
   },
   prayerScheduleActive: {
-    color: '#f6d778',
-  },
-  prayerFooter: {
-    alignItems: 'center',
-    borderTopColor: 'rgba(230, 226, 214, 0.25)',
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: spacing.sm,
-  },
-  trackerTitle: {
-    color: '#e6e2d6',
-    fontSize: 12,
-    fontWeight: '900',
-    letterSpacing: 0,
-    textTransform: 'uppercase',
-  },
-  tracker: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  trackerDot: {
-    alignItems: 'center',
-    borderColor: 'rgba(230, 226, 214, 0.4)',
-    borderRadius: 4,
-    borderWidth: 1,
-    height: 24,
-    justifyContent: 'center',
-    width: 24,
-  },
-  trackerDotDone: {
-    backgroundColor: colors.onPrimary,
-    borderColor: colors.onPrimary,
-  },
-  trackerText: {
-    color: '#d8d2c4',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  trackerLegend: {
-    color: '#e6e2d6',
-    fontSize: 12,
-    marginTop: spacing.sm,
-  },
-  trackerTextDone: {
-    color: colors.primary,
+    color: colors.accent,
   },
   menuGrid: {
     backgroundColor: colors.surface,

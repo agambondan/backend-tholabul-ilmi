@@ -33,10 +33,6 @@ jest.mock('../api/client', () => ({
   getPrayerTimes: jest.fn(),
 }));
 
-jest.mock('../api/personal', () => ({
-  getTodayPrayerLog: jest.fn(),
-}));
-
 jest.mock('../storage/recentFeatures', () => ({
   readPinnedFeatures: jest.fn(),
   readRecentFeatures: jest.fn(),
@@ -91,12 +87,11 @@ jest.mock('../data/mobileFeatures', () => ({
 }));
 
 import React from 'react';
-import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { HomeScreen } from '../screens/HomeScreen';
 
 const { useSession } = require('../context/SessionContext');
 const clientApi = require('../api/client');
-const personalApi = require('../api/personal');
 const Location = require('expo-location');
 const { readPinnedFeatures, readRecentFeatures } = require('../storage/recentFeatures');
 
@@ -149,7 +144,6 @@ beforeEach(() => {
   clientApi.getDailyHadith.mockResolvedValue(mockHadith);
   clientApi.getHijriToday.mockResolvedValue({ dateStr: '1 Ramadan 1445 H' });
   clientApi.getPrayerTimes.mockResolvedValue(mockPrayerTimes);
-  personalApi.getTodayPrayerLog.mockResolvedValue({ prayers: { subuh: true, dzuhur: false, ashar: true, maghrib: false, isya: true } });
   readPinnedFeatures.mockResolvedValue([]);
   readRecentFeatures.mockResolvedValue([]);
 });
@@ -247,7 +241,7 @@ describe('HomeScreen', () => {
     expect(onOpenTab).toHaveBeenCalledWith('hadith', null);
   });
 
-  test('shows sholat tracker with prayer status', async () => {
+  test('does not show sholat tracker inside the home prayer card', async () => {
     Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
     Location.getCurrentPositionAsync.mockResolvedValue({
       coords: { latitude: -6.2, longitude: 106.8 },
@@ -257,7 +251,8 @@ describe('HomeScreen', () => {
     const { getByText, queryByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
 
     await waitFor(() => {
-      expect(getByText('Tracker hari ini')).toBeTruthy();
+      expect(getByText('Subuh')).toBeTruthy();
+      expect(queryByText('Tracker hari ini')).toBeNull();
     });
   });
 
