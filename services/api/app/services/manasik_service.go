@@ -33,7 +33,7 @@ func (s *manasikService) FindAll(limit, offset int) ([]model.ManasikStep, error)
 		return s.repo.FindAll(limit, offset)
 	}
 	var result []model.ManasikStep
-	key := "manasik:all"
+	key := lib.CacheKey("manasik:all", "limit", limit, "offset", offset)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAll(limit, offset)
 	})
@@ -41,7 +41,15 @@ func (s *manasikService) FindAll(limit, offset int) ([]model.ManasikStep, error)
 }
 
 func (s *manasikService) FindByType(t model.ManasikType, limit, offset int) ([]model.ManasikStep, error) {
-	return s.repo.FindByType(t, limit, offset)
+	if s.cache == nil {
+		return s.repo.FindByType(t, limit, offset)
+	}
+	var result []model.ManasikStep
+	key := lib.CacheKey("manasik:type", t, "limit", limit, "offset", offset)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindByType(t, limit, offset)
+	})
+	return result, err
 }
 
 func (s *manasikService) FindByTypeAndStep(t model.ManasikType, step int) (*model.ManasikStep, error) {

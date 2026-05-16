@@ -33,7 +33,11 @@ func NewThemeServiceWithCache(repo repository.ThemeRepository, cache *lib.CacheS
 }
 
 func (b *themeService) Create(theme *model.Theme) (*model.Theme, error) {
-	return b.theme.Save(theme)
+	result, err := b.theme.Save(theme)
+	if err == nil && b.cache != nil {
+		b.cache.Invalidate("themes:*")
+	}
+	return result, err
 }
 
 func (b *themeService) FindAll(ctx *fiber.Ctx) *paginate.Page {
@@ -41,7 +45,7 @@ func (b *themeService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 		return b.theme.FindAll(ctx)
 	}
 	var result *paginate.Page
-	key := "themes:all"
+	key := lib.RequestCacheKey("themes:all", ctx)
 	err := b.cache.Remember(key, &result, func() (interface{}, error) {
 		return b.theme.FindAll(ctx), nil
 	})
@@ -52,19 +56,43 @@ func (b *themeService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 }
 
 func (b *themeService) FindById(id *int) (*model.Theme, error) {
-	return b.theme.FindById(id)
+	if b.cache == nil {
+		return b.theme.FindById(id)
+	}
+	var result *model.Theme
+	key := lib.CacheKey("themes:id", *id)
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.theme.FindById(id)
+	})
+	return result, err
 }
 
 func (b *themeService) FindByBookSlug(ctx *fiber.Ctx, slug *string) (*[]model.BookThemes, error) {
-	return b.theme.FindByBookSlug(ctx, slug)
+	if b.cache == nil {
+		return b.theme.FindByBookSlug(ctx, slug)
+	}
+	var result *[]model.BookThemes
+	key := lib.RequestCacheKey("themes:book", ctx, *slug)
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.theme.FindByBookSlug(ctx, slug)
+	})
+	return result, err
 }
 
 func (b *themeService) UpdateById(id *int, theme *model.Theme) (*model.Theme, error) {
-	return b.theme.UpdateById(id, theme)
+	result, err := b.theme.UpdateById(id, theme)
+	if err == nil && b.cache != nil {
+		b.cache.Invalidate("themes:*")
+	}
+	return result, err
 }
 
 func (b *themeService) DeleteById(id *int, scoped *string) error {
-	return b.theme.DeleteById(id, scoped)
+	err := b.theme.DeleteById(id, scoped)
+	if err == nil && b.cache != nil {
+		b.cache.Invalidate("themes:*")
+	}
+	return err
 }
 
 func (b *themeService) Count() (*int64, error) {

@@ -40,7 +40,7 @@ func (s *sirohService) FindAllCategories() ([]model.SirohCategory, error) {
 		return s.repo.FindAllCategories()
 	}
 	var result []model.SirohCategory
-	key := "siroh:all"
+	key := lib.CacheKey("siroh:all")
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAllCategories()
 	})

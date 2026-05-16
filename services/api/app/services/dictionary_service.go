@@ -34,7 +34,7 @@ func (s *dictionaryService) FindAll(category string, search string) ([]model.Isl
 		return s.repo.FindAll(category, search)
 	}
 	var result []model.IslamicTerm
-	key := "dictionary:all"
+	key := lib.CacheKey("dictionary:all", "category", category, "search", search)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAll(category, search)
 	})
@@ -46,7 +46,15 @@ func (s *dictionaryService) FindByTerm(term string) (*model.IslamicTerm, error) 
 }
 
 func (s *dictionaryService) FindByCategory(category model.TermCategory) ([]model.IslamicTerm, error) {
-	return s.repo.FindByCategory(category)
+	if s.cache == nil {
+		return s.repo.FindByCategory(category)
+	}
+	var result []model.IslamicTerm
+	key := lib.CacheKey("dictionary:category", category)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindByCategory(category)
+	})
+	return result, err
 }
 
 func (s *dictionaryService) FindByID(id int) (*model.IslamicTerm, error) {
@@ -54,7 +62,7 @@ func (s *dictionaryService) FindByID(id int) (*model.IslamicTerm, error) {
 }
 
 func (s *dictionaryService) Create(req *model.CreateIslamicTermRequest) (*model.IslamicTerm, error) {
-	return s.repo.Create(&model.IslamicTerm{
+	result, err := s.repo.Create(&model.IslamicTerm{
 		Term:       req.Term,
 		Category:   req.Category,
 		Definition: req.Definition,
@@ -62,10 +70,14 @@ func (s *dictionaryService) Create(req *model.CreateIslamicTermRequest) (*model.
 		Source:     req.Source,
 		Origin:     req.Origin,
 	})
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("dictionary:*")
+	}
+	return result, err
 }
 
 func (s *dictionaryService) Update(id int, req *model.CreateIslamicTermRequest) (*model.IslamicTerm, error) {
-	return s.repo.Update(id, &model.IslamicTerm{
+	result, err := s.repo.Update(id, &model.IslamicTerm{
 		Term:       req.Term,
 		Category:   req.Category,
 		Definition: req.Definition,
@@ -73,6 +85,16 @@ func (s *dictionaryService) Update(id int, req *model.CreateIslamicTermRequest) 
 		Source:     req.Source,
 		Origin:     req.Origin,
 	})
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("dictionary:*")
+	}
+	return result, err
 }
 
-func (s *dictionaryService) Delete(id int) error { return s.repo.Delete(id) }
+func (s *dictionaryService) Delete(id int) error {
+	err := s.repo.Delete(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("dictionary:*")
+	}
+	return err
+}

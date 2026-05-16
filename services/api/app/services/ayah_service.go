@@ -45,7 +45,7 @@ func (c *ayahService) FindDaily() (*model.Ayah, error) {
 		return c.findDailyFromRepo()
 	}
 	var result *model.Ayah
-	key := "ayah:daily"
+	key := lib.CacheKey("ayah:daily", time.Now().UTC().Format("2006-01-02"))
 	err := c.cache.Remember(key, &result, func() (interface{}, error) {
 		return c.findDailyFromRepo()
 	})

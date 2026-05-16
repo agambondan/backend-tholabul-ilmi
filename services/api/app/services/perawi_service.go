@@ -47,7 +47,7 @@ func (s *perawiService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 		return s.repo.FindAll(ctx)
 	}
 	var result *paginate.Page
-	key := "perawi:all"
+	key := lib.RequestCacheKey("perawi:all", ctx)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAll(ctx), nil
 	})
@@ -62,19 +62,57 @@ func (s *perawiService) FindByID(id *int) (*model.Perawi, error) {
 }
 
 func (s *perawiService) FindByTabaqah(ctx *fiber.Ctx, tabaqah string) *paginate.Page {
-	return s.repo.FindByTabaqah(ctx, tabaqah)
+	if s.cache == nil {
+		return s.repo.FindByTabaqah(ctx, tabaqah)
+	}
+	var result *paginate.Page
+	key := lib.RequestCacheKey("perawi:tabaqah", ctx, tabaqah)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindByTabaqah(ctx, tabaqah), nil
+	})
+	if err != nil {
+		return s.repo.FindByTabaqah(ctx, tabaqah)
+	}
+	return result
 }
 
 func (s *perawiService) Search(ctx *fiber.Ctx, q string) *paginate.Page {
-	return s.repo.Search(ctx, q)
+	if s.cache == nil {
+		return s.repo.Search(ctx, q)
+	}
+	var result *paginate.Page
+	key := lib.RequestCacheKey("perawi:search", ctx, q)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.Search(ctx, q), nil
+	})
+	if err != nil {
+		return s.repo.Search(ctx, q)
+	}
+	return result
 }
 
 func (s *perawiService) FindGuru(id *int) ([]model.Perawi, error) {
-	return s.repo.FindGuru(id)
+	if s.cache == nil {
+		return s.repo.FindGuru(id)
+	}
+	var result []model.Perawi
+	key := lib.CacheKey("perawi:guru", *id)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindGuru(id)
+	})
+	return result, err
 }
 
 func (s *perawiService) FindMurid(id *int) ([]model.Perawi, error) {
-	return s.repo.FindMurid(id)
+	if s.cache == nil {
+		return s.repo.FindMurid(id)
+	}
+	var result []model.Perawi
+	key := lib.CacheKey("perawi:murid", *id)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindMurid(id)
+	})
+	return result, err
 }
 
 func (s *perawiService) UpdateByID(id *int, p *model.Perawi) (*model.Perawi, error) {

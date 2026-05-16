@@ -68,6 +68,8 @@ type wordItem struct {
 // SeedQuranFromFile seeds surah and ayah from data/quran_base.json.
 // No-op if the file does not exist or if ayahs are already fully seeded.
 func SeedQuranFromFile(db *gorm.DB) {
+	cleanupDuplicateQuranAyahs(db)
+
 	var distinctAyahCount int64
 	db.Model(&model.Ayah{}).
 		Select("COUNT(DISTINCT CONCAT(surah_id, ':', number))").
@@ -196,6 +198,60 @@ func upsertQuranAyahFromFile(db *gorm.DB, ayah *model.Ayah, af ayahJSON) error {
 	}
 	ayah.TranslationID = ayahTr.ID
 	return db.Create(ayah).Error
+}
+
+func cleanupDuplicateQuranAyahs(db *gorm.DB) {
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		dedupe := `
+			WITH duplicate_ayahs AS (
+				SELECT id AS duplicate_id, keep_id
+				FROM (
+					SELECT id, MIN(id) OVER (PARTITION BY surah_id, number) AS keep_id,
+						ROW_NUMBER() OVER (PARTITION BY surah_id, number ORDER BY id) AS rn
+					FROM ayah
+					WHERE deleted_at IS NULL
+				) ranked
+				WHERE rn > 1
+			)
+		`
+		statements := []string{
+			dedupe + `
+				DELETE FROM ayah_audio dup
+				USING duplicate_ayahs d
+				WHERE dup.ayah_id = d.duplicate_id
+					AND EXISTS (
+						SELECT 1 FROM ayah_audio keep
+						WHERE keep.ayah_id = d.keep_id
+							AND keep.qari_slug = dup.qari_slug
+					)
+			`,
+			dedupe + ` UPDATE ayah_audio target SET ayah_id = d.keep_id FROM duplicate_ayahs d WHERE target.ayah_id = d.duplicate_id`,
+			dedupe + ` UPDATE tafsir target SET ayah_id = d.keep_id FROM duplicate_ayahs d WHERE target.ayah_id = d.duplicate_id`,
+			dedupe + ` UPDATE mufrodat target SET ayah_id = d.keep_id FROM duplicate_ayahs d WHERE target.ayah_id = d.duplicate_id`,
+			dedupe + ` UPDATE ayah_asset target SET ayah_id = d.keep_id FROM duplicate_ayahs d WHERE target.ayah_id = d.duplicate_id`,
+			dedupe + ` UPDATE reading_progress target SET ayah_id = d.keep_id FROM duplicate_ayahs d WHERE target.ayah_id = d.duplicate_id`,
+			dedupe + `
+				DELETE FROM asbabun_nuzul_ayahs dup
+				USING duplicate_ayahs d
+				WHERE dup.ayah_id = d.duplicate_id
+					AND EXISTS (
+						SELECT 1 FROM asbabun_nuzul_ayahs keep
+						WHERE keep.ayah_id = d.keep_id
+							AND keep.asbabun_nuzul_id = dup.asbabun_nuzul_id
+					)
+			`,
+			dedupe + ` UPDATE asbabun_nuzul_ayahs target SET ayah_id = d.keep_id FROM duplicate_ayahs d WHERE target.ayah_id = d.duplicate_id`,
+			dedupe + ` DELETE FROM ayah target USING duplicate_ayahs d WHERE target.id = d.duplicate_id`,
+		}
+		for _, stmt := range statements {
+			if err := tx.Exec(stmt).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		log.Printf("[seeder] cleanup duplicate Quran ayahs gagal: %v", err)
+	}
 }
 
 // ── SeedMufrodatFromFile ──────────────────────────────────────────────────────

@@ -30,7 +30,7 @@ func (s *doaService) FindAll(limit, offset int) ([]model.Doa, error) {
 		return s.repo.FindAll(limit, offset)
 	}
 	var result []model.Doa
-	key := "doa:all"
+	key := lib.CacheKey("doa:all", "limit", limit, "offset", offset)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAll(limit, offset)
 	})
@@ -42,5 +42,13 @@ func (s *doaService) FindByID(id int) (*model.Doa, error) {
 }
 
 func (s *doaService) FindByCategory(category model.DoaCategory, limit, offset int) ([]model.Doa, error) {
-	return s.repo.FindByCategory(category, limit, offset)
+	if s.cache == nil {
+		return s.repo.FindByCategory(category, limit, offset)
+	}
+	var result []model.Doa
+	key := lib.CacheKey("doa:category", category, "limit", limit, "offset", offset)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindByCategory(category, limit, offset)
+	})
+	return result, err
 }

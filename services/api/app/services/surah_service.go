@@ -46,7 +46,7 @@ func (c *surahService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 		return c.surah.FindAll(ctx)
 	}
 	var result *paginate.Page
-	key := "surah:all"
+	key := lib.RequestCacheKey("surah:all", ctx)
 	err := c.cache.Remember(key, &result, func() (interface{}, error) {
 		return c.surah.FindAll(ctx), nil
 	})

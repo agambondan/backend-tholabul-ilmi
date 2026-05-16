@@ -34,7 +34,11 @@ func NewChapterServiceWithCache(repo repository.ChapterRepository, cache *lib.Ca
 }
 
 func (b *chapterService) Create(chapter *model.Chapter) (*model.Chapter, error) {
-	return b.chapter.Save(chapter)
+	result, err := b.chapter.Save(chapter)
+	if err == nil && b.cache != nil {
+		b.cache.Invalidate("chapters:*")
+	}
+	return result, err
 }
 
 func (b *chapterService) FindAll(ctx *fiber.Ctx) *paginate.Page {
@@ -42,7 +46,7 @@ func (b *chapterService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 		return b.chapter.FindAll(ctx)
 	}
 	var result *paginate.Page
-	key := "chapters:all"
+	key := lib.RequestCacheKey("chapters:all", ctx)
 	err := b.cache.Remember(key, &result, func() (interface{}, error) {
 		return b.chapter.FindAll(ctx), nil
 	})
@@ -53,23 +57,55 @@ func (b *chapterService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 }
 
 func (b *chapterService) FindById(id *int) (*model.Chapter, error) {
-	return b.chapter.FindById(id)
+	if b.cache == nil {
+		return b.chapter.FindById(id)
+	}
+	var result *model.Chapter
+	key := lib.CacheKey("chapters:id", *id)
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.chapter.FindById(id)
+	})
+	return result, err
 }
 
 func (b *chapterService) FindByBookSlugThemeId(ctx *fiber.Ctx, bookSlug *string, themeId *int) (*paginate.Page, error) {
-	return b.chapter.FindByBookSlugThemeId(ctx, bookSlug, themeId)
+	if b.cache == nil {
+		return b.chapter.FindByBookSlugThemeId(ctx, bookSlug, themeId)
+	}
+	var result *paginate.Page
+	key := lib.RequestCacheKey("chapters:book-theme", ctx, *bookSlug, *themeId)
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.chapter.FindByBookSlugThemeId(ctx, bookSlug, themeId)
+	})
+	return result, err
 }
 
 func (b *chapterService) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, error) {
-	return b.chapter.FindByThemeId(ctx, id)
+	if b.cache == nil {
+		return b.chapter.FindByThemeId(ctx, id)
+	}
+	var result *paginate.Page
+	key := lib.RequestCacheKey("chapters:theme", ctx, *id)
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.chapter.FindByThemeId(ctx, id)
+	})
+	return result, err
 }
 
 func (b *chapterService) UpdateById(id *int, chapter *model.Chapter) (*model.Chapter, error) {
-	return b.chapter.UpdateById(id, chapter)
+	result, err := b.chapter.UpdateById(id, chapter)
+	if err == nil && b.cache != nil {
+		b.cache.Invalidate("chapters:*")
+	}
+	return result, err
 }
 
 func (b *chapterService) DeleteById(id *int, scoped *string) error {
-	return b.chapter.DeleteById(id, scoped)
+	err := b.chapter.DeleteById(id, scoped)
+	if err == nil && b.cache != nil {
+		b.cache.Invalidate("chapters:*")
+	}
+	return err
 }
 
 func (b *chapterService) Count() (*int64, error) {

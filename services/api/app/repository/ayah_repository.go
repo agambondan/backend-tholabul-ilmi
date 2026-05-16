@@ -8,8 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var ayahListSelect = "ayah.id, ayah.number, ayah.surah_id, ayah.page, ayah.juz_number, translation.idn, translation.en, translation.ar, translation.latin_idn"
-
 type AyahRepository interface {
 	Save(*model.Ayah) (*model.Ayah, error)
 	FindAll(*fiber.Ctx) *paginate.Page
@@ -44,7 +42,7 @@ func (c *ayahRepo) Save(Ayah *model.Ayah) (*model.Ayah, error) {
 
 func (c *ayahRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	var ayahs []model.Ayah
-	mod := c.db.Model(&model.Ayah{}).Select(ayahListSelect).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Order(`"ayah".id`)
+	mod := c.db.Model(&model.Ayah{}).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Order(`"ayah".id`)
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&ayahs)
 
 	return &page
@@ -129,7 +127,7 @@ func (c *ayahRepo) FindByNumber(ctx *fiber.Ctx, number *int) (*paginate.Page, er
 
 func (c *ayahRepo) FindBySurahNumber(ctx *fiber.Ctx, number *int) (*paginate.Page, error) {
 	var ayahs []*model.Ayah
-	mod := c.db.Model(&model.Ayah{}).Select(ayahListSelect).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Where(`"Surah".number = ?`, number).Order(`"ayah".id, "Surah".id`)
+	mod := c.db.Model(&model.Ayah{}).Joins("Translation").Joins("Surah").Joins("Surah.Translation").Where(`"Surah".number = ?`, number).Order(`"ayah".id, "Surah".id`)
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&ayahs)
 
 	return &page, nil

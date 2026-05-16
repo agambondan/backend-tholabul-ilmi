@@ -29,7 +29,7 @@ func (s *asmaUlHusnaService) FindAll(limit, offset int) ([]model.AsmaUlHusna, er
 		return s.repo.FindAll(limit, offset)
 	}
 	var result []model.AsmaUlHusna
-	key := "asmaul-husna:all"
+	key := lib.CacheKey("asmaul-husna:all", "limit", limit, "offset", offset)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAll(limit, offset)
 	})

@@ -34,7 +34,7 @@ func (s *tahlilService) FindAll(limit, offset int) ([]model.TahlilCollection, er
 		return s.repo.FindAll(limit, offset)
 	}
 	var result []model.TahlilCollection
-	key := "tahlil:all"
+	key := lib.CacheKey("tahlil:all", "limit", limit, "offset", offset)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAll(limit, offset)
 	})
@@ -49,19 +49,39 @@ func (s *tahlilService) FindByID(id int) (*model.TahlilCollection, error) {
 }
 
 func (s *tahlilService) FindAllItems(limit, offset int) ([]model.TahlilItem, error) {
-	return s.repo.FindAllItems(limit, offset)
+	if s.cache == nil {
+		return s.repo.FindAllItems(limit, offset)
+	}
+	var result []model.TahlilItem
+	key := lib.CacheKey("tahlil:items", "limit", limit, "offset", offset)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAllItems(limit, offset)
+	})
+	return result, err
 }
 
 func (s *tahlilService) CreateItem(item *model.TahlilItem) (*model.TahlilItem, error) {
-	return s.repo.CreateItem(item)
+	result, err := s.repo.CreateItem(item)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("tahlil:*")
+	}
+	return result, err
 }
 
 func (s *tahlilService) UpdateItem(id int, item *model.TahlilItem) (*model.TahlilItem, error) {
-	return s.repo.UpdateItem(id, item)
+	result, err := s.repo.UpdateItem(id, item)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("tahlil:*")
+	}
+	return result, err
 }
 
 func (s *tahlilService) DeleteItem(id int) error {
-	return s.repo.DeleteItem(id)
+	err := s.repo.DeleteItem(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("tahlil:*")
+	}
+	return err
 }
 
 func (s *tahlilService) EnsureCollection(t model.TahlilType) (*model.TahlilCollection, error) {

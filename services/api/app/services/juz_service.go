@@ -1,8 +1,6 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
@@ -39,7 +37,7 @@ func (c *juzService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 		return c.juz.FindAll(ctx)
 	}
 	var result *paginate.Page
-	key := "juz:all"
+	key := lib.RequestCacheKey("juz:all", ctx)
 	err := c.cache.Remember(key, &result, func() (interface{}, error) {
 		return c.juz.FindAll(ctx), nil
 	})
@@ -54,7 +52,7 @@ func (c *juzService) FindById(id *int) (*model.Juz, error) {
 		return c.juz.FindById(id)
 	}
 	var result *model.Juz
-	key := fmt.Sprintf("juz:id:%d", *id)
+	key := lib.CacheKey("juz:id", *id)
 	err := c.cache.Remember(key, &result, func() (interface{}, error) {
 		return c.juz.FindById(id)
 	})
@@ -65,19 +63,39 @@ func (c *juzService) FindById(id *int) (*model.Juz, error) {
 }
 
 func (c *juzService) Create(juz *model.Juz) (*model.Juz, error) {
-	return c.juz.Save(juz)
+	result, err := c.juz.Save(juz)
+	if err == nil && c.cache != nil {
+		c.cache.Invalidate("juz:*")
+	}
+	return result, err
 }
 
 func (c *juzService) FindBySurahName(ctx *fiber.Ctx, name *string) (*model.Juz, error) {
-	return c.juz.FindBySurahName(ctx, name)
+	if c.cache == nil {
+		return c.juz.FindBySurahName(ctx, name)
+	}
+	var result *model.Juz
+	key := lib.RequestCacheKey("juz:surah", ctx, *name)
+	err := c.cache.Remember(key, &result, func() (interface{}, error) {
+		return c.juz.FindBySurahName(ctx, name)
+	})
+	return result, err
 }
 
 func (c *juzService) UpdateById(id *int, juz *model.Juz) (*model.Juz, error) {
-	return c.juz.UpdateById(id, juz)
+	result, err := c.juz.UpdateById(id, juz)
+	if err == nil && c.cache != nil {
+		c.cache.Invalidate("juz:*")
+	}
+	return result, err
 }
 
 func (c *juzService) DeleteById(id *int, scoped *string) error {
-	return c.juz.DeleteById(id, scoped)
+	err := c.juz.DeleteById(id, scoped)
+	if err == nil && c.cache != nil {
+		c.cache.Invalidate("juz:*")
+	}
+	return err
 }
 
 func (c *juzService) Count() (*int64, error) {

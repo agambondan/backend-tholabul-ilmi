@@ -3,10 +3,14 @@ package lib
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/url"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/gofiber/fiber/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -29,21 +33,25 @@ const (
 )
 
 var cacheTTLByPrefix = map[string]int{
-	"surah:":    CacheTTLStatic,
-	"asmaul:":   CacheTTLStatic,
-	"doa:":      CacheTTLStatic,
-	"dzikir:":   CacheTTLStatic,
-	"fiqh:":     CacheTTLStatic,
-	"tahlil:":   CacheTTLStatic,
-	"manasik:":  CacheTTLStatic,
-	"books:":    CacheTTLStatic,
-	"themes:":   CacheTTLStatic,
-	"chapters:": CacheTTLStatic,
-	"perawi:":   CacheTTLStatic,
-	"tafsir:":   CacheTTLStatic,
-	"siroh:":    CacheTTLStatic,
-	"kajian:":   CacheTTLStatic,
-	"hijri:":    CacheTTLStatic,
+	"surah:":        CacheTTLStatic,
+	"ayah:":         CacheTTLStatic,
+	"asmaul-husna:": CacheTTLStatic,
+	"doa:":          CacheTTLStatic,
+	"dzikir:":       CacheTTLStatic,
+	"fiqh:":         CacheTTLStatic,
+	"tahlil:":       CacheTTLStatic,
+	"manasik:":      CacheTTLStatic,
+	"books:":        CacheTTLStatic,
+	"themes:":       CacheTTLStatic,
+	"chapters:":     CacheTTLStatic,
+	"hadith:":       CacheTTLStatic,
+	"perawi:":       CacheTTLStatic,
+	"tafsir:":       CacheTTLStatic,
+	"siroh:":        CacheTTLStatic,
+	"kajian:":       CacheTTLStatic,
+	"hijri:":        CacheTTLStatic,
+	"dictionary:":   CacheTTLStatic,
+	"sync:":         CacheTTLStatic,
 }
 
 type CacheService struct {
@@ -74,6 +82,38 @@ func (c *CacheService) ttlForKey(key string) time.Duration {
 		}
 	}
 	return time.Duration(CacheTTLDefault) * time.Second
+}
+
+func RequestCacheKey(prefix string, ctx *fiber.Ctx, parts ...interface{}) string {
+	if ctx == nil {
+		return CacheKey(prefix, append(parts, "no-request")...)
+	}
+	keyParts := append([]interface{}{}, parts...)
+	keyParts = append(keyParts, ctx.Method(), ctx.Path())
+	query := ctx.Queries()
+	if len(query) > 0 {
+		keys := make([]string, 0, len(query))
+		for key := range query {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			keyParts = append(keyParts, key+"="+query[key])
+		}
+	}
+	return CacheKey(prefix, keyParts...)
+}
+
+func CacheKey(prefix string, parts ...interface{}) string {
+	if len(parts) == 0 {
+		return prefix
+	}
+	segments := make([]string, 0, len(parts)+1)
+	segments = append(segments, prefix)
+	for _, part := range parts {
+		segments = append(segments, url.QueryEscape(fmt.Sprint(part)))
+	}
+	return strings.Join(segments, ":")
 }
 
 func (c *CacheService) Get(key string, dest interface{}) error {

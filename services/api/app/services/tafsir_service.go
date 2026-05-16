@@ -36,7 +36,7 @@ func (s *tafsirService) FindBySurahNumber(surahNumber, limit, offset int) ([]mod
 		return s.repo.FindBySurahNumber(surahNumber, limit, offset)
 	}
 	var result []model.Tafsir
-	key := "tafsir:all"
+	key := lib.CacheKey("tafsir:surah", surahNumber, "limit", limit, "offset", offset)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindBySurahNumber(surahNumber, limit, offset)
 	})
@@ -63,5 +63,13 @@ func (s *tafsirService) UpdateByAyahID(ayahID int, t *model.Tafsir) (*model.Tafs
 }
 
 func (s *tafsirService) Search(query string, limit, offset int) ([]model.Tafsir, error) {
-	return s.repo.Search(query, limit, offset)
+	if s.cache == nil {
+		return s.repo.Search(query, limit, offset)
+	}
+	var result []model.Tafsir
+	key := lib.CacheKey("tafsir:search", query, "limit", limit, "offset", offset)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.Search(query, limit, offset)
+	})
+	return result, err
 }

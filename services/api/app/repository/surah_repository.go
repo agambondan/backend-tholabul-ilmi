@@ -39,8 +39,8 @@ func (c *surahRepo) Save(Surah *model.Surah) (*model.Surah, error) {
 func (c *surahRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	var surah []*model.Surah
 	mod := c.db.Model(&model.Surah{}).
-		Select("surah.*, translation.idn, translation.en, translation.ar, translation.latin_idn, translation.latin_en").
-		Joins("Translation")
+		Joins("Translation").
+		Order(`"surah".number`)
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&surah)
 	return &page
 }
@@ -48,22 +48,27 @@ func (c *surahRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 func (c *surahRepo) loadSurahParallel(surah *model.Surah, ctx *fiber.Ctx) error {
 	g := new(errgroup.Group)
 
-	g.Go(func() error {
-		return c.db.Joins("Translation").
-			Select("surah.*, translation.idn, translation.en, translation.ar").
-			First(&surah.NextSurah, `number = ?`, *surah.Number+1).Error
-	})
-	g.Go(func() error {
-		return c.db.Joins("Translation").
-			Select("surah.*, translation.idn, translation.en, translation.ar").
-			First(&surah.PrevSurah, `number = ?`, *surah.Number-1).Error
-	})
+	if surah.Number == nil {
+		return nil
+	}
+
+	if *surah.Number < 114 {
+		g.Go(func() error {
+			return c.db.Joins("Translation").
+				First(&surah.NextSurah, `number = ?`, *surah.Number+1).Error
+		})
+	}
+	if *surah.Number > 1 {
+		g.Go(func() error {
+			return c.db.Joins("Translation").
+				First(&surah.PrevSurah, `number = ?`, *surah.Number-1).Error
+		})
+	}
 	if ctx != nil {
 		g.Go(func() error {
 			limit, offset := lib.GetLimitOffset(ctx)
 			return c.db.Where(`surah_id = ?`, surah.Number).Offset(offset).Limit(limit).
 				Order("number").Joins("Translation").
-				Select("ayah.*, translation.idn, translation.en, translation.ar, translation.latin_idn, translation.latin_en").
 				Find(&surah.Ayahs).Error
 		})
 	}
@@ -73,7 +78,6 @@ func (c *surahRepo) loadSurahParallel(surah *model.Surah, ctx *fiber.Ctx) error 
 func (c *surahRepo) FindById(ctx *fiber.Ctx, id *int) (*model.Surah, error) {
 	var surah *model.Surah
 	if err := c.db.Joins("Translation").
-		Select("surah.*, translation.idn, translation.en, translation.ar, translation.latin_idn, translation.latin_en").
 		First(&surah, `surah.id = ?`, id).Error; err != nil {
 		return nil, err
 	}
@@ -86,7 +90,6 @@ func (c *surahRepo) FindById(ctx *fiber.Ctx, id *int) (*model.Surah, error) {
 func (c *surahRepo) FindByNumber(ctx *fiber.Ctx, number *int) (*model.Surah, error) {
 	var surah *model.Surah
 	if err := c.db.Joins("Translation").
-		Select("surah.*, translation.idn, translation.en, translation.ar, translation.latin_idn, translation.latin_en").
 		First(&surah, `surah.number = ?`, number).Error; err != nil {
 		return nil, err
 	}
@@ -99,7 +102,6 @@ func (c *surahRepo) FindByNumber(ctx *fiber.Ctx, number *int) (*model.Surah, err
 func (c *surahRepo) FindByName(ctx *fiber.Ctx, name *string) (*model.Surah, error) {
 	var surah *model.Surah
 	if err := c.db.Joins("Translation").
-		Select("surah.*, translation.idn, translation.en, translation.ar, translation.latin_idn, translation.latin_en").
 		First(&surah, `"Translation".latin_idn = ? OR "Translation".latin_en = ? OR 
 		"Translation".idn = ? OR "Translation".en = ? OR "Translation".ar = ?`, name, name, name, name, name).Error; err != nil {
 		return nil, err

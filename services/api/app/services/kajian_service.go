@@ -35,7 +35,7 @@ func (s *kajianService) FindAll(ctx *fiber.Ctx, topic, kajianType string) *pagin
 		return s.repo.FindAll(ctx, topic, kajianType)
 	}
 	var result *paginate.Page
-	key := "kajian:all"
+	key := lib.RequestCacheKey("kajian:all", ctx)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAll(ctx, topic, kajianType), nil
 	})
@@ -61,7 +61,11 @@ func (s *kajianService) Create(req *model.CreateKajianRequest) (*model.Kajian, e
 		ThumbnailURL: req.ThumbnailURL,
 		PublishedAt:  req.PublishedAt,
 	}
-	return s.repo.Create(k)
+	result, err := s.repo.Create(k)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("kajian:*")
+	}
+	return result, err
 }
 
 func (s *kajianService) Update(id int, req *model.CreateKajianRequest) (*model.Kajian, error) {
@@ -76,11 +80,19 @@ func (s *kajianService) Update(id int, req *model.CreateKajianRequest) (*model.K
 		ThumbnailURL: req.ThumbnailURL,
 		PublishedAt:  req.PublishedAt,
 	}
-	return s.repo.Update(id, k)
+	result, err := s.repo.Update(id, k)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("kajian:*")
+	}
+	return result, err
 }
 
 func (s *kajianService) Delete(id int) error {
-	return s.repo.Delete(id)
+	err := s.repo.Delete(id)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("kajian:*")
+	}
+	return err
 }
 
 func (s *kajianService) IncrementView(id int) {

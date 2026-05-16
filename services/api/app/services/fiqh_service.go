@@ -34,7 +34,15 @@ func NewFiqhServiceWithCache(repo repository.FiqhRepository, cache *lib.CacheSer
 }
 
 func (s *fiqhService) FindAllCategories(limit, offset int) ([]model.FiqhCategory, error) {
-	return s.repo.FindAllCategories(limit, offset)
+	if s.cache == nil {
+		return s.repo.FindAllCategories(limit, offset)
+	}
+	var result []model.FiqhCategory
+	key := lib.CacheKey("fiqh:categories", "limit", limit, "offset", offset)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindAllCategories(limit, offset)
+	})
+	return result, err
 }
 
 func (s *fiqhService) FindAllItems(limit, offset int) ([]model.FiqhItem, error) {
@@ -42,7 +50,7 @@ func (s *fiqhService) FindAllItems(limit, offset int) ([]model.FiqhItem, error) 
 		return s.repo.FindAllItems(limit, offset)
 	}
 	var result []model.FiqhItem
-	key := "fiqh:all"
+	key := lib.CacheKey("fiqh:items", "limit", limit, "offset", offset)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAllItems(limit, offset)
 	})
@@ -50,7 +58,15 @@ func (s *fiqhService) FindAllItems(limit, offset int) ([]model.FiqhItem, error) 
 }
 
 func (s *fiqhService) FindCategoryBySlug(slug string, limit, offset int) (*model.FiqhCategory, error) {
-	return s.repo.FindCategoryBySlug(slug, limit, offset)
+	if s.cache == nil {
+		return s.repo.FindCategoryBySlug(slug, limit, offset)
+	}
+	var result *model.FiqhCategory
+	key := lib.CacheKey("fiqh:category", slug, "limit", limit, "offset", offset)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindCategoryBySlug(slug, limit, offset)
+	})
+	return result, err
 }
 
 func (s *fiqhService) FindItemBySlug(slug string) (*model.FiqhItem, error) {

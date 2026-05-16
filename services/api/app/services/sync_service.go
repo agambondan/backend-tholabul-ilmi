@@ -8,13 +8,13 @@ import (
 )
 
 type SyncResponse struct {
-	Surahs        []model.Surah          `json:"surahs"`
-	Juzs          []model.Juz            `json:"juzs"`
-	Doas          []model.Doa            `json:"doas"`
-	Dzikirs       []model.Dzikir         `json:"dzikirs"`
-	AsmaulHusnas  []model.AsmaUlHusna    `json:"asmaul_husnas"`
-	HadithBooks   []model.Book           `json:"hadith_books"`
-	PrayerMethods []map[string]any       `json:"prayer_methods"`
+	Surahs        []model.Surah       `json:"surahs"`
+	Juzs          []model.Juz         `json:"juzs"`
+	Doas          []model.Doa         `json:"doas"`
+	Dzikirs       []model.Dzikir      `json:"dzikirs"`
+	AsmaulHusnas  []model.AsmaUlHusna `json:"asmaul_husnas"`
+	HadithBooks   []model.Book        `json:"hadith_books"`
+	PrayerMethods []map[string]any    `json:"prayer_methods"`
 }
 
 type SyncService interface {
@@ -45,7 +45,7 @@ var syncPrayerMethods = []map[string]any{
 
 func (s *syncService) GetInitialSync(lang string) (*SyncResponse, error) {
 	var resp SyncResponse
-	key := "sync:initial:" + lang
+	key := lib.CacheKey("sync:initial", lang)
 	err := s.cache.Remember(key, &resp, func() (interface{}, error) {
 		return s.buildSyncData(lang)
 	})

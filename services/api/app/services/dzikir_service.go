@@ -34,7 +34,7 @@ func (s *dzikirService) FindAll(limit, offset int) ([]model.Dzikir, error) {
 		return s.repo.FindAll(limit, offset)
 	}
 	var result []model.Dzikir
-	key := "dzikir:all"
+	key := lib.CacheKey("dzikir:all", "limit", limit, "offset", offset)
 	err := s.cache.Remember(key, &result, func() (interface{}, error) {
 		return s.repo.FindAll(limit, offset)
 	})
@@ -46,11 +46,27 @@ func (s *dzikirService) FindByID(id int) (*model.Dzikir, error) {
 }
 
 func (s *dzikirService) FindByCategory(category string, limit, offset int) ([]model.Dzikir, error) {
-	return s.repo.FindByCategory(model.DzikirCategory(category), limit, offset)
+	if s.cache == nil {
+		return s.repo.FindByCategory(model.DzikirCategory(category), limit, offset)
+	}
+	var result []model.Dzikir
+	key := lib.CacheKey("dzikir:category", category, "limit", limit, "offset", offset)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindByCategory(model.DzikirCategory(category), limit, offset)
+	})
+	return result, err
 }
 
 func (s *dzikirService) FindByOccasion(occasion string, limit, offset int) ([]model.Dzikir, error) {
-	return s.repo.FindByOccasion(occasion, limit, offset)
+	if s.cache == nil {
+		return s.repo.FindByOccasion(occasion, limit, offset)
+	}
+	var result []model.Dzikir
+	key := lib.CacheKey("dzikir:occasion", occasion, "limit", limit, "offset", offset)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		return s.repo.FindByOccasion(occasion, limit, offset)
+	})
+	return result, err
 }
 
 func (s *dzikirService) Create(d *model.Dzikir) (*model.Dzikir, error) {

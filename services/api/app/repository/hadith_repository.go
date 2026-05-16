@@ -10,8 +10,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var hadithListSelect = "hadith.id, hadith.number, hadith.grade, hadith.book_id, hadith.theme_id, hadith.chapter_id, translation.idn, translation.en, translation.ar"
-
 func parseUpdatedAfter(ctx *fiber.Ctx) *time.Time {
 	raw := ctx.Query("updated_after")
 	if raw == "" {
@@ -73,7 +71,7 @@ func (c *hadithRepo) withRelations(db *gorm.DB, selectArgs ...string) *gorm.DB {
 
 func (c *hadithRepo) FindAll(ctx *fiber.Ctx) *paginate.Page {
 	var hadiths []model.Hadith
-	mod := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).Preload("Media").Order("id")
+	mod := c.withRelations(c.db.Model(&model.Hadith{})).Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
 
 	return &page
@@ -86,7 +84,7 @@ func (c *hadithRepo) FindAllKeyset(ctx *fiber.Ctx) (*lib.KeysetPage, error) {
 	c.db.Model(&model.Hadith{}).Count(&total)
 
 	var hadiths []model.Hadith
-	query := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).
+	query := c.withRelations(c.db.Model(&model.Hadith{})).
 		Preload("Media").Order("id")
 	if cursor > 0 {
 		query = query.Where("hadith.id > ?", cursor)
@@ -131,7 +129,7 @@ func (c *hadithRepo) FindManyByIds(ids []int) ([]model.Hadith, error) {
 
 func (c *hadithRepo) FindByBookSlug(ctx *fiber.Ctx, bookSlug *string) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).
+	mod := c.withRelations(c.db.Model(&model.Hadith{})).
 		Where(`"Book".slug = ?`, bookSlug).
 		Preload("Media").Order("id")
 	if updatedAfter := parseUpdatedAfter(ctx); updatedAfter != nil {
@@ -144,7 +142,7 @@ func (c *hadithRepo) FindByBookSlug(ctx *fiber.Ctx, bookSlug *string) (*paginate
 
 func (c *hadithRepo) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).
+	mod := c.withRelations(c.db.Model(&model.Hadith{})).
 		Where("hadith.theme_id = ?", id).Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
 
@@ -153,7 +151,7 @@ func (c *hadithRepo) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, err
 
 func (c *hadithRepo) FindByThemeName(ctx *fiber.Ctx, name *string) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).
+	mod := c.withRelations(c.db.Model(&model.Hadith{})).
 		Where(`LOWER("Theme__Translation".idn) = ?`, name).
 		Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
@@ -163,7 +161,7 @@ func (c *hadithRepo) FindByThemeName(ctx *fiber.Ctx, name *string) (*paginate.Pa
 
 func (c *hadithRepo) FindByBookSlugThemeId(ctx *fiber.Ctx, bookSlug *string, themeId *int) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).
+	mod := c.withRelations(c.db.Model(&model.Hadith{})).
 		Where(`"Book".slug = ? AND hadith.theme_id = ?`, bookSlug, themeId).
 		Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
@@ -173,7 +171,7 @@ func (c *hadithRepo) FindByBookSlugThemeId(ctx *fiber.Ctx, bookSlug *string, the
 
 func (c *hadithRepo) FindByChapterId(ctx *fiber.Ctx, id *int) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).
+	mod := c.withRelations(c.db.Model(&model.Hadith{})).
 		Where("hadith.chapter_id = ?", id).Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
 
@@ -182,7 +180,7 @@ func (c *hadithRepo) FindByChapterId(ctx *fiber.Ctx, id *int) (*paginate.Page, e
 
 func (c *hadithRepo) FindByBookSlugChapterId(ctx *fiber.Ctx, bookSlug *string, chapterId *int) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).
+	mod := c.withRelations(c.db.Model(&model.Hadith{})).
 		Where(`"Book".slug = ? AND hadith.chapter_id = ?`, bookSlug, chapterId).
 		Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
@@ -192,7 +190,7 @@ func (c *hadithRepo) FindByBookSlugChapterId(ctx *fiber.Ctx, bookSlug *string, c
 
 func (c *hadithRepo) FindByThemeIdChapterId(ctx *fiber.Ctx, themeId, chapterId *int) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).
+	mod := c.withRelations(c.db.Model(&model.Hadith{})).
 		Where("hadith.chapter_id = ? AND hadith.theme_id = ?", chapterId, themeId).
 		Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
@@ -202,7 +200,7 @@ func (c *hadithRepo) FindByThemeIdChapterId(ctx *fiber.Ctx, themeId, chapterId *
 
 func (c *hadithRepo) FindByBookSlugThemeIdChapterId(ctx *fiber.Ctx, bookSlug *string, themeId, chapterId *int) (*paginate.Page, error) {
 	var hadiths []model.Hadith
-	mod := c.withRelations(c.db.Model(&model.Hadith{}), hadithListSelect).
+	mod := c.withRelations(c.db.Model(&model.Hadith{})).
 		Where(`"Book".slug = ? AND hadith.chapter_id = ? AND hadith.theme_id = ?`, bookSlug, chapterId, themeId).
 		Preload("Media").Order("id")
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)

@@ -33,7 +33,11 @@ func NewBookServiceWithCache(repo repository.BookRepository, cache *lib.CacheSer
 }
 
 func (b *bookService) Create(book *model.Book) (*model.Book, error) {
-	return b.book.Save(book)
+	result, err := b.book.Save(book)
+	if err == nil && b.cache != nil {
+		b.cache.Invalidate("books:*")
+	}
+	return result, err
 }
 
 func (b *bookService) FindAll(ctx *fiber.Ctx) *paginate.Page {
@@ -41,7 +45,7 @@ func (b *bookService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 		return b.book.FindAll(ctx)
 	}
 	var result *paginate.Page
-	key := "books:all"
+	key := lib.RequestCacheKey("books:all", ctx)
 	err := b.cache.Remember(key, &result, func() (interface{}, error) {
 		return b.book.FindAll(ctx), nil
 	})
@@ -52,19 +56,43 @@ func (b *bookService) FindAll(ctx *fiber.Ctx) *paginate.Page {
 }
 
 func (b *bookService) FindById(id *int) (*model.Book, error) {
-	return b.book.FindById(id)
+	if b.cache == nil {
+		return b.book.FindById(id)
+	}
+	var result *model.Book
+	key := lib.CacheKey("books:id", *id)
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.book.FindById(id)
+	})
+	return result, err
 }
 
 func (b *bookService) FindBySlug(ctx *fiber.Ctx, slug *string) (*model.Book, error) {
-	return b.book.FindBySlug(ctx, slug)
+	if b.cache == nil {
+		return b.book.FindBySlug(ctx, slug)
+	}
+	var result *model.Book
+	key := lib.RequestCacheKey("books:slug", ctx, *slug)
+	err := b.cache.Remember(key, &result, func() (interface{}, error) {
+		return b.book.FindBySlug(ctx, slug)
+	})
+	return result, err
 }
 
 func (b *bookService) UpdateById(id *int, book *model.Book) (*model.Book, error) {
-	return b.book.UpdateById(id, book)
+	result, err := b.book.UpdateById(id, book)
+	if err == nil && b.cache != nil {
+		b.cache.Invalidate("books:*")
+	}
+	return result, err
 }
 
 func (b *bookService) DeleteById(id *int, scoped *string) error {
-	return b.book.DeleteById(id, scoped)
+	err := b.book.DeleteById(id, scoped)
+	if err == nil && b.cache != nil {
+		b.cache.Invalidate("books:*")
+	}
+	return err
 }
 
 func (b *bookService) Count() (*int64, error) {
