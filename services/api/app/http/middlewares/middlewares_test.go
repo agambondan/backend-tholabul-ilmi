@@ -53,6 +53,82 @@ func TestCorsAllowsDefaultDockerFrontendOrigin(t *testing.T) {
 	}
 }
 
+func TestCacheByTypeSetsStaticCacheAfterSuccess(t *testing.T) {
+	app := fiber.New()
+	app.Use(CacheByType(300, 30))
+	app.Get("/api/v1/tafsir/search", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"ok": true})
+	})
+
+	resp, err := app.Test(httptest.NewRequest(fiber.MethodGet, "/api/v1/tafsir/search?q=sabar", nil))
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if got := resp.Header.Get(fiber.HeaderCacheControl); got != "public, max-age=300" {
+		t.Fatalf("expected static cache header, got %q", got)
+	}
+	if got := resp.Header.Get("X-Cache-TTL"); got != "300" {
+		t.Fatalf("expected ttl 300, got %q", got)
+	}
+}
+
+func TestCacheByTypeSkipsPrivateAndAuthenticatedResponses(t *testing.T) {
+	app := fiber.New()
+	app.Use(CacheByType(300, 30))
+	app.Get("/api/v1/sholat/today", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"private": true})
+	})
+	app.Get("/api/v1/surah", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"public": true})
+	})
+
+	privateResp, err := app.Test(httptest.NewRequest(fiber.MethodGet, "/api/v1/sholat/today", nil))
+	if err != nil {
+		t.Fatalf("private request failed: %v", err)
+	}
+	if got := privateResp.Header.Get(fiber.HeaderCacheControl); got != "" {
+		t.Fatalf("expected no private cache header, got %q", got)
+	}
+
+	authReq := httptest.NewRequest(fiber.MethodGet, "/api/v1/surah", nil)
+	authReq.Header.Set(fiber.HeaderAuthorization, "Bearer token")
+	authResp, err := app.Test(authReq)
+	if err != nil {
+		t.Fatalf("authenticated request failed: %v", err)
+	}
+	if got := authResp.Header.Get(fiber.HeaderCacheControl); got != "" {
+		t.Fatalf("expected no authenticated cache header, got %q", got)
+	}
+}
+
+func TestCacheByTypeSkipsErrorsAndExistingPolicy(t *testing.T) {
+	app := fiber.New()
+	app.Use(CacheByType(300, 30))
+	app.Get("/api/v1/surah/error", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusInternalServerError)
+	})
+	app.Get("/api/v1/surah/custom", func(c *fiber.Ctx) error {
+		c.Response().Header.Set(fiber.HeaderCacheControl, "no-store")
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	errorResp, err := app.Test(httptest.NewRequest(fiber.MethodGet, "/api/v1/surah/error", nil))
+	if err != nil {
+		t.Fatalf("error request failed: %v", err)
+	}
+	if got := errorResp.Header.Get(fiber.HeaderCacheControl); got != "" {
+		t.Fatalf("expected no error cache header, got %q", got)
+	}
+
+	customResp, err := app.Test(httptest.NewRequest(fiber.MethodGet, "/api/v1/surah/custom", nil))
+	if err != nil {
+		t.Fatalf("custom request failed: %v", err)
+	}
+	if got := customResp.Header.Get(fiber.HeaderCacheControl); got != "no-store" {
+		t.Fatalf("expected existing cache header to be preserved, got %q", got)
+	}
+}
+
 func TestCorsAllowsDefaultExpoWebOrigin(t *testing.T) {
 	viper.Reset()
 	t.Cleanup(viper.Reset)

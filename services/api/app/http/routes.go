@@ -169,7 +169,9 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	cacheMw := middlewares.CacheByType(300, 30)
 	app.Use(cacheMw)
 
-	app.Use(middlewares.PoolProtection(repo.GetDB()))
+	if repo != nil && repo.GetDB() != nil {
+		app.Use(middlewares.PoolProtection(repo.GetDB()))
+	}
 
 	master := app.Group(viper.GetString("ENDPOINT"))
 	master.Use(timeout.NewWithContext(func(c *fiber.Ctx) error {

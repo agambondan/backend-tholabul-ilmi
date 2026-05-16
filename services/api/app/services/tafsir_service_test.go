@@ -12,6 +12,8 @@ func intPtr(i int) *int { return &i }
 type fakeTafsirRepo struct {
 	tafsir     *model.Tafsir
 	tafsirs    []model.Tafsir
+	searchErr  error
+	searches   []model.Tafsir
 	err        error
 	surahErr   error
 	saveResult *model.Tafsir
@@ -25,6 +27,10 @@ func (f *fakeTafsirRepo) FindByAyahID(ayahID int) (*model.Tafsir, error) {
 
 func (f *fakeTafsirRepo) FindBySurahNumber(surahNumber, limit, offset int) ([]model.Tafsir, error) {
 	return f.tafsirs, f.surahErr
+}
+
+func (f *fakeTafsirRepo) Search(query string, limit, offset int) ([]model.Tafsir, error) {
+	return f.searches, f.searchErr
 }
 
 func (f *fakeTafsirRepo) Save(t *model.Tafsir) (*model.Tafsir, error) {

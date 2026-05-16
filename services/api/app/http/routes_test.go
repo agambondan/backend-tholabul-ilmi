@@ -100,6 +100,9 @@ func getRoutes() []routeItem {
 		re2 := regexp.MustCompile(`/([:][^/]+)`)
 		result := re.FindAllSubmatch(bte, -1)
 		for i := range result {
+			if strings.HasPrefix(string(result[i][0]), "pprofGroup.") {
+				continue
+			}
 			item := routeItem{}
 			item.matches = string(result[i][0])
 			item.method = strings.ToUpper(string(result[i][1]))

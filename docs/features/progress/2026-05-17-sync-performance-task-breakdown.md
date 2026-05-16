@@ -14,7 +14,8 @@ dan mengurangi risiko performance yang ditemukan pada deep review terbaru.
 
 Priority: `P0`
 Area: `services/api`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -35,9 +36,20 @@ Status: `TODO`
 
 ### Verification
 
-- `cd services/api/app && go test ./...`
+- `cd services/api/app && go test ./...` - `PASS`
 - Manual check dengan curl untuk satu endpoint public dan satu endpoint
   authenticated/private jika token tersedia.
+
+### Implementation Notes
+
+- `CacheByType` sekarang memasang header cache setelah handler selesai.
+- Private/authenticated GET tidak diberi `Cache-Control: public`.
+- Prefix static cache ditambah untuk tafsir, siroh, kajian, asbabun nuzul,
+  history, tokoh tarikh, dan jarh wa ta'dil.
+- `routes_test` tidak lagi salah membaca route debug pprof sebagai root API.
+- Fake tafsir repo test sudah mengikuti interface `Search`.
+- Query dzikir by occasion memakai kolom qualified agar tidak ambigu saat join
+  translation.
 
 ## Task 2 - Mobile Khatam Journey
 
