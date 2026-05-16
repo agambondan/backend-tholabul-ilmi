@@ -115,6 +115,11 @@ utama, bukan list data biasa.
     tajweed color terlihat.
 - Device smoke gesture kanan/kiri masih belum bisa divalidasi otomatis karena
   MIUI memblokir `adb shell input tap/swipe/keyevent` dengan `INJECT_EVENTS`.
+- Device probe 2026-05-16:
+  - Device `985c2f0e` terdeteksi oleh ADB, tetapi masih `no permissions`.
+  - `make mobile-status` gagal di `adb reverse` karena `insufficient
+    permissions for device`, jadi smoke ulang reader Quran pada device belum
+    valid untuk menggantikan evidence 2026-05-14.
 
 ## Source of Truth
 

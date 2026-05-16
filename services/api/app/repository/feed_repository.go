@@ -10,7 +10,7 @@ import (
 )
 
 type FeedRepository interface {
-	FindAll(*fiber.Ctx, model.FeedRefType) *paginate.Page
+	FindAll(*fiber.Ctx, model.FeedRefType, []string) *paginate.Page
 	FindByID(string) (*model.FeedPost, error)
 	Create(*model.FeedPost) (*model.FeedPost, error)
 	Delete(string, *uuid.UUID) error
@@ -30,11 +30,14 @@ func (r *feedRepository) base() *gorm.DB {
 	return r.db.Model(&model.FeedPost{}).Preload("Author")
 }
 
-func (r *feedRepository) FindAll(ctx *fiber.Ctx, refType model.FeedRefType) *paginate.Page {
+func (r *feedRepository) FindAll(ctx *fiber.Ctx, refType model.FeedRefType, hiddenIDs []string) *paginate.Page {
 	var posts []model.FeedPost
 	q := r.base().Order("created_at desc")
 	if refType != "" {
 		q = q.Where("feed_posts.ref_type = ?", refType)
+	}
+	if len(hiddenIDs) > 0 {
+		q = q.Where("CAST(feed_posts.id AS TEXT) NOT IN ?", hiddenIDs)
 	}
 	page := r.pg.With(q).Request(ctx.Request()).Response(&posts)
 	return &page

@@ -16,66 +16,67 @@ import (
 )
 
 type Repositories struct {
-	User              UserRepository
-	Ayah              AyahRepository
-	Surah             SurahRepository
-	Juz               JuzRepository
-	Book              BookRepository
-	Theme             ThemeRepository
-	Chapter           ChapterRepository
-	Hadith            HadithRepository
-	Bookmark          BookmarkRepository
-	UserWird          UserWirdRepository
-	ReadingProgress   ReadingProgressRepository
-	Hafalan           HafalanRepository
-	UserActivity      UserActivityRepository
-	Search            SearchRepository
-	Mufrodat          MufrodatRepository
-	Notification      NotificationRepository
-	NotificationInbox NotificationInboxRepository
-	Feed              FeedRepository
-	Tafsir            TafsirRepository
-	Doa               DoaRepository
-	AsmaUlHusna       AsmaUlHusnaRepository
-	Audio             AudioRepository
-	Siroh             SirohRepository
-	Blog              BlogRepository
-	Tilawah           TilawahRepository
-	Amalan            AmalanRepository
-	Dzikir            DzikirRepository
-	DzikirLog         DzikirLogRepository
-	Achievement       AchievementRepository
-	Leaderboard       LeaderboardRepository
-	Sholat            SholatRepository
-	Murojaah          MurojaahRepository
-	Fiqh              FiqhRepository
-	Tahlil            TahlilRepository
-	Kajian            KajianRepository
-	Muhasabah         MuhasabahRepository
-	Goal              GoalRepository
-	History           HistoryRepository
-	Manasik           ManasikRepository
-	Quiz              QuizRepository
-	Note              NoteRepository
-	Dictionary        DictionaryRepository
-	Comment           CommentRepository
-	APIKey            APIKeyRepository
-	IslamicEvent      IslamicEventRepository
-	KalkulasiZakat    KalkulasiZakatRepository
-	SimpanFaraidh     SimpanFaraidhRepository
-	HadithAyah        HadithAyahRepository
-	Forum              ForumRepository
-	Munasabah          MunasabahRepository
+	User                 UserRepository
+	Ayah                 AyahRepository
+	Surah                SurahRepository
+	Juz                  JuzRepository
+	Book                 BookRepository
+	Theme                ThemeRepository
+	Chapter              ChapterRepository
+	Hadith               HadithRepository
+	Bookmark             BookmarkRepository
+	UserWird             UserWirdRepository
+	ReadingProgress      ReadingProgressRepository
+	Hafalan              HafalanRepository
+	UserActivity         UserActivityRepository
+	Search               SearchRepository
+	Mufrodat             MufrodatRepository
+	Notification         NotificationRepository
+	NotificationInbox    NotificationInboxRepository
+	Feed                 FeedRepository
+	SocialModeration     SocialModerationRepository
+	Tafsir               TafsirRepository
+	Doa                  DoaRepository
+	AsmaUlHusna          AsmaUlHusnaRepository
+	Audio                AudioRepository
+	Siroh                SirohRepository
+	Blog                 BlogRepository
+	Tilawah              TilawahRepository
+	Amalan               AmalanRepository
+	Dzikir               DzikirRepository
+	DzikirLog            DzikirLogRepository
+	Achievement          AchievementRepository
+	Leaderboard          LeaderboardRepository
+	Sholat               SholatRepository
+	Murojaah             MurojaahRepository
+	Fiqh                 FiqhRepository
+	Tahlil               TahlilRepository
+	Kajian               KajianRepository
+	Muhasabah            MuhasabahRepository
+	Goal                 GoalRepository
+	History              HistoryRepository
+	Manasik              ManasikRepository
+	Quiz                 QuizRepository
+	Note                 NoteRepository
+	Dictionary           DictionaryRepository
+	Comment              CommentRepository
+	APIKey               APIKeyRepository
+	IslamicEvent         IslamicEventRepository
+	KalkulasiZakat       KalkulasiZakatRepository
+	SimpanFaraidh        SimpanFaraidhRepository
+	HadithAyah           HadithAyahRepository
+	Forum                ForumRepository
+	Munasabah            MunasabahRepository
 	NotificationTemplate NotificationTemplateRepository
-	TokohTarikh        TokohTarikhRepository
-	AsbabunNuzul      AsbabunNuzulRepository
-	Perawi            PerawiRepository
-	JarhTadil         JarhTadilRepository
-	Sanad             SanadRepository
-	Takhrij           TakhrijRepository
-	db                *gorm.DB
-	pg                *paginate.Pagination
-	redis             *redis.Client
+	TokohTarikh          TokohTarikhRepository
+	AsbabunNuzul         AsbabunNuzulRepository
+	Perawi               PerawiRepository
+	JarhTadil            JarhTadilRepository
+	Sanad                SanadRepository
+	Takhrij              TakhrijRepository
+	db                   *gorm.DB
+	pg                   *paginate.Pagination
+	redis                *redis.Client
 }
 
 func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
@@ -94,66 +95,67 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 	})
 
 	return &Repositories{
-		User:              NewUserRepository(db, pg),
-		Ayah:              NewAyahRepository(db, pg),
-		Surah:             NewSurahRepository(db, pg),
-		Juz:               NewJuzRepository(db, pg),
-		Book:              NewBookRepository(db, pg),
-		Theme:             NewThemeRepository(db, pg),
-		Chapter:           NewChapterRepository(db, pg),
-		Hadith:            NewHadithRepository(db, pg),
-		Bookmark:          NewBookmarkRepository(db),
-		UserWird:          NewUserWirdRepository(db),
-		ReadingProgress:   NewReadingProgressRepository(db),
-		Hafalan:           NewHafalanRepository(db),
-		UserActivity:      NewUserActivityRepository(db),
-		Search:            NewSearchRepository(db),
-		Mufrodat:          NewMufrodatRepository(db),
-		Notification:      NewNotificationRepository(db),
-		NotificationInbox: NewNotificationInboxRepository(db),
-		Feed:              NewFeedRepository(db, pg),
-		Tafsir:            NewTafsirRepository(db, pg),
-		Doa:               NewDoaRepository(db),
-		AsmaUlHusna:       NewAsmaUlHusnaRepository(db),
-		Audio:             NewAudioRepository(db),
-		Siroh:             NewSirohRepository(db, pg),
-		Blog:              NewBlogRepository(db, pg),
-		Tilawah:           NewTilawahRepository(db),
-		Amalan:            NewAmalanRepository(db),
-		Dzikir:            NewDzikirRepository(db),
-		DzikirLog:         NewDzikirLogRepository(db),
-		Achievement:       NewAchievementRepository(db),
-		Leaderboard:       NewLeaderboardRepository(db),
-		Sholat:            NewSholatRepository(db),
-		Murojaah:          NewMurojaahRepository(db),
-		Fiqh:              NewFiqhRepository(db),
-		Tahlil:            NewTahlilRepository(db),
-		Kajian:            NewKajianRepository(db, pg),
-		Muhasabah:         NewMuhasabahRepository(db),
-		Goal:              NewGoalRepository(db),
-		History:           NewHistoryRepository(db),
-		Manasik:           NewManasikRepository(db),
-		Quiz:              NewQuizRepository(db),
-		Note:              NewNoteRepository(db),
-		Dictionary:        NewDictionaryRepository(db),
-		Comment:           NewCommentRepository(db),
-		APIKey:            NewAPIKeyRepository(db),
-		IslamicEvent:      NewIslamicEventRepository(db),
-		KalkulasiZakat:    NewKalkulasiZakatRepository(db),
-		SimpanFaraidh:     NewSimpanFaraidhRepository(db),
-		HadithAyah:        NewHadithAyahRepository(db),
-		Forum:             NewForumRepository(db),
-		Munasabah:         NewMunasabahRepository(db),
+		User:                 NewUserRepository(db, pg),
+		Ayah:                 NewAyahRepository(db, pg),
+		Surah:                NewSurahRepository(db, pg),
+		Juz:                  NewJuzRepository(db, pg),
+		Book:                 NewBookRepository(db, pg),
+		Theme:                NewThemeRepository(db, pg),
+		Chapter:              NewChapterRepository(db, pg),
+		Hadith:               NewHadithRepository(db, pg),
+		Bookmark:             NewBookmarkRepository(db),
+		UserWird:             NewUserWirdRepository(db),
+		ReadingProgress:      NewReadingProgressRepository(db),
+		Hafalan:              NewHafalanRepository(db),
+		UserActivity:         NewUserActivityRepository(db),
+		Search:               NewSearchRepository(db),
+		Mufrodat:             NewMufrodatRepository(db),
+		Notification:         NewNotificationRepository(db),
+		NotificationInbox:    NewNotificationInboxRepository(db),
+		Feed:                 NewFeedRepository(db, pg),
+		SocialModeration:     NewSocialModerationRepository(db),
+		Tafsir:               NewTafsirRepository(db, pg),
+		Doa:                  NewDoaRepository(db),
+		AsmaUlHusna:          NewAsmaUlHusnaRepository(db),
+		Audio:                NewAudioRepository(db),
+		Siroh:                NewSirohRepository(db, pg),
+		Blog:                 NewBlogRepository(db, pg),
+		Tilawah:              NewTilawahRepository(db),
+		Amalan:               NewAmalanRepository(db),
+		Dzikir:               NewDzikirRepository(db),
+		DzikirLog:            NewDzikirLogRepository(db),
+		Achievement:          NewAchievementRepository(db),
+		Leaderboard:          NewLeaderboardRepository(db),
+		Sholat:               NewSholatRepository(db),
+		Murojaah:             NewMurojaahRepository(db),
+		Fiqh:                 NewFiqhRepository(db),
+		Tahlil:               NewTahlilRepository(db),
+		Kajian:               NewKajianRepository(db, pg),
+		Muhasabah:            NewMuhasabahRepository(db),
+		Goal:                 NewGoalRepository(db),
+		History:              NewHistoryRepository(db),
+		Manasik:              NewManasikRepository(db),
+		Quiz:                 NewQuizRepository(db),
+		Note:                 NewNoteRepository(db),
+		Dictionary:           NewDictionaryRepository(db),
+		Comment:              NewCommentRepository(db),
+		APIKey:               NewAPIKeyRepository(db),
+		IslamicEvent:         NewIslamicEventRepository(db),
+		KalkulasiZakat:       NewKalkulasiZakatRepository(db),
+		SimpanFaraidh:        NewSimpanFaraidhRepository(db),
+		HadithAyah:           NewHadithAyahRepository(db),
+		Forum:                NewForumRepository(db),
+		Munasabah:            NewMunasabahRepository(db),
 		NotificationTemplate: NewNotificationTemplateRepository(db),
-		TokohTarikh:        NewTokohTarikhRepository(db),
-		AsbabunNuzul:      NewAsbabunNuzulRepository(db),
-		Perawi:            NewPerawiRepository(db, pg),
-		JarhTadil:         NewJarhTadilRepository(db),
-		Sanad:             NewSanadRepository(db),
-		Takhrij:           NewTakhrijRepository(db),
-		db:                db,
-		pg:                pg,
-		redis:             client,
+		TokohTarikh:          NewTokohTarikhRepository(db),
+		AsbabunNuzul:         NewAsbabunNuzulRepository(db),
+		Perawi:               NewPerawiRepository(db, pg),
+		JarhTadil:            NewJarhTadilRepository(db),
+		Sanad:                NewSanadRepository(db),
+		Takhrij:              NewTakhrijRepository(db),
+		db:                   db,
+		pg:                   pg,
+		redis:                client,
 	}, nil
 }
 

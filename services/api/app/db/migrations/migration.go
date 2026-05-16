@@ -19,6 +19,7 @@ var ModelMigrations []interface{} = []interface{}{
 	model.PushToken{},
 	model.UserNotification{},
 	model.FeedPost{},
+	model.SocialModerationAction{},
 	model.Juz{},
 	model.Tafsir{},
 	model.ThemeAsset{},

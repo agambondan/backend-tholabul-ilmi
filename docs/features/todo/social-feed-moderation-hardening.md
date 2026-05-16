@@ -1,6 +1,6 @@
 # Social Feed Moderation Hardening
 
-Status: `TODO`
+Status: `IN_PROGRESS`
 Priority: `P2`
 Tanggal: `2026-05-14`
 
@@ -29,10 +29,10 @@ service, repository, dan model feed/comment.
 
 ## Task List
 
-1. Desain kontrak report/hide minimal.
-2. Tambah API moderation baseline.
-3. Tambah aksi report/hide pada mobile feed detail.
-4. Verifikasi hak akses delete/report.
+1. `DONE` Desain kontrak report/hide minimal.
+2. `DONE` Tambah API moderation baseline.
+3. `PENDING` Tambah aksi report/hide pada mobile feed detail.
+4. `DONE` Verifikasi hak akses delete/report backend.
 
 ## Acceptance Criteria
 
@@ -42,7 +42,23 @@ service, repository, dan model feed/comment.
 
 ## Evidence
 
-- Pending.
+- 2026-05-16:
+  - Model `SocialModerationAction` ditambahkan untuk menyimpan aksi per user:
+    target `feed_post`/`comment`, action `hide`/`report`, `target_id`, dan
+    `reason`.
+  - Endpoint baru:
+    - `POST /feed/:id/hide`
+    - `POST /feed/:id/report`
+    - `POST /comments/:id/hide`
+    - `POST /comments/:id/report`
+  - List feed/comment akan mengecualikan item yang disembunyikan user saat
+    request membawa JWT valid, tanpa mengubah pengalaman public anonymous.
+  - Delete comment sekarang mengikuti guardrail feed: owner bisa delete item
+    sendiri, admin bisa delete item mana pun, user lain mendapat forbidden.
+  - Validasi compile: `cd services/api && go build ./app/model ./app/repository
+    ./app/services ./app/controllers ./app/http` `PASS`.
+  - Mobile action belum dikerjakan di slice ini karena `ExploreScreen.js` sedang
+    dirty milik agent lain.
 
 ## Source of Truth
 

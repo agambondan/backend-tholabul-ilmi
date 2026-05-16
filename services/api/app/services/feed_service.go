@@ -12,25 +12,35 @@ import (
 )
 
 type FeedService interface {
-	FindAll(*fiber.Ctx, model.FeedRefType) *paginate.Page
+	FindAll(*fiber.Ctx, model.FeedRefType, *uuid.UUID) *paginate.Page
 	FindByID(string) (*model.FeedPost, error)
 	CreatePost(userID uuid.UUID, req *model.CreateFeedPostRequest) (*model.FeedPost, error)
 	LikePost(id string) (*model.FeedPost, error)
 	DeletePost(id string, userID uuid.UUID, isAdmin bool) error
+	HidePost(id string, userID uuid.UUID) (*model.SocialModerationAction, error)
+	ReportPost(id string, userID uuid.UUID, reason string) (*model.SocialModerationAction, error)
 }
 
 type feedService struct {
-	repo   repository.FeedRepository
-	ayah   AyahService
-	hadith HadithService
+	repo       repository.FeedRepository
+	moderation repository.SocialModerationRepository
+	ayah       AyahService
+	hadith     HadithService
 }
 
-func NewFeedService(repo repository.FeedRepository, ayah AyahService, hadith HadithService) FeedService {
-	return &feedService{repo: repo, ayah: ayah, hadith: hadith}
+func NewFeedService(repo repository.FeedRepository, moderation repository.SocialModerationRepository, ayah AyahService, hadith HadithService) FeedService {
+	return &feedService{repo: repo, moderation: moderation, ayah: ayah, hadith: hadith}
 }
 
-func (s *feedService) FindAll(ctx *fiber.Ctx, refType model.FeedRefType) *paginate.Page {
-	return s.repo.FindAll(ctx, refType)
+func (s *feedService) FindAll(ctx *fiber.Ctx, refType model.FeedRefType, viewerID *uuid.UUID) *paginate.Page {
+	hiddenIDs := []string{}
+	if viewerID != nil && s.moderation != nil {
+		ids, err := s.moderation.HiddenTargetIDs(*viewerID, model.SocialModerationTargetFeedPost)
+		if err == nil {
+			hiddenIDs = ids
+		}
+	}
+	return s.repo.FindAll(ctx, refType, hiddenIDs)
 }
 
 func (s *feedService) FindByID(id string) (*model.FeedPost, error) {
@@ -85,4 +95,31 @@ func (s *feedService) DeletePost(id string, userID uuid.UUID, isAdmin bool) erro
 		return s.repo.Delete(id, nil)
 	}
 	return s.repo.Delete(id, &userID)
+}
+
+func (s *feedService) HidePost(id string, userID uuid.UUID) (*model.SocialModerationAction, error) {
+	return s.moderatePost(id, userID, model.SocialModerationActionHide, "")
+}
+
+func (s *feedService) ReportPost(id string, userID uuid.UUID, reason string) (*model.SocialModerationAction, error) {
+	return s.moderatePost(id, userID, model.SocialModerationActionReport, reason)
+}
+
+func (s *feedService) moderatePost(id string, userID uuid.UUID, action model.SocialModerationActionType, reason string) (*model.SocialModerationAction, error) {
+	if s.moderation == nil {
+		return nil, errors.New("moderation repository unavailable")
+	}
+	if _, err := s.repo.FindByID(id); err != nil {
+		return nil, errors.New("post not found")
+	}
+	if _, err := uuid.Parse(id); err != nil {
+		return nil, errors.New("invalid post id")
+	}
+	return s.moderation.Upsert(&model.SocialModerationAction{
+		UserID:     userID,
+		TargetType: model.SocialModerationTargetFeedPost,
+		TargetID:   id,
+		Action:     action,
+		Reason:     strings.TrimSpace(reason),
+	})
 }

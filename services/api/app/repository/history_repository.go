@@ -53,11 +53,65 @@ func (r *historyRepository) FindBySlug(slug string) (*model.HistoryEvent, error)
 }
 
 func (r *historyRepository) Create(e *model.HistoryEvent) (*model.HistoryEvent, error) {
-	return e, r.db.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "slug"}}, DoUpdates: clause.AssignmentColumns([]string{"title", "description", "year_hijri", "year_miladi", "category", "is_significant"})}).Create(e).Error
+	var saved model.HistoryEvent
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var existing model.HistoryEvent
+		err := tx.Where("slug = ?", e.Slug).First(&existing).Error
+		if err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+
+		var existingTranslationID *int
+		if err == nil {
+			existingTranslationID = existing.TranslationID
+			e.ID = existing.ID
+		}
+
+		trID, err := upsertContentTranslation(tx, existingTranslationID, e.Title, "", "", e.Description)
+		if err != nil {
+			return err
+		}
+		e.TranslationID = trID
+
+		if err := tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "slug"}},
+			DoUpdates: clause.AssignmentColumns([]string{"title", "description", "year_hijri", "year_miladi", "category", "is_significant", "translation_id"}),
+		}).Create(e).Error; err != nil {
+			return err
+		}
+		return tx.Preload("Translation").Where("slug = ?", e.Slug).First(&saved).Error
+	})
+	return &saved, err
 }
 
 func (r *historyRepository) Update(id int, e *model.HistoryEvent) (*model.HistoryEvent, error) {
-	return e, r.db.Model(&model.HistoryEvent{}).Where("id = ?", id).Updates(e).Error
+	var saved model.HistoryEvent
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		var existing model.HistoryEvent
+		if err := tx.First(&existing, id).Error; err != nil {
+			return err
+		}
+
+		trID, err := upsertContentTranslation(tx, existing.TranslationID, e.Title, "", "", e.Description)
+		if err != nil {
+			return err
+		}
+
+		if err := tx.Model(&existing).Updates(map[string]interface{}{
+			"year_hijri":     e.YearHijri,
+			"year_miladi":    e.YearMiladi,
+			"title":          e.Title,
+			"slug":           e.Slug,
+			"description":    e.Description,
+			"category":       e.Category,
+			"is_significant": e.IsSignificant,
+			"translation_id": trID,
+		}).Error; err != nil {
+			return err
+		}
+		return tx.Preload("Translation").First(&saved, id).Error
+	})
+	return &saved, err
 }
 
 func (r *historyRepository) Delete(id int) error {

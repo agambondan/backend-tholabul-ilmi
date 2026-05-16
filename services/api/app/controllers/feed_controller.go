@@ -5,6 +5,7 @@ import (
 	"github.com/agambondan/islamic-explorer/app/model"
 	service "github.com/agambondan/islamic-explorer/app/services"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type FeedController interface {
@@ -12,6 +13,8 @@ type FeedController interface {
 	FindByID(ctx *fiber.Ctx) error
 	Create(ctx *fiber.Ctx) error
 	Like(ctx *fiber.Ctx) error
+	Hide(ctx *fiber.Ctx) error
+	Report(ctx *fiber.Ctx) error
 	Delete(ctx *fiber.Ctx) error
 }
 
@@ -32,7 +35,11 @@ func NewFeedController(services *service.Services) FeedController {
 // @Router /feed [get]
 func (c *feedController) FindAll(ctx *fiber.Ctx) error {
 	refType := model.FeedRefType(ctx.Query("ref_type"))
-	return lib.OK(ctx, c.svc.FindAll(ctx, refType))
+	var viewerID *uuid.UUID
+	if userID, err := extractUserID(ctx); err == nil {
+		viewerID = &userID
+	}
+	return lib.OK(ctx, c.svc.FindAll(ctx, refType, viewerID))
 }
 
 // @Summary Get feed post by ID
@@ -92,6 +99,55 @@ func (c *feedController) Like(ctx *fiber.Ctx) error {
 		return lib.ErrorNotFound(ctx)
 	}
 	return lib.OK(ctx, post)
+}
+
+// @Summary Hide feed post for current user
+// @Tags Sosial
+// @Produce json
+// @Param id path string true "Post ID"
+// @Success 200 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /feed/{id}/hide [post]
+func (c *feedController) Hide(ctx *fiber.Ctx) error {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return lib.ErrorUnauthorized(ctx)
+	}
+	action, err := c.svc.HidePost(ctx.Params("id"), userID)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, action)
+}
+
+// @Summary Report feed post
+// @Tags Sosial
+// @Accept json
+// @Produce json
+// @Param id path string true "Post ID"
+// @Param body body model.SocialModerationRequest false "Report reason"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 401 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /feed/{id}/report [post]
+func (c *feedController) Report(ctx *fiber.Ctx) error {
+	userID, err := extractUserID(ctx)
+	if err != nil {
+		return lib.ErrorUnauthorized(ctx)
+	}
+	req := new(model.SocialModerationRequest)
+	if len(ctx.Body()) > 0 {
+		if err := lib.BodyParser(ctx, req); err != nil {
+			return lib.ErrorBadRequest(ctx, err)
+		}
+	}
+	action, err := c.svc.ReportPost(ctx.Params("id"), userID, req.Reason)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, action)
 }
 
 // @Summary Delete feed post

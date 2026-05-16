@@ -326,6 +326,8 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/feed/:id", newFeedController.FindByID)
 	master.Post("/feed", jwt, newFeedController.Create)
 	master.Post("/feed/:id/like", jwt, newFeedController.Like)
+	master.Post("/feed/:id/hide", jwt, newFeedController.Hide)
+	master.Post("/feed/:id/report", jwt, newFeedController.Report)
 	master.Delete("/feed/:id", jwt, newFeedController.Delete)
 
 	// Bookmark
@@ -593,6 +595,8 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	// #49 Diskusi & Komentar (public read, protected write)
 	master.Get("/comments", newCommentController.FindByRef)
 	master.Post("/comments", jwt, newCommentController.Create)
+	master.Post("/comments/:id/hide", jwt, newCommentController.Hide)
+	master.Post("/comments/:id/report", jwt, newCommentController.Report)
 	master.Delete("/comments/:id", jwt, newCommentController.Delete)
 
 	// #50 Open API & Partner Integration (protected — JWT user)
