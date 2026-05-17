@@ -180,12 +180,17 @@ const formatPrayerSummary = (nextPrayer, hasPrayerSchedule) => {
   return `${label} dalam ${minutes} menit`;
 };
 
+const hasUsablePrayerTimes = (prayers) =>
+  prayerScheduleItems.some(({ key }) => toSeconds(prayers?.[key]) !== null);
+
 const formatHadisSource = (value = '') => {
   if (!value) return '';
   return value.replace(/\bHadith\b/g, 'Hadis');
 };
 
 const locationErrorLabels = new Set(['LOKASI NONAKTIF', 'LOKASI BELUM TERSEDIA']);
+const prayerRetryDelays = [2500, 5000, 10000, 15000];
+const emptyPrayerState = { countdown: '--:--:--', key: 'asr', time: '--:--' };
 
 const getHomeLocationLabel = async (coords) => {
   try {
@@ -234,6 +239,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const { user } = useSession();
   const { notifyTabActivity } = useTabActivity();
   const mountedRef = useRef(true);
+  const prayerRetryTimerRef = useRef(null);
   const [dailyHadith, setDailyHadith] = useState(null);
   const [dailyAyah, setDailyAyah] = useState(null);
   const [dateSnapshot, setDateSnapshot] = useState(() => new Date());
@@ -245,6 +251,8 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const [refreshing, setRefreshing] = useState(false);
   const [dailyMessage, setDailyMessage] = useState('');
   const [prayerMessage, setPrayerMessage] = useState('');
+  const [prayerRetryAttempt, setPrayerRetryAttempt] = useState(0);
+  const [prayerSyncState, setPrayerSyncState] = useState('idle');
   const [pinnedFeatures, setPinnedFeatures] = useState([]);
   const [recentFeatures, setRecentFeatures] = useState([]);
   const handleScrollActivity = useCallback(() => {
@@ -309,6 +317,17 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     () => formatPrayerSummary(nextPrayer, hasPrayerSchedule),
     [hasPrayerSchedule, nextPrayer],
   );
+  const prayerStatusLabel = useMemo(() => {
+    if (hasPrayerSchedule) return 'Jadwal siap';
+    if (prayerSyncState === 'retrying') {
+      return `Mencoba ulang ${prayerRetryAttempt}/${prayerRetryDelays.length}`;
+    }
+    if (prayerSyncState === 'loading') return 'Sinkron jadwal';
+    if (prayerSyncState === 'blocked') return 'Butuh lokasi';
+    if (prayerSyncState === 'failed') return 'Tarik untuk ulang';
+    if (prayerSyncState === 'waiting') return 'Menunggu lokasi';
+    return 'Sinkron otomatis';
+  }, [hasPrayerSchedule, prayerRetryAttempt, prayerSyncState]);
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)
@@ -316,9 +335,74 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     .map((part) => part[0]?.toUpperCase())
     .join('');
 
+  const clearPrayerRetryTimer = useCallback(() => {
+    if (prayerRetryTimerRef.current) {
+      clearTimeout(prayerRetryTimerRef.current);
+      prayerRetryTimerRef.current = null;
+    }
+  }, []);
+
+  const fetchPrayerTimesWithRetry = useCallback(async function fetchPrayerTimesWithRetryForCoords(coords, attempt = 0) {
+    clearPrayerRetryTimer();
+
+    if (!coords) {
+      setPrayerTimes(null);
+      setNextPrayer(emptyPrayerState);
+      setPrayerRetryAttempt(0);
+      setPrayerSyncState('waiting');
+      return false;
+    }
+
+    if (mountedRef.current) {
+      setPrayerSyncState(attempt > 0 ? 'retrying' : 'loading');
+      setPrayerRetryAttempt(attempt);
+      if (attempt === 0) {
+        setPrayerMessage('');
+      } else {
+        setPrayerMessage(`Jadwal sholat belum tersedia. Mencoba ulang ${attempt}/${prayerRetryDelays.length}...`);
+      }
+    }
+
+    try {
+      const nextTimes = await getPrayerTimes({ ...coords, madhab: 'shafi', method: 'kemenag' });
+      if (!hasUsablePrayerTimes(nextTimes)) {
+        throw new Error('Prayer schedule is empty');
+      }
+      if (!mountedRef.current) return false;
+
+      setPrayerTimes(nextTimes);
+      setNextPrayer(resolvePrayerState(nextTimes));
+      setPrayerMessage('');
+      setPrayerRetryAttempt(0);
+      setPrayerSyncState('ready');
+      return true;
+    } catch {
+      if (!mountedRef.current) return false;
+
+      if (attempt < prayerRetryDelays.length) {
+        const nextAttempt = attempt + 1;
+        setPrayerRetryAttempt(nextAttempt);
+        setPrayerSyncState('retrying');
+        setPrayerMessage(`Jadwal sholat belum tersedia. Mencoba ulang ${nextAttempt}/${prayerRetryDelays.length}...`);
+        prayerRetryTimerRef.current = setTimeout(() => {
+          fetchPrayerTimesWithRetryForCoords(coords, nextAttempt);
+        }, prayerRetryDelays[attempt]);
+        return false;
+      }
+
+      setPrayerTimes(null);
+      setNextPrayer(emptyPrayerState);
+      setPrayerRetryAttempt(0);
+      setPrayerSyncState('failed');
+      setPrayerMessage('Jadwal sholat belum tersedia. Tarik untuk memuat ulang.');
+      return false;
+    }
+  }, [clearPrayerRetryTimer]);
+
   const loadHomeData = useCallback(async ({ refresh = false } = {}) => {
     const currentDate = new Date();
     setDateSnapshot(currentDate);
+    clearPrayerRetryTimer();
 
     if (refresh) {
       setRefreshing(true);
@@ -348,24 +432,26 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
           if (mountedRef.current) setLocationLabel(label);
         } else if (mountedRef.current) {
           setLocationLabel('LOKASI BELUM TERSEDIA');
+          setPrayerSyncState('waiting');
           setPrayerMessage('Lokasi belum terbaca. Tarik untuk memuat ulang jadwal sholat.');
         }
       } else if (mountedRef.current) {
         setLocationLabel('LOKASI NONAKTIF');
+        setPrayerSyncState('blocked');
         setPrayerMessage('Aktifkan lokasi untuk melihat jadwal sholat di tempatmu.');
       }
     } catch {
       if (mountedRef.current) {
         setLocationLabel('LOKASI BELUM TERSEDIA');
+        setPrayerSyncState('waiting');
         setPrayerMessage('Lokasi belum terbaca. Coba aktifkan GPS lalu tarik untuk memuat ulang.');
       }
     }
 
-    const [hadithResult, ayahResult, hijriResult, prayersResult] = await Promise.allSettled([
+    const [hadithResult, ayahResult, hijriResult] = await Promise.allSettled([
       getDailyHadith(),
       getDailyAyah(),
       getHijriToday(),
-      coords ? getPrayerTimes({ ...coords, madhab: 'shafi', method: 'kemenag' }) : Promise.resolve(null),
     ]);
 
     if (!mountedRef.current) return;
@@ -394,15 +480,11 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       setHijriDate(formatFallbackHijriHomeDate(currentDate));
     }
 
-    if (prayersResult.status === 'fulfilled' && prayersResult.value) {
-      setPrayerTimes(prayersResult.value);
-      setNextPrayer(resolvePrayerState(prayersResult.value));
+    if (coords) {
+      await fetchPrayerTimesWithRetry(coords);
     } else {
       setPrayerTimes(null);
-      setNextPrayer({ countdown: '--:--:--', key: 'asr', time: '--:--' });
-      if (coords) {
-        setPrayerMessage('Jadwal sholat belum tersedia. Coba muat ulang beberapa saat lagi.');
-      }
+      setNextPrayer(emptyPrayerState);
     }
 
     if (mountedRef.current) {
@@ -416,9 +498,10 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     loadHomeData();
 
     return () => {
+      clearPrayerRetryTimer();
       mountedRef.current = false;
     };
-  }, [loadHomeData]);
+  }, [clearPrayerRetryTimer, loadHomeData]);
 
   useEffect(() => {
     if (!prayerTimes) return undefined;
@@ -606,9 +689,9 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
 
       <View style={styles.prayerCard}>
         <View style={styles.prayerHeader}>
-          <View style={styles.locationPill}>
-            <Compass color={colors.primary} size={13} strokeWidth={2.4} />
-            <Text style={styles.locationPillText}>{locationLabel}</Text>
+          <View style={styles.prayerStatusPill}>
+            <Clock3 color={colors.primary} size={13} strokeWidth={2.4} />
+            <Text style={styles.prayerStatusText}>{prayerStatusLabel}</Text>
           </View>
           <View style={styles.prayerDateStack}>
             <Text style={styles.gregorianDate}>{gregorianDate}</Text>
@@ -917,7 +1000,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
-  locationPill: {
+  prayerStatusPill: {
     alignItems: 'center',
     backgroundColor: colors.surfaceMuted,
     borderColor: colors.faint,
@@ -929,7 +1012,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     maxWidth: '48%',
   },
-  locationPillText: {
+  prayerStatusText: {
     color: colors.primary,
     flexShrink: 1,
     fontSize: 11,

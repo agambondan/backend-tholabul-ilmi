@@ -87,7 +87,7 @@ jest.mock('../data/mobileFeatures', () => ({
 }));
 
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { act, render, fireEvent, waitFor } from '@testing-library/react-native';
 import { HomeScreen } from '../screens/HomeScreen';
 import { flushAsyncWork } from '../test-utils/async';
 
@@ -162,6 +162,10 @@ beforeEach(() => {
   readRecentFeatures.mockResolvedValue([]);
 });
 
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 describe('HomeScreen', () => {
   test('renders header with guest name', async () => {
     const { getByText } = await renderHomeScreen();
@@ -215,6 +219,34 @@ describe('HomeScreen', () => {
       expect(getByText('Ashar')).toBeTruthy();
       expect(getByText('Maghrib')).toBeTruthy();
       expect(getByText('Isya')).toBeTruthy();
+      expect(getByText('05:45')).toBeTruthy();
+    });
+  });
+
+  test('retries prayer schedule when the first call fails', async () => {
+    jest.useFakeTimers();
+    Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    Location.getCurrentPositionAsync.mockResolvedValue({
+      coords: { latitude: -6.2, longitude: 106.8 },
+    });
+    Location.reverseGeocodeAsync.mockResolvedValue([{ city: 'Jakarta' }]);
+    clientApi.getPrayerTimes
+      .mockRejectedValueOnce(new Error('temporary prayer error'))
+      .mockResolvedValueOnce(mockPrayerTimes);
+
+    const { getByText } = await renderHomeScreen();
+
+    await waitFor(() => {
+      expect(getByText('Mencoba ulang 1/4')).toBeTruthy();
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2500);
+    });
+    await flushAsyncWork();
+
+    await waitFor(() => {
+      expect(clientApi.getPrayerTimes).toHaveBeenCalledTimes(2);
       expect(getByText('05:45')).toBeTruthy();
     });
   });
