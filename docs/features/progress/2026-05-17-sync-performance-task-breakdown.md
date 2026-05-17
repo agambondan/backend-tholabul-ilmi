@@ -1,6 +1,6 @@
 # Sync And Performance Task Breakdown
 
-Status: `TODO`
+Status: `VERIFIED_WITH_DEVICE_SMOKE_PENDING`
 Priority: `P0-P2`
 Tanggal: `2026-05-17`
 Source Review: `docs/reviews/2026-05-17-web-mobile-performance-sync-deep-review.md`
@@ -9,6 +9,24 @@ Source Review: `docs/reviews/2026-05-17-web-mobile-performance-sync-deep-review.
 
 Menutup gap sync web/mobile/backend, memperbaiki CTA yang masih misleading,
 dan mengurangi risiko performance yang ditemukan pada deep review terbaru.
+
+## Current Status
+
+Task 1-11 sudah `VERIFIED` dan perubahan terkait sudah di-build/test. Sisa
+yang belum tertutup adalah device smoke mobile karena ADB belum melihat device
+aktif pada verifikasi 2026-05-17:
+
+```text
+List of devices attached
+```
+
+Smoke yang masih perlu dijalankan saat device aktif:
+
+- Tab Ibadah -> Khatam.
+- Belajar -> Flashcard Asmaul Husna.
+- Profile -> Achievements detail.
+- Quran deep link target ayah jauh.
+- Explore infinite scroll / paginated feature list.
 
 ## Task 1 - Backend Cache And Test Hardening
 

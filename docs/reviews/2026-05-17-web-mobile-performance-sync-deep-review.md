@@ -1,26 +1,45 @@
 # Web Mobile Sync And Performance Deep Review
 
-Status: `REVIEWED`
+Status: `REVIEWED_TASKS_VERIFIED_DEVICE_PENDING`
 Tanggal: `2026-05-17`
 Scope: `apps/web`, `apps/mobile`, `services/api`
 
 ## Ringkasan Verdict
 
-Web, mobile, dan backend belum bisa disebut 100% sync. Banyak gap besar dari
-review sebelumnya sudah tertutup, terutama katalog mobile, forum, peta, tokoh,
-tafsir, cross-reference hadis-ayah, dan beberapa fitur personal. Namun masih
-ada gap low-impact sampai high-impact yang mempengaruhi journey, CTA, dan
-persepsi user bahwa fitur web dan mobile setara.
+Update 2026-05-17: task implementasi dari review ini sudah ditutup sampai
+Task 11 di `docs/features/progress/2026-05-17-sync-performance-task-breakdown.md`.
+Status review sekarang bukan lagi baseline awal. Web, mobile, dan backend sudah
+lebih sinkron untuk area yang diaudit, dengan sisa utama berupa device smoke
+mobile yang belum bisa dijalankan karena device ADB tidak aktif.
 
-Verdict teknis saat review ini:
+Verdict teknis setelah Task 1-11:
 
 | Area | Status | Catatan |
 |---|---|---|
-| Web build | `PASS` | `cd apps/web && npm run build` berhasil, tetapi ada warning root lockfile/Turbopack. |
-| Mobile unit/integration test | `PASS_WITH_WARNINGS` | `cd apps/mobile && npm test -- --runInBand` lulus 537 test, tetapi banyak warning `act(...)`. |
-| Backend test | `FAIL` | `cd services/api/app && go test ./...` gagal di tafsir mock, route test nil repo, dan query dzikir ambiguous column. |
-| Feature parity web/mobile | `PARTIAL` | Fitur utama sudah banyak sync, tetapi beberapa CTA/entrypoint dan fitur turunan belum sejajar. |
-| Performance readiness | `PARTIAL` | Mobile list utama sudah memakai `FlatList`, tetapi ada hotspot Quran deep-load, web client bundle, dan cache middleware backend. |
+| Web build | `PASS` | `cd apps/web && npm run build` berhasil setelah Task 7 dan Task 11. Root lockfile/Turbopack warning sudah ditutup lewat config web. |
+| Mobile unit/integration test | `PASS` | `cd apps/mobile && npm test -- --runInBand` lulus 39 suites / 544 tests. Full suite tidak lagi melaporkan `act(...)` warning. |
+| Backend test | `PASS` | `cd services/api/app && go test ./...` hijau setelah cache/test hardening dan cache key coverage. |
+| Feature parity web/mobile | `VERIFIED_WITH_DEVICE_PENDING` | Khatam, Asmaul Flashcard, Achievements, landing discovery, dan feature manifest sudah ditutup; smoke device masih pending. |
+| Performance readiness | `PARTIAL_VERIFIED` | Backend cache, Quran deep target, Explore catalog, Quran screenshot dynamic import, landing server wrapper, dan `/panduan-sholat` client island sudah ditutup. Sisa: lanjut client-island pass route content-heavy lain. |
+
+## Resolution Update 2026-05-17
+
+Task breakdown yang menutup review ini:
+
+- Task 1: backend cache middleware dan backend test hardening - `VERIFIED`.
+- Task 2: mobile Khatam journey - `VERIFIED`.
+- Task 3: mobile Asmaul Husna Flashcard - `VERIFIED`.
+- Task 4: mobile Achievements detail journey - `VERIFIED`.
+- Task 5: landing web feature discovery sync - `VERIFIED`.
+- Task 6: feature manifest dan parity check - `VERIFIED`.
+- Task 7: web performance pass awal - `VERIFIED`.
+- Task 8: mobile Quran dan Explore performance pass - `VERIFIED`.
+- Task 9: backend cache key coverage - `VERIFIED`.
+- Task 10: mobile test warning cleanup - `VERIFIED`.
+- Task 11: `/panduan-sholat` web client-island pass - `VERIFIED`.
+
+Device smoke masih pending. Verifikasi terbaru `adb devices -l` pada
+2026-05-17 hanya mengembalikan header `List of devices attached` tanpa device.
 
 ## Evidence Review
 
@@ -38,6 +57,8 @@ Verdict teknis saat review ini:
 ## Feature Sync Findings
 
 ### P0 - Mobile Khatam CTA Belum Menjadi Fitur Khatam
+
+Status 2026-05-17: `CLOSED_BY_TASK_2`, device smoke pending.
 
 Web sudah punya route public `/khatam` dan dashboard `/dashboard/khatam`.
 Mobile menampilkan item `Khatam` di tab Ibadah, tetapi item tersebut hanya
@@ -57,6 +78,8 @@ Rekomendasi:
 
 ### P1 - Asmaul Husna Flashcard Belum Sync Ke Mobile
 
+Status 2026-05-17: `CLOSED_BY_TASK_3`, device smoke pending.
+
 Web punya route flashcard public dan dashboard:
 
 - `/asmaul-husna/flashcard`
@@ -75,6 +98,8 @@ Rekomendasi:
 
 ### P1 - Achievements Belum Punya Journey Mobile Penuh
 
+Status 2026-05-17: `CLOSED_BY_TASK_4`, device smoke pending.
+
 Web dashboard punya dedicated route `/dashboard/achievements`. Mobile
 `ProfileScreen` menampilkan ringkasan poin/achievement, tetapi belum ada
 halaman atau modal detail untuk daftar achievement, progress, dan reward.
@@ -91,6 +116,8 @@ Rekomendasi:
 - Sinkronkan label, progress, dan empty state dengan web dashboard.
 
 ### P1 - Landing Web Belum Mengekspos Semua Fitur Baru
+
+Status 2026-05-17: `CLOSED_BY_TASK_5`.
 
 Home web saat ini sudah mengarah ke banyak fitur core, tetapi belum terlihat
 mengekspos beberapa fitur yang sudah ada atau sudah ditambahkan belakangan,
@@ -118,6 +145,8 @@ Rekomendasi:
 
 ### P1 - Nama Fitur Dan Route Alias Belum Konsisten
 
+Status 2026-05-17: `CLOSED_BY_TASK_6`.
+
 Beberapa fitur punya perbedaan penamaan antara web route, mobile registry, dan
 copy UI:
 
@@ -136,6 +165,8 @@ Rekomendasi:
 
 ### P2 - Fitur Ada, Tetapi Entry Point Journey Belum Merata
 
+Status 2026-05-17: `CLOSED_BY_TASK_5_AND_TASK_6`.
+
 Beberapa fitur sudah ada di salah satu permukaan, tetapi entrypoint belum
 sekuat fitur lain:
 
@@ -151,6 +182,8 @@ sekuat fitur lain:
 
 ### P1 - CTA Mobile Harus Menjelaskan Destination
 
+Status 2026-05-17: `CLOSED_BY_TASK_2_TO_TASK_4`.
+
 CTA seperti `Khatam` yang membuka Quran tab adalah mismatch. Pola yang sama
 perlu dicek untuk semua item katalog:
 
@@ -161,6 +194,10 @@ perlu dicek untuk semua item katalog:
   redirect ke fitur lain.
 
 ### P1 - Dashboard Journey Jangan Bocor Ke Public Route
+
+Status 2026-05-17: `PARTIALLY_CLOSED_BY_EXISTING_PUBLIC_DASHBOARD_PARITY_TASKS`.
+Risiko ini tetap perlu dijaga lewat smoke dashboard terpisah saat ada perubahan
+CTA baru.
 
 Review sebelumnya menemukan banyak risiko CTA dashboard yang mengarah ke route
 public. Belum semua area diverifikasi ulang pada review ini, jadi statusnya
@@ -184,6 +221,8 @@ Rule yang harus dipakai:
 
 ### P2 - Discovery Mobile Dan Web Perlu Source Of Truth
 
+Status 2026-05-17: `CLOSED_BY_TASK_6`.
+
 Mobile punya `mobileFeatures.js`, web punya route dan landing grid sendiri.
 Tanpa source of truth, fitur baru mudah masuk ke mobile tapi lupa di landing
 web, atau sebaliknya.
@@ -203,6 +242,8 @@ Rekomendasi:
 ## Performance Findings
 
 ### P0 - Backend Cache Middleware Bisa Memberi Header Public Terlalu Dini
+
+Status 2026-05-17: `CLOSED_BY_TASK_1`.
 
 `CacheByType` di `services/api/app/http/middlewares/cache.go` mengatur header
 sebelum `c.Next()` selesai. Karena status response dicek sebelum route handler
@@ -225,6 +266,8 @@ Rekomendasi:
 
 ### P0 - Backend Test Suite Belum Hijau
 
+Status 2026-05-17: `CLOSED_BY_TASK_1`.
+
 `go test ./...` di `services/api/app` gagal pada tiga area:
 
 - `tafsir_service_test.go`: fake repo belum mengikuti interface terbaru yang
@@ -240,6 +283,8 @@ Impact:
 - Risiko regresi endpoint/cache tidak tertangkap.
 
 ### P1 - Web Build Warning Root Lockfile/Turbopack
+
+Status 2026-05-17: `CLOSED_BY_TASK_7`.
 
 Build web berhasil, tetapi Next.js mendeteksi workspace root dari
 `/home/firman/package-lock.json` dan memberi warning karena ada lockfile lain
@@ -257,6 +302,8 @@ Rekomendasi:
 
 ### P1 - Landing Web Masih Full Client Component
 
+Status 2026-05-17: `CLOSED_BY_TASK_7`.
+
 `apps/web/src/app/page.js` memakai `'use client'`. Untuk landing page yang
 banyak berisi content, CTA, dan widget terbatas, full client component membuat
 bundle awal lebih berat dari yang diperlukan.
@@ -268,6 +315,8 @@ Rekomendasi:
 - Pastikan hero, feature grid, dan static content tetap render server-side.
 
 ### P1 - Quran Web Mengimpor `html2canvas` Di Top-Level
+
+Status 2026-05-17: `CLOSED_BY_TASK_7`.
 
 `apps/web/src/app/quran/[...slug]/AyahPage.js` mengimpor `html2canvas` di
 top-level. Di route hadis detail, pola yang lebih ringan sudah dipakai dengan
@@ -281,6 +330,8 @@ Rekomendasi:
 
 ### P1 - Mobile Quran Deep Target Bisa Fan-Out Banyak Request
 
+Status 2026-05-17: `CLOSED_BY_TASK_8`, device smoke pending.
+
 `QuranScreen` punya pola load target ayah yang mengambil page 0 sampai target
 page sekaligus. Untuk ayah yang jauh di akhir surah, ini bisa membuat banyak
 request paralel hanya untuk membuka target tertentu.
@@ -292,6 +343,9 @@ Rekomendasi:
 - Hindari memuat semua page sebelumnya hanya untuk positioning awal.
 
 ### P1 - ExploreScreen Mobile Masih Menjadi Hotspot Besar
+
+Status 2026-05-17: `PARTIALLY_CLOSED_BY_TASK_8`; catalog rendering sudah
+dipisah, split domain lanjutan masih bisa dilakukan bertahap.
 
 Explore sudah lebih baik karena active list memakai `FlatList` lewat shared
 `Screen`, tetapi `ExploreScreen` masih memegang banyak state, handler, dan
@@ -312,6 +366,8 @@ Rekomendasi:
 
 ### P2 - Mobile Test Lulus Tetapi Banyak Warning `act(...)`
 
+Status 2026-05-17: `CLOSED_BY_TASK_10`.
+
 Test mobile lulus 537 test, tetapi warning `act(...)` masih banyak muncul dari
 beberapa screen. Ini bukan blocker release langsung, tetapi membuat signal test
 lebih bising dan bisa menutupi warning baru.
@@ -323,6 +379,8 @@ Rekomendasi:
 - Jadikan warning baru sebagai indikator regresi setelah baseline dibersihkan.
 
 ### P2 - Backend Cache Key Coverage Belum Merata
+
+Status 2026-05-17: `CLOSED_BY_TASK_9`.
 
 `services/api/app/lib/cache.go` sudah punya TTL prefix untuk banyak domain,
 tetapi fitur baru dan public catalog belum semuanya terlihat setara, seperti:
@@ -351,11 +409,13 @@ Rekomendasi:
 
 ## Done Criteria Untuk Menutup Review Ini
 
-- Backend `go test ./...` di `services/api/app` hijau.
-- Mobile Khatam tidak lagi misleading.
+- Backend `go test ./...` di `services/api/app` hijau - `DONE`.
+- Mobile Khatam tidak lagi misleading - `DONE`.
 - Asmaul Flashcard dan Achievements punya journey mobile atau status UI yang
-  eksplisit.
-- Landing web mengekspos fitur public baru yang sudah tersedia.
+  eksplisit - `DONE`.
+- Landing web mengekspos fitur public baru yang sudah tersedia - `DONE`.
 - Dashboard CTA tidak keluar dari layout dashboard saat user mulai dari
-  dashboard.
-- Ada manifest/checklist parity yang dipakai saat menambah fitur baru.
+  dashboard - `PARTIAL`, tetap perlu regression smoke saat CTA baru ditambah.
+- Ada manifest/checklist parity yang dipakai saat menambah fitur baru - `DONE`.
+- Device smoke mobile untuk Khatam, Asmaul Flashcard, Achievements, Quran deep
+  link, dan Explore infinite scroll - `PENDING_DEVICE`.
