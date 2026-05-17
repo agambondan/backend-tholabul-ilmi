@@ -33,6 +33,7 @@ import {
 import {
     getAsbabForAyah,
     getAyahAudio,
+    getAyahById,
     getAyahsForHizb,
     getAyahsForPage,
     getAyahsForSurahPage,
@@ -119,6 +120,7 @@ const QURAN_TABS = [
 const SWIPE_TRIGGER_DISTANCE = 34;
 const SWIPE_EDGE_GUARD = 24;
 const SURAH_PAGE_SIZE = 20;
+const SURAH_TARGET_PREFETCH_RADIUS = 1;
 const SURAH_PREFETCH_DISTANCE = 620;
 const MUSHAF_FIRST_PAGE = 1;
 const MUSHAF_LAST_PAGE = 604;
@@ -202,9 +204,37 @@ const clampMushafPage = (page) => {
     return Math.max(MUSHAF_FIRST_PAGE, Math.min(MUSHAF_LAST_PAGE, numeric));
 };
 
+const mergeUniqueAyahs = (pageResults = []) => {
+    const seen = new Set();
+    return pageResults
+        .flatMap((pageResult) => pageResult?.items ?? [])
+        .filter((ayah) => {
+            const key = getAyahIdentity(ayah);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+};
+
 const getFirstPageNumber = (items, fallback = MUSHAF_FIRST_PAGE) => {
     const pageNumber = items.find((ayah) => Number.isFinite(Number(ayah.pageNumber)))?.pageNumber;
     return clampMushafPage(pageNumber ?? fallback);
+};
+
+const getSurahPageForAyah = (ayahNumber) => {
+    const numeric = Number.parseInt(`${ayahNumber}`, 10);
+    if (!Number.isFinite(numeric) || numeric < 1) return 0;
+    return Math.floor((numeric - 1) / SURAH_PAGE_SIZE);
+};
+
+const getInitialSurahPages = (targetPage, totalAyahs) => {
+    const page = Math.max(0, Number.parseInt(`${targetPage}`, 10) || 0);
+    const maxPage = Number(totalAyahs) > 0
+        ? Math.max(0, Math.floor((Number(totalAyahs) - 1) / SURAH_PAGE_SIZE))
+        : page + SURAH_TARGET_PREFETCH_RADIUS;
+    const start = Math.max(0, page - SURAH_TARGET_PREFETCH_RADIUS);
+    const end = Math.min(maxPage, Math.max(start, page + SURAH_TARGET_PREFETCH_RADIUS));
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
 };
 
 const getMushafTranslationLength = (ayah) => String(ayah.translation || '').length;
@@ -879,19 +909,29 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         setTargetAyah(nextTargetAyah);
         setReaderLoading(true);
         try {
-            const targetPage = nextTargetAyah?.number
-                ? Math.floor((Number(nextTargetAyah.number) - 1) / SURAH_PAGE_SIZE)
+            const resolvedTargetAyah = nextTargetAyah?.id && !nextTargetAyah.number
+                ? await getAyahById(nextTargetAyah.id).catch(() => nextTargetAyah)
+                : nextTargetAyah;
+            const normalizedTargetAyah = resolvedTargetAyah
+                ? {
+                    id: resolvedTargetAyah.id ?? nextTargetAyah.id ?? null,
+                    number: resolvedTargetAyah.number ?? nextTargetAyah.number ?? null,
+                  }
+                : null;
+            if (normalizedTargetAyah) {
+                setTargetAyah(normalizedTargetAyah);
+            }
+            const targetPage = normalizedTargetAyah?.number
+                ? getSurahPageForAyah(normalizedTargetAyah.number)
                 : 0;
+            const pagesToLoad = getInitialSurahPages(targetPage, surah.ayahs);
             const pages = await Promise.all(
-                Array.from({ length: targetPage + 1 }, (_, page) =>
+                pagesToLoad.map((page) =>
                     getAyahsForSurahPage(surah.number, { page, size: SURAH_PAGE_SIZE }),
                 ),
             );
-            const result = pages[pages.length - 1];
-            const initialAyahs = pages.flatMap((pageResult) => pageResult.items).filter((ayah, index, all) => {
-                const key = getAyahIdentity(ayah);
-                return all.findIndex((item) => getAyahIdentity(item) === key) === index;
-            });
+            const result = pages[pages.length - 1] ?? { hasMore: false, page: 0 };
+            const initialAyahs = mergeUniqueAyahs(pages);
             const expectedTotal = Number(surah.ayahs);
             const loadedKeys = new Set(initialAyahs.map(getAyahIdentity));
             surahPaginationRef.current = {
@@ -903,10 +943,10 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                 surahNumber: surah.number,
             };
             setAyahs(initialAyahs);
-            const targetAyahInLoaded = nextTargetAyah
+            const targetAyahInLoaded = normalizedTargetAyah
                 ? initialAyahs.find((ayah) =>
-                    (nextTargetAyah.id && Number(nextTargetAyah.id) === Number(ayah.id)) ||
-                    (nextTargetAyah.number && Number(nextTargetAyah.number) === Number(ayah.number)),
+                    (normalizedTargetAyah.id && Number(normalizedTargetAyah.id) === Number(ayah.id)) ||
+                    (normalizedTargetAyah.number && Number(normalizedTargetAyah.number) === Number(ayah.number)),
                   )
                 : null;
             const initialPage = targetAyahInLoaded?.pageNumber
@@ -921,8 +961,8 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                 await loadMushafPage(initialPage, { items: pagePreviewAyahs });
             }
             await loadBookmarks();
-            if (nextTargetAyah?.number) {
-                setMessage(`Dibuka dari pencarian ke ayat ${nextTargetAyah.number}.`);
+            if (normalizedTargetAyah?.number) {
+                setMessage(`Dibuka dari pencarian ke ayat ${normalizedTargetAyah.number}.`);
             }
         } catch (err) {
             setAyahs([]);

@@ -7,6 +7,7 @@ jest.mock('../constants/quranFonts', () => ({
 jest.mock('../api/client', () => ({
   getSurahs: jest.fn().mockResolvedValue([]),
   getAyahsForSurahPage: jest.fn().mockResolvedValue({ items: [], hasMore: false, page: 0 }),
+  getAyahById: jest.fn().mockResolvedValue(null),
   getAyahAudio: jest.fn().mockResolvedValue({ audio_url: 'https://example.com/audio.mp3' }),
   getAyahsForHizb: jest.fn().mockResolvedValue([]),
   getAyahsForPage: jest.fn().mockResolvedValue([]),
@@ -294,6 +295,34 @@ describe('QuranScreen', () => {
     await waitFor(() => {
       expect(client.getAyahsForSurahPage).toHaveBeenCalledWith(1, expect.any(Object));
     });
+  });
+
+  it('loads only a small page window when opened from a far target ayah', async () => {
+    client.getSurahs.mockResolvedValue([mockSurah(1, { ayahs: 120 })]);
+    client.getAyahsForSurahPage.mockImplementation((surahNumber, { page, size }) => {
+      const firstAyah = page * size + 1;
+      const items = Array.from({ length: size }, (_, index) =>
+        mockAyah(firstAyah + index, surahNumber, { pageNumber: page + 1 }),
+      );
+      return Promise.resolve({ items, hasMore: page < 5, page });
+    });
+
+    render(
+      <QuranScreen
+        deepLinkTarget={{ id: 'quran-target-65', params: { surahNumber: 1, ayahNumber: 65 } }}
+        isActive
+        navigation={mockNavigation}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(client.getAyahsForSurahPage).toHaveBeenCalledTimes(3);
+    });
+
+    const loadedPages = client.getAyahsForSurahPage.mock.calls.map(([, options]) => options.page);
+    expect(loadedPages).toEqual([2, 3, 4]);
+    expect(loadedPages).not.toContain(0);
+    expect(loadedPages).not.toContain(1);
   });
 
   it('shows "Hafalan" tab with content', async () => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Globe, Heart, HelpCircle, ListChecks, MessageCircle, Pencil, Scale, Star, StickyNote, Trash2, UserCircle, Users, Video } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Heart, MessageCircle, Pencil, StickyNote, Trash2, UserCircle } from 'lucide-react-native';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import {
   getAllNotes,
@@ -25,11 +25,11 @@ import { Card, CardTitle } from '../components/Card';
 import { ContentCard } from '../components/ContentCard';
 import { NotesPanel } from '../components/NotesPanel';
 import { NotificationCenter } from '../components/NotificationCenter';
-import { ActionPill, CompactRow, IconActionButton, PaperSearchInput, SectionHeader } from '../components/Paper';
+import { ActionPill, IconActionButton, PaperSearchInput } from '../components/Paper';
 import { Screen } from '../components/Screen';
 import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
-import { allFeatures, belajarFeatureGroups } from '../data/mobileFeatures';
+import { FeatureCatalog, findFeatureByKey, isPaginatedFeature, LOCAL_TOOL_TYPES } from './explore/FeatureCatalog';
 import { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinnedFeature } from '../storage/recentFeatures';
 import { colors, radius, spacing } from '../theme';
 import {
@@ -56,43 +56,7 @@ import { HistoricalMapContent } from './HistoricalMapScreen';
 
 const quizOptions = ['A', 'B', 'C', 'D'];
 
-const localTools = ['tasbih', 'zakat', 'faraidh', 'notifications', 'surah-content', 'sholat-tracker', 'asmaul-wirid', 'asmaul-flashcard', 'forum', 'historical-map'];
 const EXPLORE_PAGE_SIZE = 20;
-
-const belajarFeatureIcons = {
-  'asbabun-nuzul': BookOpen,
-  'asmaul-flashcard': Star,
-  'asmaul-husna': Star,
-  blog: BookOpen,
-  bookmarks: Bookmark,
-  'community-feed': MessageCircle,
-  fiqh: BookOpen,
-  goals: Star,
-  'jarh-tadil': Scale,
-  kajian: Video,
-  kamus: Star,
-  leaderboard: Users,
-  manasik: BookOpen,
-  notes: StickyNote,
-  'panduan-sholat': BookOpen,
-  perawi: Users,
-  quiz: HelpCircle,
-  sejarah: Globe,
-  siroh: Users,
-  stats: Globe,
-  tafsir: BookOpen,
-  'user-wird': ListChecks,
-};
-
-const belajarSections = belajarFeatureGroups.map((group) => ({
-  key: group.key,
-  title: group.label,
-  meta: group.meta,
-  rows: group.features.map((feature) => ({
-    featureKey: feature.key,
-    Icon: belajarFeatureIcons[feature.key] ?? BookOpen,
-  })),
-}));
 
 const PRAYER_ITEMS = [
   { key: 'subuh', label: 'Subuh' },
@@ -157,25 +121,6 @@ const getItemRef = (feature, item) => {
   };
 };
 const getExploreItemKey = (item) => String(item?.id ?? item?.raw?.id ?? item?.raw?.slug ?? item?.title ?? item?.body);
-const isPaginatedFeature = (feature) => feature?.type === 'feed' || (Boolean(feature?.endpoint) && ['list', 'protected-list'].includes(feature.type));
-const findFeature = (featureKey) => allFeatures.find((feature) => feature.key === featureKey);
-const getFeatureBadges = (feature, recentFeatureKeys = {}) => {
-  const badges = [];
-
-  if (recentFeatureKeys[feature?.key]) badges.push('Terakhir');
-  if (Array.isArray(feature?.badges)) badges.push(...feature.badges);
-  if (['protected-list', 'bookmarks', 'notes'].includes(feature?.type)) badges.push('Akun');
-  if (localTools.includes(feature?.type)) badges.push('Lokal');
-
-  return [...new Set(badges)].slice(0, 3);
-};
-const matchesCatalogQuery = (section, feature, query) => {
-  const text = [section.title, section.meta, feature?.title, feature?.subtitle, feature?.group, feature?.key]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-  return text.includes(query);
-};
 const mergeUniqueItems = (currentItems, nextItems) => {
   const seen = new Set(currentItems.map(getExploreItemKey));
   const merged = [...currentItems];
@@ -290,18 +235,6 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [pagination, setPagination] = useState({ page: 0, hasMore: false, loadingMore: false });
   const loadingMoreRef = useRef(false);
 
-  const catalogSections = useMemo(() => {
-    const query = normalizeSearchText(featureSearch);
-    return belajarSections
-      .map((section) => {
-        const rows = section.rows
-          .map((row) => ({ ...row, feature: findFeature(row.featureKey) }))
-          .filter((row) => row.feature && (!query || matchesCatalogQuery(section, row.feature, query)));
-        return { ...section, rows };
-      })
-      .filter((section) => section.rows.length > 0);
-  }, [featureSearch]);
-
   const visibleSurahOptions = useMemo(() => {
     const query = normalizeSearchText(surahSearch);
     const matches = query
@@ -383,7 +316,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         setSelectedSurahNumber(null);
       }
 
-      if (localTools.includes(feature.type)) {
+      if (LOCAL_TOOL_TYPES.includes(feature.type)) {
         if (feature.type === 'surah-content') {
           setLoading(true);
           try {
@@ -851,7 +784,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     const featureKey = deepLinkTarget?.params?.featureKey;
     if (!featureKey || handledDeepLinkId.current === deepLinkTarget?.id) return;
 
-    const feature = allFeatures.find((item) => item.key === featureKey);
+    const feature = findFeatureByKey(featureKey);
     if (!feature) return;
 
     handledDeepLinkId.current = deepLinkTarget.id;
@@ -2638,51 +2571,13 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
             placeholder="Cari kajian, tafsir, kamus, perawi, quiz..."
             value={featureSearch}
           />
-          {catalogSections.length ? (
-            catalogSections.map((section) => (
-            <View key={section.key} style={styles.belajarSection}>
-              <SectionHeader meta={section.meta} title={section.title} />
-              <Card style={styles.belajarCard}>
-                {section.rows.map((row) => {
-                  const pinned = Boolean(pinnedFeatureKeys[row.feature.key]);
-                  const badges = getFeatureBadges(row.feature, recentFeatureKeys);
-                  return (
-                    <CompactRow
-                      badges={badges}
-                      Icon={row.Icon}
-                      key={row.feature.key}
-                      onPress={() => loadFeature(row.feature)}
-                      right={(
-                        <Pressable
-                          accessibilityLabel={pinned ? `Lepas ${row.feature.title} dari Beranda` : `Sematkan ${row.feature.title} ke Beranda`}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected: pinned }}
-                          android_ripple={{ color: 'rgba(91, 110, 91, 0.12)', borderless: true }}
-                          onPress={(event) => handleTogglePinnedFeature(event, row.feature)}
-                          style={[styles.pinButton, pinned && styles.pinButtonActive]}
-                        >
-                          <Star
-                            color={pinned ? colors.onPrimary : colors.primary}
-                            fill={pinned ? colors.onPrimary : 'transparent'}
-                            size={15}
-                            strokeWidth={2.2}
-                          />
-                        </Pressable>
-                      )}
-                      subtitle={row.feature.subtitle}
-                      title={row.feature.title}
-                    />
-                  );
-                })}
-              </Card>
-            </View>
-            ))
-          ) : (
-            <Card>
-              <CardTitle meta="Kosong">Tidak ada hasil</CardTitle>
-              <Text style={styles.body}>Coba kata lain seperti tafsir, kamus, siroh, atau quiz.</Text>
-            </Card>
-          )}
+          <FeatureCatalog
+            featureSearch={featureSearch}
+            onFeaturePress={loadFeature}
+            onTogglePinnedFeature={handleTogglePinnedFeature}
+            pinnedFeatureKeys={pinnedFeatureKeys}
+            recentFeatureKeys={recentFeatureKeys}
+          />
         </>
       )}
 
@@ -2695,7 +2590,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           Dijawab {Object.keys(answers).length}/{items.length}, skor {scoreQuiz()}
         </Text>
       ) : null}
-      {!loading && activeFeature && !error && !items.length && !localTools.includes(activeFeature.type) && !(activeFeature.type === 'user-wird' && !session?.token) ? (
+      {!loading && activeFeature && !error && !items.length && !LOCAL_TOOL_TYPES.includes(activeFeature.type) && !(activeFeature.type === 'user-wird' && !session?.token) ? (
         <Text style={styles.empty}>
           {activeFeature.type === 'bookmarks'
             ? 'Belum ada bookmark tersimpan. Buka suatu hadis atau ayat lalu simpan.'
@@ -2717,28 +2612,6 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
 }
 
 const styles = StyleSheet.create({
-  belajarSection: {
-    marginBottom: spacing.lg,
-  },
-  belajarCard: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  pinButton: {
-    alignItems: 'center',
-    backgroundColor: colors.bg,
-    borderColor: colors.faint,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    flexShrink: 0,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-  pinButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
   backToExplore: {
     alignItems: 'center',
     borderColor: colors.faint,

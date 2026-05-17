@@ -322,7 +322,8 @@ Completed: `2026-05-17`
 
 Priority: `P1`
 Area: `apps/mobile`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -340,9 +341,31 @@ Status: `TODO`
 
 ### Verification
 
-- `cd apps/mobile && npm test -- --runInBand`
-- Device smoke Quran deep link target ayah.
-- Device smoke Explore infinite scroll.
+- `node --check apps/mobile/src/screens/QuranScreen.js` - `PASS`
+- `node --check apps/mobile/src/screens/ExploreScreen.js` - `PASS`
+- `node --check apps/mobile/src/screens/explore/FeatureCatalog.js` - `PASS`
+- `cd apps/mobile && npm test -- --runInBand src/__tests__/quranScreen.test.js src/__tests__/exploreScreen.test.js` - `PASS`
+- `cd apps/mobile && npm test -- --runInBand` - `PASS`
+  - 39 suites / 544 tests passed.
+  - Existing `act(...)` warnings still appear in several mobile tests; they do
+    not fail the suite and are tracked separately by Task 10.
+- `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-quran-explore-perf-export` - `PASS`
+- Automated Quran deep-link regression added:
+  - target ayah 65 loads pages `[2, 3, 4]` only, not pages `0..4`.
+- Device smoke Quran deep link target ayah - `PENDING`
+- Device smoke Explore infinite scroll - `PENDING`
+
+### Implementation Notes
+
+- `QuranScreen` now resolves target ayah IDs when needed, calculates the target
+  surah page directly, and prefetches only a small page window around it.
+- The far-target loader no longer requests every page from `0` through target.
+- Explore catalog rendering moved into
+  `apps/mobile/src/screens/explore/FeatureCatalog.js`.
+- Catalog rows and pin/open handlers are memoized so the Belajar catalog is less
+  sensitive to unrelated state churn as feature count grows.
+- Active feature content still uses the existing `Screen` FlatList path for
+  paginated lists and infinite scroll.
 
 ## Task 9 - Backend Cache Key Coverage
 
