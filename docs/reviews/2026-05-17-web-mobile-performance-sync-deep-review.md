@@ -1,6 +1,6 @@
 # Web Mobile Sync And Performance Deep Review
 
-Status: `REVIEWED_TASKS_VERIFIED_DEVICE_PENDING`
+Status: `REVIEWED_TASKS_DEVICE_VERIFIED`
 Tanggal: `2026-05-17`
 Scope: `apps/web`, `apps/mobile`, `services/api`
 
@@ -9,9 +9,8 @@ Scope: `apps/web`, `apps/mobile`, `services/api`
 Update 2026-05-17: task implementasi dari review ini sudah ditutup sampai
 Task 11 di `docs/features/progress/2026-05-17-sync-performance-task-breakdown.md`.
 Status review sekarang bukan lagi baseline awal. Web, mobile, dan backend sudah
-lebih sinkron untuk area yang diaudit, dengan sisa utama berupa device smoke
-mobile yang belum bisa dijalankan sampai selesai karena device ADB terkunci
-keyguard.
+lebih sinkron untuk area yang diaudit. Device smoke mobile sudah selesai
+dijalankan pada device fisik setelah device di-unlock.
 
 Verdict teknis setelah Task 1-11:
 
@@ -20,7 +19,7 @@ Verdict teknis setelah Task 1-11:
 | Web build | `PASS` | `cd apps/web && npm run build` berhasil setelah Task 7 dan Task 11. Root lockfile/Turbopack warning sudah ditutup lewat config web. |
 | Mobile unit/integration test | `PASS` | `cd apps/mobile && npm test -- --runInBand` lulus 39 suites / 544 tests. Full suite tidak lagi melaporkan `act(...)` warning. |
 | Backend test | `PASS` | `cd services/api/app && go test ./...` hijau setelah cache/test hardening dan cache key coverage. |
-| Feature parity web/mobile | `VERIFIED_WITH_DEVICE_PENDING` | Khatam, Asmaul Flashcard, Achievements, landing discovery, dan feature manifest sudah ditutup; smoke device masih pending karena keyguard. |
+| Feature parity web/mobile | `DEVICE_VERIFIED` | Khatam, Asmaul Flashcard, Achievements, landing discovery, dan feature manifest sudah ditutup dan smoke device lulus. |
 | Performance readiness | `PARTIAL_VERIFIED` | Backend cache, Quran deep target, Explore catalog, Quran screenshot dynamic import, landing server wrapper, serta `/panduan-sholat` dan `/tahlil` client island sudah ditutup. Sisa: lanjut client-island pass route content-heavy lain. |
 
 ## Resolution Update 2026-05-17
@@ -39,11 +38,14 @@ Task breakdown yang menutup review ini:
 - Task 10: mobile test warning cleanup - `VERIFIED`.
 - Task 11: `/panduan-sholat` dan `/tahlil` web client-island pass - `VERIFIED`.
 
-Device smoke masih pending. Verifikasi terbaru pada 2026-05-17 sudah melihat
-device `22101316G`, Expo/Metro berhasil dibuka melalui `make mobile-dev-all`,
-tetapi UI automation berhenti di lock screen `Enter PIN or use fingerprint to
-unlock`, sehingga navigasi Khatam, Asmaul Flashcard, Achievements, Quran deep
-link, dan Explore belum bisa dinyatakan lulus dari device fisik.
+Device smoke sudah selesai pada 2026-05-17 dengan device `22101316G` melalui
+`make mobile-dev-all`. Journey yang diverifikasi:
+
+- Ibadah -> Khatam - `PASS`.
+- Belajar -> Flashcard Asmaul Husna -> Lihat arti - `PASS`.
+- Profile -> Achievements detail - `PASS`.
+- Quran deep link target ayah jauh `quran/2/65` - `PASS`.
+- Explore infinite scroll / paginated feature list - `PASS`.
 
 ## Evidence Review
 
@@ -62,7 +64,7 @@ link, dan Explore belum bisa dinyatakan lulus dari device fisik.
 
 ### P0 - Mobile Khatam CTA Belum Menjadi Fitur Khatam
 
-Status 2026-05-17: `CLOSED_BY_TASK_2`, device smoke pending.
+Status 2026-05-17: `CLOSED_BY_TASK_2_DEVICE_VERIFIED`.
 
 Web sudah punya route public `/khatam` dan dashboard `/dashboard/khatam`.
 Mobile menampilkan item `Khatam` di tab Ibadah, tetapi item tersebut hanya
@@ -82,7 +84,7 @@ Rekomendasi:
 
 ### P1 - Asmaul Husna Flashcard Belum Sync Ke Mobile
 
-Status 2026-05-17: `CLOSED_BY_TASK_3`, device smoke pending.
+Status 2026-05-17: `CLOSED_BY_TASK_3_DEVICE_VERIFIED`.
 
 Web punya route flashcard public dan dashboard:
 
@@ -102,7 +104,7 @@ Rekomendasi:
 
 ### P1 - Achievements Belum Punya Journey Mobile Penuh
 
-Status 2026-05-17: `CLOSED_BY_TASK_4`, device smoke pending.
+Status 2026-05-17: `CLOSED_BY_TASK_4_DEVICE_VERIFIED`.
 
 Web dashboard punya dedicated route `/dashboard/achievements`. Mobile
 `ProfileScreen` menampilkan ringkasan poin/achievement, tetapi belum ada
@@ -334,7 +336,7 @@ Rekomendasi:
 
 ### P1 - Mobile Quran Deep Target Bisa Fan-Out Banyak Request
 
-Status 2026-05-17: `CLOSED_BY_TASK_8`, device smoke pending.
+Status 2026-05-17: `CLOSED_BY_TASK_8_DEVICE_VERIFIED`.
 
 `QuranScreen` punya pola load target ayah yang mengambil page 0 sampai target
 page sekaligus. Untuk ayah yang jauh di akhir surah, ini bisa membuat banyak
@@ -422,4 +424,4 @@ Rekomendasi:
   dashboard - `PARTIAL`, tetap perlu regression smoke saat CTA baru ditambah.
 - Ada manifest/checklist parity yang dipakai saat menambah fitur baru - `DONE`.
 - Device smoke mobile untuk Khatam, Asmaul Flashcard, Achievements, Quran deep
-  link, dan Explore infinite scroll - `PENDING_DEVICE`.
+  link, dan Explore infinite scroll - `DONE`.

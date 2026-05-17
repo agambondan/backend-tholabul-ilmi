@@ -1,6 +1,6 @@
 # Sync And Performance Task Breakdown
 
-Status: `VERIFIED_WITH_DEVICE_SMOKE_PENDING`
+Status: `VERIFIED_WITH_DEVICE_SMOKE`
 Priority: `P0-P2`
 Tanggal: `2026-05-17`
 Source Review: `docs/reviews/2026-05-17-web-mobile-performance-sync-deep-review.md`
@@ -12,22 +12,21 @@ dan mengurangi risiko performance yang ditemukan pada deep review terbaru.
 
 ## Current Status
 
-Task 1-11 sudah `VERIFIED` dan perubahan terkait sudah di-build/test. Sisa
-yang belum tertutup adalah device smoke mobile. Verifikasi 2026-05-17 terbaru
-sudah melihat device ADB dan berhasil membuka Expo/Metro, tetapi device masih
-terkunci keyguard/PIN sehingga UI journey belum bisa dinavigasi:
+Task 1-11 sudah `VERIFIED` dan perubahan terkait sudah di-build/test. Device
+smoke mobile juga sudah dijalankan pada device fisik setelah device di-unlock.
+Verifikasi runtime:
 
 ```text
 z5yxpjrgvw8pdqzt       device usb:3-9 product:ruby_id model:22101316G device:ruby transport_id:1
-Enter PIN or use fingerprint to unlock
+make mobile-dev-all
 ```
 
-Smoke yang masih perlu dijalankan saat device sudah unlocked:
+Smoke device yang sudah lulus:
 
 - Tab Ibadah -> Khatam.
-- Belajar -> Flashcard Asmaul Husna.
+- Belajar -> Flashcard Asmaul Husna -> Lihat arti.
 - Profile -> Achievements detail.
-- Quran deep link target ayah jauh.
+- Quran deep link target ayah jauh `exp://127.0.0.1:19007/--/quran/2/65`.
 - Explore infinite scroll / paginated feature list.
 
 ## Task 1 - Backend Cache And Test Hardening
@@ -100,7 +99,8 @@ Completed: `2026-05-17`
 
 - `cd apps/mobile && npm test -- --runInBand` - `PASS`
 - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-khatam-mobile-export` - `PASS`
-- Device smoke dari tab Ibadah ke Khatam masih perlu dijalankan pada device fisik.
+- Device smoke dari tab Ibadah ke Khatam - `PASS`
+  - Evidence: `output/native/2026-05-17/khatam-screen.png`
 
 ### Implementation Notes
 
@@ -141,7 +141,8 @@ Completed: `2026-05-17`
 - `cd apps/mobile && npm test -- --runInBand src/__tests__/exploreScreen.test.js src/__tests__/mobileFeatures.test.js` - `PASS`
 - `cd apps/mobile && npm test -- --runInBand` - `PASS`
 - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-asmaul-flashcard-export` - `PASS`
-- Device smoke fitur Asmaul Husna Flashcard masih perlu dijalankan pada device fisik.
+- Device smoke fitur Asmaul Husna Flashcard - `PASS`
+  - Evidence: `output/native/2026-05-17/asmaul-flashcard-revealed.png`
 
 ### Implementation Notes
 
@@ -180,7 +181,8 @@ Completed: `2026-05-17`
 - `cd apps/mobile && npm test -- --runInBand src/__tests__/profileScreen.test.js src/__tests__/api-personal.test.js` - `PASS`
 - `cd apps/mobile && npm test -- --runInBand` - `PASS`
 - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-achievements-detail-export` - `PASS`
-- Device smoke Profile -> Achievements detail masih perlu dijalankan pada device fisik.
+- Device smoke Profile -> Achievements detail - `PASS`
+  - Evidence: `output/native/2026-05-17/profile-achievements-detail.png`
 
 ### Implementation Notes
 
@@ -372,8 +374,10 @@ Completed: `2026-05-17`
 - `cd apps/mobile && npx expo export --platform android --dev --output-dir /tmp/thollabul-quran-explore-perf-export` - `PASS`
 - Automated Quran deep-link regression added:
   - target ayah 65 loads pages `[2, 3, 4]` only, not pages `0..4`.
-- Device smoke Quran deep link target ayah - `PENDING`
-- Device smoke Explore infinite scroll - `PENDING`
+- Device smoke Quran deep link target ayah `quran/2/65` - `PASS`
+  - Evidence: `output/native/2026-05-17/quran-deeplink-2-65.png`
+- Device smoke Explore infinite scroll - `PASS`
+  - Evidence: `output/native/2026-05-17/explore-scroll.png`
 
 ### Implementation Notes
 
@@ -518,9 +522,9 @@ Completed: `2026-05-17`
   - `/dashboard/panduan-sholat` tetap prerendered static.
   - `/tahlil` tetap prerendered static.
   - `/dashboard/tahlil` tetap prerendered static.
-- Device mobile smoke untuk task sebelumnya belum bisa dilanjutkan sampai
-  selesai pada slice ini karena device sudah terdeteksi tetapi masih tertahan
-  lock screen `Enter PIN or use fingerprint to unlock`.
+- Device mobile smoke untuk task sebelumnya sudah dilanjutkan setelah device
+  di-unlock. Khatam, Asmaul Flashcard, Achievements, Quran deep link, dan
+  Explore scroll sudah `PASS`.
 
 ### Implementation Notes
 
