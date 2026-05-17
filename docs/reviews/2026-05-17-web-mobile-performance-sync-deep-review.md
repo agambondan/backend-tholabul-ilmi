@@ -10,7 +10,8 @@ Update 2026-05-17: task implementasi dari review ini sudah ditutup sampai
 Task 11 di `docs/features/progress/2026-05-17-sync-performance-task-breakdown.md`.
 Status review sekarang bukan lagi baseline awal. Web, mobile, dan backend sudah
 lebih sinkron untuk area yang diaudit, dengan sisa utama berupa device smoke
-mobile yang belum bisa dijalankan karena device ADB tidak aktif.
+mobile yang belum bisa dijalankan sampai selesai karena device ADB terkunci
+keyguard.
 
 Verdict teknis setelah Task 1-11:
 
@@ -19,8 +20,8 @@ Verdict teknis setelah Task 1-11:
 | Web build | `PASS` | `cd apps/web && npm run build` berhasil setelah Task 7 dan Task 11. Root lockfile/Turbopack warning sudah ditutup lewat config web. |
 | Mobile unit/integration test | `PASS` | `cd apps/mobile && npm test -- --runInBand` lulus 39 suites / 544 tests. Full suite tidak lagi melaporkan `act(...)` warning. |
 | Backend test | `PASS` | `cd services/api/app && go test ./...` hijau setelah cache/test hardening dan cache key coverage. |
-| Feature parity web/mobile | `VERIFIED_WITH_DEVICE_PENDING` | Khatam, Asmaul Flashcard, Achievements, landing discovery, dan feature manifest sudah ditutup; smoke device masih pending. |
-| Performance readiness | `PARTIAL_VERIFIED` | Backend cache, Quran deep target, Explore catalog, Quran screenshot dynamic import, landing server wrapper, dan `/panduan-sholat` client island sudah ditutup. Sisa: lanjut client-island pass route content-heavy lain. |
+| Feature parity web/mobile | `VERIFIED_WITH_DEVICE_PENDING` | Khatam, Asmaul Flashcard, Achievements, landing discovery, dan feature manifest sudah ditutup; smoke device masih pending karena keyguard. |
+| Performance readiness | `PARTIAL_VERIFIED` | Backend cache, Quran deep target, Explore catalog, Quran screenshot dynamic import, landing server wrapper, serta `/panduan-sholat` dan `/tahlil` client island sudah ditutup. Sisa: lanjut client-island pass route content-heavy lain. |
 
 ## Resolution Update 2026-05-17
 
@@ -36,10 +37,13 @@ Task breakdown yang menutup review ini:
 - Task 8: mobile Quran dan Explore performance pass - `VERIFIED`.
 - Task 9: backend cache key coverage - `VERIFIED`.
 - Task 10: mobile test warning cleanup - `VERIFIED`.
-- Task 11: `/panduan-sholat` web client-island pass - `VERIFIED`.
+- Task 11: `/panduan-sholat` dan `/tahlil` web client-island pass - `VERIFIED`.
 
-Device smoke masih pending. Verifikasi terbaru `adb devices -l` pada
-2026-05-17 hanya mengembalikan header `List of devices attached` tanpa device.
+Device smoke masih pending. Verifikasi terbaru pada 2026-05-17 sudah melihat
+device `22101316G`, Expo/Metro berhasil dibuka melalui `make mobile-dev-all`,
+tetapi UI automation berhenti di lock screen `Enter PIN or use fingerprint to
+unlock`, sehingga navigasi Khatam, Asmaul Flashcard, Achievements, Quran deep
+link, dan Explore belum bisa dinyatakan lulus dari device fisik.
 
 ## Evidence Review
 

@@ -13,14 +13,16 @@ dan mengurangi risiko performance yang ditemukan pada deep review terbaru.
 ## Current Status
 
 Task 1-11 sudah `VERIFIED` dan perubahan terkait sudah di-build/test. Sisa
-yang belum tertutup adalah device smoke mobile karena ADB belum melihat device
-aktif pada verifikasi 2026-05-17:
+yang belum tertutup adalah device smoke mobile. Verifikasi 2026-05-17 terbaru
+sudah melihat device ADB dan berhasil membuka Expo/Metro, tetapi device masih
+terkunci keyguard/PIN sehingga UI journey belum bisa dinavigasi:
 
 ```text
-List of devices attached
+z5yxpjrgvw8pdqzt       device usb:3-9 product:ruby_id model:22101316G device:ruby transport_id:1
+Enter PIN or use fingerprint to unlock
 ```
 
-Smoke yang masih perlu dijalankan saat device aktif:
+Smoke yang masih perlu dijalankan saat device sudah unlocked:
 
 - Tab Ibadah -> Khatam.
 - Belajar -> Flashcard Asmaul Husna.
@@ -516,8 +518,9 @@ Completed: `2026-05-17`
   - `/dashboard/panduan-sholat` tetap prerendered static.
   - `/tahlil` tetap prerendered static.
   - `/dashboard/tahlil` tetap prerendered static.
-- Device mobile smoke untuk task sebelumnya belum bisa dilanjutkan pada slice
-  ini karena `adb devices -l` tidak menampilkan device aktif.
+- Device mobile smoke untuk task sebelumnya belum bisa dilanjutkan sampai
+  selesai pada slice ini karena device sudah terdeteksi tetapi masih tertahan
+  lock screen `Enter PIN or use fingerprint to unlock`.
 
 ### Implementation Notes
 
