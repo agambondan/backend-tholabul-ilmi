@@ -49,8 +49,8 @@ func (c *bookmarkController) Add(ctx *fiber.Ctx) error {
 	if err := lib.BodyParser(ctx, req); err != nil {
 		return lib.ErrorBadRequest(ctx, err)
 	}
-	if req.RefType != model.BookmarkAyah && req.RefType != model.BookmarkHadith && req.RefType != model.BookmarkArticle {
-		return lib.ErrorBadRequest(ctx, "ref_type must be 'ayah', 'hadith', or 'article'")
+	if req.RefType != model.BookmarkAyah && req.RefType != model.BookmarkHadith && req.RefType != model.BookmarkArticle && req.RefType != model.BookmarkLibraryBook {
+		return lib.ErrorBadRequest(ctx, "ref_type must be 'ayah', 'hadith', 'article', or 'library_book'")
 	}
 	if len(req.Label) > 64 {
 		return lib.ErrorBadRequest(ctx, "label too long (max 64 chars)")

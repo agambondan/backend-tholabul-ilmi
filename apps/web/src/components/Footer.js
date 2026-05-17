@@ -38,6 +38,7 @@ const Footer = () => {
                 { label: t('link.brief_fiqh'), href: '/fiqh' },
                 { label: t('link.asbabun_nuzul'), href: '/asbabun-nuzul' },
                 { label: t('link.sirah'), href: '/siroh' },
+                { label: t('link.library'), href: '/library' },
                 { label: t('link.blog'), href: '/blog' },
             ],
         },

@@ -18,13 +18,14 @@ type BookmarkService interface {
 }
 
 type bookmarkService struct {
-	repo   repository.BookmarkRepository
-	ayah   repository.AyahRepository
-	hadith repository.HadithRepository
+	repo        repository.BookmarkRepository
+	ayah        repository.AyahRepository
+	hadith      repository.HadithRepository
+	libraryBook repository.LibraryBookRepository
 }
 
-func NewBookmarkService(repo repository.BookmarkRepository, ayah repository.AyahRepository, hadith repository.HadithRepository) BookmarkService {
-	return &bookmarkService{repo, ayah, hadith}
+func NewBookmarkService(repo repository.BookmarkRepository, ayah repository.AyahRepository, hadith repository.HadithRepository, libraryBook repository.LibraryBookRepository) BookmarkService {
+	return &bookmarkService{repo, ayah, hadith, libraryBook}
 }
 
 func (s *bookmarkService) AddBySlug(userID uuid.UUID, refType model.BookmarkType, slug, color, label string) (*model.Bookmark, error) {
@@ -82,13 +83,15 @@ func (s *bookmarkService) FindByUserID(userID uuid.UUID) ([]model.Bookmark, erro
 		return bookmarks, nil
 	}
 
-	var ayahIDs, hadithIDs []int
+	var ayahIDs, hadithIDs, libraryBookIDs []int
 	for _, b := range bookmarks {
 		switch b.RefType {
 		case model.BookmarkAyah:
 			ayahIDs = append(ayahIDs, b.RefID)
 		case model.BookmarkHadith:
 			hadithIDs = append(hadithIDs, b.RefID)
+		case model.BookmarkLibraryBook:
+			libraryBookIDs = append(libraryBookIDs, b.RefID)
 		}
 	}
 
@@ -110,12 +113,23 @@ func (s *bookmarkService) FindByUserID(userID uuid.UUID) ([]model.Bookmark, erro
 		}
 	}
 
+	libraryBookMap := make(map[int]*model.LibraryBook)
+	if len(libraryBookIDs) > 0 && s.libraryBook != nil {
+		if books, err := s.libraryBook.FindManyByIDs(libraryBookIDs); err == nil {
+			for i := range books {
+				libraryBookMap[*books[i].ID] = &books[i]
+			}
+		}
+	}
+
 	for i := range bookmarks {
 		switch bookmarks[i].RefType {
 		case model.BookmarkAyah:
 			bookmarks[i].Ayah = ayahMap[bookmarks[i].RefID]
 		case model.BookmarkHadith:
 			bookmarks[i].Hadith = hadithMap[bookmarks[i].RefID]
+		case model.BookmarkLibraryBook:
+			bookmarks[i].LibraryBook = libraryBookMap[bookmarks[i].RefID]
 		}
 	}
 

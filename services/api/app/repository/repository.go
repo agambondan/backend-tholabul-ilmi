@@ -41,6 +41,7 @@ type Repositories struct {
 	Audio                AudioRepository
 	Siroh                SirohRepository
 	Blog                 BlogRepository
+	LibraryBook          LibraryBookRepository
 	Tilawah              TilawahRepository
 	Amalan               AmalanRepository
 	Dzikir               DzikirRepository
@@ -120,6 +121,7 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 		Audio:                NewAudioRepository(db),
 		Siroh:                NewSirohRepository(db, pg),
 		Blog:                 NewBlogRepository(db, pg),
+		LibraryBook:          NewLibraryBookRepository(db, pg),
 		Tilawah:              NewTilawahRepository(db),
 		Amalan:               NewAmalanRepository(db),
 		Dzikir:               NewDzikirRepository(db),

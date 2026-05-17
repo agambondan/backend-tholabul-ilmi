@@ -224,6 +224,7 @@ export default function Home() {
                 { icon: <MdMenuBook />, labelKey: 'home.f.siroh', descKey: 'home.f.siroh_d', href: '/siroh' },
                 { icon: <BsPeopleFill />, labelKey: 'home.f.tokoh', descKey: 'home.f.tokoh_d', href: '/tokoh' },
                 { icon: <MdArticle />, labelKey: 'home.f.blog', descKey: 'home.f.blog_d', href: '/blog' },
+                { icon: <BsBook />, labelKey: 'home.f.library', descKey: 'home.f.library_d', href: '/library' },
                 { icon: <MdTimeline />, labelKey: 'home.f.sejarah', descKey: 'home.f.sejarah_d', href: '/sejarah' },
                 { icon: <MdExplore />, labelKey: 'home.f.peta', descKey: 'home.f.peta_d', href: '/peta' },
                 { icon: <BsChatDots />, labelKey: 'home.f.forum', descKey: 'home.f.forum_d', href: '/forum' },

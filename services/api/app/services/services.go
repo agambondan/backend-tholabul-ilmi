@@ -31,6 +31,7 @@ type Services struct {
 	Audio                AudioService
 	Siroh                SirohService
 	Blog                 BlogService
+	LibraryBook          LibraryBookService
 	Stats                StatsService
 	Tilawah              TilawahService
 	Amalan               AmalanService
@@ -99,7 +100,7 @@ func NewServices(repo *repository.Repositories) *Services {
 		Theme:                NewThemeServiceWithCache(repo.Theme, cache),
 		Chapter:              NewChapterServiceWithCache(repo.Chapter, cache),
 		Hadith:               NewHadithServiceWithCache(repo.Hadith, cache),
-		Bookmark:             NewBookmarkService(repo.Bookmark, repo.Ayah, repo.Hadith),
+		Bookmark:             NewBookmarkService(repo.Bookmark, repo.Ayah, repo.Hadith, repo.LibraryBook),
 		UserWird:             NewUserWirdService(repo.UserWird),
 		ReadingProgress:      NewReadingProgressService(repo.ReadingProgress, repo.UserActivity),
 		Hafalan:              NewHafalanService(repo.Hafalan),
@@ -115,6 +116,7 @@ func NewServices(repo *repository.Repositories) *Services {
 		Audio:                NewAudioService(repo.Audio),
 		Siroh:                NewSirohServiceWithCache(repo.Siroh, cache),
 		Blog:                 NewBlogService(repo.Blog),
+		LibraryBook:          NewLibraryBookService(repo.LibraryBook),
 		Stats:                NewStatsServiceWithTilawah(repo.Bookmark, repo.Hafalan, repo.UserActivity, repo.Tilawah, streak),
 		Tilawah:              NewTilawahService(repo.Tilawah),
 		Amalan:               NewAmalanService(repo.Amalan),

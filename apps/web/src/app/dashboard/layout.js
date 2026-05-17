@@ -167,6 +167,7 @@ const DashboardLayout = ({ children }) => {
                 { labelKey: 'link.tokoh', href: '/dashboard/tokoh', icon: <BsPeopleFill /> },
                 { labelKey: 'link.peta', href: '/dashboard/peta', icon: <MdExplore /> },
                 { labelKey: 'link.manasik', href: '/dashboard/manasik', icon: <MdOutlineDirectionsWalk /> },
+                { labelKey: 'link.library', href: '/dashboard/library', icon: <BsBook /> },
                 { labelKey: 'link.blog', href: '/dashboard/blog', icon: <BsNewspaper /> },
             ],
         },

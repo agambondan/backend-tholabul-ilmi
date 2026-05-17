@@ -57,6 +57,7 @@ export const linksMenuContent = [
     { label: 'Peta Islam', labelKey: 'link.peta', href: '/peta', icon: <MdExplore /> },
     { label: 'Blog', labelKey: 'link.blog', href: '/blog', icon: <MdArticle /> },
     { label: 'Kajian Islam', labelKey: 'link.kajian', href: '/kajian', icon: <MdOutlinePlayLesson /> },
+    { label: 'Perpustakaan Ilmu', labelKey: 'link.library', href: '/library', icon: <BsBook /> },
     { label: 'Forum Diskusi', labelKey: 'link.forum', href: '/forum', icon: <BsChatDots /> },
     { label: 'Asbabun Nuzul', labelKey: 'link.asbabun_nuzul', href: '/asbabun-nuzul', icon: <MdMenuBook /> },
     { label: 'Tafsir Al-Quran', labelKey: 'link.tafsir', href: '/tafsir', icon: <MdOutlineAutoStories /> },

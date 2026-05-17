@@ -5,8 +5,9 @@ import "github.com/google/uuid"
 type NoteRefType string
 
 const (
-	NoteRefTypeAyah   NoteRefType = "ayah"
-	NoteRefTypeHadith NoteRefType = "hadith"
+	NoteRefTypeAyah        NoteRefType = "ayah"
+	NoteRefTypeHadith      NoteRefType = "hadith"
+	NoteRefTypeLibraryBook NoteRefType = "library_book"
 )
 
 type Note struct {

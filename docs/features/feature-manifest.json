@@ -383,6 +383,18 @@
       "status": "active"
     },
     {
+      "key": "library",
+      "title": "Perpustakaan Ilmu",
+      "publicWebRoute": "/library",
+      "dashboardWebRoute": "/dashboard/library",
+      "mobileRoute": "feature:library",
+      "authRequired": false,
+      "ctaLabel": "Buka Perpustakaan",
+      "searchable": true,
+      "status": "active",
+      "aliases": ["books", "buku", "kitab", "pdf", "perpustakaan"]
+    },
+    {
       "key": "blog",
       "title": "Artikel",
       "publicWebRoute": "/blog",

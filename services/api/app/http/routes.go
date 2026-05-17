@@ -92,6 +92,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newAudioController := controllers.NewAudioController(newServices)
 	newSirohController := controllers.NewSirohController(newServices)
 	newBlogController := controllers.NewBlogController(newServices)
+	newLibraryBookController := controllers.NewLibraryBookController(newServices)
 	newStatsController := controllers.NewStatsController(newServices)
 	newTilawahController := controllers.NewTilawahController(newServices)
 	newAmalanController := controllers.NewAmalanController(newServices)
@@ -332,6 +333,10 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Post("/feed/:id/hide", jwt, newFeedController.Hide)
 	master.Post("/feed/:id/report", jwt, newFeedController.Report)
 	master.Delete("/feed/:id", jwt, newFeedController.Delete)
+
+	// Library Books / Perpustakaan Ilmu (public)
+	master.Get("/library/books", newLibraryBookController.FindAll)
+	master.Get("/library/books/:slug", newLibraryBookController.FindBySlug)
 
 	// Bookmark
 	master.Post("/bookmarks", jwt, newBookmarkController.Add)

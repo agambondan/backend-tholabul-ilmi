@@ -19,10 +19,10 @@ Current checker output:
 
 ```text
 Feature parity check passed.
-- manifest features: 49
+- manifest features: 50
 - manifest utility routes: 14
-- mobile feature keys: 42
-- web app routes scanned: 146
+- mobile feature keys: 43
+- web app routes scanned: 150
 ```
 
 ## Current Parity Rule
@@ -62,7 +62,7 @@ The manifest is the authoritative table. Current active coverage includes:
 | --- | --- |
 | Core worship | Quran, Hadith, Doa, Dzikir, Wirid, Tahlil, Panduan Sholat, Jadwal Sholat, Kiblat, Khatam |
 | Quran learning | Tafsir, Asbabun Nuzul, Siroh, Tokoh Tarikh, Sejarah Islam, Peta Islam Interaktif |
-| Knowledge | Fiqh, Manasik, Kajian, Artikel, Perawi, Jarh wa Ta'dil, Forum Tanya Jawab, Kamus Arab |
+| Knowledge | Fiqh, Manasik, Kajian, Perpustakaan Ilmu, Artikel, Perawi, Jarh wa Ta'dil, Forum Tanya Jawab, Kamus Arab |
 | Tools | Quiz, Kalender Hijri, Imsakiyah, Tasbih, Zakat, Faraidh |
 | Personal | Wirid Pribadi, Amalan Harian, Sholat Tracker, Bookmarks, Notes, Notifications, Goals, Muhasabah, Hafalan, Murojaah, Tilawah, Stats, Leaderboard, Achievements |
 
@@ -76,6 +76,7 @@ These route patterns are part of the current journey contract:
 | Quran/Hadith cross-reference | Quran detail bottom sheet | Hadith detail tab | Mobile now exposes Munasabah and Hadith-Ayah references from Quran detail, and Ayat Terkait from Hadith detail. Cross-reference rows navigate to the related Quran/Hadith screen. |
 | Tafsir kitab comparison | `/tafsir/:slug` | `/dashboard/tafsir/:slug` | Web keeps the full selector/comparison controls. Mobile detail view now exposes `Semua`, `Kemenag`, and `Al-Mishbah` modes with stacked comparison so the journey remains readable on small screens. |
 | Quran audio range player | Quran reader | Dashboard Quran reader | Web and mobile readers both support qari selection, start/end surah range, end ayah limit, repeat, and playback speed. Per-ayah play still works from the ayah action sheet/detail sheet. |
+| Perpustakaan Ilmu | `/library`, `/library/:slug` | `/dashboard/library`, `/dashboard/library/:slug` | Web and mobile both expose the same public catalog through `GET /api/v1/library/books`. Dashboard/detail journeys keep notes and bookmarks inside the personal shell with `library_book` references. |
 | Zakat/Faraidh saved history | `/zakat/history`, `/faraidh` | `/dashboard/zakat/history`, `/dashboard/faraidh` | Mobile calculators now keep local device history without login and merge it with backend history when the user is authenticated, matching the web local + account-sync journey. |
 | Jadwal Sholat adzan behavior | `/jadwal-sholat` | `/dashboard/jadwal-sholat` | Mobile now has countdown, foreground prayer-time notification, optional adzan audio toggle, reminder scheduling, offline schedule cache, and manual correction controls. |
 

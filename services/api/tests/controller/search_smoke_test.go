@@ -4,12 +4,12 @@ package controller_test
 
 import (
 	"encoding/json"
+	"io"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/agambondan/islamic-explorer/app/db"
 	"github.com/agambondan/islamic-explorer/app/http"
-	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/gofiber/fiber/v2"
 )
@@ -39,8 +39,13 @@ func TestSearchEndpointRequiresQuery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("request: %v", err)
 	}
+	defer resp.Body.Close()
+	rawBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read body: %v", err)
+	}
 	var body map[string]interface{}
-	parseJSON(t, []byte(lib.JSONStringify(resp)), &body)
+	parseJSON(t, rawBody, &body)
 }
 
 func TestHealthEndpoint(t *testing.T) {

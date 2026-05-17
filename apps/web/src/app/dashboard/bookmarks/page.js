@@ -16,6 +16,7 @@ const REF_LABEL_KEY = {
     dzikir: 'bookmarks.type_dzikir',
     asmaul_husna: 'bookmarks.type_asmaul',
     article: 'bookmarks.type_article',
+    library_book: 'Perpustakaan',
 };
 
 const REF_ICON = {
@@ -26,6 +27,7 @@ const REF_ICON = {
     dzikir: '💎',
     asmaul_husna: '⭐',
     article: '📰',
+    library_book: '📚',
 };
 
 const slugify = (value) => String(value ?? '').trim().toLowerCase();
@@ -54,6 +56,10 @@ const refHref = (bookmark) => {
     if (refType === 'dzikir') return refId ? `/dashboard/dzikir#${refId}` : '/dashboard/dzikir';
     if (refType === 'asmaul_husna') return refId ? `/dashboard/asmaul-husna#${refId}` : '/dashboard/asmaul-husna';
     if (refType === 'article' && refSlug) return `/dashboard/blog/${refSlug}`;
+    if (refType === 'library_book') {
+        const slug = refSlug || bookmark.library_book?.slug;
+        return slug ? `/dashboard/library/${slug}` : '/dashboard/library';
+    }
     return '/dashboard';
 };
 

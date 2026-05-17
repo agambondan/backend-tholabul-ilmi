@@ -81,6 +81,17 @@ export const normalizeExploreItem = (item, index = 0) => {
     return item;
   }
 
+  if (item?.source_url || item?.format || item?.license) {
+    return {
+      id: item?.id ?? item?.slug ?? `library-book-${index}`,
+      title: pickText(item?.title, item?.name, `Buku ${index + 1}`),
+      arabic: '',
+      body: pickText(item?.description, item?.summary),
+      meta: joinMeta(item?.author, item?.category, item?.level, item?.format ? String(item.format).toUpperCase() : ''),
+      raw: item,
+    };
+  }
+
   if (item?.kemenag || item?.ibnu_katsir || item?.ayah_id) {
     const ayah = item?.ayah ?? {};
     const ayahTranslation = ayah?.translation ?? {};

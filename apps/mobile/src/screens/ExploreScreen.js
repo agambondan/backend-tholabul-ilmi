@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, CheckCircle2, Circle, ExternalLink, Heart, MessageCircle, Pencil, StickyNote, Trash2, UserCircle } from 'lucide-react-native';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import {
   getAllNotes,
   getAsmaulNames,
@@ -703,6 +703,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const openSource = useCallback(
     async (item) => {
       const raw = item?.raw ?? {};
+      const sourceUrl = raw.source_url || raw.url || raw.link;
+      if (sourceUrl) {
+        try {
+          await Linking.openURL(sourceUrl);
+        } catch (err) {
+          setError(err?.message ?? 'Sumber asli belum bisa dibuka.');
+        }
+        return;
+      }
+
       const refType = raw.ref_type;
       const refId = Number(raw.ref_id);
       if (!onOpenTab || !refType || !Number.isFinite(refId)) return;

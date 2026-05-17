@@ -151,6 +151,15 @@ export const featureGroups = [
         endpoint: '/api/v1/kajian?page=0&size=20',
       },
       {
+        key: 'library',
+        title: 'Perpustakaan',
+        subtitle: 'Kitab dan bahan belajar',
+        badges: ['Baru'],
+        type: 'list',
+        refType: 'library_book',
+        endpoint: '/api/v1/library/books?page=0&size=20',
+      },
+      {
         key: 'blog',
         title: 'Artikel',
         subtitle: 'Tulisan dan pembaruan',

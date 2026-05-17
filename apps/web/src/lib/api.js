@@ -241,6 +241,20 @@ export const blogApi = {
     listTags: () => fetch(`${API_URL}/api/v1/blog/tags`),
 };
 
+export const libraryApi = {
+    list: ({ page = 0, size = 20, category = '', level = '', search = '' } = {}) => {
+        const params = new URLSearchParams({
+            page: String(page),
+            size: String(size),
+        });
+        if (category) params.set('category', category);
+        if (level) params.set('level', level);
+        if (search) params.set('search', search);
+        return fetch(`${API_URL}/api/v1/library/books?${params.toString()}`);
+    },
+    detail: (slug) => fetch(`${API_URL}/api/v1/library/books/${encodeURIComponent(slug)}`),
+};
+
 export const adminBlogApi = {
     listAll: (status = '') =>
         authFetch(`/api/v1/blog/posts${status ? `?status=${status}` : '?status=all'}`),
