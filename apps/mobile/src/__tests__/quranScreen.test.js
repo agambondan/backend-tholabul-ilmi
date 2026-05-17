@@ -8,7 +8,18 @@ jest.mock('../api/client', () => ({
   getSurahs: jest.fn().mockResolvedValue([]),
   getAyahsForSurahPage: jest.fn().mockResolvedValue({ items: [], hasMore: false, page: 0 }),
   getAyahById: jest.fn().mockResolvedValue(null),
-  getAyahAudio: jest.fn().mockResolvedValue({ audio_url: 'https://example.com/audio.mp3' }),
+  getAyahAudio: jest.fn().mockResolvedValue([
+    {
+      audio_url: 'https://example.com/audio.mp3',
+      qari_name: 'Mishary Rashid Al-Afasy',
+      qari_slug: 'mishary-rashid-alafasy',
+    },
+    {
+      audio_url: 'https://example.com/sudais.mp3',
+      qari_name: 'Abdul Rahman Al-Sudais',
+      qari_slug: 'abdul-rahman-al-sudais',
+    },
+  ]),
   getAyahsForHizb: jest.fn().mockResolvedValue([]),
   getAyahsForPage: jest.fn().mockResolvedValue([]),
   getFirstAyahForSurah: jest.fn().mockResolvedValue(null),
@@ -67,8 +78,13 @@ jest.mock('../utils/audioPlayer', () => ({
 }));
 
 jest.mock('../storage/preferences', () => ({
-  preferenceKeys: { quranAudioQari: 'quranAudioQari' },
-  readPreference: jest.fn().mockResolvedValue('Alafasy_64kbps'),
+  preferenceKeys: {
+    quranAudioQari: 'quranAudioQari',
+    quranAudioRange: 'quranAudioRange',
+    quranAudioRepeat: 'quranAudioRepeat',
+    quranAudioSpeed: 'quranAudioSpeed',
+  },
+  readPreference: jest.fn((key, defaultValue) => Promise.resolve(defaultValue)),
   writePreference: jest.fn().mockResolvedValue(undefined),
 }));
 
@@ -194,6 +210,8 @@ const { useFeedback } = require('../context/FeedbackContext');
 const { useTabActivity } = require('../context/TabActivityContext');
 const client = require('../api/client');
 const personal = require('../api/personal');
+const audioPlayer = require('../utils/audioPlayer');
+const preferences = require('../storage/preferences');
 
 const mockSurah = (number, overrides = {}) => ({
   number,
@@ -231,6 +249,7 @@ beforeEach(() => {
     hasMore: false,
     page: 0,
   });
+  preferences.readPreference.mockImplementation((key, defaultValue) => Promise.resolve(defaultValue));
 });
 
 const mockNavigation = { setBack: jest.fn(), clearBack: jest.fn(), closeAndOpen: jest.fn() };
@@ -428,6 +447,42 @@ describe('QuranScreen', () => {
       expect(getByText('Surah 1')).toBeTruthy();
       expect(getByText(/7 ayah/)).toBeTruthy();
     });
+  });
+
+  it('plays configured quran audio range with qari, repeat, and speed', async () => {
+    const { getByTestId, getByText } = await renderQuranScreen();
+
+    await waitFor(() => {
+      expect(getByText('Surah 1')).toBeTruthy();
+    });
+
+    fireEvent.press(getByText('Surah 1'));
+
+    await waitFor(() => {
+      expect(getByText('Audio Surat')).toBeTruthy();
+    });
+
+    fireEvent.changeText(getByTestId('audio-start-surah'), '1');
+    fireEvent.changeText(getByTestId('audio-end-surah'), '1');
+    fireEvent.changeText(getByTestId('audio-end-ayah'), '2');
+    fireEvent.press(getByText('Abdul Rahman Al-Sudais'));
+    fireEvent.press(getByText('1.25x'));
+    fireEvent.press(getByTestId('audio-repeat-toggle'));
+    fireEvent.press(getByTestId('audio-range-toggle'));
+
+    await waitFor(() => {
+      expect(client.getAyahAudio).toHaveBeenCalled();
+      expect(audioPlayer.playAudioUrl).toHaveBeenCalledWith(
+        'https://example.com/sudais.mp3',
+        expect.objectContaining({ rate: 1.25, onEnded: expect.any(Function) }),
+      );
+    });
+    expect(preferences.writePreference).toHaveBeenCalledWith(
+      'quranAudioQari',
+      'abdul-rahman-al-sudais',
+    );
+    expect(preferences.writePreference).toHaveBeenCalledWith('quranAudioSpeed', 1.25);
+    expect(preferences.writePreference).toHaveBeenCalledWith('quranAudioRepeat', true);
   });
 
   it('shows reader menu button when surah is opened', async () => {

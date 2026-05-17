@@ -12,13 +12,14 @@ Audio murotal per ayat dari multiple qori', streaming via API.
 
 - API: /audio
 - Web: bagian dari /quran
-- Mobile: audioPlayer utilitas
+- Mobile: audioPlayer utilitas dan kontrol reader Quran
 
 ## Evidence
 
 - API controller: services/api/app/controllers/audio_controller.go
 - Web page: apps/web/src/app/quran/page.js
-- Mobile screen: apps/mobile/src/utils/audioPlayer.js
+- Mobile utility: apps/mobile/src/utils/audioPlayer.js
+- Mobile screen: apps/mobile/src/screens/QuranScreen.js
 
 ## Source of Truth
 
@@ -81,4 +82,4 @@ Audio murotal per ayat dari multiple qori', streaming via API.
 ### Key Frontend Components
 
 - **Web** (bagian dari `/quran`): Qari selector dropdown → play/pause per ayah with progress bar; continuous play mode for full surah
-- **Mobile** (`audioPlayer` utility): Background audio service; qari picker; per-ayah playlist queue; playback speed control
+- **Mobile** (`QuranScreen` + `audioPlayer` utility): qari picker, per-ayat play, range playlist dari surat ke surat dengan batas ayat akhir, repeat toggle, dan playback speed 0.75x-2x.

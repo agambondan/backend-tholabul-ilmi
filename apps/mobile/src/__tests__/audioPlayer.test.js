@@ -8,6 +8,7 @@ const mockPlayer = {
   pause: jest.fn(),
   seekTo: jest.fn(),
   remove: jest.fn(),
+  setPlaybackRate: jest.fn(),
   addListener: jest.fn((event, cb) => {
     statusCallback = cb;
     return { remove: jest.fn() };
@@ -46,6 +47,12 @@ describe('playAudioUrl', () => {
     expect(mockPlayer.play).toHaveBeenCalled();
   });
 
+  test('applies playback rate on native', async () => {
+    const result = await playAudioUrl('https://example.com/audio.mp3', { rate: 1.5 });
+    expect(result).toBe(true);
+    expect(mockPlayer.setPlaybackRate).toHaveBeenCalledWith(1.5);
+  });
+
   test('calls onEnded when audio finishes on native', async () => {
     const onEnded = jest.fn();
 
@@ -59,11 +66,12 @@ describe('playAudioUrl', () => {
   test('uses Web Audio API on web', async () => {
     Platform.OS = 'web';
     delete global.Audio;
-    const mockWebAudio = { play: jest.fn(async () => {}), onended: null };
+    const mockWebAudio = { play: jest.fn(async () => {}), onended: null, playbackRate: 1 };
     global.Audio = jest.fn(() => mockWebAudio);
 
-    const result = await playAudioUrl('https://example.com/audio.mp3');
+    const result = await playAudioUrl('https://example.com/audio.mp3', { rate: 1.25 });
     expect(result).toBe(true);
+    expect(mockWebAudio.playbackRate).toBe(1.25);
 
     const onEnded = jest.fn();
     mockWebAudio.onended();

@@ -117,6 +117,14 @@ const QURAN_TABS = [
     { key: 'murojaah', label: 'Murojaah' },
 ];
 
+const QARI_PRESETS = [
+    { qari_name: 'Mishary Rashid Al-Afasy', qari_slug: 'mishary-rashid-alafasy' },
+    { qari_name: 'Mishary Alafasy (Legacy)', qari_slug: 'Alafasy_64kbps' },
+    { qari_name: 'Abdul Rahman Al-Sudais', qari_slug: 'abdul-rahman-al-sudais' },
+];
+
+const AUDIO_SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
+
 const SWIPE_TRIGGER_DISTANCE = 34;
 const SWIPE_EDGE_GUARD = 24;
 const SURAH_PAGE_SIZE = 20;
@@ -194,6 +202,26 @@ const getTajweedTextColor = (className) => {
         .split(/\s+/)
         .map((name) => TAJWEED_TEXT_COLORS[name])
         .find(Boolean) ?? null;
+};
+
+const clampAudioSpeed = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 1;
+    return Math.max(0.5, Math.min(2, numeric));
+};
+
+const toPositiveInt = (value) => {
+    const numeric = Number.parseInt(`${value ?? ''}`, 10);
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+};
+
+const normalizeAudioSources = (result) => {
+    if (Array.isArray(result)) return result;
+    if (Array.isArray(result?.items)) return result.items;
+    if (Array.isArray(result?.ayah_audio)) return result.ayah_audio;
+    if (result?.ayah_audio) return [result.ayah_audio];
+    if (result?.audio_url) return [result];
+    return [];
 };
 
 const getAyahIdentity = (ayah) => `${ayah.surahNumber ?? 'surah'}:${ayah.number ?? ayah.id}`;
@@ -501,6 +529,13 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const swipeInFlightRef = useRef(false);
     const swipeTouchRef = useRef(null);
     const surahPaginationRef = useRef({ hasMore: false, loading: false, page: 0, surahNumber: null });
+    const audioRangeSessionRef = useRef(0);
+    const audioQueueRef = useRef([]);
+    const audioQueueIndexRef = useRef(0);
+    const audioSourcesRef = useRef({});
+    const audioQariRef = useRef('mishary-rashid-alafasy');
+    const audioRangeRepeatRef = useRef(false);
+    const audioRangeSpeedRef = useRef(1);
     const [surahs, setSurahs] = useState([]);
     const [selectedSurah, setSelectedSurah] = useState(null);
     const [ayahs, setAyahs] = useState([]);
@@ -530,8 +565,18 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         activeAyahId: null,
         loadingAyahId: null,
         playingAyahId: null,
-        qariSlug: 'Alafasy_64kbps',
+        qariSlug: 'mishary-rashid-alafasy',
         sourcesByAyah: {},
+    });
+    const [audioRange, setAudioRange] = useState({
+        currentLabel: '',
+        endAyah: '',
+        endSurah: '',
+        loading: false,
+        playing: false,
+        repeat: false,
+        speed: 1,
+        startSurah: '',
     });
     const [hafalanList, setHafalanList] = useState([]);
     const [hafalanSummary, setHafalanSummary] = useState(null);
@@ -570,6 +615,38 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         updateFontSize,
         updateMemorizationMode,
     } = useQuranReaderPreferences({ onMemorizationModeChange: resetRevealedAyahs });
+
+    useEffect(() => {
+        audioSourcesRef.current = audioState.sourcesByAyah;
+    }, [audioState.sourcesByAyah]);
+
+    useEffect(() => {
+        audioQariRef.current = audioState.qariSlug;
+    }, [audioState.qariSlug]);
+
+    useEffect(() => {
+        audioRangeRepeatRef.current = audioRange.repeat;
+    }, [audioRange.repeat]);
+
+    useEffect(() => {
+        audioRangeSpeedRef.current = audioRange.speed;
+    }, [audioRange.speed]);
+
+    const audioQariOptions = useMemo(() => {
+        const bySlug = new Map(QARI_PRESETS.map((item) => [item.qari_slug, item]));
+        Object.values(audioState.sourcesByAyah).forEach((sources) => {
+            if (!Array.isArray(sources)) return;
+            sources.forEach((source) => {
+                if (source?.qari_slug && !bySlug.has(source.qari_slug)) {
+                    bySlug.set(source.qari_slug, {
+                        qari_name: source.qari_name || source.qari_slug,
+                        qari_slug: source.qari_slug,
+                    });
+                }
+            });
+        });
+        return Array.from(bySlug.values());
+    }, [audioState.sourcesByAyah]);
 
     const openReferenceModal = async (ayah, type) => {
         setReferenceModal({ visible: true, type, ayah });
@@ -1324,17 +1401,194 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         }
     };
 
-    const pickAudioSource = (sources) =>
-        sources.find((source) => source.qari_slug === audioState.qariSlug) ?? sources[0] ?? null;
+    const pickAudioSource = (sources, qariSlug = audioState.qariSlug) => {
+        const normalizedSources = normalizeAudioSources(sources);
+        return (
+            normalizedSources.find((source) => source.qari_slug === qariSlug) ??
+            normalizedSources[0] ??
+            null
+        );
+    };
+
+    const getSourcesForAyah = async (ayah) => {
+        const cached = audioSourcesRef.current[ayah.id];
+        if (cached) return cached;
+        const sources = normalizeAudioSources(
+            await getAyahAudio({
+                ayahId: ayah.id,
+                ayahNumber: ayah.number,
+                surahNumber: ayah.surahNumber ?? selectedSurah?.number,
+            }),
+        );
+        audioSourcesRef.current = { ...audioSourcesRef.current, [ayah.id]: sources };
+        setAudioState((current) => ({
+            ...current,
+            sourcesByAyah: { ...current.sourcesByAyah, [ayah.id]: sources },
+        }));
+        return sources;
+    };
+
+    const stopRangeAudio = () => {
+        audioRangeSessionRef.current += 1;
+        audioQueueRef.current = [];
+        audioQueueIndexRef.current = 0;
+        stopAudio();
+        setAudioRange((current) => ({
+            ...current,
+            currentLabel: '',
+            loading: false,
+            playing: false,
+        }));
+        setAudioState((current) => ({ ...current, loadingAyahId: null, playingAyahId: null }));
+    };
+
+    const playRangeQueueItem = async (index, sessionId) => {
+        if (sessionId !== audioRangeSessionRef.current) return;
+        const queue = audioQueueRef.current;
+        const nextIndex =
+            index >= queue.length && audioRangeRepeatRef.current && queue.length ? 0 : index;
+        const ayah = queue[nextIndex];
+
+        if (!ayah) {
+            setAudioRange((current) => ({
+                ...current,
+                currentLabel: '',
+                loading: false,
+                playing: false,
+            }));
+            setAudioState((current) => ({ ...current, loadingAyahId: null, playingAyahId: null }));
+            return;
+        }
+
+        audioQueueIndexRef.current = nextIndex;
+        setAudioRange((current) => ({
+            ...current,
+            currentLabel: `${ayah.surahName || `Surah ${ayah.surahNumber}`} · Ayat ${ayah.number}`,
+            loading: true,
+            playing: true,
+        }));
+        setAudioState((current) => ({
+            ...current,
+            activeAyahId: ayah.id,
+            loadingAyahId: ayah.id,
+        }));
+
+        try {
+            const sources = await getSourcesForAyah(ayah);
+            const source = pickAudioSource(sources, audioQariRef.current);
+            if (sessionId !== audioRangeSessionRef.current) return;
+            if (!source?.audio_url) {
+                await playRangeQueueItem(nextIndex + 1, sessionId);
+                return;
+            }
+            await playAudioUrl(source.audio_url, {
+                rate: audioRangeSpeedRef.current,
+                onEnded: () => playRangeQueueItem(nextIndex + 1, sessionId),
+            });
+            setAudioState((current) => ({
+                ...current,
+                activeAyahId: ayah.id,
+                loadingAyahId: null,
+                playingAyahId: ayah.id,
+            }));
+            setAudioRange((current) => ({ ...current, loading: false, playing: true }));
+        } catch (err) {
+            if (sessionId !== audioRangeSessionRef.current) return;
+            setMessage(err?.message ?? 'Range audio belum bisa diputar.');
+            setAudioRange((current) => ({ ...current, loading: false, playing: false }));
+            setAudioState((current) => ({
+                ...current,
+                loadingAyahId: null,
+                playingAyahId: null,
+            }));
+        }
+    };
+
+    const fetchAudioRangeQueue = async ({ endAyah, endSurah, startSurah }) => {
+        const queue = [];
+        for (let surahNumber = startSurah; surahNumber <= endSurah; surahNumber += 1) {
+            const surah = surahs.find((item) => Number(item.number) === surahNumber);
+            const lastAyah =
+                surahNumber === endSurah ? endAyah : Number(surah?.ayahs) || SURAH_PAGE_SIZE;
+            const maxPage = Math.max(0, Math.ceil(lastAyah / SURAH_PAGE_SIZE) - 1);
+            for (let page = 0; page <= maxPage; page += 1) {
+                const result = await getAyahsForSurahPage(surahNumber, {
+                    page,
+                    size: SURAH_PAGE_SIZE,
+                });
+                const items = (result?.items ?? [])
+                    .filter((item) => Number(item.number) <= lastAyah)
+                    .map((item) => ({
+                        ...item,
+                        surahName: item.surahName || surah?.name,
+                        surahNumber,
+                    }));
+                queue.push(...items);
+                if (!result?.hasMore) break;
+            }
+        }
+        return queue;
+    };
+
+    const startRangeAudio = async () => {
+        if (!selectedSurah || selectedSurah.type !== 'surah') return;
+        const currentSurahNumber = Number(selectedSurah.number) || 1;
+        const startSurah = toPositiveInt(audioRange.startSurah) ?? currentSurahNumber;
+        const endSurah = toPositiveInt(audioRange.endSurah) ?? startSurah;
+        const endSurahMeta = surahs.find((item) => Number(item.number) === endSurah);
+        const maxEndAyah = Number(endSurahMeta?.ayahs) || Number(selectedSurah.ayahs) || 1;
+        const endAyah = Math.min(toPositiveInt(audioRange.endAyah) ?? maxEndAyah, maxEndAyah);
+
+        if (startSurah > endSurah) {
+            setMessage('Range audio belum valid: surat awal tidak boleh melewati surat akhir.');
+            return;
+        }
+        if (!surahs.some((item) => Number(item.number) === startSurah) || !endSurahMeta) {
+            setMessage('Range audio belum valid: nomor surat tidak ditemukan.');
+            return;
+        }
+
+        setMessage('');
+        setAudioRange((current) => ({
+            ...current,
+            endAyah: `${endAyah}`,
+            endSurah: `${endSurah}`,
+            loading: true,
+            playing: false,
+            startSurah: `${startSurah}`,
+        }));
+        await writePreference(preferenceKeys.quranAudioRange, {
+            endAyah: `${endAyah}`,
+            endSurah: `${endSurah}`,
+            startSurah: `${startSurah}`,
+        });
+        stopAudio();
+        const sessionId = audioRangeSessionRef.current + 1;
+        audioRangeSessionRef.current = sessionId;
+        try {
+            const queue = await fetchAudioRangeQueue({ endAyah, endSurah, startSurah });
+            if (!queue.length) {
+                setMessage('Ayat untuk range audio belum tersedia.');
+                setAudioRange((current) => ({ ...current, loading: false, playing: false }));
+                return;
+            }
+            audioQueueRef.current = queue;
+            audioQueueIndexRef.current = 0;
+            playRangeQueueItem(0, sessionId);
+        } catch (err) {
+            setAudioRange((current) => ({ ...current, loading: false, playing: false }));
+            setMessage(err?.message ?? 'Range audio belum bisa dimuat.');
+        }
+    };
 
     const playAyahAudio = async (ayah) => {
         if (!selectedSurah) return;
         const surahNumber = selectedSurah.number ?? ayah.surahNumber;
         if (audioState.playingAyahId === ayah.id) {
-            stopAudio();
-            setAudioState((current) => ({ ...current, playingAyahId: null }));
+            stopRangeAudio();
             return;
         }
+        stopRangeAudio();
         setMessage('');
         setAudioState((current) => ({
             ...current,
@@ -1342,10 +1596,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             loadingAyahId: ayah.id,
         }));
         try {
-            const storedSources = audioState.sourcesByAyah[ayah.id];
-            const sources =
-                storedSources ??
-                (await getAyahAudio({ ayahId: ayah.id, ayahNumber: ayah.number, surahNumber }));
+            const sources = await getSourcesForAyah({ ...ayah, surahNumber });
             const source = pickAudioSource(sources);
             setAudioState((current) => ({
                 ...current,
@@ -1358,6 +1609,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                 return;
             }
             await playAudioUrl(source.audio_url, {
+                rate: audioRange.speed,
                 onEnded: () => setAudioState((current) => ({ ...current, playingAyahId: null })),
             });
             setAudioState((current) => ({
@@ -1376,11 +1628,30 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         }
     };
 
+    const updateAudioRangeField = (field, value) => {
+        setAudioRange((current) => ({ ...current, [field]: value.replace(/[^\d]/g, '') }));
+    };
+
+    const selectAudioSpeed = async (speed) => {
+        const nextSpeed = clampAudioSpeed(speed);
+        audioRangeSpeedRef.current = nextSpeed;
+        setAudioRange((current) => ({ ...current, speed: nextSpeed }));
+        await writePreference(preferenceKeys.quranAudioSpeed, nextSpeed);
+    };
+
+    const toggleAudioRepeat = async () => {
+        const nextRepeat = !audioRange.repeat;
+        audioRangeRepeatRef.current = nextRepeat;
+        setAudioRange((current) => ({ ...current, repeat: nextRepeat }));
+        await writePreference(preferenceKeys.quranAudioRepeat, nextRepeat);
+    };
+
     const selectQari = async (ayahId, qariSlug) => {
-        stopAudio();
+        stopRangeAudio();
+        audioQariRef.current = qariSlug;
         setAudioState((current) => ({
             ...current,
-            activeAyahId: ayahId,
+            activeAyahId: ayahId ?? current.activeAyahId,
             playingAyahId: null,
             qariSlug,
         }));
@@ -1837,6 +2108,163 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         );
     };
 
+    const renderAudioRangePanel = () => {
+        if (!selectedSurah || selectedSurah.type !== 'surah') return null;
+        const activeQari = audioQariOptions.find((item) => item.qari_slug === audioState.qariSlug);
+        const isPlaying = audioRange.playing || audioRange.loading;
+
+        return (
+            <View style={styles.audioPanel}>
+                <View style={styles.audioPanelHeader}>
+                    <View style={styles.audioPanelTitleRow}>
+                        <Volume2 color={colors.primaryDark} size={18} strokeWidth={2.2} />
+                        <View style={styles.audioPanelTitleCopy}>
+                            <Text style={styles.audioPanelTitle}>Audio Surat</Text>
+                            <Text numberOfLines={1} style={styles.audioPanelMeta}>
+                                {activeQari?.qari_name || 'Pilih qari'} · {audioRange.speed}x
+                            </Text>
+                        </View>
+                    </View>
+                    <Pressable
+                        android_ripple={{ color: 'rgba(255,255,255,0.18)', borderless: false }}
+                        disabled={audioRange.loading}
+                        onPress={isPlaying ? stopRangeAudio : startRangeAudio}
+                        style={[
+                            styles.audioPrimaryButton,
+                            audioRange.loading ? styles.disabled : null,
+                        ]}
+                        testID="audio-range-toggle"
+                    >
+                        {isPlaying ? (
+                            <Pause color={colors.onPrimary} size={15} strokeWidth={2.4} />
+                        ) : (
+                            <Volume2 color={colors.onPrimary} size={15} strokeWidth={2.4} />
+                        )}
+                        <Text style={styles.audioPrimaryButtonText}>
+                            {audioRange.loading ? 'Memuat' : isPlaying ? 'Stop' : 'Putar range'}
+                        </Text>
+                    </Pressable>
+                </View>
+
+                <View style={styles.audioInputGrid}>
+                    <View style={styles.audioInputGroup}>
+                        <Text style={styles.audioInputLabel}>Dari surat</Text>
+                        <TextInput
+                            keyboardType="number-pad"
+                            onChangeText={(value) => updateAudioRangeField('startSurah', value)}
+                            placeholder={`${selectedSurah.number}`}
+                            placeholderTextColor={colors.muted}
+                            style={styles.audioInput}
+                            testID="audio-start-surah"
+                            value={audioRange.startSurah}
+                        />
+                    </View>
+                    <View style={styles.audioInputGroup}>
+                        <Text style={styles.audioInputLabel}>Sampai surat</Text>
+                        <TextInput
+                            keyboardType="number-pad"
+                            onChangeText={(value) => updateAudioRangeField('endSurah', value)}
+                            placeholder={`${selectedSurah.number}`}
+                            placeholderTextColor={colors.muted}
+                            style={styles.audioInput}
+                            testID="audio-end-surah"
+                            value={audioRange.endSurah}
+                        />
+                    </View>
+                    <View style={styles.audioInputGroup}>
+                        <Text style={styles.audioInputLabel}>Sampai ayat</Text>
+                        <TextInput
+                            keyboardType="number-pad"
+                            onChangeText={(value) => updateAudioRangeField('endAyah', value)}
+                            placeholder={`${selectedSurah.ayahs || ''}`}
+                            placeholderTextColor={colors.muted}
+                            style={styles.audioInput}
+                            testID="audio-end-ayah"
+                            value={audioRange.endAyah}
+                        />
+                    </View>
+                </View>
+
+                <Text style={styles.audioSectionLabel}>Qari</Text>
+                <View style={styles.audioChipRow}>
+                    {audioQariOptions.map((qari) => {
+                        const isActive = audioState.qariSlug === qari.qari_slug;
+                        return (
+                            <Pressable
+                                key={qari.qari_slug}
+                                onPress={() => selectQari(null, qari.qari_slug)}
+                                style={[
+                                    styles.audioChip,
+                                    isActive ? styles.audioChipActive : null,
+                                ]}
+                            >
+                                <Text
+                                    style={[
+                                        styles.audioChipText,
+                                        isActive ? styles.audioChipTextActive : null,
+                                    ]}
+                                >
+                                    {qari.qari_name}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                </View>
+
+                <View style={styles.audioControlRow}>
+                    <View style={styles.audioControlGroup}>
+                        <Text style={styles.audioSectionLabel}>Speed</Text>
+                        <View style={styles.audioChipRow}>
+                            {AUDIO_SPEED_OPTIONS.map((speed) => {
+                                const isActive = audioRange.speed === speed;
+                                return (
+                                    <Pressable
+                                        key={speed}
+                                        onPress={() => selectAudioSpeed(speed)}
+                                        style={[
+                                            styles.audioChip,
+                                            isActive ? styles.audioChipActive : null,
+                                        ]}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.audioChipText,
+                                                isActive ? styles.audioChipTextActive : null,
+                                            ]}
+                                        >
+                                            {speed}x
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    </View>
+                    <Pressable
+                        onPress={toggleAudioRepeat}
+                        style={[
+                            styles.audioRepeatButton,
+                            audioRange.repeat ? styles.audioRepeatButtonActive : null,
+                        ]}
+                        testID="audio-repeat-toggle"
+                    >
+                        <Text
+                            style={[
+                                styles.audioRepeatText,
+                                audioRange.repeat ? styles.audioRepeatTextActive : null,
+                            ]}
+                        >
+                            Repeat {audioRange.repeat ? 'On' : 'Off'}
+                        </Text>
+                    </Pressable>
+                </View>
+
+                {audioRange.currentLabel ? (
+                    <Text style={styles.audioStatusText}>{audioRange.currentLabel}</Text>
+                ) : null}
+            </View>
+        );
+    };
+
     const renderReaderHeader = () => {
         const isSeriousMode = displayMode === 'focus' || displayMode === 'mushaf';
         const selectedSurahNumber = Number(selectedSurah?.number);
@@ -1927,6 +2355,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                     </Pressable>
                 </View>
             ) : null}
+            {selectedSurah.type === 'surah' ? renderAudioRangePanel() : null}
             {message ? <Text style={styles.message}>{message}</Text> : null}
             {previewAyah && !isSeriousMode ? (
                 <View style={styles.targetPreview}>
@@ -2612,15 +3041,44 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
 
     useEffect(() => {
         let mounted = true;
-        readPreference(preferenceKeys.quranAudioQari, 'Alafasy_64kbps').then((value) => {
-            if (mounted && typeof value === 'string')
-                setAudioState((current) => ({ ...current, qariSlug: value }));
+        Promise.all([
+            readPreference(preferenceKeys.quranAudioQari, 'mishary-rashid-alafasy'),
+            readPreference(preferenceKeys.quranAudioRange, null),
+            readPreference(preferenceKeys.quranAudioRepeat, false),
+            readPreference(preferenceKeys.quranAudioSpeed, 1),
+        ]).then(([qariSlug, range, repeat, speed]) => {
+            if (!mounted) return;
+            if (typeof qariSlug === 'string') {
+                setAudioState((current) => ({ ...current, qariSlug }));
+            }
+            const nextSpeed = clampAudioSpeed(speed);
+            audioRangeRepeatRef.current = Boolean(repeat);
+            audioRangeSpeedRef.current = nextSpeed;
+            setAudioRange((current) => ({
+                ...current,
+                endAyah: typeof range?.endAyah === 'string' ? range.endAyah : current.endAyah,
+                endSurah: typeof range?.endSurah === 'string' ? range.endSurah : current.endSurah,
+                repeat: Boolean(repeat),
+                speed: nextSpeed,
+                startSurah:
+                    typeof range?.startSurah === 'string' ? range.startSurah : current.startSurah,
+            }));
         });
         return () => {
             mounted = false;
             stopAudio();
         };
     }, []);
+
+    useEffect(() => {
+        if (!selectedSurah || selectedSurah.type !== 'surah') return;
+        setAudioRange((current) => ({
+            ...current,
+            endAyah: current.endAyah || `${selectedSurah.ayahs || ''}`,
+            endSurah: current.endSurah || `${selectedSurah.number}`,
+            startSurah: current.startSurah || `${selectedSurah.number}`,
+        }));
+    }, [selectedSurah?.number, selectedSurah?.ayahs, selectedSurah?.type]);
 
     const query = surahQuery.trim().toLowerCase();
     const filteredSurahs = query
@@ -2643,6 +3101,7 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
     const readerExtraData = useMemo(
         () => ({
             arabicFont,
+            audioRange,
             audioState,
             bookmarks,
             displayMode,
@@ -2651,7 +3110,17 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
             revealedAyahs,
             targetAyah,
         }),
-        [arabicFont, audioState, bookmarks, displayMode, fontSize, memorizationMode, revealedAyahs, targetAyah],
+        [
+            arabicFont,
+            audioRange,
+            audioState,
+            bookmarks,
+            displayMode,
+            fontSize,
+            memorizationMode,
+            revealedAyahs,
+            targetAyah,
+        ],
     );
 
     useEffect(() => {
@@ -4164,6 +4633,158 @@ const styles = StyleSheet.create({
     },
     qariTextActive: {
         color: colors.primaryDark,
+    },
+    audioPanel: {
+        backgroundColor: colors.surface,
+        borderColor: colors.faint,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        gap: spacing.sm,
+        marginBottom: spacing.md,
+        padding: spacing.md,
+    },
+    audioPanelHeader: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        gap: spacing.sm,
+        justifyContent: 'space-between',
+    },
+    audioPanelTitleRow: {
+        alignItems: 'center',
+        flex: 1,
+        flexDirection: 'row',
+        gap: spacing.sm,
+        minWidth: 0,
+    },
+    audioPanelTitleCopy: {
+        flex: 1,
+        minWidth: 0,
+    },
+    audioPanelTitle: {
+        color: colors.ink,
+        fontSize: 14,
+        fontWeight: '900',
+    },
+    audioPanelMeta: {
+        color: colors.muted,
+        fontSize: 11,
+        fontWeight: '800',
+        marginTop: 2,
+    },
+    audioPrimaryButton: {
+        alignItems: 'center',
+        backgroundColor: colors.primary,
+        borderRadius: radius.sm,
+        flexDirection: 'row',
+        gap: spacing.xs,
+        justifyContent: 'center',
+        minHeight: 36,
+        paddingHorizontal: spacing.md,
+    },
+    audioPrimaryButtonText: {
+        color: colors.onPrimary,
+        fontSize: 12,
+        fontWeight: '900',
+    },
+    audioInputGrid: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+    },
+    audioInputGroup: {
+        flex: 1,
+        minWidth: 0,
+    },
+    audioInputLabel: {
+        color: colors.muted,
+        fontSize: 10,
+        fontWeight: '900',
+        marginBottom: 4,
+        textTransform: 'uppercase',
+    },
+    audioInput: {
+        backgroundColor: colors.bg,
+        borderColor: colors.faint,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        color: colors.ink,
+        fontSize: 13,
+        fontWeight: '900',
+        minHeight: 38,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 0,
+        textAlign: 'center',
+    },
+    audioSectionLabel: {
+        color: colors.primaryDark,
+        fontSize: 11,
+        fontWeight: '900',
+        marginTop: spacing.xs,
+        textTransform: 'uppercase',
+    },
+    audioChipRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.xs,
+    },
+    audioChip: {
+        alignItems: 'center',
+        backgroundColor: colors.bg,
+        borderColor: colors.faint,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        justifyContent: 'center',
+        minHeight: 32,
+        paddingHorizontal: spacing.sm,
+    },
+    audioChipActive: {
+        backgroundColor: colors.surfaceMuted,
+        borderColor: colors.primary,
+    },
+    audioChipText: {
+        color: colors.text,
+        fontSize: 11,
+        fontWeight: '800',
+    },
+    audioChipTextActive: {
+        color: colors.primaryDark,
+    },
+    audioControlRow: {
+        alignItems: 'flex-end',
+        flexDirection: 'row',
+        gap: spacing.sm,
+        justifyContent: 'space-between',
+    },
+    audioControlGroup: {
+        flex: 1,
+        minWidth: 0,
+    },
+    audioRepeatButton: {
+        alignItems: 'center',
+        backgroundColor: colors.bg,
+        borderColor: colors.faint,
+        borderRadius: radius.sm,
+        borderWidth: 1,
+        justifyContent: 'center',
+        minHeight: 32,
+        paddingHorizontal: spacing.md,
+    },
+    audioRepeatButtonActive: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    audioRepeatText: {
+        color: colors.text,
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    audioRepeatTextActive: {
+        color: colors.onPrimary,
+    },
+    audioStatusText: {
+        color: colors.primary,
+        fontSize: 12,
+        fontWeight: '800',
+        lineHeight: 17,
     },
     hafalanSummary: {
         flexDirection: 'row',

@@ -4,6 +4,12 @@ let nativeAudio;
 let player;
 let statusSubscription;
 
+const normalizePlaybackRate = (rate) => {
+  const numeric = Number(rate);
+  if (!Number.isFinite(numeric)) return 1;
+  return Math.max(0.5, Math.min(2, numeric));
+};
+
 const cleanupStatusSubscription = () => {
   statusSubscription?.remove?.();
   statusSubscription = null;
@@ -32,12 +38,14 @@ export const stopAudio = () => {
   player = null;
 };
 
-export const playAudioUrl = async (url, { onEnded } = {}) => {
+export const playAudioUrl = async (url, { onEnded, rate = 1 } = {}) => {
   if (!url) return false;
   stopAudio();
+  const playbackRate = normalizePlaybackRate(rate);
 
   if (Platform.OS === 'web') {
     player = new Audio(url);
+    player.playbackRate = playbackRate;
     player.onended = () => {
       player = null;
       onEnded?.();
@@ -48,6 +56,11 @@ export const playAudioUrl = async (url, { onEnded } = {}) => {
 
   const nativeAudioModule = getNativeAudio();
   player = nativeAudioModule.createAudioPlayer(url);
+  if (typeof player.setPlaybackRate === 'function') {
+    player.setPlaybackRate(playbackRate);
+  } else if ('playbackRate' in player) {
+    player.playbackRate = playbackRate;
+  }
   statusSubscription = player.addListener?.('playbackStatusUpdate', (status) => {
     if (status?.didJustFinish) {
       stopAudio();
