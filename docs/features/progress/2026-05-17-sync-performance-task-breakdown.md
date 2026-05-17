@@ -424,7 +424,8 @@ Completed: `2026-05-17`
 
 Priority: `P2`
 Area: `apps/mobile`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -441,7 +442,30 @@ Status: `TODO`
 
 ### Verification
 
-- `cd apps/mobile && npm test -- --runInBand`
+- `node --check apps/mobile/src/test-utils/async.js` - `PASS`
+- `cd apps/mobile && npm test -- --runInBand src/__tests__/homeScreen.test.js src/__tests__/PrayerScreen.test.js src/__tests__/quranScreen.test.js src/__tests__/exploreScreen.test.js src/__tests__/globalSearchScreen.test.js src/__tests__/sessionCard.test.js` - `PASS`
+  - 6 suites / 72 tests passed.
+  - No `act(...)` warning in targeted Home, Prayer, Quran, Explore,
+    GlobalSearch, and SessionCard tests.
+- `cd apps/mobile && npm test -- --runInBand src/__tests__/notificationCenter.test.js src/__tests__/offlinePackCard.test.js src/__tests__/notesPanel.test.js src/__tests__/context-session.test.js` - `PASS`
+  - 4 suites / 39 tests passed.
+  - Low-impact warning cleanup extended to NotificationCenter,
+    OfflinePackCard, NotesPanel, and SessionProvider coverage.
+- `cd apps/mobile && npm test -- --runInBand` - `PASS`
+  - 39 suites / 544 tests passed.
+  - Full suite output no longer reports `not wrapped in act(...)`.
+
+### Implementation Notes
+
+- Added shared mobile test helper `apps/mobile/src/test-utils/async.js` for
+  flushing async effects inside `act(...)`.
+- Home, Prayer, Quran, Explore, GlobalSearch, and SessionCard tests now await
+  mount effects or async submit handlers before asserting.
+- Low-impact residual warnings found in the full suite were also cleaned:
+  NotificationCenter, OfflinePackCard, NotesPanel, and SessionProvider tests now
+  wait for async initialization paths.
+- The helper intentionally lives outside `src/__tests__` so Jest does not treat
+  it as a standalone test file.
 
 ## Suggested Execution Order
 

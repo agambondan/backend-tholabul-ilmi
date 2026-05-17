@@ -16,6 +16,7 @@ jest.mock('../storage/offlineContent', () => ({
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { OfflinePackCard } from '../components/OfflinePackCard';
+import { flushAsyncWork } from '../test-utils/async';
 
 const { useFeedback } = require('../context/FeedbackContext');
 const { getHadithBooks } = require('../api/client');
@@ -41,6 +42,12 @@ const mockBooks = [
   { slug: 'muslim', name: 'Shahih Muslim', count: 80 },
 ];
 
+const renderOfflinePackCard = async () => {
+  const view = render(<OfflinePackCard />);
+  await flushAsyncWork();
+  return view;
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   useFeedback.mockReturnValue(mockFeedback);
@@ -50,35 +57,35 @@ beforeEach(() => {
 });
 
 describe('OfflinePackCard', () => {
-  test('renders card title', () => {
-    const { getByText } = render(<OfflinePackCard />);
+  test('renders card title', async () => {
+    const { getByText } = await renderOfflinePackCard();
     expect(getByText('Paket Offline')).toBeTruthy();
   });
 
-  test('renders Al-Quran toggle', () => {
-    const { getByText } = render(<OfflinePackCard />);
+  test('renders Al-Quran toggle', async () => {
+    const { getByText } = await renderOfflinePackCard();
     expect(getByText('Al-Quran lengkap')).toBeTruthy();
   });
 
-  test('renders kitab hadis section', () => {
-    const { getByText } = render(<OfflinePackCard />);
+  test('renders kitab hadis section', async () => {
+    const { getByText } = await renderOfflinePackCard();
     expect(getByText('Kitab Hadis')).toBeTruthy();
   });
 
   test('shows book list after loading', async () => {
-    const { findByText } = render(<OfflinePackCard />);
+    const { findByText } = await renderOfflinePackCard();
     expect(await findByText('Shahih Bukhari')).toBeTruthy();
     expect(await findByText('Shahih Muslim')).toBeTruthy();
   });
 
   test('shows loading state while fetching books', async () => {
     getHadithBooks.mockReturnValue(new Promise(() => {}));
-    const { findByText } = render(<OfflinePackCard />);
+    const { findByText } = await renderOfflinePackCard();
     expect(await findByText('Memuat daftar kitab hadis...')).toBeTruthy();
   });
 
   test('renders download and hapus buttons', async () => {
-    const { findByText } = render(<OfflinePackCard />);
+    const { findByText } = await renderOfflinePackCard();
     expect(await findByText('Unduh update')).toBeTruthy();
     expect(await findByText('Hapus paket')).toBeTruthy();
   });
@@ -91,7 +98,7 @@ describe('OfflinePackCard', () => {
       hadiths: 5000,
       hadithBooks: ['bukhari', 'muslim'],
     });
-    const { findByText } = render(<OfflinePackCard />);
+    const { findByText } = await renderOfflinePackCard();
     expect(await findByText('114')).toBeTruthy();
     expect(await findByText('6236')).toBeTruthy();
     expect(await findByText('5000')).toBeTruthy();
@@ -117,17 +124,17 @@ describe('OfflinePackCard', () => {
     getOfflineHadithCountsBySlug.mockResolvedValue({ bukhari: 100 });
     getHadithBooks.mockResolvedValue([{ slug: 'bukhari', name: 'Shahih Bukhari', count: 100 }]);
 
-    const { findByText } = render(<OfflinePackCard />);
+    const { findByText } = await renderOfflinePackCard();
     expect(await findByText('Sudah lengkap, tidak ada update')).toBeTruthy();
   });
 
   test('select all books link', async () => {
-    const { findByText } = render(<OfflinePackCard />);
+    const { findByText } = await renderOfflinePackCard();
     fireEvent.press(await findByText('Semua'));
   });
 
   test('clear book selection link', async () => {
-    const { findByText } = render(<OfflinePackCard />);
+    const { findByText } = await renderOfflinePackCard();
     fireEvent.press(await findByText('Kosongkan'));
   });
 });

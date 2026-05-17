@@ -89,6 +89,7 @@ jest.mock('../components/ContentCard', () => {
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { GlobalSearchScreen } from '../screens/GlobalSearchScreen';
+import { flushAsyncWork } from '../test-utils/async';
 
 const client = require('../api/client');
 const recentSearches = require('../storage/recentSearches');
@@ -110,6 +111,14 @@ const mockDoa = (id, overrides = {}) => ({
   ...overrides,
 });
 
+const renderGlobalSearchScreen = async (props = {}) => {
+  const view = render(
+    <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} {...props} />,
+  );
+  await flushAsyncWork();
+  return view;
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   jest.useFakeTimers();
@@ -124,10 +133,8 @@ afterEach(() => {
 });
 
 describe('GlobalSearchScreen', () => {
-  it('renders search input and filter chips', () => {
-    const { getByTestId, getByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+  it('renders search input and filter chips', async () => {
+    const { getByTestId, getByText } = await renderGlobalSearchScreen();
 
     expect(getByTestId('search-input')).toBeTruthy();
     expect(getByText('Semua')).toBeTruthy();
@@ -140,10 +147,8 @@ describe('GlobalSearchScreen', () => {
     expect(getByText('Fitur')).toBeTruthy();
   });
 
-  it('shows quick suggestions when no query', () => {
-    const { getByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+  it('shows quick suggestions when no query', async () => {
+    const { getByText } = await renderGlobalSearchScreen();
 
     expect(getByText('Cari cepat')).toBeTruthy();
     expect(getByText('shalat')).toBeTruthy();
@@ -155,9 +160,7 @@ describe('GlobalSearchScreen', () => {
   it('shows recent searches when available', async () => {
     recentSearches.readRecentSearches.mockResolvedValue(['zakat', 'ikhlas']);
 
-    const { getByText, queryByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+    const { getByText, queryByText } = await renderGlobalSearchScreen();
 
     await waitFor(() => {
       expect(getByText('Terakhir dicari')).toBeTruthy();
@@ -170,9 +173,7 @@ describe('GlobalSearchScreen', () => {
   it('calls searchGlobal when query changes', async () => {
     client.searchGlobal.mockResolvedValue({ ayahs: [mockAyah(1)], total: 1, ayahTotal: 1 });
 
-    const { getByTestId } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+    const { getByTestId } = await renderGlobalSearchScreen();
 
     const input = getByTestId('search-input');
     fireEvent.changeText(input, 'fatihah');
@@ -192,9 +193,7 @@ describe('GlobalSearchScreen', () => {
       return {};
     });
 
-    const { getByTestId, getByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+    const { getByTestId, getByText } = await renderGlobalSearchScreen();
 
     const input = getByTestId('search-input');
     fireEvent.changeText(input, 'islam');
@@ -216,9 +215,7 @@ describe('GlobalSearchScreen', () => {
       return {};
     });
 
-    const { getByTestId, getByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+    const { getByTestId, getByText } = await renderGlobalSearchScreen();
 
     const input = getByTestId('search-input');
     fireEvent.changeText(input, 'islam');
@@ -237,9 +234,7 @@ describe('GlobalSearchScreen', () => {
       return {};
     });
 
-    const { getByTestId, getByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+    const { getByTestId, getByText } = await renderGlobalSearchScreen();
 
     const input = getByTestId('search-input');
     fireEvent.changeText(input, 'islam');
@@ -260,9 +255,7 @@ describe('GlobalSearchScreen', () => {
   it('shows loading state', async () => {
     client.searchGlobal.mockImplementation(() => new Promise(() => {}));
 
-    const { getByTestId, getByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+    const { getByTestId, getByText } = await renderGlobalSearchScreen();
 
     const input = getByTestId('search-input');
     fireEvent.changeText(input, 'islam');
@@ -277,9 +270,7 @@ describe('GlobalSearchScreen', () => {
   it('shows empty results state', async () => {
     client.searchGlobal.mockResolvedValue({});
 
-    const { getByTestId, getByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+    const { getByTestId, getByText } = await renderGlobalSearchScreen();
 
     const input = getByTestId('search-input');
     fireEvent.changeText(input, 'zzzzz');
@@ -294,9 +285,7 @@ describe('GlobalSearchScreen', () => {
   it('handles error during search with message', async () => {
     client.searchGlobal.mockRejectedValue(new Error('Network error'));
 
-    const { getByTestId, getByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+    const { getByTestId, getByText } = await renderGlobalSearchScreen();
 
     const input = getByTestId('search-input');
     fireEvent.changeText(input, 'islam');
@@ -308,10 +297,8 @@ describe('GlobalSearchScreen', () => {
     });
   });
 
-  it('pressing a quick suggestion sets the query', () => {
-    const { getByText, getByTestId } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+  it('pressing a quick suggestion sets the query', async () => {
+    const { getByText, getByTestId } = await renderGlobalSearchScreen();
 
     fireEvent.press(getByText('shalat'));
 
@@ -321,9 +308,7 @@ describe('GlobalSearchScreen', () => {
   it('shows feature results when matching', async () => {
     client.searchGlobal.mockResolvedValue({});
 
-    const { getByTestId, getByText } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={jest.fn()} />,
-    );
+    const { getByTestId, getByText } = await renderGlobalSearchScreen();
 
     const input = getByTestId('search-input');
     fireEvent.changeText(input, 'kiblat');
@@ -343,9 +328,7 @@ describe('GlobalSearchScreen', () => {
       return {};
     });
 
-    const { getByTestId, getAllByTestId } = render(
-      <GlobalSearchScreen onBack={jest.fn()} onOpenTab={onOpenTab} />,
-    );
+    const { getByTestId, getAllByTestId } = await renderGlobalSearchScreen({ onOpenTab });
 
     const input = getByTestId('search-input');
     fireEvent.changeText(input, 'fatihah');

@@ -89,6 +89,7 @@ jest.mock('../data/mobileFeatures', () => ({
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { HomeScreen } from '../screens/HomeScreen';
+import { flushAsyncWork } from '../test-utils/async';
 
 const { useSession } = require('../context/SessionContext');
 const clientApi = require('../api/client');
@@ -128,6 +129,19 @@ const defaultNavigation = {
   clearBack: jest.fn(),
 };
 
+const renderHomeScreen = async (props = {}) => {
+  const view = render(
+    <HomeScreen
+      isActive
+      navigation={defaultNavigation}
+      onOpenTab={jest.fn()}
+      {...props}
+    />,
+  );
+  await flushAsyncWork();
+  return view;
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   useSession.mockReturnValue({
@@ -150,7 +164,7 @@ beforeEach(() => {
 
 describe('HomeScreen', () => {
   test('renders header with guest name', async () => {
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
     await waitFor(() => {
       expect(getByText('Tamu')).toBeTruthy();
     });
@@ -162,15 +176,14 @@ describe('HomeScreen', () => {
       session: { token: 'abc' },
     });
 
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
     await waitFor(() => {
       expect(getByText('Ahmad')).toBeTruthy();
     });
-    jest.useRealTimers();
   });
 
   test('loads and displays daily ayah', async () => {
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Ayat Hari Ini')).toBeTruthy();
@@ -179,7 +192,7 @@ describe('HomeScreen', () => {
   });
 
   test('shows hijri and gregorian dates on home', async () => {
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('1 Ramadan 1445 H')).toBeTruthy();
@@ -193,7 +206,7 @@ describe('HomeScreen', () => {
     });
     Location.reverseGeocodeAsync.mockResolvedValue([{ city: 'Jakarta' }]);
 
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Subuh')).toBeTruthy();
@@ -207,7 +220,7 @@ describe('HomeScreen', () => {
   });
 
   test('loads and displays daily hadith', async () => {
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Hadis Hari Ini')).toBeTruthy();
@@ -216,7 +229,7 @@ describe('HomeScreen', () => {
   });
 
   test('shows feature grid with menu items', async () => {
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Kiblat')).toBeTruthy();
@@ -228,7 +241,7 @@ describe('HomeScreen', () => {
 
   test('quick action buttons navigate to correct tabs', async () => {
     const onOpenTab = jest.fn();
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={onOpenTab} />);
+    const { getByText } = await renderHomeScreen({ onOpenTab });
 
     await waitFor(() => {
       expect(getByText('Kiblat')).toBeTruthy();
@@ -248,7 +261,7 @@ describe('HomeScreen', () => {
     });
     Location.reverseGeocodeAsync.mockResolvedValue([{ city: 'Jakarta' }]);
 
-    const { getByText, queryByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText, queryByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Subuh')).toBeTruthy();
@@ -259,7 +272,7 @@ describe('HomeScreen', () => {
   test('daily message shown when ayah fails', async () => {
     clientApi.getDailyAyah.mockRejectedValue(new Error('fail'));
 
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Bacaan harian belum tersedia dari server.')).toBeTruthy();
@@ -268,7 +281,7 @@ describe('HomeScreen', () => {
 
   test('profile button navigates to profile tab', async () => {
     const onOpenTab = jest.fn();
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={onOpenTab} />);
+    const { getByText } = await renderHomeScreen({ onOpenTab });
 
     await waitFor(() => {
       expect(getByText('Tamu')).toBeTruthy();
@@ -279,7 +292,7 @@ describe('HomeScreen', () => {
   });
 
   test('displays muhasabah journal card', async () => {
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Jurnal Muhasabah')).toBeTruthy();
@@ -292,7 +305,7 @@ describe('HomeScreen', () => {
     ]);
     readRecentFeatures.mockResolvedValue([]);
 
-    const { getByText, getAllByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText, getAllByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Disematkan')).toBeTruthy();
@@ -307,7 +320,7 @@ describe('HomeScreen', () => {
       { key: 'kamus', title: 'Kamus Arab', subtitle: 'Cari kata', group: 'Alat' },
     ]);
 
-    const { getByText } = render(<HomeScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    const { getByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Terakhir Dibuka')).toBeTruthy();

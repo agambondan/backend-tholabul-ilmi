@@ -12,8 +12,9 @@ jest.mock('../api/auth', () => ({
 }));
 
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { SessionCard } from '../components/SessionCard';
+import { flushAsyncWork } from '../test-utils/async';
 
 const { useSession } = require('../context/SessionContext');
 const { useFeedback } = require('../context/FeedbackContext');
@@ -46,11 +47,14 @@ describe('SessionCard', () => {
     expect(getByPlaceholderText('Kata sandi')).toBeTruthy();
   });
 
-  test('calls signIn on submit', () => {
-    const signIn = jest.fn();
+  test('calls signIn on submit', async () => {
+    const signIn = jest.fn().mockResolvedValue({});
     useSession.mockReturnValue({ ...defaultSession, signIn });
     const { getAllByText } = render(<SessionCard />);
-    fireEvent.press(getAllByText('Masuk')[1]);
+    await act(async () => {
+      fireEvent.press(getAllByText('Masuk')[1]);
+    });
+    await flushAsyncWork();
     expect(signIn).toHaveBeenCalledTimes(1);
     expect(signIn).toHaveBeenCalledWith({ email: expect.any(String), password: expect.any(String) });
   });
@@ -86,7 +90,10 @@ describe('SessionCard', () => {
     fireEvent.changeText(nameInput, 'Test User');
     fireEvent.changeText(emailInput, 'test@test.com');
     fireEvent.changeText(passwordInput, 'password123');
-    fireEvent.press(getByText('Buat Akun'));
+    await act(async () => {
+      fireEvent.press(getByText('Buat Akun'));
+    });
+    await findByText('Akun berhasil dibuat. Silakan masuk.');
     expect(register).toHaveBeenCalledWith({ email: 'test@test.com', name: 'Test User', password: 'password123' });
   });
 
@@ -96,7 +103,12 @@ describe('SessionCard', () => {
     fireEvent.press(getByText('Lupa Sandi'));
     const emailInput = getByPlaceholderText('Email');
     fireEvent.changeText(emailInput, 'test@test.com');
-    fireEvent.press(getByText('Kirim Tautan Reset'));
+    await act(async () => {
+      fireEvent.press(getByText('Kirim Tautan Reset'));
+    });
+    await waitFor(() => {
+      expect(getByText('Email terkirim')).toBeTruthy();
+    });
     expect(forgotPassword).toHaveBeenCalledWith('test@test.com');
   });
 

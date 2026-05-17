@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, act, renderHook, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
+import { flushAsyncWork } from '../test-utils/async';
 
 jest.mock('../api/auth', () => ({
   getMe: jest.fn(),
@@ -34,12 +35,13 @@ afterEach(() => {
 });
 
 describe('SessionProvider', () => {
-  test('wraps children', () => {
+  test('wraps children', async () => {
     const { getByText } = render(
       <SessionProvider>
         <Text>hello</Text>
       </SessionProvider>,
     );
+    await flushAsyncWork();
     expect(getByText('hello')).toBeTruthy();
   });
 

@@ -16,6 +16,7 @@ jest.mock('../api/personal', () => ({
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { NotesPanel } from '../components/NotesPanel';
+import { flushAsyncWork } from '../test-utils/async';
 
 const { useSession } = require('../context/SessionContext');
 const { useFeedback } = require('../context/FeedbackContext');
@@ -25,6 +26,12 @@ const mockFeedback = {
   showError: jest.fn(),
   showInfo: jest.fn(),
   showSuccess: jest.fn(),
+};
+
+const renderNotesPanel = async (props = {}) => {
+  const view = render(<NotesPanel refType="quran" refId="1" {...props} />);
+  await flushAsyncWork();
+  return view;
 };
 
 beforeEach(() => {
@@ -42,7 +49,7 @@ describe('NotesPanel', () => {
   });
 
   test('renders input and submit button after load', async () => {
-    const { findByPlaceholderText, findByText } = render(<NotesPanel refType="quran" refId="1" />);
+    const { findByPlaceholderText, findByText } = await renderNotesPanel();
     expect(await findByPlaceholderText('Tulis catatan personal...')).toBeTruthy();
     expect(await findByText('Simpan catatan')).toBeTruthy();
   });
@@ -53,7 +60,7 @@ describe('NotesPanel', () => {
       { id: '2', content: 'Catatan kedua' },
     ];
     getNotes.mockResolvedValue(mockNotes);
-    const { findByText } = render(<NotesPanel refType="quran" refId="1" />);
+    const { findByText } = await renderNotesPanel();
     expect(await findByText('Catatan pertama')).toBeTruthy();
     expect(await findByText('Catatan kedua')).toBeTruthy();
   });
@@ -61,7 +68,7 @@ describe('NotesPanel', () => {
   test('creates a note on submit', async () => {
     const createdNote = { id: '3', content: 'Catatan baru' };
     createNote.mockResolvedValue(createdNote);
-    const { findByPlaceholderText, findByText } = render(<NotesPanel refType="quran" refId="1" />);
+    const { findByPlaceholderText, findByText } = await renderNotesPanel();
     const input = await findByPlaceholderText('Tulis catatan personal...');
     fireEvent.changeText(input, 'Catatan baru');
     const saveButton = await findByText('Simpan catatan');
@@ -74,19 +81,19 @@ describe('NotesPanel', () => {
   test('shows show-all button when more than 5 notes', async () => {
     const manyNotes = Array.from({ length: 7 }, (_, i) => ({ id: String(i + 1), content: `Note ${i + 1}` }));
     getNotes.mockResolvedValue(manyNotes);
-    const { findByText } = render(<NotesPanel refType="quran" refId="1" />);
+    const { findByText } = await renderNotesPanel();
     expect(await findByText(/Lihat semua/)).toBeTruthy();
   });
 
   test('shows edit and delete buttons for each note', async () => {
     getNotes.mockResolvedValue([{ id: '1', content: 'Test note' }]);
-    const { findByText } = render(<NotesPanel refType="quran" refId="1" />);
+    const { findByText } = await renderNotesPanel();
     expect(await findByText('Ubah')).toBeTruthy();
     expect(await findByText('Hapus')).toBeTruthy();
   });
 
-  test('calls getNotes with correct params', () => {
-    render(<NotesPanel refType="hadith" refId="42" />);
+  test('calls getNotes with correct params', async () => {
+    await renderNotesPanel({ refType: 'hadith', refId: '42' });
     expect(getNotes).toHaveBeenCalledWith({ refType: 'hadith', refId: '42' });
   });
 });

@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { flushAsyncWork } from '../test-utils/async';
 
 jest.mock('expo-audio', () => ({
   createAudioPlayer: jest.fn(() => ({ play: jest.fn(), stop: jest.fn(), source: null })),
@@ -121,6 +122,14 @@ const defaultNavigation = {
   current: null,
 };
 
+const renderPrayerScreen = async () => {
+  const view = render(
+    <PrayerScreen isActive={true} navigation={defaultNavigation} />,
+  );
+  await flushAsyncWork();
+  return view;
+};
+
 describe('PrayerScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -139,10 +148,8 @@ describe('PrayerScreen', () => {
     });
   });
 
-  test('renders screen title', () => {
-    const { getByTestId } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
+  test('renders screen title', async () => {
+    const { getByTestId } = await renderPrayerScreen();
 
     expect(getByTestId('screen-title')).toBeTruthy();
     expect(getByTestId('screen-title').props.children).toBe(
@@ -150,14 +157,12 @@ describe('PrayerScreen', () => {
     );
   });
 
-  test('shows loader while loading', () => {
+  test('shows loader while loading', async () => {
     Location.requestForegroundPermissionsAsync.mockReturnValue(
       new Promise(() => {}),
     );
 
-    const { getByTestId } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
+    const { getByTestId } = await renderPrayerScreen();
 
     expect(getByTestId('screen-loader')).toBeTruthy();
   });
@@ -167,9 +172,7 @@ describe('PrayerScreen', () => {
       status: 'denied',
     });
 
-    const { getByText } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
+    const { getByText } = await renderPrayerScreen();
 
     await waitFor(() => {
       expect(
@@ -185,9 +188,7 @@ describe('PrayerScreen', () => {
       status: 'denied',
     });
 
-    const { getByText, getByPlaceholderText } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
+    const { getByText, getByPlaceholderText } = await renderPrayerScreen();
 
     await waitFor(() => {
       expect(getByText('Lokasi Manual')).toBeTruthy();
@@ -206,9 +207,7 @@ describe('PrayerScreen', () => {
         'Fitur jadwal offline tersedia di aplikasi mobile.',
     });
 
-    const { getByText, queryByText } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
+    const { getByText, queryByText } = await renderPrayerScreen();
 
     await waitFor(() => {
       expect(getByText('Subuh')).toBeTruthy();
@@ -228,9 +227,7 @@ describe('PrayerScreen', () => {
       days: 0,
     });
 
-    const { getByText, queryByText } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
+    const { getByText, queryByText } = await renderPrayerScreen();
 
     await waitFor(() => {
       expect(getByText('Subuh')).toBeTruthy();
@@ -248,9 +245,7 @@ describe('PrayerScreen', () => {
       days: 0,
     });
 
-    const { getByText, getByTestId } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
+    const { getByText, getByTestId } = await renderPrayerScreen();
 
     await waitFor(() => {
       expect(getByText('Subuh')).toBeTruthy();
@@ -279,9 +274,7 @@ describe('PrayerScreen', () => {
       days: 0,
     });
 
-    const { getByText } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
+    const { getByText } = await renderPrayerScreen();
 
     await waitFor(() => {
       expect(getByText('Subuh')).toBeTruthy();
@@ -310,9 +303,7 @@ describe('PrayerScreen', () => {
       days: 0,
     });
 
-    const { getByText } = render(
-      <PrayerScreen isActive={true} navigation={defaultNavigation} />,
-    );
+    const { getByText } = await renderPrayerScreen();
 
     await waitFor(() => {
       expect(getByText('Network error')).toBeTruthy();

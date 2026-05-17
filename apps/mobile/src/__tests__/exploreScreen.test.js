@@ -221,6 +221,7 @@ jest.mock('../data/mobileFeatures', () => {
 
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { flushAsyncWork } from '../test-utils/async';
 
 jest.setTimeout(15000);
 import { ExploreScreen } from '../screens/ExploreScreen';
@@ -237,6 +238,19 @@ const defaultNavigation = {
   close: jest.fn(),
   setBack: jest.fn(),
   clearBack: jest.fn(),
+};
+
+const renderExploreScreen = async (props = {}) => {
+  const view = render(
+    <ExploreScreen
+      isActive
+      navigation={defaultNavigation}
+      onOpenTab={jest.fn()}
+      {...props}
+    />,
+  );
+  await flushAsyncWork();
+  return view;
 };
 
 const mockUseSession = () => ({
@@ -256,41 +270,31 @@ beforeEach(() => {
 });
 
 describe('ExploreScreen', () => {
-  test('renders screen title and subtitle', () => {
-    const { getByTestId } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+  test('renders screen title and subtitle', async () => {
+    const { getByTestId } = await renderExploreScreen();
     expect(getByTestId('screen-title')).toBeTruthy();
     expect(getByTestId('screen-subtitle')).toBeTruthy();
   });
 
-  test('renders search input for feature catalog', () => {
-    const { getByTestId } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+  test('renders search input for feature catalog', async () => {
+    const { getByTestId } = await renderExploreScreen();
     expect(getByTestId('search-input')).toBeTruthy();
   });
 
-  test('renders section headers in catalog', () => {
-    const { getAllByTestId } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+  test('renders section headers in catalog', async () => {
+    const { getAllByTestId } = await renderExploreScreen();
     expect(getAllByTestId('section-title').length).toBeGreaterThanOrEqual(1);
   });
 
-  test('renders feature rows in catalog sections', () => {
-    const { getByText } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+  test('renders feature rows in catalog sections', async () => {
+    const { getByText } = await renderExploreScreen();
     expect(getByText('Kajian & Artikel')).toBeTruthy();
     expect(getByText('Referensi')).toBeTruthy();
     expect(getByText('Evaluasi')).toBeTruthy();
   });
 
   test('feature items are tappable and load feature content', async () => {
-    const { getByText, getByPlaceholderText } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+    const { getByText, getByPlaceholderText } = await renderExploreScreen();
 
     fireEvent.press(getByText('Kamus Arab'));
 
@@ -299,10 +303,8 @@ describe('ExploreScreen', () => {
     });
   });
 
-  test('search/filter narrows down feature list', () => {
-    const { getByTestId, queryByText } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+  test('search/filter narrows down feature list', async () => {
+    const { getByTestId, queryByText } = await renderExploreScreen();
 
     const searchInput = getByTestId('search-input');
     fireEvent.changeText(searchInput, 'tafsir');
@@ -311,10 +313,8 @@ describe('ExploreScreen', () => {
     expect(queryByText('Referensi')).toBeTruthy();
   });
 
-  test('shows empty results message when search has no matches', () => {
-    const { getByTestId, getByText } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+  test('shows empty results message when search has no matches', async () => {
+    const { getByTestId, getByText } = await renderExploreScreen();
 
     const searchInput = getByTestId('search-input');
     fireEvent.changeText(searchInput, 'zzzzznotexist');
@@ -332,7 +332,7 @@ describe('ExploreScreen', () => {
       { id: '1', ref_type: 'ayah', ref_id: '1:1' },
     ]);
 
-    render(<ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />);
+    await renderExploreScreen();
 
     await waitFor(() => {
       expect(personalApi.getBookmarks).toHaveBeenCalled();
@@ -344,9 +344,7 @@ describe('ExploreScreen', () => {
       { id: 'q1', title: 'Quiz 1', raw: { question: 'What?', option_a: 'A', option_b: 'B', option_c: 'C', option_d: 'D', correct_answer: 'A' } },
     ]);
 
-    const { getByText } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+    const { getByText } = await renderExploreScreen();
 
     fireEvent.press(getByText('Quiz Islami'));
 
@@ -366,9 +364,7 @@ describe('ExploreScreen', () => {
       },
     ]);
 
-    const { getByText } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+    const { getByText } = await renderExploreScreen();
 
     fireEvent.press(getByText('Flashcard Asmaul Husna'));
 
@@ -382,9 +378,7 @@ describe('ExploreScreen', () => {
   });
 
   test('toggle pinned feature calls togglePinnedFeature', async () => {
-    const { getByText, getAllByLabelText } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+    const { getByText, getAllByLabelText } = await renderExploreScreen();
 
     await waitFor(() => {
       expect(getByText('Tafsir')).toBeTruthy();
@@ -398,17 +392,13 @@ describe('ExploreScreen', () => {
     });
   });
 
-  test('shows profile action button when no feature is active', () => {
-    const { getByTestId } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+  test('shows profile action button when no feature is active', async () => {
+    const { getByTestId } = await renderExploreScreen();
     expect(getByTestId('action-Buka Profil')).toBeTruthy();
   });
 
   test('shows back button when a feature is active', async () => {
-    const { getByText, getByTestId } = render(
-      <ExploreScreen isActive navigation={defaultNavigation} onOpenTab={jest.fn()} />,
-    );
+    const { getByText, getByTestId } = await renderExploreScreen();
 
     fireEvent.press(getByText('Kamus Arab'));
 

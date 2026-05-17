@@ -187,6 +187,7 @@ jest.mock('../components/NotesPanel', () => ({
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { QuranScreen } from '../screens/QuranScreen';
+import { flushAsyncWork } from '../test-utils/async';
 
 const { useSession } = require('../context/SessionContext');
 const { useFeedback } = require('../context/FeedbackContext');
@@ -234,15 +235,21 @@ beforeEach(() => {
 
 const mockNavigation = { setBack: jest.fn(), clearBack: jest.fn() };
 
+const renderQuranScreen = async (props = {}) => {
+  const view = render(
+    <QuranScreen isActive navigation={mockNavigation} {...props} />,
+  );
+  await flushAsyncWork();
+  return view;
+};
+
 afterEach(() => {
   jest.useRealTimers();
 });
 
 describe('QuranScreen', () => {
   it('renders surah list on mount', async () => {
-    const { getByText, queryByTestId } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByText, queryByTestId } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Al-Qur\'an')).toBeTruthy();
@@ -255,18 +262,16 @@ describe('QuranScreen', () => {
     });
   });
 
-  it('shows loading state when surahs not yet loaded', () => {
+  it('shows loading state when surahs not yet loaded', async () => {
     client.getSurahs.mockImplementation(() => new Promise(() => {}));
 
-    render(<QuranScreen isActive navigation={mockNavigation} />);
+    await renderQuranScreen();
 
     expect(client.getSurahs).toHaveBeenCalled();
   });
 
   it('filters surahs by search query', async () => {
-    const { getByPlaceholderText, getByText, queryByText } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByPlaceholderText, getByText, queryByText } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Surah 1')).toBeTruthy();
@@ -282,9 +287,7 @@ describe('QuranScreen', () => {
   });
 
   it('opens ayah view when surah is pressed', async () => {
-    const { getByText } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByText } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Surah 1')).toBeTruthy();
@@ -307,13 +310,9 @@ describe('QuranScreen', () => {
       return Promise.resolve({ items, hasMore: page < 5, page });
     });
 
-    render(
-      <QuranScreen
-        deepLinkTarget={{ id: 'quran-target-65', params: { surahNumber: 1, ayahNumber: 65 } }}
-        isActive
-        navigation={mockNavigation}
-      />,
-    );
+    await renderQuranScreen({
+      deepLinkTarget: { id: 'quran-target-65', params: { surahNumber: 1, ayahNumber: 65 } },
+    });
 
     await waitFor(() => {
       expect(client.getAyahsForSurahPage).toHaveBeenCalledTimes(3);
@@ -326,9 +325,7 @@ describe('QuranScreen', () => {
   });
 
   it('shows "Hafalan" tab with content', async () => {
-    const { getByText } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByText } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Hafalan')).toBeTruthy();
@@ -342,9 +339,7 @@ describe('QuranScreen', () => {
   });
 
   it('shows memorization mode selector in settings', async () => {
-    const { getByText, getByTestId } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByText, getByTestId } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Surah 1')).toBeTruthy();
@@ -376,9 +371,7 @@ describe('QuranScreen', () => {
 
   it('renders bookmark and note buttons in ayah action sheet', async () => {
     useSession.mockReturnValue({ user: { id: 'user-1' }, loading: false });
-    const { getByText } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByText } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Surah 1')).toBeTruthy();
@@ -392,9 +385,7 @@ describe('QuranScreen', () => {
   });
 
   it('toggles quran tabs (Surah / Hafalan / Murojaah)', async () => {
-    const { getByText, queryByText } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByText, queryByText } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Surah')).toBeTruthy();
@@ -411,9 +402,7 @@ describe('QuranScreen', () => {
 
   it('shows murojaah tab when user is logged in', async () => {
     useSession.mockReturnValue({ user: { id: 'user-1' }, loading: false });
-    const { getByText } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByText } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Murojaah')).toBeTruthy();
@@ -427,9 +416,7 @@ describe('QuranScreen', () => {
   });
 
   it('shows reader header when surah is opened', async () => {
-    const { getByText } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByText } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Surah 1')).toBeTruthy();
@@ -444,9 +431,7 @@ describe('QuranScreen', () => {
   });
 
   it('shows reader menu button when surah is opened', async () => {
-    const { getByText, getByTestId } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { getByText, getByTestId } = await renderQuranScreen();
 
     await waitFor(() => {
       expect(getByText('Surah 1')).toBeTruthy();
@@ -470,9 +455,7 @@ describe('QuranScreen', () => {
       },
     ]);
 
-    const { findByText, getAllByText, getByText } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { findByText, getAllByText, getByText } = await renderQuranScreen();
 
     fireEvent.press(await findByText('Surah 1'));
     fireEvent.press((await waitFor(() => getAllByText('Ketuk untuk membaca lengkap')))[0]);
@@ -493,9 +476,7 @@ describe('QuranScreen', () => {
       },
     ]);
 
-    const { findByText, getAllByText, getByText } = render(
-      <QuranScreen isActive navigation={mockNavigation} />,
-    );
+    const { findByText, getAllByText, getByText } = await renderQuranScreen();
 
     fireEvent.press(await findByText('Surah 1'));
     fireEvent.press((await waitFor(() => getAllByText('Ketuk untuk membaca lengkap')))[0]);
