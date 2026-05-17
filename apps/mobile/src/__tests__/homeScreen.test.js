@@ -226,6 +226,10 @@ describe('HomeScreen', () => {
       expect(getByText('05:45')).toBeTruthy();
       expect(getAllByText('JAKARTA').length).toBeGreaterThanOrEqual(1);
     });
+    expect(Location.reverseGeocodeAsync).toHaveBeenCalledWith({
+      latitude: -6.2,
+      longitude: 106.8,
+    });
   });
 
   test('retries prayer schedule when the first call fails', async () => {
@@ -285,6 +289,39 @@ describe('HomeScreen', () => {
       lng: 106.8,
       madhab: 'shafi',
       method: 'kemenag',
+    });
+  });
+
+  test('retries current GPS lookup and loads prayer schedule automatically', async () => {
+    jest.useFakeTimers();
+    Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    Location.getCurrentPositionAsync
+      .mockRejectedValueOnce(new Error('gps warming up'))
+      .mockResolvedValueOnce({
+        coords: { latitude: -6.2, longitude: 106.8 },
+      });
+    Location.reverseGeocodeAsync.mockResolvedValue([{ city: 'Jakarta' }]);
+
+    const { getByText } = await renderHomeScreen();
+
+    await waitFor(() => {
+      expect(getByText('GPS masih mencari lokasi. Mencoba lagi 1/5...')).toBeTruthy();
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    await flushAsyncWork();
+
+    await waitFor(() => {
+      expect(Location.getCurrentPositionAsync).toHaveBeenCalledTimes(2);
+      expect(clientApi.getPrayerTimes).toHaveBeenCalledWith({
+        lat: -6.2,
+        lng: 106.8,
+        madhab: 'shafi',
+        method: 'kemenag',
+      });
+      expect(getByText('05:45')).toBeTruthy();
     });
   });
 

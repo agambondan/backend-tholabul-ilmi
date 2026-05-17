@@ -189,8 +189,10 @@ const formatHadisSource = (value = '') => {
   return value.replace(/\bHadith\b/g, 'Hadis');
 };
 
-const locationErrorLabels = new Set(['LOKASI NONAKTIF', 'LOKASI BELUM TERSEDIA']);
-const currentLocationTimeoutMs = 4500;
+const waitingLocationLabel = 'MENUNGGU LOKASI';
+const locationErrorLabels = new Set(['LOKASI NONAKTIF', 'LOKASI BELUM TERSEDIA', waitingLocationLabel]);
+const currentLocationTimeoutMs = 3000;
+const locationRetryDelays = [1000, 2500, 5000, 10000, 15000];
 const prayerRetryDelays = [2500, 5000, 10000, 15000];
 const emptyPrayerState = { countdown: '--:--:--', key: 'asr', time: '--:--' };
 
@@ -230,9 +232,19 @@ const normalizeStoredLocation = (value) => {
 const areCoordsClose = (first, second) =>
   Boolean(first && second && Math.abs(first.lat - second.lat) < 0.001 && Math.abs(first.lng - second.lng) < 0.001);
 
+const toExpoLocationCoords = (coords) => {
+  const latitude = Number(coords?.lat);
+  const longitude = Number(coords?.lng);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  return { latitude, longitude };
+};
+
 const getHomeLocationLabel = async (coords) => {
+  const expoCoords = toExpoLocationCoords(coords);
+  if (!expoCoords) return 'LOKASI AKTIF';
+
   try {
-    const places = await Location.reverseGeocodeAsync(coords);
+    const places = await Location.reverseGeocodeAsync(expoCoords);
     const place = places?.[0];
     const city = place?.city || place?.subregion || place?.district || place?.region;
     return (city || 'Lokasi aktif').toUpperCase();
@@ -290,6 +302,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const { notifyTabActivity } = useTabActivity();
   const mountedRef = useRef(true);
   const prayerRetryTimerRef = useRef(null);
+  const locationRetryTimerRef = useRef(null);
   const [dailyHadith, setDailyHadith] = useState(null);
   const [dailyAyah, setDailyAyah] = useState(null);
   const [dateSnapshot, setDateSnapshot] = useState(() => new Date());
@@ -396,6 +409,13 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     }
   }, []);
 
+  const clearLocationRetryTimer = useCallback(() => {
+    if (locationRetryTimerRef.current) {
+      clearTimeout(locationRetryTimerRef.current);
+      locationRetryTimerRef.current = null;
+    }
+  }, []);
+
   const fetchPrayerTimesWithRetry = useCallback(async function fetchPrayerTimesWithRetryForCoords(coords, attempt = 0) {
     clearPrayerRetryTimer();
 
@@ -461,7 +481,9 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     return true;
   }, []);
 
-  const refreshCurrentLocationInBackground = useCallback((baseCoords) => {
+  const refreshCurrentLocationInBackground = useCallback(function refreshCurrentLocationInBackgroundForCoords(baseCoords, attempt = 0) {
+    clearLocationRetryTimer();
+
     withTimeout(
       Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
       currentLocationTimeoutMs,
@@ -481,17 +503,28 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
         }
       })
       .catch(() => {
-        if (!baseCoords && mountedRef.current) {
+        if (baseCoords || !mountedRef.current) return;
+
+        if (attempt < locationRetryDelays.length) {
+          const nextAttempt = attempt + 1;
           setPrayerSyncState('waiting');
-          setPrayerMessage('GPS masih mencari lokasi. Jadwal akan dimuat otomatis saat lokasi terbaca.');
+          setPrayerMessage(`GPS masih mencari lokasi. Mencoba lagi ${nextAttempt}/${locationRetryDelays.length}...`);
+          locationRetryTimerRef.current = setTimeout(() => {
+            refreshCurrentLocationInBackgroundForCoords(null, nextAttempt);
+          }, locationRetryDelays[attempt]);
+          return;
         }
+
+        setPrayerSyncState('waiting');
+        setPrayerMessage('GPS belum terbaca. Aktifkan lokasi presisi atau tarik untuk mencoba ulang.');
       });
-  }, [fetchPrayerTimesWithRetry]);
+  }, [clearLocationRetryTimer, fetchPrayerTimesWithRetry]);
 
   const loadHomeData = useCallback(async ({ refresh = false } = {}) => {
     const currentDate = new Date();
     setDateSnapshot(currentDate);
     clearPrayerRetryTimer();
+    clearLocationRetryTimer();
 
     if (refresh) {
       setRefreshing(true);
@@ -530,7 +563,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
         refreshCurrentLocationInBackground(coords);
 
         if (!coords && mountedRef.current) {
-          setLocationLabel('LOKASI BELUM TERSEDIA');
+          setLocationLabel(waitingLocationLabel);
           setPrayerSyncState('waiting');
           setPrayerMessage('GPS masih mencari lokasi. Jadwal akan dimuat otomatis saat lokasi terbaca.');
         }
@@ -541,7 +574,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       }
     } catch {
       if (mountedRef.current) {
-        setLocationLabel('LOKASI BELUM TERSEDIA');
+        setLocationLabel(waitingLocationLabel);
         setPrayerSyncState('waiting');
         setPrayerMessage('Lokasi belum terbaca. Coba aktifkan GPS lalu tarik untuk memuat ulang.');
       }
@@ -590,7 +623,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       setLoadingDaily(false);
       setRefreshing(false);
     }
-  }, [applyHomeLocation, clearPrayerRetryTimer, fetchPrayerTimesWithRetry, refreshCurrentLocationInBackground]);
+  }, [applyHomeLocation, clearLocationRetryTimer, clearPrayerRetryTimer, fetchPrayerTimesWithRetry, refreshCurrentLocationInBackground]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -598,9 +631,10 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
 
     return () => {
       clearPrayerRetryTimer();
+      clearLocationRetryTimer();
       mountedRef.current = false;
     };
-  }, [clearPrayerRetryTimer, loadHomeData]);
+  }, [clearLocationRetryTimer, clearPrayerRetryTimer, loadHomeData]);
 
   useEffect(() => {
     if (!prayerTimes) return undefined;
@@ -618,10 +652,6 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     if (!isActive) return;
     let mounted = true;
 
-    if (locationErrorLabels.has(locationLabel)) {
-      loadHomeData({ refresh: true });
-    }
-
     Promise.all([readPinnedFeatures(), readRecentFeatures()]).then(([pinnedItems, recentItems]) => {
       if (!mounted) return;
       setPinnedFeatures(pinnedItems.slice(0, 4));
@@ -631,7 +661,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     return () => {
       mounted = false;
     };
-  }, [isActive, loadHomeData, locationLabel]);
+  }, [isActive]);
 
   useEffect(() => {
     const activeView = navigation?.current?.view;
