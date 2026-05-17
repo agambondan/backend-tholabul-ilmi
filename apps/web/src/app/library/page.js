@@ -21,6 +21,17 @@ const normalizeItems = (data) => {
     return [];
 };
 
+const hasMorePages = (data, itemCount) => {
+    const page = data?.data ?? data;
+    if (typeof page?.last === 'boolean') return !page.last;
+    if (typeof page?.has_more === 'boolean') return page.has_more;
+    if (typeof page?.hasMore === 'boolean') return page.hasMore;
+    const currentPage = Number(page?.page ?? 0);
+    const totalPages = Number(page?.total_pages ?? page?.totalPages ?? page?.max_page ?? 0);
+    if (totalPages > 0) return currentPage + 1 < totalPages;
+    return itemCount >= PAGE_SIZE;
+};
+
 const normalizeProgressItems = (data) => {
     if (Array.isArray(data?.items)) return data.items;
     if (Array.isArray(data?.data?.items)) return data.data.items;
@@ -60,6 +71,9 @@ export const LibraryContent = ({ basePath = '/library', showProgressSummary = fa
     const { isAuthenticated } = useAuth();
     const [books, setBooks] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
+    const [page, setPage] = useState(0);
     const [error, setError] = useState(false);
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('');
@@ -68,21 +82,50 @@ export const LibraryContent = ({ basePath = '/library', showProgressSummary = fa
     const [progressItems, setProgressItems] = useState([]);
     const [progressLoading, setProgressLoading] = useState(false);
 
-    useEffect(() => {
-        setLoading(true);
+    const fetchBooks = (pageNumber, append = false) => {
+        if (append) {
+            setLoadingMore(true);
+        } else {
+            setLoading(true);
+        }
         setError(false);
         libraryApi
-            .list({ page: 0, size: PAGE_SIZE })
+            .list({ page: pageNumber, size: PAGE_SIZE })
             .then((res) => {
                 if (!res.ok) throw new Error('failed');
                 return res.json();
             })
-            .then((data) => setBooks(normalizeItems(data)))
-            .catch(() => {
-                setBooks([]);
-                setError(true);
+            .then((data) => {
+                const items = normalizeItems(data);
+                setBooks((current) => {
+                    if (!append) return items;
+                    const seen = new Set(current.map((book) => String(book.id ?? book.slug)));
+                    return [
+                        ...current,
+                        ...items.filter((book) => {
+                            const key = String(book.id ?? book.slug);
+                            if (seen.has(key)) return false;
+                            seen.add(key);
+                            return true;
+                        }),
+                    ];
+                });
+                setHasMore(hasMorePages(data, items.length));
+                setPage(pageNumber);
             })
-            .finally(() => setLoading(false));
+            .catch(() => {
+                if (!append) setBooks([]);
+                setError(true);
+                setHasMore(false);
+            })
+            .finally(() => {
+                if (append) setLoadingMore(false);
+                else setLoading(false);
+            });
+    };
+
+    useEffect(() => {
+        fetchBooks(0, false);
     }, []);
 
     useEffect(() => {
@@ -330,6 +373,19 @@ export const LibraryContent = ({ basePath = '/library', showProgressSummary = fa
                     );
                 })}
             </div>
+
+            {hasMore && !loading && !error && (
+                <div className='mt-6 flex justify-center'>
+                    <button
+                        className='rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-emerald-200 dark:hover:border-emerald-700 dark:hover:bg-slate-800'
+                        disabled={loadingMore}
+                        onClick={() => fetchBooks(page + 1, true)}
+                        type='button'
+                    >
+                        {loadingMore ? 'Memuat...' : 'Muat lebih banyak'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
