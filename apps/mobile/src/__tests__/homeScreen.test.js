@@ -214,7 +214,7 @@ describe('HomeScreen', () => {
     });
     Location.reverseGeocodeAsync.mockResolvedValue([{ city: 'Jakarta' }]);
 
-    const { getByText } = await renderHomeScreen();
+    const { getAllByText, getByText } = await renderHomeScreen();
 
     await waitFor(() => {
       expect(getByText('Subuh')).toBeTruthy();
@@ -224,6 +224,7 @@ describe('HomeScreen', () => {
       expect(getByText('Maghrib')).toBeTruthy();
       expect(getByText('Isya')).toBeTruthy();
       expect(getByText('05:45')).toBeTruthy();
+      expect(getAllByText('JAKARTA').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -241,7 +242,7 @@ describe('HomeScreen', () => {
     const { getByText } = await renderHomeScreen();
 
     await waitFor(() => {
-      expect(getByText('Mencoba ulang 1/4')).toBeTruthy();
+      expect(getByText('Jadwal sholat belum tersedia. Mencoba ulang 1/4...')).toBeTruthy();
     });
 
     await act(async () => {

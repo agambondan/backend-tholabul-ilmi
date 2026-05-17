@@ -367,8 +367,12 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     () => formatPrayerSummary(nextPrayer, hasPrayerSchedule),
     [hasPrayerSchedule, nextPrayer],
   );
+  const hasResolvedLocation =
+    Boolean(locationLabel) &&
+    locationLabel !== 'Memuat lokasi' &&
+    !locationErrorLabels.has(locationLabel);
   const prayerStatusLabel = useMemo(() => {
-    if (hasPrayerSchedule) return 'Jadwal siap';
+    if (hasResolvedLocation) return locationLabel;
     if (prayerSyncState === 'retrying') {
       return `Mencoba ulang ${prayerRetryAttempt}/${prayerRetryDelays.length}`;
     }
@@ -377,7 +381,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     if (prayerSyncState === 'failed') return 'Tarik untuk ulang';
     if (prayerSyncState === 'waiting') return 'Menunggu lokasi';
     return 'Sinkron otomatis';
-  }, [hasPrayerSchedule, prayerRetryAttempt, prayerSyncState]);
+  }, [hasResolvedLocation, locationLabel, prayerRetryAttempt, prayerSyncState]);
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)
