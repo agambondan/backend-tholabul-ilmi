@@ -29,6 +29,7 @@ type HadithRepository interface {
 	FindById(*int) (*model.Hadith, error)
 	FindManyByIds(ids []int) ([]model.Hadith, error)
 	FindByBookSlug(*fiber.Ctx, *string) (*paginate.Page, error)
+	FindByBookSlugNumber(*string, *int) (*model.Hadith, error)
 	FindByThemeId(*fiber.Ctx, *int) (*paginate.Page, error)
 	FindByThemeName(*fiber.Ctx, *string) (*paginate.Page, error)
 	FindByBookSlugThemeId(*fiber.Ctx, *string, *int) (*paginate.Page, error)
@@ -138,6 +139,16 @@ func (c *hadithRepo) FindByBookSlug(ctx *fiber.Ctx, bookSlug *string) (*paginate
 	page := c.pg.With(mod).Request(ctx.Request()).Response(&hadiths)
 
 	return &page, nil
+}
+
+func (c *hadithRepo) FindByBookSlugNumber(bookSlug *string, number *int) (*model.Hadith, error) {
+	var hadith model.Hadith
+	if err := c.withRelations(c.db).Preload("Media").
+		Where(`"Book".slug = ? AND hadith.number = ?`, *bookSlug, *number).
+		First(&hadith).Error; err != nil {
+		return nil, err
+	}
+	return &hadith, nil
 }
 
 func (c *hadithRepo) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, error) {

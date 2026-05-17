@@ -156,7 +156,7 @@ const chapterName = (c, lang) =>
 
 // ─── Hadith Card ─────────────────────────────────────────────────────────────
 
-function HadithCard({ h, idx, lang, t, slug }) {
+function HadithCard({ h, idx, lang, t, slug, basePath }) {
     const [showSanad, setShowSanad] = useState(false);
     const [showTakhrij, setShowTakhrij] = useState(false);
     const [clipboardPopUp, setClipboardPopUp] = useState(false);
@@ -171,13 +171,16 @@ function HadithCard({ h, idx, lang, t, slug }) {
     const audioSources = (h?.media ?? []).map((e) => e?.multimedia?.url).filter(Boolean);
     const firstAudioSource = audioSources[0] ?? '';
     const arabicText = h.translation?.ar ?? h.arab ?? '';
-    const hadithText = getLocalizedTranslation(h.translation, lang) || h.indonesia || '';
-    const cardId = `${slug}-${h.number ?? h.id ?? idx}`;
+	    const hadithText = getLocalizedTranslation(h.translation, lang) || h.indonesia || '';
+	    const cardId = `${slug}-${h.number ?? h.id ?? idx}`;
+	    const detailPath = h.number ? `${basePath}/${slug}/${h.number}` : null;
 
-    const getCardUrl = () => {
-        if (typeof window === 'undefined') return '';
-        return `${window.location.origin}${window.location.pathname}${window.location.search}#${cardId}`;
-    };
+	    const getCardUrl = () => {
+	        if (typeof window === 'undefined') return '';
+	        return detailPath
+	            ? `${window.location.origin}${detailPath}`
+	            : `${window.location.origin}${window.location.pathname}${window.location.search}#${cardId}`;
+	    };
 
     const copyText = (value) => {
         CopyToClipboard(value);
@@ -246,10 +249,19 @@ function HadithCard({ h, idx, lang, t, slug }) {
                     <GradeBadge grade={h.grade} />
                 </div>
 
-                {/* Action toolbar */}
-                <div className='flex items-center gap-1'>
-                    {h.id && (
-                        <button
+	                {/* Action toolbar */}
+	                <div className='flex items-center gap-1'>
+	                    {detailPath && (
+	                        <Link
+	                            href={detailPath}
+	                            title='Buka halaman detail'
+	                            className='p-2 rounded-lg text-base text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors'
+	                        >
+	                            <IoIosLink />
+	                        </Link>
+	                    )}
+	                    {h.id && (
+	                        <button
                             type='button'
                             title={isPlayingAudio ? 'Pause Audio' : firstAudioSource ? 'Putar Audio' : 'Audio belum tersedia'}
                             onClick={handleAudio}
@@ -565,7 +577,15 @@ export function HadithDetailContent({ params, basePath = '/dashboard/hadith' }) 
                         {/* Hadith list */}
                         <div className='space-y-4'>
                             {hadiths.map((h, idx) => (
-                                <HadithCard key={h.id ?? idx} h={h} idx={idx} lang={lang} t={t} slug={slug} />
+	                                <HadithCard
+	                                    key={h.id ?? idx}
+	                                    h={h}
+	                                    idx={idx}
+	                                    lang={lang}
+	                                    t={t}
+	                                    slug={slug}
+	                                    basePath={basePath}
+	                                />
                             ))}
                         </div>
 

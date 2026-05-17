@@ -142,7 +142,10 @@
       "authRequired": false,
       "ctaLabel": "Baca Hadis",
       "searchable": true,
-      "status": "active"
+      "status": "active",
+      "aliases": ["hadis", "hadits"],
+      "detailWebRoute": "/hadith/:slug/:number",
+      "dashboardDetailWebRoute": "/dashboard/hadith/:slug/:number"
     },
     {
       "key": "search",

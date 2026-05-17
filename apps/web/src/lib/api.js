@@ -618,6 +618,8 @@ export const bookHref = (slug) => `/hadith/${slug}`;
 export const hadithApi = {
     daily: () => fetch(`${API_URL}/api/v1/hadiths/daily`),
     detail: (id) => fetch(`${API_URL}/api/v1/hadiths/${id}`),
+    detailByBookNumber: (bookSlug, number) =>
+        fetch(`${API_URL}/api/v1/hadiths/book/${bookSlug}/number/${number}`),
 };
 
 export const achievementApi = {

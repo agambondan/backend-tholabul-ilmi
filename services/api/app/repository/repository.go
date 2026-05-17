@@ -194,6 +194,7 @@ func (s *Repositories) createCompositeIndexes() {
 
 	indexes := []string{
 		`CREATE INDEX IF NOT EXISTS idx_hadith_book_del    ON hadith (book_id, deleted_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_hadith_book_number_del ON hadith (book_id, number, deleted_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_hadith_theme_del   ON hadith (theme_id, deleted_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_hadith_chapter_del ON hadith (chapter_id, deleted_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_ua_uid_date_del    ON user_activity (user_id, activity_date, deleted_at)`,

@@ -77,7 +77,7 @@ export default function DailyHadithWidget({ basePath = '/hadith' }) {
                 </span>
                 {slug && (
                     <Link
-                        href={`${basePath}/${slug}`}
+                        href={number ? `${basePath}/${slug}/${number}` : `${basePath}/${slug}`}
                         className='text-emerald-600 dark:text-emerald-400 hover:underline font-medium'
                     >
                         {t('hadith.read_more')} →

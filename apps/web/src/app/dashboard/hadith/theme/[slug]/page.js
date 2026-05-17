@@ -43,6 +43,7 @@ export default async function DashboardHadithThemePage(props) {
                                 book={hadith.book}
                                 hadith={hadith}
                                 key={hadith.id}
+                                basePath='/dashboard/hadith'
                             />
                         ))}
                     </div>

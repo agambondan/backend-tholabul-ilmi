@@ -23,12 +23,17 @@ func (f *fakeHadithRepo) FindByOffset(offset int64) (*model.Hadith, error) {
 func (f *fakeHadithRepo) FindAllKeyset(ctx *fiber.Ctx) (*lib.KeysetPage, error) {
 	return &lib.KeysetPage{}, nil
 }
-func (f *fakeHadithRepo) Save(h *model.Hadith) (*model.Hadith, error)    { return h, nil }
-func (f *fakeHadithRepo) FindAll(ctx *fiber.Ctx) *paginate.Page          { return &paginate.Page{} }
-func (f *fakeHadithRepo) FindById(id *int) (*model.Hadith, error)        { return f.hadith, f.findByIdErr }
-func (f *fakeHadithRepo) FindManyByIds(ids []int) ([]model.Hadith, error) { return []model.Hadith{}, nil }
+func (f *fakeHadithRepo) Save(h *model.Hadith) (*model.Hadith, error) { return h, nil }
+func (f *fakeHadithRepo) FindAll(ctx *fiber.Ctx) *paginate.Page       { return &paginate.Page{} }
+func (f *fakeHadithRepo) FindById(id *int) (*model.Hadith, error)     { return f.hadith, f.findByIdErr }
+func (f *fakeHadithRepo) FindManyByIds(ids []int) ([]model.Hadith, error) {
+	return []model.Hadith{}, nil
+}
 func (f *fakeHadithRepo) FindByBookSlug(ctx *fiber.Ctx, slug *string) (*paginate.Page, error) {
 	return &paginate.Page{}, nil
+}
+func (f *fakeHadithRepo) FindByBookSlugNumber(slug *string, number *int) (*model.Hadith, error) {
+	return f.hadith, f.findByIdErr
 }
 func (f *fakeHadithRepo) FindByThemeId(ctx *fiber.Ctx, id *int) (*paginate.Page, error) {
 	return &paginate.Page{}, nil
@@ -107,6 +112,21 @@ func TestHadithServiceFindByIdFound(t *testing.T) {
 	}
 	if hadith == nil || hadith.Number == nil || *hadith.Number != 42 {
 		t.Fatalf("expected hadith number 42, got %#v", hadith)
+	}
+}
+
+func TestHadithServiceFindByBookSlugNumberFound(t *testing.T) {
+	num := 1
+	repo := &fakeHadithRepo{hadith: &model.Hadith{Number: &num}}
+	svc := NewHadithService(repo)
+
+	slug := "bukhari"
+	hadith, err := svc.FindByBookSlugNumber(&slug, &num)
+	if err != nil {
+		t.Fatalf("find by book slug number: %v", err)
+	}
+	if hadith == nil || hadith.Number == nil || *hadith.Number != 1 {
+		t.Fatalf("expected hadith number 1, got %#v", hadith)
 	}
 }
 

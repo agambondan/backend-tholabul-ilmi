@@ -211,7 +211,7 @@ const ByHadith = ({ basePath = '/hadith' }) => {
                         <div className='space-y-3'>
                             {hadiths.map((hadith) => (
                                 <Link
-                                    href={`${basePath}/${selectedBookSlug}#${selectedBookSlug}-${hadith.number}`}
+                                    href={`${basePath}/${selectedBookSlug}/${hadith.number}`}
                                     key={hadith.id}
                                     className={classNames(
                                         'block rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm hover:shadow-md hover:border-emerald-200 dark:hover:border-emerald-700 transition-all'

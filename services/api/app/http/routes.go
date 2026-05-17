@@ -290,6 +290,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/hadiths", newHadithController.FindAll)
 	master.Get("/hadiths/keyset", newHadithController.FindAllKeyset)
 	master.Get("/hadiths/daily", newHadithController.FindDaily)
+	master.Get("/hadiths/book/:slug/number/:number", newHadithController.FindByBookSlugNumber)
 	master.Get("/hadiths/:id", newHadithController.FindById)
 	master.Get("/hadiths/book/:slug", newHadithController.FindByBookSlug)
 	master.Get("/hadiths/theme/:themeId", newHadithController.FindByThemeId)

@@ -22,7 +22,7 @@ Feature parity check passed.
 - manifest features: 49
 - manifest utility routes: 14
 - mobile feature keys: 42
-- web app routes scanned: 143
+- web app routes scanned: 146
 ```
 
 ## Current Parity Rule
@@ -65,6 +65,14 @@ The manifest is the authoritative table. Current active coverage includes:
 | Knowledge | Fiqh, Manasik, Kajian, Artikel, Perawi, Jarh wa Ta'dil, Forum Tanya Jawab, Kamus Arab |
 | Tools | Quiz, Kalender Hijri, Imsakiyah, Tasbih, Zakat, Faraidh |
 | Personal | Wirid Pribadi, Amalan Harian, Sholat Tracker, Bookmarks, Notes, Notifications, Goals, Muhasabah, Hafalan, Murojaah, Tilawah, Stats, Leaderboard, Achievements |
+
+## Detail Route Patterns
+
+These route patterns are part of the current journey contract:
+
+| Feature | Public | Dashboard | Notes |
+| --- | --- | --- | --- |
+| Hadith by book number | `/hadith/:slug/:number` | `/dashboard/hadith/:slug/:number` | Canonical numbered detail page, backed by `GET /api/v1/hadiths/book/:slug/number/:number`. The Indonesian spelling alias `/hadits/:slug/:number` redirects to the canonical public route. |
 
 Closed historical gaps:
 

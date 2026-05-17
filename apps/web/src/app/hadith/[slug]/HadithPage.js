@@ -8,6 +8,7 @@ import { listMasjidImage } from '@/lib/const';
 import { CopyImageToClipboard, CopyToClipboard } from '@/lib/copy';
 import { getLocalizedTranslation } from '@/lib/translation';
 import classNames from 'classnames';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import {
     BsFileEarmarkPlay,
@@ -127,7 +128,7 @@ function TakhrijPanel({ hadithId }) {
     );
 }
 
-const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
+const HadithPage = ({ params, hadith, book, newLimit, isLast, basePath = '/hadith' }) => {
     const { t, lang } = useLocale();
     const cardRef = useRef();
     const audioRef = useRef(null);
@@ -146,6 +147,11 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
         .filter(Boolean);
     const firstAudioSource = audioSources[0] ?? '';
     const hadithTranslation = getLocalizedTranslation(hadith.translation, lang);
+    const detailPath = hadith?.number ? `${basePath}/${params.slug}/${hadith.number}` : '';
+    const detailUrl = () => {
+        if (!detailPath || typeof window === 'undefined') return '';
+        return `${window.location.origin}${detailPath}`;
+    };
 
     const toggleSettingPopUp = () => {
         SetSettingPopUp(!settingPopUp);
@@ -255,10 +261,10 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
                     text={`${hadith.translation.ar}\n`
                         .concat(`${hadithTranslation}\n`)
                         .concat(
-                            `(HR. ${params.slug}: ${hadith.number})\n`.concat(
-                                `Via Thullaabul 'Ilmi ${window.location.href}#${hadith.number}`
-                            )
-                        )}
+	                            `(HR. ${params.slug}: ${hadith.number})\n`.concat(
+	                                `Via Thullaabul 'Ilmi ${detailUrl() || window.location.href}`
+	                            )
+	                        )}
                 />
             ) : (
                 ''
@@ -277,13 +283,24 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
                     <li className='flex justify-center text-sm font-medium text-gray-500 dark:text-gray-400 pb-1'>
                         {book.slug}:{hadith.number}
                     </li>
-                    {hadith.grade && (
-                        <li className='flex justify-center'>
-                            <GradeBadge grade={hadith.grade} />
-                        </li>
-                    )}
-                    <li className='flex justify-center'>
-                        <button
+	                    {hadith.grade && (
+	                        <li className='flex justify-center'>
+	                            <GradeBadge grade={hadith.grade} />
+	                        </li>
+	                    )}
+	                    {detailPath && (
+	                        <li className='flex justify-center'>
+	                            <Link
+	                                href={detailPath}
+	                                title='Buka halaman detail'
+	                                className='p-2 rounded-lg text-lg hover:bg-emerald-100 dark:hover:bg-slate-700 transition-colors'
+	                            >
+	                                <IoIosLink />
+	                            </Link>
+	                        </li>
+	                    )}
+	                    <li className='flex justify-center'>
+	                        <button
                             title={
                                 firstAudioSource
                                     ? isPlayingAudio
@@ -336,11 +353,9 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
                                 <div className='flex flex-col bg-white dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 rounded-xl w-40 p-1 shadow-lg text-emerald-900 dark:text-white'>
                                     <button
                                         className='flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors text-left'
-                                        onClick={() => {
-                                            copyText(
-                                                `${window.location.href}#${hadith.number}`
-                                            );
-                                        }}
+	                                        onClick={() => {
+	                                            copyText(detailUrl() || `${window.location.href}#${hadith.number}`);
+	                                        }}
                                     >
                                         <IoIosLink />
                                         Copy Link
@@ -377,9 +392,9 @@ const HadithPage = ({ params, hadith, book, newLimit, isLast }) => {
                                                         `${hadithTranslation}\n`
                                                     )
                                                     .concat(
-                                                        `(HR. ${params.slug}: ${hadith.number})\n`.concat(
-                                                            `Via Thullaabul 'Ilmi ${window.location.href}#${hadith.number}`
-                                                        )
+	                                                        `(HR. ${params.slug}: ${hadith.number})\n`.concat(
+	                                                            `Via Thullaabul 'Ilmi ${detailUrl() || window.location.href}`
+	                                                        )
                                                     )
                                             );
                                         }}

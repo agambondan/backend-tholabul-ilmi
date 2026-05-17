@@ -17,6 +17,7 @@ type HadithController interface {
 	FindDaily(ctx *fiber.Ctx) error
 	FindById(ctx *fiber.Ctx) error
 	FindByBookSlug(ctx *fiber.Ctx) error
+	FindByBookSlugNumber(ctx *fiber.Ctx) error
 	FindByThemeId(ctx *fiber.Ctx) error
 	FindByThemeName(ctx *fiber.Ctx) error
 	FindByBookSlugThemeId(ctx *fiber.Ctx) error
@@ -130,6 +131,29 @@ func (c *hadithController) FindById(ctx *fiber.Ctx) error {
 func (c *hadithController) FindByBookSlug(ctx *fiber.Ctx) error {
 	bookSlug := ctx.Params("slug")
 	data, err := c.hadith.FindByBookSlug(ctx, &bookSlug)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, data)
+}
+
+// @Summary Find hadith by book slug and number
+// @Tags Hadith
+// @Accept json
+// @Produce json
+// @Param slug path string true "Book slug"
+// @Param number path int true "Hadith number in book"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /hadiths/book/{slug}/number/{number} [get]
+func (c *hadithController) FindByBookSlugNumber(ctx *fiber.Ctx) error {
+	bookSlug := ctx.Params("slug")
+	number, err := strconv.Atoi(ctx.Params("number"))
+	if err != nil || number < 1 {
+		return lib.ErrorBadRequest(ctx, "invalid hadith number")
+	}
+	data, err := c.hadith.FindByBookSlugNumber(&bookSlug, &number)
 	if err != nil {
 		return lib.ErrorNotFound(ctx)
 	}
