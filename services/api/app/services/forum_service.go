@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/agambondan/islamic-explorer/app/lib"
 	"github.com/agambondan/islamic-explorer/app/model"
 	"github.com/agambondan/islamic-explorer/app/repository"
 	"github.com/google/uuid"
@@ -23,11 +24,16 @@ type ForumService interface {
 }
 
 type forumService struct {
-	repo repository.ForumRepository
+	repo  repository.ForumRepository
+	cache *lib.CacheService
 }
 
 func NewForumService(repo repository.ForumRepository) ForumService {
-	return &forumService{repo}
+	return &forumService{repo: repo}
+}
+
+func NewForumServiceWithCache(repo repository.ForumRepository, cache *lib.CacheService) ForumService {
+	return &forumService{repo: repo, cache: cache}
 }
 
 func (s *forumService) CreateQuestion(userID uuid.UUID, req *model.CreateQuestionRequest) (*model.ForumQuestion, error) {
@@ -51,6 +57,9 @@ func (s *forumService) CreateQuestion(userID uuid.UUID, req *model.CreateQuestio
 	if err := s.repo.CreateQuestion(q); err != nil {
 		return nil, errors.New("failed to create question")
 	}
+	if s.cache != nil {
+		s.cache.Invalidate("forum:*")
+	}
 	return s.repo.FindQuestionByID(q.ID)
 }
 
@@ -61,7 +70,20 @@ func (s *forumService) ListQuestions(page, limit int, search, tag string) ([]mod
 	if limit < 1 || limit > 50 {
 		limit = 20
 	}
-	return s.repo.FindQuestions(page, limit, search, tag)
+	if s.cache == nil {
+		return s.repo.FindQuestions(page, limit, search, tag)
+	}
+	type cachedForumQuestions struct {
+		Items []model.ForumQuestion `json:"items"`
+		Total int64                 `json:"total"`
+	}
+	var result cachedForumQuestions
+	key := lib.CacheKey("forum:questions", "page", page, "limit", limit, "search", search, "tag", tag)
+	err := s.cache.Remember(key, &result, func() (interface{}, error) {
+		items, total, err := s.repo.FindQuestions(page, limit, search, tag)
+		return cachedForumQuestions{Items: items, Total: total}, err
+	})
+	return result.Items, result.Total, err
 }
 
 func (s *forumService) GetQuestion(slug string) (*model.ForumQuestion, error) {
@@ -76,7 +98,11 @@ func (s *forumService) GetQuestion(slug string) (*model.ForumQuestion, error) {
 }
 
 func (s *forumService) DeleteQuestion(id, userID uuid.UUID) error {
-	return s.repo.DeleteQuestion(id, userID)
+	err := s.repo.DeleteQuestion(id, userID)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("forum:*")
+	}
+	return err
 }
 
 func (s *forumService) CreateAnswer(userID uuid.UUID, questionID uuid.UUID, req *model.CreateAnswerRequest) (*model.ForumAnswer, error) {
@@ -89,6 +115,9 @@ func (s *forumService) CreateAnswer(userID uuid.UUID, questionID uuid.UUID, req 
 	if err := s.repo.CreateAnswer(a); err != nil {
 		return nil, errors.New("failed to create answer")
 	}
+	if s.cache != nil {
+		s.cache.Invalidate("forum:*")
+	}
 	return a, nil
 }
 
@@ -100,21 +129,37 @@ func (s *forumService) AcceptAnswer(answerID, questionID, userID uuid.UUID) erro
 	if q.UserID != userID {
 		return errors.New("only question author can accept answer")
 	}
-	return s.repo.AcceptAnswer(answerID, questionID, userID)
+	err = s.repo.AcceptAnswer(answerID, questionID, userID)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("forum:*")
+	}
+	return err
 }
 
 func (s *forumService) DeleteAnswer(id, userID uuid.UUID) error {
-	return s.repo.DeleteAnswer(id, userID)
+	err := s.repo.DeleteAnswer(id, userID)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("forum:*")
+	}
+	return err
 }
 
 func (s *forumService) Vote(userID uuid.UUID, req *model.VoteRequest) error {
 	existing, err := s.repo.FindVote(userID, req.TargetID, req.TargetType)
 	if err == nil && existing != nil {
 		if existing.Value == req.Value {
-			return s.repo.DeleteVote(existing.ID)
+			err := s.repo.DeleteVote(existing.ID)
+			if err == nil && s.cache != nil {
+				s.cache.Invalidate("forum:*")
+			}
+			return err
 		}
 		existing.Value = req.Value
-		return s.repo.CreateVote(existing)
+		err := s.repo.CreateVote(existing)
+		if err == nil && s.cache != nil {
+			s.cache.Invalidate("forum:*")
+		}
+		return err
 	}
 	v := &model.ForumVote{
 		BaseUUID:   model.BaseUUID{ID: uuid.New()},
@@ -123,5 +168,9 @@ func (s *forumService) Vote(userID uuid.UUID, req *model.VoteRequest) error {
 		TargetID:   req.TargetID,
 		Value:      req.Value,
 	}
-	return s.repo.CreateVote(v)
+	err = s.repo.CreateVote(v)
+	if err == nil && s.cache != nil {
+		s.cache.Invalidate("forum:*")
+	}
+	return err
 }

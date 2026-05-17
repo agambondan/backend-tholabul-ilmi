@@ -371,7 +371,8 @@ Completed: `2026-05-17`
 
 Priority: `P2`
 Area: `services/api`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -392,8 +393,32 @@ Status: `TODO`
 
 ### Verification
 
-- `cd services/api/app && go test ./...`
-- Manual Redis key inspection pada endpoint yang berubah.
+- `cd services/api/app && go test ./lib ./http/middlewares ./services` - `PASS`
+- `cd services/api/app && go test ./...` - `PASS`
+- Manual Redis key inspection pada endpoint yang berubah masih bisa dilakukan
+  saat runtime/staging aktif.
+
+### Implementation Notes
+
+- `cacheTTLByPrefix` sekarang mengenali prefix Redis:
+  - `asbabun-nuzul:*`
+  - `history:*`
+  - `tokoh-tarikh:*`
+  - `jarh-tadil:*`
+  - `forum:*`
+- Prefix asbabun/history/tokoh/jarh memakai TTL static; `forum:*` memakai TTL
+  dynamic karena question list bisa berubah oleh pertanyaan, jawaban, dan vote.
+- Service-level cache ditambahkan untuk public read:
+  - Asbabun Nuzul list, ayah, dan surah.
+  - History list, id, dan slug.
+  - Tokoh Tarikh list dan id.
+  - Jarh wa Ta'dil list, id, dan perawi.
+  - Forum question list saja.
+- Forum detail sengaja tidak di-cache karena endpoint itu menaikkan view count
+  dan perlu menjaga detail jawaban/vote tetap segar.
+- Mutation di domain terkait melakukan invalidation prefix domain masing-masing.
+- Middleware cache header tetap membedakan static public content dan dynamic
+  forum reads, serta tetap skip private/authenticated request.
 
 ## Task 10 - Mobile Test Warning Cleanup
 

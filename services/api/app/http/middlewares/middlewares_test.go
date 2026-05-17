@@ -72,6 +72,47 @@ func TestCacheByTypeSetsStaticCacheAfterSuccess(t *testing.T) {
 	}
 }
 
+func TestCacheByTypeClassifiesNewPublicContentPrefixes(t *testing.T) {
+	app := fiber.New()
+	app.Use(CacheByType(300, 30))
+	for _, path := range []string{
+		"/api/v1/asbabun-nuzul",
+		"/api/v1/history",
+		"/api/v1/tokoh-tarikh",
+		"/api/v1/jarh-tadil",
+	} {
+		app.Get(path, func(c *fiber.Ctx) error {
+			return c.JSON(fiber.Map{"ok": true})
+		})
+	}
+	app.Get("/api/v1/forum/questions", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"ok": true})
+	})
+
+	for _, path := range []string{
+		"/api/v1/asbabun-nuzul",
+		"/api/v1/history",
+		"/api/v1/tokoh-tarikh",
+		"/api/v1/jarh-tadil",
+	} {
+		resp, err := app.Test(httptest.NewRequest(fiber.MethodGet, path, nil))
+		if err != nil {
+			t.Fatalf("request %s failed: %v", path, err)
+		}
+		if got := resp.Header.Get(fiber.HeaderCacheControl); got != "public, max-age=300" {
+			t.Fatalf("expected static cache header for %s, got %q", path, got)
+		}
+	}
+
+	resp, err := app.Test(httptest.NewRequest(fiber.MethodGet, "/api/v1/forum/questions", nil))
+	if err != nil {
+		t.Fatalf("forum request failed: %v", err)
+	}
+	if got := resp.Header.Get(fiber.HeaderCacheControl); got != "public, max-age=30" {
+		t.Fatalf("expected dynamic cache header for forum, got %q", got)
+	}
+}
+
 func TestCacheByTypeSkipsPrivateAndAuthenticatedResponses(t *testing.T) {
 	app := fiber.New()
 	app.Use(CacheByType(300, 30))
