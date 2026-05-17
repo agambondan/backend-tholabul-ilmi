@@ -15,6 +15,25 @@ import { BsSearch } from 'react-icons/bs';
 
 const PAGE_SIZE = 10;
 
+const getCategoryLabel = (category, lang) => {
+    if (!category) return '';
+    if (typeof category === 'string') return category;
+    if (typeof category.name === 'string') return category.name;
+    return getLocalizedField(category, 'name', lang) || category.slug || '';
+};
+
+const getCategoryValue = (category, lang) => {
+    if (!category) return '';
+    if (typeof category === 'string') return category;
+    return String(category.slug ?? category.id ?? getCategoryLabel(category, lang));
+};
+
+const getAuthorName = (author) => {
+    if (!author) return '';
+    if (typeof author === 'string') return author;
+    return author.name ?? author.email ?? '';
+};
+
 export const BlogContent = ({ basePath = '/blog' }) => {
     const { t, lang } = useLocale();
     const { isWide } = useLayoutMode();
@@ -87,15 +106,20 @@ export const BlogContent = ({ basePath = '/blog' }) => {
         const query = search.trim().toLowerCase();
         const title = getLocalizedField(post, 'title', lang);
         const excerpt = getLocalizedField(post, 'excerpt', lang);
-        const category = getLocalizedField(post, 'category', lang);
+        const authorName = getAuthorName(post.author);
+        const categoryLabel =
+            getCategoryLabel(post.category, lang) ||
+            getLocalizedField(post, 'category', lang);
+        const categoryValue = getCategoryValue(post.category ?? categoryLabel, lang);
         const matchesQuery =
             !query ||
             title?.toLowerCase().includes(query) ||
             excerpt?.toLowerCase().includes(query) ||
-            post.author?.toLowerCase().includes(query) ||
-            category?.toLowerCase().includes(query);
+            authorName?.toLowerCase().includes(query) ||
+            categoryLabel?.toLowerCase().includes(query);
         const matchesCategory =
-            !selectedCategory || category?.toLowerCase() === selectedCategory.toLowerCase();
+            !selectedCategory ||
+            categoryValue.toLowerCase() === selectedCategory.toLowerCase();
 
         if (!query && !selectedCategory) return true;
         return (
@@ -139,21 +163,25 @@ export const BlogContent = ({ basePath = '/blog' }) => {
                             >
                                 {t('blog.filter_all')}
                             </button>
-                            {categories.map((category) => (
-                                <button
-                                    key={category.id ?? category.slug ?? category.name}
-                                    type='button'
-                                    onClick={() => setSelectedCategory(category.name ?? category)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                                        (category.name ?? category).toLowerCase() ===
-                                        selectedCategory.toLowerCase()
-                                            ? 'bg-emerald-700 text-white'
-                                            : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-slate-600'
-                                    }`}
-                                >
-                                    {category.name ?? category}
-                                </button>
-                            ))}
+                            {categories.map((category) => {
+                                const categoryValue = getCategoryValue(category, lang);
+                                const categoryLabel = getCategoryLabel(category, lang);
+                                return (
+                                    <button
+                                        key={categoryValue}
+                                        type='button'
+                                        onClick={() => setSelectedCategory(categoryValue)}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                            categoryValue.toLowerCase() ===
+                                            selectedCategory.toLowerCase()
+                                                ? 'bg-emerald-700 text-white'
+                                                : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-slate-600'
+                                        }`}
+                                    >
+                                        {categoryLabel}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
 
@@ -220,9 +248,9 @@ export const BlogContent = ({ basePath = '/blog' }) => {
                                     />
                                 )}
                                 <div className='p-4'>
-                                    {getLocalizedField(post, 'category', lang) && (
+                                    {getCategoryLabel(post.category, lang) && (
                                         <span className='text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-2 block'>
-                                            {getLocalizedField(post, 'category', lang)}
+                                            {getCategoryLabel(post.category, lang)}
                                         </span>
                                     )}
                                     <h2 className='font-bold text-emerald-900 dark:text-white mb-1 line-clamp-2'>
@@ -234,7 +262,9 @@ export const BlogContent = ({ basePath = '/blog' }) => {
                                         </p>
                                     )}
                                     <div className='flex items-center justify-between text-xs text-gray-400 dark:text-gray-500'>
-                                        {post.author && <span>{post.author}</span>}
+                                        {getAuthorName(post.author) && (
+                                            <span>{getAuthorName(post.author)}</span>
+                                        )}
                                         {post.published_at && (
                                             <span>
                                                 {new Date(post.published_at).toLocaleDateString(

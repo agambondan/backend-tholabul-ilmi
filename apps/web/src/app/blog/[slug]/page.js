@@ -18,6 +18,38 @@ const normalizeItems = (data) => data?.items ?? data?.data ?? data ?? [];
 
 const normalizeText = (value) => String(value ?? '').trim().toLowerCase();
 
+const getCategoryLabel = (category, lang) => {
+    if (!category) return '';
+    if (typeof category === 'string') return category;
+    if (typeof category.name === 'string') return category.name;
+    return getLocalizedField(category, 'name', lang) || category.slug || '';
+};
+
+const getCategoryValue = (category, lang) => {
+    if (!category) return '';
+    if (typeof category === 'string') return category;
+    return String(category.slug ?? category.id ?? getCategoryLabel(category, lang));
+};
+
+const getTagLabel = (tag, lang) => {
+    if (!tag) return '';
+    if (typeof tag === 'string') return tag;
+    if (typeof tag.name === 'string') return tag.name;
+    return getLocalizedField(tag, 'name', lang) || tag.slug || '';
+};
+
+const getTagValue = (tag, lang) => {
+    if (!tag) return '';
+    if (typeof tag === 'string') return tag;
+    return String(tag.slug ?? tag.id ?? getTagLabel(tag, lang));
+};
+
+const getAuthorName = (author) => {
+    if (!author) return '';
+    if (typeof author === 'string') return author;
+    return author.name ?? author.email ?? '';
+};
+
 const formatDate = (value, lang = 'ID') => {
     if (!value) return '';
     try {
@@ -74,19 +106,27 @@ export const BlogDetailContent = ({ params, basePath = '/blog' }) => {
                 if (listRes.status === 'fulfilled' && listRes.value.ok) {
                     const blogList = normalizeItems(await listRes.value.json());
                     const currentSlug = normalizeText(detailData.slug ?? params.slug);
-                    const currentCategory = normalizeText(detailData.category);
+                    const currentCategory = normalizeText(
+                        getCategoryValue(detailData.category, lang),
+                    );
                     const currentTags = new Set(
                         Array.isArray(detailData.tags)
-                            ? detailData.tags.map(normalizeText).filter(Boolean)
+                            ? detailData.tags
+                                  .map((tag) => normalizeText(getTagValue(tag, lang)))
+                                  .filter(Boolean)
                             : [],
                     );
 
                     const related = blogList
                         .filter((item) => normalizeText(item.slug ?? item.id) !== currentSlug)
                         .filter((item) => {
-                            const itemCategory = normalizeText(item.category);
+                            const itemCategory = normalizeText(
+                                getCategoryValue(item.category, lang),
+                            );
                             const itemTags = Array.isArray(item.tags)
-                                ? item.tags.map(normalizeText).filter(Boolean)
+                                ? item.tags
+                                      .map((tag) => normalizeText(getTagValue(tag, lang)))
+                                      .filter(Boolean)
                                 : [];
 
                             if (currentCategory && itemCategory === currentCategory) return true;
@@ -126,7 +166,7 @@ export const BlogDetailContent = ({ params, basePath = '/blog' }) => {
         return () => {
             isActive = false;
         };
-    }, [params.slug]);
+    }, [params.slug, lang]);
 
     useEffect(() => {
         if (!isAuthenticated || !params.slug) return;
@@ -168,6 +208,9 @@ export const BlogDetailContent = ({ params, basePath = '/blog' }) => {
 
     if (isLoading) return <SkeletonList title={false} rows={5} />;
 
+    const postCategoryLabel = getCategoryLabel(post?.category, lang);
+    const postAuthorName = getAuthorName(post?.author);
+
     return (
                 <div className={isWide ? 'w-full px-4' : 'container mx-auto px-4 max-w-4xl'}>
                     <Link
@@ -188,16 +231,18 @@ export const BlogDetailContent = ({ params, basePath = '/blog' }) => {
                     {post && (
                         <article className='bg-white dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden'>
                             <div className='p-5 md:p-8'>
-                                {post.category && (
+                                {postCategoryLabel && (
                                     <span className='text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-3 block'>
-                                    {getLocalizedField(post, 'category', lang)}
+                                        {postCategoryLabel}
                                     </span>
                                 )}
                                 <h1 className='text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3 leading-snug'>
                                     {getLocalizedField(post, 'title', lang)}
                                 </h1>
                                 <div className='flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 mb-6 pb-6 border-b border-gray-100 dark:border-slate-700'>
-                                    {post.author && <span>{t('blog.by_author')} {post.author}</span>}
+                                    {postAuthorName && (
+                                        <span>{t('blog.by_author')} {postAuthorName}</span>
+                                    )}
                                     {post.published_at && (
                                         <span>{formatDate(post.published_at, lang)}</span>
                                     )}
@@ -239,14 +284,17 @@ export const BlogDetailContent = ({ params, basePath = '/blog' }) => {
 
                             {post.tags && post.tags.length > 0 && (
                                 <div className='flex gap-2 flex-wrap px-5 md:px-8 py-5 border-t border-gray-100 dark:border-slate-800 bg-gray-50/70 dark:bg-slate-800/40'>
-                                    {post.tags.map((tag) => (
+                                    {post.tags.map((tag) => {
+                                        const tagLabel = getTagLabel(tag, lang);
+                                        return (
                                         <span
-                                            key={tag}
+                                            key={getTagValue(tag, lang)}
                                             className='px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-full text-xs'
                                         >
-                                            #{tag}
+                                            #{tagLabel}
                                         </span>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
 
@@ -272,9 +320,9 @@ export const BlogDetailContent = ({ params, basePath = '/blog' }) => {
                                                         href={`${basePath}/${item.slug}`}
                                                         className='block rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60 p-4 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm transition-all'
                                                     >
-                                                        {item.category && (
+                                                        {getCategoryLabel(item.category, lang) && (
                                                             <p className='text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-2'>
-                                                                {getLocalizedField(item, 'category', lang)}
+                                                                {getCategoryLabel(item.category, lang)}
                                                             </p>
                                                         )}
                                                         <h3 className='font-bold text-gray-900 dark:text-white line-clamp-2 mb-2'>
