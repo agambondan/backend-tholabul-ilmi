@@ -1,6 +1,7 @@
 'use client';
 
 import Footer from '@/components/Footer';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { NavbarTailwindCss } from '@/components/Navbar';
 import Section from '@/components/Section';
 import { useLocale } from '@/context/Locale';
@@ -19,7 +20,7 @@ const ERA_FILTERS = [
     { value: 'Khalifah', labelKey: 'tokoh.era_khalifah' },
 ];
 
-export function TokohListContent() {
+export function TokohListContent({ className = '' }) {
     const { t, lang } = useLocale();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -41,7 +42,7 @@ export function TokohListContent() {
     }, [search, era]);
 
     return (
-        <div className='container mx-auto px-4 max-w-4xl py-6'>
+        <ContentWidth compact='max-w-4xl' className={`px-4 py-6 ${className}`}>
             <div className='text-center mb-8'>
                 <div className='inline-flex items-center justify-center w-16 h-16 bg-indigo-100 dark:bg-indigo-900/40 rounded-2xl mb-4'>
                     <BsPeopleFill className='text-3xl text-indigo-600 dark:text-indigo-400' />
@@ -122,7 +123,7 @@ export function TokohListContent() {
                     </div>
                 </div>
             )}
-        </div>
+        </ContentWidth>
     );
 }
 
@@ -130,7 +131,7 @@ export default function TokohPage() {
     return (
         <main className='min-h-screen flex flex-col bg-parchment-50 dark:bg-slate-900'>
             <NavbarTailwindCss />
-            <div className='pt-24'><TokohListContent /></div>
+            <TokohListContent className='pt-24' />
             <Footer />
         </main>
     );

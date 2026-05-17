@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { BsChevronDown, BsChevronUp, BsSearch } from 'react-icons/bs';
+import ContentWidth from '@/components/layout/ContentWidth';
 import { useLocale } from '@/context/Locale';
 import { getLocalizedField } from '@/lib/translation';
+import { useEffect, useState } from 'react';
+import { BsChevronDown, BsChevronUp, BsSearch } from 'react-icons/bs';
 
 const CATEGORIES = [
     'khulafaur-rasyidin',
@@ -55,7 +56,7 @@ export default function SejarahDashboardPage() {
     const toggle = (id) => setExpanded((prev) => (prev === id ? null : id));
 
     return (
-        <div className='p-6'>
+        <ContentWidth compact='max-w-3xl' className='px-4 py-6'>
             <h1 className='text-2xl font-bold text-gray-800 dark:text-white mb-1'>{t('sejarah.title')}</h1>
             <p className='text-gray-500 dark:text-gray-400 mb-4'>{t('sejarah.subtitle')}</p>
 
@@ -157,6 +158,6 @@ export default function SejarahDashboardPage() {
                     })}
                 </div>
             </div>
-        </div>
+        </ContentWidth>
     );
 }
