@@ -6,6 +6,7 @@ const keyFor = (key) => `${PREF_PREFIX}${key}`;
 
 export const preferenceKeys = {
   prayerAdjustments: 'prayer-adjustments',
+  homeLastLocation: 'home-last-location',
   prayerMadhab: 'prayer-madhab',
   prayerMethod: 'prayer-method',
   prayerReminderEnabled: 'prayer-reminder-enabled',

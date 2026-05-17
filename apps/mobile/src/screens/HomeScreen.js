@@ -35,6 +35,7 @@ import { GlobalSearchScreen } from './GlobalSearchScreen';
 import { featureGroups } from '../data/mobileFeatures';
 import { arabicTypography } from '../styles/arabicTypography';
 import { readPinnedFeatures, readRecentFeatures } from '../storage/recentFeatures';
+import { preferenceKeys, readPreference, writePreference } from '../storage/preferences';
 import { colors, radius, shadows, spacing } from '../theme';
 
 const prayerKeyLabels = {
@@ -189,8 +190,45 @@ const formatHadisSource = (value = '') => {
 };
 
 const locationErrorLabels = new Set(['LOKASI NONAKTIF', 'LOKASI BELUM TERSEDIA']);
+const currentLocationTimeoutMs = 4500;
 const prayerRetryDelays = [2500, 5000, 10000, 15000];
 const emptyPrayerState = { countdown: '--:--:--', key: 'asr', time: '--:--' };
+
+const withTimeout = (promise, timeoutMs) =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Location lookup timed out')), timeoutMs);
+    Promise.resolve(promise)
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+
+const coordsFromPosition = (position) => {
+  const latitude = Number(position?.coords?.latitude);
+  const longitude = Number(position?.coords?.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  return { lat: latitude, lng: longitude };
+};
+
+const normalizeStoredLocation = (value) => {
+  const latitude = Number(value?.lat);
+  const longitude = Number(value?.lng);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  return {
+    lat: latitude,
+    lng: longitude,
+    label: typeof value?.label === 'string' && value.label.trim() ? value.label : 'LOKASI AKTIF',
+    updatedAt: Number(value?.updatedAt) || 0,
+  };
+};
+
+const areCoordsClose = (first, second) =>
+  Boolean(first && second && Math.abs(first.lat - second.lat) < 0.001 && Math.abs(first.lng - second.lng) < 0.001);
 
 const getHomeLocationLabel = async (coords) => {
   try {
@@ -200,6 +238,18 @@ const getHomeLocationLabel = async (coords) => {
     return (city || 'Lokasi aktif').toUpperCase();
   } catch {
     return 'LOKASI AKTIF';
+  }
+};
+
+const saveHomeLocation = async (coords, label) => {
+  try {
+    await writePreference(preferenceKeys.homeLastLocation, {
+      ...coords,
+      label,
+      updatedAt: Date.now(),
+    });
+  } catch {
+    // Location cache should never block the home screen.
   }
 };
 
@@ -399,6 +449,41 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     }
   }, [clearPrayerRetryTimer]);
 
+  const applyHomeLocation = useCallback(async (coords, knownLabel) => {
+    const label = knownLabel || await getHomeLocationLabel(coords);
+    if (!mountedRef.current) return false;
+    setLocationLabel(label);
+    saveHomeLocation(coords, label);
+    return true;
+  }, []);
+
+  const refreshCurrentLocationInBackground = useCallback((baseCoords) => {
+    withTimeout(
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+      currentLocationTimeoutMs,
+    )
+      .then(async (position) => {
+        const freshCoords = coordsFromPosition(position);
+        if (!freshCoords || !mountedRef.current) return;
+
+        const label = await getHomeLocationLabel(freshCoords);
+        if (!mountedRef.current) return;
+
+        setLocationLabel(label);
+        saveHomeLocation(freshCoords, label);
+
+        if (!areCoordsClose(baseCoords, freshCoords)) {
+          fetchPrayerTimesWithRetry(freshCoords);
+        }
+      })
+      .catch(() => {
+        if (!baseCoords && mountedRef.current) {
+          setPrayerSyncState('waiting');
+          setPrayerMessage('GPS masih mencari lokasi. Jadwal akan dimuat otomatis saat lokasi terbaca.');
+        }
+      });
+  }, [fetchPrayerTimesWithRetry]);
+
   const loadHomeData = useCallback(async ({ refresh = false } = {}) => {
     const currentDate = new Date();
     setDateSnapshot(currentDate);
@@ -416,24 +501,34 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (permission.status === 'granted') {
-        let position = null;
-        try {
-          position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        } catch {
-          position = await Location.getLastKnownPositionAsync({
-            maxAge: 10 * 60 * 1000,
-            requiredAccuracy: 5000,
-          });
+        const [storedLocation, lastKnownPosition] = await Promise.all([
+          readPreference(preferenceKeys.homeLastLocation, null).then(normalizeStoredLocation),
+          Promise.resolve(
+            Location.getLastKnownPositionAsync({
+              maxAge: 10 * 60 * 1000,
+              requiredAccuracy: 5000,
+            }),
+          ).catch(() => null),
+        ]);
+        const lastKnownCoords = coordsFromPosition(lastKnownPosition);
+
+        if (lastKnownCoords) {
+          coords = lastKnownCoords;
+          await applyHomeLocation(
+            coords,
+            areCoordsClose(storedLocation, lastKnownCoords) ? storedLocation.label : null,
+          );
+        } else if (storedLocation) {
+          coords = { lat: storedLocation.lat, lng: storedLocation.lng };
+          await applyHomeLocation(coords, storedLocation.label);
         }
 
-        if (position?.coords) {
-          coords = { lat: position.coords.latitude, lng: position.coords.longitude };
-          const label = await getHomeLocationLabel(coords);
-          if (mountedRef.current) setLocationLabel(label);
-        } else if (mountedRef.current) {
+        refreshCurrentLocationInBackground(coords);
+
+        if (!coords && mountedRef.current) {
           setLocationLabel('LOKASI BELUM TERSEDIA');
           setPrayerSyncState('waiting');
-          setPrayerMessage('Lokasi belum terbaca. Tarik untuk memuat ulang jadwal sholat.');
+          setPrayerMessage('GPS masih mencari lokasi. Jadwal akan dimuat otomatis saat lokasi terbaca.');
         }
       } else if (mountedRef.current) {
         setLocationLabel('LOKASI NONAKTIF');
@@ -491,7 +586,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       setLoadingDaily(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [applyHomeLocation, clearPrayerRetryTimer, fetchPrayerTimesWithRetry, refreshCurrentLocationInBackground]);
 
   useEffect(() => {
     mountedRef.current = true;

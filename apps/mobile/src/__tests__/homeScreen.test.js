@@ -90,6 +90,7 @@ import React from 'react';
 import { act, render, fireEvent, waitFor } from '@testing-library/react-native';
 import { HomeScreen } from '../screens/HomeScreen';
 import { flushAsyncWork } from '../test-utils/async';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { useSession } = require('../context/SessionContext');
 const clientApi = require('../api/client');
@@ -154,6 +155,9 @@ beforeEach(() => {
   });
 
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });
+  Location.getLastKnownPositionAsync.mockResolvedValue(null);
+  AsyncStorage.getItem.mockResolvedValue(null);
+  AsyncStorage.setItem.mockResolvedValue();
   clientApi.getDailyAyah.mockResolvedValue(mockAyah);
   clientApi.getDailyHadith.mockResolvedValue(mockHadith);
   clientApi.getHijriToday.mockResolvedValue({ dateStr: '1 Ramadan 1445 H' });
@@ -248,6 +252,38 @@ describe('HomeScreen', () => {
     await waitFor(() => {
       expect(clientApi.getPrayerTimes).toHaveBeenCalledTimes(2);
       expect(getByText('05:45')).toBeTruthy();
+    });
+  });
+
+  test('uses cached home location while current GPS resolves in background', async () => {
+    Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    Location.getCurrentPositionAsync.mockResolvedValue({
+      coords: { latitude: -6.2, longitude: 106.8 },
+    });
+    AsyncStorage.getItem.mockImplementation((key) => {
+      if (key === 'tholabul:pref:home-last-location') {
+        return Promise.resolve(JSON.stringify({
+          lat: -6.2,
+          lng: 106.8,
+          label: 'JAKARTA',
+          updatedAt: Date.now(),
+        }));
+      }
+      return Promise.resolve(null);
+    });
+
+    const { getAllByText, getByText } = await renderHomeScreen();
+
+    await waitFor(() => {
+      expect(getAllByText('JAKARTA').length).toBeGreaterThanOrEqual(1);
+      expect(getByText('05:45')).toBeTruthy();
+    });
+    expect(Location.getCurrentPositionAsync).toHaveBeenCalled();
+    expect(clientApi.getPrayerTimes).toHaveBeenCalledWith({
+      lat: -6.2,
+      lng: 106.8,
+      madhab: 'shafi',
+      method: 'kemenag',
     });
   });
 
