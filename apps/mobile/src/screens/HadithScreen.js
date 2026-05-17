@@ -26,6 +26,7 @@ import { Screen } from '../components/Screen';
 import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { getOfflineItems, getOfflineOverview } from '../storage/offlineContent';
+import { arabicTypography } from '../styles/arabicTypography';
 import { colors, radius, spacing } from '../theme';
 
 const HADITH_LIST_PAGE_SIZE = 20;
@@ -987,12 +988,9 @@ export function HadithScreen({ deepLinkTarget, isActive, navigation }) {
 
 const styles = StyleSheet.create({
   arabic: {
+    ...arabicTypography.body,
     color: colors.ink,
-    fontSize: 21,
-    fontWeight: '700',
-    lineHeight: 34,
     marginBottom: spacing.md,
-    textAlign: 'right',
   },
   translation: {
     color: colors.text,
@@ -1176,11 +1174,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   chainArabic: {
+    ...arabicTypography.small,
     color: colors.text,
-    fontSize: 16,
-    lineHeight: 24,
     marginTop: spacing.xs,
-    textAlign: 'right',
   },
   chainMeta: {
     color: colors.muted,
@@ -1190,11 +1186,9 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   perawiArabic: {
+    ...arabicTypography.compact,
     color: colors.ink,
-    fontSize: 20,
-    lineHeight: 30,
     marginBottom: spacing.sm,
-    textAlign: 'right',
   },
   perawiBio: {
     color: colors.text,

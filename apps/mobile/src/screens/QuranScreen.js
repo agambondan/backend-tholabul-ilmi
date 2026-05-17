@@ -3405,8 +3405,10 @@ const styles = StyleSheet.create({
     },
     surahArabic: {
         color: colors.ink,
-        fontSize: 16,
-        fontWeight: '700',
+        fontFamily: QURAN_FONT_FAMILIES.kitab,
+        fontSize: 19,
+        fontWeight: '400',
+        lineHeight: 28,
         marginLeft: spacing.sm,
         maxWidth: '38%',
         textAlign: 'right',

@@ -33,6 +33,7 @@ import { useSession } from '../context/SessionContext';
 import { useTabActivity } from '../context/TabActivityContext';
 import { GlobalSearchScreen } from './GlobalSearchScreen';
 import { featureGroups } from '../data/mobileFeatures';
+import { arabicTypography } from '../styles/arabicTypography';
 import { readPinnedFeatures, readRecentFeatures } from '../storage/recentFeatures';
 import { colors, radius, shadows, spacing } from '../theme';
 
@@ -1276,12 +1277,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   dailyArabic: {
+    ...arabicTypography.small,
     color: colors.ink,
-    fontSize: 18,
-    fontWeight: '800',
-    lineHeight: 30,
     marginTop: spacing.xs,
-    textAlign: 'right',
   },
   dailyText: {
     color: colors.text,

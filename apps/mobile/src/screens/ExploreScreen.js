@@ -31,6 +31,7 @@ import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { FeatureCatalog, findFeatureByKey, isPaginatedFeature, LOCAL_TOOL_TYPES } from './explore/FeatureCatalog';
 import { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinnedFeature } from '../storage/recentFeatures';
+import { arabicTypography } from '../styles/arabicTypography';
 import { colors, radius, spacing } from '../theme';
 import {
   addBookmark,
@@ -2648,9 +2649,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   arabicInput: {
-    fontSize: 18,
-    lineHeight: 28,
-    textAlign: 'right',
+    ...arabicTypography.input,
   },
   inputLabel: {
     color: colors.muted,
@@ -2845,11 +2844,9 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   detailArabic: {
+    ...arabicTypography.large,
     color: colors.ink,
-    fontSize: 28,
-    lineHeight: 48,
     marginBottom: spacing.md,
-    textAlign: 'right',
   },
   detailBody: {
     color: colors.text,
@@ -2961,18 +2958,14 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   arabic: {
+    ...arabicTypography.body,
     color: colors.ink,
-    fontSize: 22,
-    lineHeight: 34,
     marginBottom: spacing.sm,
-    textAlign: 'right',
   },
   tafsirArabic: {
+    ...arabicTypography.body,
     color: colors.ink,
-    fontSize: 23,
-    lineHeight: 38,
     marginBottom: spacing.md,
-    textAlign: 'right',
   },
   tafsirTranslationBox: {
     backgroundColor: colors.bg,
@@ -3323,11 +3316,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   asmaulArabic: {
+    ...arabicTypography.centered,
     color: colors.ink,
-    fontSize: 20,
-    fontWeight: '800',
     marginBottom: 4,
-    textAlign: 'center',
   },
   asmaulLatin: {
     color: colors.primary,
@@ -3354,12 +3345,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   flashcardArabic: {
+    ...arabicTypography.hero,
     color: colors.ink,
-    fontSize: 34,
-    fontWeight: '900',
-    lineHeight: 48,
     marginBottom: spacing.sm,
-    textAlign: 'center',
   },
   flashcardHint: {
     color: colors.muted,
