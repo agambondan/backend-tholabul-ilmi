@@ -467,6 +467,45 @@ Completed: `2026-05-17`
 - The helper intentionally lives outside `src/__tests__` so Jest does not treat
   it as a standalone test file.
 
+## Task 11 - Web Static Route Client Island Pass
+
+Priority: `P2`
+Area: `apps/web`
+Status: `VERIFIED`
+Completed: `2026-05-17`
+
+### Scope
+
+- Lanjutkan follow-up Task 7 untuk route public content-heavy yang masih
+  memakai full-page `'use client'`.
+- Mulai dari route yang aman dan sudah di-reuse dashboard:
+  `/panduan-sholat`.
+- Pertahankan interaksi accordion/fetch di client island.
+- Pastikan dashboard reuse tidak import server page module.
+
+### Acceptance Criteria
+
+- Public `/panduan-sholat` tidak lagi menjadi full client page.
+- Komponen interaktif tetap reusable oleh `/dashboard/panduan-sholat`.
+- Build web tetap hijau.
+
+### Verification
+
+- `cd apps/web && npm run build` - `PASS`
+  - `/panduan-sholat` tetap prerendered static.
+  - `/dashboard/panduan-sholat` tetap prerendered static.
+- Device mobile smoke untuk task sebelumnya belum bisa dilanjutkan pada slice
+  ini karena `adb devices -l` tidak menampilkan device aktif.
+
+### Implementation Notes
+
+- `PanduanSholatContent` dipindahkan ke
+  `apps/web/src/app/panduan-sholat/PanduanSholatClient.js`.
+- `apps/web/src/app/panduan-sholat/page.js` sekarang server wrapper yang hanya
+  memasang navbar, spacing, client island, dan footer.
+- `apps/web/src/app/dashboard/panduan-sholat/page.js` sekarang import client
+  island langsung, bukan import dari public page module.
+
 ## Suggested Execution Order
 
 1. Task 1 - Backend cache and test hardening.
@@ -479,6 +518,7 @@ Completed: `2026-05-17`
 8. Task 8 - Mobile Quran and Explore performance pass.
 9. Task 9 - Backend cache key coverage.
 10. Task 10 - Mobile test warning cleanup.
+11. Task 11 - Web static route client island pass.
 
 ## Notes
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { PanduanSholatContent } from '@/app/panduan-sholat/page';
+import { PanduanSholatContent } from '@/app/panduan-sholat/PanduanSholatClient';
 
 export default function DashboardPanduanSholatPage() {
     return (
