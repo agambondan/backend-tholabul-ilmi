@@ -255,6 +255,16 @@ export const libraryApi = {
     detail: (slug) => fetch(`${API_URL}/api/v1/library/books/${encodeURIComponent(slug)}`),
 };
 
+export const libraryProgressApi = {
+    list: () => authFetch('/api/v1/library/progress'),
+    detail: (bookId) => authFetch(`/api/v1/library/progress/${bookId}`),
+    save: (bookId, data) =>
+        authFetch(`/api/v1/library/progress/${bookId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        }),
+};
+
 export const adminBlogApi = {
     listAll: (status = '') =>
         authFetch(`/api/v1/blog/posts${status ? `?status=${status}` : '?status=all'}`),

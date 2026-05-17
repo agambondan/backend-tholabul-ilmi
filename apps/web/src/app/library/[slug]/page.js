@@ -6,13 +6,19 @@ import NoteButton from '@/components/NoteButton';
 import Section from '@/components/Section';
 import { SkeletonList } from '@/components/skeleton/Skeleton';
 import { useAuth } from '@/context/Auth';
-import { bookmarkApi, libraryApi } from '@/lib/api';
+import { bookmarkApi, libraryApi, libraryProgressApi } from '@/lib/api';
 import { useLayoutMode } from '@/lib/useLayoutMode';
 import Link from 'next/link';
 import { use, useEffect, useState } from 'react';
 import { BsBookmark, BsBookmarkFill, BsBoxArrowUpRight } from 'react-icons/bs';
 
 const normalizeBook = (data) => data?.data ?? data;
+const PROGRESS_STATUSES = [
+    { value: 'planned', label: 'Rencana' },
+    { value: 'reading', label: 'Dibaca' },
+    { value: 'paused', label: 'Dijeda' },
+    { value: 'completed', label: 'Selesai' },
+];
 
 const metaItems = (book) =>
     [
@@ -32,6 +38,14 @@ export const LibraryDetailContent = ({ params, basePath = '/library' }) => {
     const [error, setError] = useState(false);
     const [bookmarked, setBookmarked] = useState(false);
     const [bookmarkId, setBookmarkId] = useState(null);
+    const [progress, setProgress] = useState(null);
+    const [progressForm, setProgressForm] = useState({
+        current_page: '',
+        note: '',
+        status: 'reading',
+    });
+    const [savingProgress, setSavingProgress] = useState(false);
+    const [progressMessage, setProgressMessage] = useState('');
 
     useEffect(() => {
         let active = true;
@@ -78,6 +92,24 @@ export const LibraryDetailContent = ({ params, basePath = '/library' }) => {
             .catch(() => {});
     }, [book?.id, isAuthenticated]);
 
+    useEffect(() => {
+        if (!isAuthenticated || !book?.id) return;
+        libraryProgressApi
+            .detail(book.id)
+            .then((res) => res.json())
+            .then((data) => {
+                const item = data?.data ?? data;
+                if (!item) return;
+                setProgress(item);
+                setProgressForm({
+                    current_page: item.current_page ? String(item.current_page) : '',
+                    note: item.note ?? '',
+                    status: item.status ?? 'reading',
+                });
+            })
+            .catch(() => {});
+    }, [book?.id, isAuthenticated]);
+
     const toggleBookmark = async () => {
         if (!isAuthenticated || !book?.id) return;
         if (bookmarked && bookmarkId) {
@@ -96,6 +128,27 @@ export const LibraryDetailContent = ({ params, basePath = '/library' }) => {
             setBookmarked(true);
             setBookmarkId(data?.data?.id ?? data?.id ?? null);
         } catch {}
+    };
+
+    const saveProgress = async () => {
+        if (!isAuthenticated || !book?.id) return;
+        setSavingProgress(true);
+        setProgressMessage('');
+        try {
+            const res = await libraryProgressApi.save(book.id, {
+                current_page: Number(progressForm.current_page) || 0,
+                note: progressForm.note,
+                status: progressForm.status,
+            });
+            if (!res.ok) throw new Error('failed');
+            const data = await res.json();
+            setProgress(data?.data ?? data);
+            setProgressMessage('Progress belajar disimpan.');
+        } catch {
+            setProgressMessage('Progress belum bisa disimpan.');
+        } finally {
+            setSavingProgress(false);
+        }
     };
 
     if (loading) return <SkeletonList title={false} rows={4} />;
@@ -185,6 +238,99 @@ export const LibraryDetailContent = ({ params, basePath = '/library' }) => {
                                     {book.license}
                                 </span>
                             )}
+                        </div>
+
+                        <div className='mt-8 rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 dark:border-slate-700 dark:bg-slate-800/70'>
+                            <div className='mb-3 flex flex-wrap items-center justify-between gap-2'>
+                                <div>
+                                    <h2 className='text-sm font-bold text-emerald-950 dark:text-white'>
+                                        Progress Belajar
+                                    </h2>
+                                    <p className='text-xs text-gray-500 dark:text-gray-400'>
+                                        {isAuthenticated
+                                            ? 'Simpan posisi belajar dan catatan ringkas untuk resource ini.'
+                                            : 'Masuk untuk menyimpan progress belajar.'}
+                                    </p>
+                                </div>
+                                {progress?.last_studied_at && (
+                                    <span className='text-xs text-gray-500 dark:text-gray-400'>
+                                        {new Date(progress.last_studied_at).toLocaleDateString('id-ID')}
+                                    </span>
+                                )}
+                            </div>
+                            {isAuthenticated ? (
+                                <div className='grid gap-3 md:grid-cols-[160px_1fr]'>
+                                    <div>
+                                        <label className='mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-300'>
+                                            Status
+                                        </label>
+                                        <select
+                                            className='w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm text-gray-800 outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100'
+                                            onChange={(event) =>
+                                                setProgressForm((current) => ({
+                                                    ...current,
+                                                    status: event.target.value,
+                                                }))
+                                            }
+                                            value={progressForm.status}
+                                        >
+                                            {PROGRESS_STATUSES.map((item) => (
+                                                <option key={item.value} value={item.value}>
+                                                    {item.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className='mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-300'>
+                                            Halaman terakhir
+                                        </label>
+                                        <input
+                                            className='w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm text-gray-800 outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100'
+                                            min='0'
+                                            onChange={(event) =>
+                                                setProgressForm((current) => ({
+                                                    ...current,
+                                                    current_page: event.target.value,
+                                                }))
+                                            }
+                                            placeholder={book.pages ? `0-${book.pages}` : '0'}
+                                            type='number'
+                                            value={progressForm.current_page}
+                                        />
+                                    </div>
+                                    <div className='md:col-span-2'>
+                                        <label className='mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-300'>
+                                            Catatan ringkas
+                                        </label>
+                                        <textarea
+                                            className='w-full rounded-lg border border-emerald-100 bg-white px-3 py-2 text-sm text-gray-800 outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100'
+                                            onChange={(event) =>
+                                                setProgressForm((current) => ({
+                                                    ...current,
+                                                    note: event.target.value,
+                                                }))
+                                            }
+                                            rows={3}
+                                            value={progressForm.note}
+                                        />
+                                    </div>
+                                    <div className='flex items-center gap-3 md:col-span-2'>
+                                        <button
+                                            className='rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-50'
+                                            disabled={savingProgress}
+                                            onClick={saveProgress}
+                                        >
+                                            {savingProgress ? 'Menyimpan...' : 'Simpan progress'}
+                                        </button>
+                                        {progressMessage && (
+                                            <span className='text-xs text-gray-500 dark:text-gray-400'>
+                                                {progressMessage}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 </article>

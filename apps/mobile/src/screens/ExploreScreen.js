@@ -49,10 +49,12 @@ import {
   getBookmarks,
   getFaraidhHistory,
   getKalkulasiZakat,
+  getLibraryProgress,
   getTodayPrayerLog,
   getUserWirds,
   saveFaraidh,
   saveKalkulasiZakat,
+  saveLibraryProgress,
   savePrayerLog,
   updateUserWird,
 } from '../api/personal';
@@ -72,6 +74,12 @@ const TAFSIR_MODES = [
   { key: 'all', label: 'Semua' },
   { key: 'kemenag', label: 'Kemenag' },
   { key: 'mishbah', label: 'Al-Mishbah' },
+];
+const LIBRARY_PROGRESS_STATUSES = [
+  { key: 'planned', label: 'Rencana' },
+  { key: 'reading', label: 'Dibaca' },
+  { key: 'paused', label: 'Dijeda' },
+  { key: 'completed', label: 'Selesai' },
 ];
 
 const PRAYER_ITEMS = [
@@ -216,6 +224,10 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [bookmarks, setBookmarks] = useState({});
   const [selectedItem, setSelectedItem] = useState(null);
   const [activeNoteRef, setActiveNoteRef] = useState('');
+  const [libraryProgress, setLibraryProgress] = useState(null);
+  const [libraryProgressDraft, setLibraryProgressDraft] = useState({ currentPage: '', note: '', status: 'reading' });
+  const [libraryProgressMessage, setLibraryProgressMessage] = useState('');
+  const [libraryProgressSaving, setLibraryProgressSaving] = useState(false);
   const [pinnedFeatureKeys, setPinnedFeatureKeys] = useState({});
   const [recentFeatureKeys, setRecentFeatureKeys] = useState({});
   const [feedComments, setFeedComments] = useState([]);
@@ -850,6 +862,36 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   }, [activeFeature?.type, loadFeedComments, selectedItem]);
 
   useEffect(() => {
+    const bookId = selectedItem?.raw?.id ?? selectedItem?.id;
+    if (activeFeature?.key !== 'library' || !selectedItem || !session?.token || !bookId) {
+      setLibraryProgress(null);
+      setLibraryProgressDraft({ currentPage: '', note: '', status: 'reading' });
+      setLibraryProgressMessage('');
+      return;
+    }
+
+    let active = true;
+    getLibraryProgress(bookId)
+      .then((payload) => {
+        const item = payload?.data ?? payload;
+        if (!active || !item) return;
+        setLibraryProgress(item);
+        setLibraryProgressDraft({
+          currentPage: item.current_page ? String(item.current_page) : '',
+          note: item.note ?? '',
+          status: item.status ?? 'reading',
+        });
+      })
+      .catch(() => {
+        if (active) setLibraryProgress(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeFeature?.key, selectedItem, session?.token]);
+
+  useEffect(() => {
     if (!isActive) return;
     if (selectedItem) {
       navigation?.setBack(() => { setSelectedItem(null); return true; });
@@ -1174,10 +1216,40 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const isTafsirDetail = activeFeature?.type === 'surah-content';
   const hasBothTafsir = isTafsirDetail && selectedItem?.tafsir && selectedItem?.secondaryTafsir;
 
+  const submitLibraryProgress = async () => {
+    const bookId = selectedItem?.raw?.id ?? selectedItem?.id;
+    if (!bookId || !session?.token) {
+      showInfo('Buka Profil untuk masuk dan menyimpan progress belajar.');
+      return;
+    }
+
+    setLibraryProgressSaving(true);
+    setLibraryProgressMessage('');
+    try {
+      const saved = await saveLibraryProgress({
+        bookId,
+        currentPage: libraryProgressDraft.currentPage,
+        note: libraryProgressDraft.note,
+        status: libraryProgressDraft.status,
+      });
+      const item = saved?.data ?? saved;
+      setLibraryProgress(item);
+      setLibraryProgressMessage('Progress belajar disimpan.');
+      showSuccess('Progress belajar disimpan.');
+    } catch (err) {
+      const nextMessage = err?.message ?? 'Progress belum bisa disimpan.';
+      setLibraryProgressMessage(nextMessage);
+      showError(nextMessage);
+    } finally {
+      setLibraryProgressSaving(false);
+    }
+  };
+
   const renderDetailScreen = () => {
     if (!selectedItem) return null;
     const ref = getItemRef(activeFeature, selectedItem);
     const noteKey = refKey(ref.refType, ref.refId);
+    const isLibraryDetail = activeFeature?.key === 'library';
 
     const renderTafsirPanel = (tafsirText, sourceLabel, isSecondary) => {
       if (!tafsirText) return null;
@@ -1200,6 +1272,62 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           {renderTafsirPanel(selectedItem.tafsir, TAFSIR_SOURCE_LABELS.kemenag, false)}
           {renderTafsirPanel(selectedItem.secondaryTafsir, TAFSIR_SOURCE_LABELS.secondary, true)}
         </>
+      );
+    };
+
+    const renderLibraryProgressPanel = () => {
+      if (!isLibraryDetail) return null;
+      const totalPages = selectedItem?.raw?.pages ?? 0;
+      return (
+        <View style={styles.libraryProgressPanel}>
+          <CardTitle meta={session?.token ? libraryProgress?.status ?? 'reading' : 'Masuk akun'}>
+            Progress Belajar
+          </CardTitle>
+          {!session?.token ? (
+            <Text style={styles.detailLine}>Masuk dari tab Profil untuk menyimpan status dan halaman terakhir.</Text>
+          ) : (
+            <>
+              <View style={styles.libraryStatusRow}>
+                {LIBRARY_PROGRESS_STATUSES.map((status) => (
+                  <ActionPill
+                    key={status.key}
+                    active={libraryProgressDraft.status === status.key}
+                    label={status.label}
+                    onPress={() => setLibraryProgressDraft((current) => ({ ...current, status: status.key }))}
+                  />
+                ))}
+              </View>
+              <Text style={styles.inputLabel}>Halaman terakhir{totalPages ? ` dari ${totalPages}` : ''}</Text>
+              <TextInput
+                keyboardType="number-pad"
+                onChangeText={(value) => setLibraryProgressDraft((current) => ({ ...current, currentPage: value }))}
+                placeholder="0"
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+                value={libraryProgressDraft.currentPage}
+              />
+              <Text style={styles.inputLabel}>Catatan ringkas</Text>
+              <TextInput
+                multiline
+                onChangeText={(value) => setLibraryProgressDraft((current) => ({ ...current, note: value }))}
+                placeholder="Misalnya: sampai bab ikhlas..."
+                placeholderTextColor={colors.muted}
+                style={[styles.input, styles.textArea]}
+                value={libraryProgressDraft.note}
+              />
+              <Pressable
+                accessibilityLabel="Simpan progress belajar"
+                accessibilityRole="button"
+                disabled={libraryProgressSaving}
+                onPress={submitLibraryProgress}
+                style={[styles.primaryButton, styles.loginButton, libraryProgressSaving && styles.disabledButton]}
+              >
+                <Text style={styles.primaryButtonText}>{libraryProgressSaving ? 'Menyimpan...' : 'Simpan progress'}</Text>
+              </Pressable>
+              {libraryProgressMessage ? <Text style={styles.detailLine}>{libraryProgressMessage}</Text> : null}
+            </>
+          )}
+        </View>
       );
     };
 
@@ -1247,6 +1375,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
         </Card>
 
         {renderFeedCommentsPanel()}
+        {renderLibraryProgressPanel()}
 
         <View style={styles.detailActions}>
           {activeFeature?.type !== 'feed' ? (
@@ -2900,6 +3029,20 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     marginTop: spacing.md,
     paddingTop: spacing.md,
+  },
+  libraryProgressPanel: {
+    backgroundColor: colors.surface,
+    borderColor: colors.faint,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+  },
+  libraryStatusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   commentsPanel: {
     borderTopColor: colors.faint,

@@ -38,6 +38,20 @@ export const saveQuranProgress = async ({ surahNumber, ayahNumber, ayahId }) =>
     { auth: true },
   );
 
+export const getLibraryProgress = async (bookId) =>
+  requestJson(`/api/v1/library/progress/${bookId}`, { auth: true });
+
+export const saveLibraryProgress = async ({ bookId, currentPage = 0, note = '', status = 'reading' }) =>
+  putJson(
+    `/api/v1/library/progress/${bookId}`,
+    {
+      current_page: Number(currentPage) || 0,
+      note,
+      status,
+    },
+    { auth: true },
+  );
+
 export const getTodayPrayerLog = async () => requestJson('/api/v1/sholat/today', { auth: true });
 
 export const savePrayerLog = async ({ date, prayer, status }) =>

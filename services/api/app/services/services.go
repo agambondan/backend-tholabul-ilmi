@@ -32,6 +32,7 @@ type Services struct {
 	Siroh                SirohService
 	Blog                 BlogService
 	LibraryBook          LibraryBookService
+	LibraryBookProgress  LibraryBookProgressService
 	Stats                StatsService
 	Tilawah              TilawahService
 	Amalan               AmalanService
@@ -117,6 +118,7 @@ func NewServices(repo *repository.Repositories) *Services {
 		Siroh:                NewSirohServiceWithCache(repo.Siroh, cache),
 		Blog:                 NewBlogService(repo.Blog),
 		LibraryBook:          NewLibraryBookService(repo.LibraryBook),
+		LibraryBookProgress:  NewLibraryBookProgressService(repo.LibraryBookProgress),
 		Stats:                NewStatsServiceWithTilawah(repo.Bookmark, repo.Hafalan, repo.UserActivity, repo.Tilawah, streak),
 		Tilawah:              NewTilawahService(repo.Tilawah),
 		Amalan:               NewAmalanService(repo.Amalan),

@@ -13,6 +13,8 @@ const {
   deleteBookmark,
   getQuranProgress,
   saveQuranProgress,
+  getLibraryProgress,
+  saveLibraryProgress,
   getTodayPrayerLog,
   savePrayerLog,
   getPrayerStats,
@@ -107,6 +109,32 @@ describe('personal api', () => {
       expect(putJson).toHaveBeenCalledWith(
         '/api/v1/progress/quran',
         { surah_number: 1, ayah_number: 7, ayah_id: 123 },
+        { auth: true },
+      );
+    });
+  });
+
+  describe('library progress', () => {
+    test('getLibraryProgress calls correct endpoint', async () => {
+      requestJson.mockResolvedValueOnce({ status: 'reading', current_page: 12 });
+      const result = await getLibraryProgress(7);
+      expect(requestJson).toHaveBeenCalledWith('/api/v1/library/progress/7', {
+        auth: true,
+      });
+      expect(result).toEqual({ status: 'reading', current_page: 12 });
+    });
+
+    test('saveLibraryProgress calls putJson', async () => {
+      putJson.mockResolvedValueOnce({});
+      await saveLibraryProgress({
+        bookId: 7,
+        currentPage: '12',
+        note: 'Bab adab',
+        status: 'paused',
+      });
+      expect(putJson).toHaveBeenCalledWith(
+        '/api/v1/library/progress/7',
+        { current_page: 12, note: 'Bab adab', status: 'paused' },
         { auth: true },
       );
     });

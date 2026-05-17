@@ -93,6 +93,7 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	newSirohController := controllers.NewSirohController(newServices)
 	newBlogController := controllers.NewBlogController(newServices)
 	newLibraryBookController := controllers.NewLibraryBookController(newServices)
+	newLibraryBookProgressController := controllers.NewLibraryBookProgressController(newServices)
 	newStatsController := controllers.NewStatsController(newServices)
 	newTilawahController := controllers.NewTilawahController(newServices)
 	newAmalanController := controllers.NewAmalanController(newServices)
@@ -340,6 +341,9 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Get("/library/books/:slug", newLibraryBookController.FindBySlug)
 	master.Put("/library/books/:id", admin, newLibraryBookController.Update)
 	master.Delete("/library/books/:id", admin, newLibraryBookController.Delete)
+	master.Get("/library/progress", jwt, newLibraryBookProgressController.FindAll)
+	master.Get("/library/progress/:bookId", jwt, newLibraryBookProgressController.FindByBook)
+	master.Put("/library/progress/:bookId", jwt, newLibraryBookProgressController.Update)
 
 	// Bookmark
 	master.Post("/bookmarks", jwt, newBookmarkController.Add)

@@ -44,6 +44,7 @@ var ModelMigrations []interface{} = []interface{}{
 	model.BlogTag{},
 	model.BlogPost{},
 	model.LibraryBook{},
+	model.LibraryBookProgress{},
 	model.TilawahLog{},
 	model.AmalanItem{},
 	model.AmalanLog{},

@@ -42,6 +42,7 @@ type Repositories struct {
 	Siroh                SirohRepository
 	Blog                 BlogRepository
 	LibraryBook          LibraryBookRepository
+	LibraryBookProgress  LibraryBookProgressRepository
 	Tilawah              TilawahRepository
 	Amalan               AmalanRepository
 	Dzikir               DzikirRepository
@@ -122,6 +123,7 @@ func NewRepositories(db *gorm.DB, client *redis.Client) (*Repositories, error) {
 		Siroh:                NewSirohRepository(db, pg),
 		Blog:                 NewBlogRepository(db, pg),
 		LibraryBook:          NewLibraryBookRepository(db, pg),
+		LibraryBookProgress:  NewLibraryBookProgressRepository(db),
 		Tilawah:              NewTilawahRepository(db),
 		Amalan:               NewAmalanRepository(db),
 		Dzikir:               NewDzikirRepository(db),
