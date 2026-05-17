@@ -121,6 +121,13 @@ const mockPrayerTimes = {
   isha: '19:10',
 };
 
+const formatTestDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const defaultNavigation = {
   current: { view: undefined, params: {} },
   open: jest.fn(),
@@ -284,6 +291,50 @@ describe('HomeScreen', () => {
       expect(getByText('05:45')).toBeTruthy();
     });
     expect(Location.getCurrentPositionAsync).toHaveBeenCalled();
+    expect(clientApi.getPrayerTimes).toHaveBeenCalledWith({
+      lat: -6.2,
+      lng: 106.8,
+      madhab: 'shafi',
+      method: 'kemenag',
+    });
+  });
+
+  test('renders cached prayer schedule before network refresh completes', async () => {
+    Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
+    Location.getCurrentPositionAsync.mockResolvedValue({
+      coords: { latitude: -6.2, longitude: 106.8 },
+    });
+    clientApi.getPrayerTimes.mockImplementation(() => new Promise(() => {}));
+    AsyncStorage.getItem.mockImplementation((key) => {
+      if (key === 'tholabul:pref:home-last-location') {
+        return Promise.resolve(JSON.stringify({
+          lat: -6.2,
+          lng: 106.8,
+          label: 'JAKARTA',
+          updatedAt: Date.now(),
+        }));
+      }
+      if (key === 'tholabul:pref:home-prayer-times') {
+        return Promise.resolve(JSON.stringify({
+          coords: { lat: -6.2, lng: 106.8 },
+          date: formatTestDateKey(),
+          madhab: 'shafi',
+          method: 'kemenag',
+          prayers: {
+            ...mockPrayerTimes,
+            sunrise: '05:44',
+          },
+          updatedAt: Date.now(),
+        }));
+      }
+      return Promise.resolve(null);
+    });
+
+    const { getByText } = await renderHomeScreen();
+
+    await waitFor(() => {
+      expect(getByText('05:44')).toBeTruthy();
+    });
     expect(clientApi.getPrayerTimes).toHaveBeenCalledWith({
       lat: -6.2,
       lng: 106.8,

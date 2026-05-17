@@ -194,6 +194,8 @@ const locationErrorLabels = new Set(['LOKASI NONAKTIF', 'LOKASI BELUM TERSEDIA',
 const currentLocationTimeoutMs = 3000;
 const locationRetryDelays = [1000, 2500, 5000, 10000, 15000];
 const prayerRetryDelays = [2500, 5000, 10000, 15000];
+const homePrayerMethod = 'kemenag';
+const homePrayerMadhab = 'shafi';
 const emptyPrayerState = { countdown: '--:--:--', key: 'asr', time: '--:--' };
 
 const withTimeout = (promise, timeoutMs) =>
@@ -217,6 +219,13 @@ const coordsFromPosition = (position) => {
   return { lat: latitude, lng: longitude };
 };
 
+const formatLocalDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const normalizeStoredLocation = (value) => {
   const latitude = Number(value?.lat);
   const longitude = Number(value?.lng);
@@ -231,6 +240,20 @@ const normalizeStoredLocation = (value) => {
 
 const areCoordsClose = (first, second) =>
   Boolean(first && second && Math.abs(first.lat - second.lat) < 0.001 && Math.abs(first.lng - second.lng) < 0.001);
+
+const normalizePrayerCache = (value, dateKey) => {
+  const latitude = Number(value?.coords?.lat);
+  const longitude = Number(value?.coords?.lng);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  if (value?.date !== dateKey) return null;
+  if (value?.method !== homePrayerMethod || value?.madhab !== homePrayerMadhab) return null;
+  if (!hasUsablePrayerTimes(value?.prayers)) return null;
+  return {
+    coords: { lat: latitude, lng: longitude },
+    prayers: value.prayers,
+    updatedAt: Number(value?.updatedAt) || 0,
+  };
+};
 
 const toExpoLocationCoords = (coords) => {
   const latitude = Number(coords?.lat);
@@ -262,6 +285,21 @@ const saveHomeLocation = async (coords, label) => {
     });
   } catch {
     // Location cache should never block the home screen.
+  }
+};
+
+const saveHomePrayerTimes = async (coords, prayers, dateKey) => {
+  try {
+    await writePreference(preferenceKeys.homePrayerTimes, {
+      coords,
+      date: dateKey,
+      madhab: homePrayerMadhab,
+      method: homePrayerMethod,
+      prayers,
+      updatedAt: Date.now(),
+    });
+  } catch {
+    // Prayer cache is only a speed-up path.
   }
 };
 
@@ -303,6 +341,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
   const mountedRef = useRef(true);
   const prayerRetryTimerRef = useRef(null);
   const locationRetryTimerRef = useRef(null);
+  const hasDisplayedPrayerTimesRef = useRef(false);
   const [dailyHadith, setDailyHadith] = useState(null);
   const [dailyAyah, setDailyAyah] = useState(null);
   const [dateSnapshot, setDateSnapshot] = useState(() => new Date());
@@ -416,10 +455,17 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     }
   }, []);
 
-  const fetchPrayerTimesWithRetry = useCallback(async function fetchPrayerTimesWithRetryForCoords(coords, attempt = 0) {
+  const applyPrayerTimes = useCallback((nextTimes) => {
+    hasDisplayedPrayerTimesRef.current = true;
+    setPrayerTimes(nextTimes);
+    setNextPrayer(resolvePrayerState(nextTimes));
+  }, []);
+
+  const fetchPrayerTimesWithRetry = useCallback(async function fetchPrayerTimesWithRetryForCoords(coords, dateKey, attempt = 0) {
     clearPrayerRetryTimer();
 
     if (!coords) {
+      hasDisplayedPrayerTimesRef.current = false;
       setPrayerTimes(null);
       setNextPrayer(emptyPrayerState);
       setPrayerRetryAttempt(0);
@@ -438,14 +484,14 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     }
 
     try {
-      const nextTimes = await getPrayerTimes({ ...coords, madhab: 'shafi', method: 'kemenag' });
+      const nextTimes = await getPrayerTimes({ ...coords, madhab: homePrayerMadhab, method: homePrayerMethod });
       if (!hasUsablePrayerTimes(nextTimes)) {
         throw new Error('Prayer schedule is empty');
       }
       if (!mountedRef.current) return false;
 
-      setPrayerTimes(nextTimes);
-      setNextPrayer(resolvePrayerState(nextTimes));
+      applyPrayerTimes(nextTimes);
+      saveHomePrayerTimes(coords, nextTimes, dateKey || formatLocalDateKey(new Date()));
       setPrayerMessage('');
       setPrayerRetryAttempt(0);
       setPrayerSyncState('ready');
@@ -459,11 +505,19 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
         setPrayerSyncState('retrying');
         setPrayerMessage(`Jadwal sholat belum tersedia. Mencoba ulang ${nextAttempt}/${prayerRetryDelays.length}...`);
         prayerRetryTimerRef.current = setTimeout(() => {
-          fetchPrayerTimesWithRetryForCoords(coords, nextAttempt);
+          fetchPrayerTimesWithRetryForCoords(coords, dateKey, nextAttempt);
         }, prayerRetryDelays[attempt]);
         return false;
       }
 
+      if (hasDisplayedPrayerTimesRef.current) {
+        setPrayerRetryAttempt(0);
+        setPrayerSyncState('ready');
+        setPrayerMessage('');
+        return false;
+      }
+
+      hasDisplayedPrayerTimesRef.current = false;
       setPrayerTimes(null);
       setNextPrayer(emptyPrayerState);
       setPrayerRetryAttempt(0);
@@ -471,7 +525,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       setPrayerMessage('Jadwal sholat belum tersedia. Tarik untuk memuat ulang.');
       return false;
     }
-  }, [clearPrayerRetryTimer]);
+  }, [applyPrayerTimes, clearPrayerRetryTimer]);
 
   const applyHomeLocation = useCallback(async (coords, knownLabel) => {
     const label = knownLabel || await getHomeLocationLabel(coords);
@@ -499,7 +553,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
         saveHomeLocation(freshCoords, label);
 
         if (!areCoordsClose(baseCoords, freshCoords)) {
-          fetchPrayerTimesWithRetry(freshCoords);
+          fetchPrayerTimesWithRetry(freshCoords, formatLocalDateKey(new Date()));
         }
       })
       .catch(() => {
@@ -522,6 +576,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
 
   const loadHomeData = useCallback(async ({ refresh = false } = {}) => {
     const currentDate = new Date();
+    const prayerDateKey = formatLocalDateKey(currentDate);
     setDateSnapshot(currentDate);
     clearPrayerRetryTimer();
     clearLocationRetryTimer();
@@ -538,8 +593,9 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (permission.status === 'granted') {
-        const [storedLocation, lastKnownPosition] = await Promise.all([
+        const [storedLocation, cachedPrayerTimes, lastKnownPosition] = await Promise.all([
           readPreference(preferenceKeys.homeLastLocation, null).then(normalizeStoredLocation),
+          readPreference(preferenceKeys.homePrayerTimes, null).then((value) => normalizePrayerCache(value, prayerDateKey)),
           Promise.resolve(
             Location.getLastKnownPositionAsync({
               maxAge: 10 * 60 * 1000,
@@ -558,6 +614,15 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
         } else if (storedLocation) {
           coords = { lat: storedLocation.lat, lng: storedLocation.lng };
           await applyHomeLocation(coords, storedLocation.label);
+        }
+
+        if (cachedPrayerTimes && (!coords || areCoordsClose(coords, cachedPrayerTimes.coords))) {
+          if (!coords) {
+            coords = cachedPrayerTimes.coords;
+          }
+          applyPrayerTimes(cachedPrayerTimes.prayers);
+          setPrayerSyncState('ready');
+          setPrayerMessage('');
         }
 
         refreshCurrentLocationInBackground(coords);
@@ -613,8 +678,9 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
     }
 
     if (coords) {
-      await fetchPrayerTimesWithRetry(coords);
+      await fetchPrayerTimesWithRetry(coords, prayerDateKey);
     } else {
+      hasDisplayedPrayerTimesRef.current = false;
       setPrayerTimes(null);
       setNextPrayer(emptyPrayerState);
     }
@@ -623,7 +689,7 @@ export function HomeScreen({ isActive, navigation, onOpenTab }) {
       setLoadingDaily(false);
       setRefreshing(false);
     }
-  }, [applyHomeLocation, clearLocationRetryTimer, clearPrayerRetryTimer, fetchPrayerTimesWithRetry, refreshCurrentLocationInBackground]);
+  }, [applyHomeLocation, applyPrayerTimes, clearLocationRetryTimer, clearPrayerRetryTimer, fetchPrayerTimesWithRetry, refreshCurrentLocationInBackground]);
 
   useEffect(() => {
     mountedRef.current = true;
