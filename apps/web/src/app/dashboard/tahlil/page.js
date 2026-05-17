@@ -1,6 +1,6 @@
 'use client';
 
-import { TahlilContent } from '@/app/tahlil/page';
+import { TahlilContent } from '@/app/tahlil/TahlilClient';
 
 export default function DashboardTahlilPage() {
     return (

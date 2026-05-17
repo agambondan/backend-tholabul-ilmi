@@ -497,14 +497,16 @@ Completed: `2026-05-17`
 - Lanjutkan follow-up Task 7 untuk route public content-heavy yang masih
   memakai full-page `'use client'`.
 - Mulai dari route yang aman dan sudah di-reuse dashboard:
-  `/panduan-sholat`.
+  `/panduan-sholat`, lalu `/tahlil`.
 - Pertahankan interaksi accordion/fetch di client island.
 - Pastikan dashboard reuse tidak import server page module.
 
 ### Acceptance Criteria
 
 - Public `/panduan-sholat` tidak lagi menjadi full client page.
+- Public `/tahlil` tidak lagi menjadi full client page.
 - Komponen interaktif tetap reusable oleh `/dashboard/panduan-sholat`.
+- Komponen interaktif tetap reusable oleh `/dashboard/tahlil`.
 - Build web tetap hijau.
 
 ### Verification
@@ -512,6 +514,8 @@ Completed: `2026-05-17`
 - `cd apps/web && npm run build` - `PASS`
   - `/panduan-sholat` tetap prerendered static.
   - `/dashboard/panduan-sholat` tetap prerendered static.
+  - `/tahlil` tetap prerendered static.
+  - `/dashboard/tahlil` tetap prerendered static.
 - Device mobile smoke untuk task sebelumnya belum bisa dilanjutkan pada slice
   ini karena `adb devices -l` tidak menampilkan device aktif.
 
@@ -523,6 +527,12 @@ Completed: `2026-05-17`
   memasang navbar, spacing, client island, dan footer.
 - `apps/web/src/app/dashboard/panduan-sholat/page.js` sekarang import client
   island langsung, bukan import dari public page module.
+- `TahlilContent` dipindahkan ke
+  `apps/web/src/app/tahlil/TahlilClient.js`.
+- `apps/web/src/app/tahlil/page.js` sekarang server wrapper yang hanya
+  memasang navbar, section layout, client island, dan footer.
+- `apps/web/src/app/dashboard/tahlil/page.js` sekarang import client island
+  langsung, bukan import dari public page module.
 
 ## Suggested Execution Order
 
