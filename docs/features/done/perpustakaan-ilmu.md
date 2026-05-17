@@ -28,6 +28,9 @@ Last updated: 2026-05-17
   - `GET /api/v1/library/progress/:bookId`
   - `PUT /api/v1/library/progress/:bookId`
   - Web and mobile detail surfaces can save status, last page, and a short progress note.
+- Added personal progress discovery:
+  - Dashboard `/dashboard/library` shows a `Progress Saya` panel for signed-in users.
+  - Mobile Perpustakaan list shows saved status/page badges for books already tracked by the user.
 
 ## Journey Notes
 
@@ -36,6 +39,7 @@ Last updated: 2026-05-17
 - Mobile uses the existing feature-level list/detail pattern and opens external source URLs from the detail action.
 - Admins can create draft/published resources, edit metadata, attach source/cover URLs, and remove outdated entries.
 - Logged-in users can track `planned`, `reading`, `paused`, and `completed` states per book without changing the public catalog layout.
+- Dashboard users can resume active books directly from the personal progress panel before browsing the full catalog.
 - PDF files are not mirrored yet. The current MVP stores external source URLs and license notes so uploaded PDFs can be added later only after source/license verification.
 
 ## Sync Contract

@@ -41,6 +41,11 @@ export const saveQuranProgress = async ({ surahNumber, ayahNumber, ayahId }) =>
 export const getLibraryProgress = async (bookId) =>
   requestJson(`/api/v1/library/progress/${bookId}`, { auth: true });
 
+export const getLibraryProgressList = async () => {
+  const payload = await requestJson('/api/v1/library/progress', { auth: true });
+  return pickItems(payload);
+};
+
 export const saveLibraryProgress = async ({ bookId, currentPage = 0, note = '', status = 'reading' }) =>
   putJson(
     `/api/v1/library/progress/${bookId}`,

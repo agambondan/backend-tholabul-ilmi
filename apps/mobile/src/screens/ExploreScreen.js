@@ -50,6 +50,7 @@ import {
   getFaraidhHistory,
   getKalkulasiZakat,
   getLibraryProgress,
+  getLibraryProgressList,
   getTodayPrayerLog,
   getUserWirds,
   saveFaraidh,
@@ -81,6 +82,8 @@ const LIBRARY_PROGRESS_STATUSES = [
   { key: 'paused', label: 'Dijeda' },
   { key: 'completed', label: 'Selesai' },
 ];
+const getLibraryProgressLabel = (status) =>
+  LIBRARY_PROGRESS_STATUSES.find((item) => item.key === status)?.label ?? 'Dibaca';
 
 const PRAYER_ITEMS = [
   { key: 'subuh', label: 'Subuh' },
@@ -225,6 +228,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [selectedItem, setSelectedItem] = useState(null);
   const [activeNoteRef, setActiveNoteRef] = useState('');
   const [libraryProgress, setLibraryProgress] = useState(null);
+  const [libraryProgressMap, setLibraryProgressMap] = useState({});
   const [libraryProgressDraft, setLibraryProgressDraft] = useState({ currentPage: '', note: '', status: 'reading' });
   const [libraryProgressMessage, setLibraryProgressMessage] = useState('');
   const [libraryProgressSaving, setLibraryProgressSaving] = useState(false);
@@ -862,6 +866,32 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   }, [activeFeature?.type, loadFeedComments, selectedItem]);
 
   useEffect(() => {
+    if (activeFeature?.key !== 'library' || !session?.token) {
+      setLibraryProgressMap({});
+      return;
+    }
+
+    let active = true;
+    getLibraryProgressList()
+      .then((items) => {
+        if (!active) return;
+        const nextMap = {};
+        items.forEach((item) => {
+          const bookId = item?.library_book_id ?? item?.book?.id ?? item?.Book?.id;
+          if (bookId) nextMap[String(bookId)] = item;
+        });
+        setLibraryProgressMap(nextMap);
+      })
+      .catch(() => {
+        if (active) setLibraryProgressMap({});
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeFeature?.key, session?.token]);
+
+  useEffect(() => {
     const bookId = selectedItem?.raw?.id ?? selectedItem?.id;
     if (activeFeature?.key !== 'library' || !selectedItem || !session?.token || !bookId) {
       setLibraryProgress(null);
@@ -986,6 +1016,10 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   };
 
   const renderItem = (item, index) => {
+    const bookId = item?.raw?.id ?? item?.id;
+    const libraryProgressEntry =
+      activeFeature?.key === 'library' && bookId ? libraryProgressMap[String(bookId)] : null;
+
     if (activeFeature?.type === 'surah-content') {
       return (
         <ContentCard
@@ -1088,6 +1122,16 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       >
         {item.arabic ? <Text numberOfLines={3} style={styles.arabic}>{item.arabic}</Text> : null}
         {item.body ? <Text numberOfLines={4} style={styles.body}>{item.body}</Text> : null}
+        {libraryProgressEntry ? (
+          <View style={styles.libraryProgressBadgeRow}>
+            <Text style={styles.libraryProgressBadgeText}>
+              {getLibraryProgressLabel(libraryProgressEntry.status)}
+            </Text>
+            {libraryProgressEntry.current_page ? (
+              <Text style={styles.libraryProgressPageText}>Hal. {libraryProgressEntry.current_page}</Text>
+            ) : null}
+          </View>
+        ) : null}
         {activeFeature?.type === 'quiz' ? (
           <View style={styles.answerRow}>
             {getQuizChoices(item).map((option) => (
@@ -1234,6 +1278,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       });
       const item = saved?.data ?? saved;
       setLibraryProgress(item);
+      setLibraryProgressMap((current) => ({ ...current, [String(bookId)]: item }));
       setLibraryProgressMessage('Progress belajar disimpan.');
       showSuccess('Progress belajar disimpan.');
     } catch (err) {
@@ -3043,6 +3088,29 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
     marginBottom: spacing.sm,
+  },
+  libraryProgressBadgeRow: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.faint,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  libraryProgressBadgeText: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  libraryProgressPageText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700',
   },
   commentsPanel: {
     borderTopColor: colors.faint,

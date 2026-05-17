@@ -14,6 +14,7 @@ const {
   getQuranProgress,
   saveQuranProgress,
   getLibraryProgress,
+  getLibraryProgressList,
   saveLibraryProgress,
   getTodayPrayerLog,
   savePrayerLog,
@@ -137,6 +138,17 @@ describe('personal api', () => {
         { current_page: 12, note: 'Bab adab', status: 'paused' },
         { auth: true },
       );
+    });
+
+    test('getLibraryProgressList picks progress items', async () => {
+      requestJson.mockResolvedValueOnce({
+        data: [{ id: 1, library_book_id: 7, status: 'reading' }],
+      });
+      const result = await getLibraryProgressList();
+      expect(requestJson).toHaveBeenCalledWith('/api/v1/library/progress', {
+        auth: true,
+      });
+      expect(result).toEqual([{ id: 1, library_book_id: 7, status: 'reading' }]);
     });
   });
 
