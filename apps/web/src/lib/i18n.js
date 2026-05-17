@@ -1107,6 +1107,9 @@ export const translations = {
         'siroh.loading': 'Memuat siroh...',
         'siroh.not_found': 'Tidak ada konten siroh.',
         'siroh.back_to_siroh': 'Kembali ke Siroh',
+        // Peta Islam
+        'peta.title': 'Peta Islam Interaktif',
+        'peta.subtitle': 'Lokasi bersejarah dalam peradaban Islam',
         // Tokoh Tarikh
         'tokoh.title': 'Tokoh Tarikh',
         'tokoh.subtitle': 'Biografi ulama, ilmuwan, dan tokoh Islam',
@@ -1645,6 +1648,7 @@ export const translations = {
         'link.sirah': "Prophet's Biography",
         'link.sirah_short': 'Sirah',
         'link.tokoh': 'Historical Figures',
+        'link.peta': 'Islamic Map',
         'link.blog': 'Blog',
         'link.kajian': 'Islamic Studies',
         'link.forum': 'Discussion Forum',
@@ -2664,6 +2668,9 @@ export const translations = {
         'siroh.loading': 'Loading sirah...',
         'siroh.not_found': 'No sirah content.',
         'siroh.back_to_siroh': 'Back to Sirah',
+        // Islamic Map
+        'peta.title': 'Interactive Islamic Map',
+        'peta.subtitle': 'Historical locations in Islamic civilization',
         // Tokoh Tarikh
         'tokoh.title': 'Historical Figures',
         'tokoh.subtitle': 'Biographies of scholars, scientists, and Islamic figures',

@@ -25,6 +25,7 @@ import {
     BsMoonStarsFill,
     BsNewspaper,
     BsPerson,
+    BsPeopleFill,
     BsSearch,
     BsStickyFill,
     BsSunFill,
@@ -163,6 +164,8 @@ const DashboardLayout = ({ children }) => {
                 { labelKey: 'link.sirah_short', href: '/dashboard/siroh', icon: <MdMenuBook /> },
                 { labelKey: 'link.brief_fiqh', href: '/dashboard/fiqh', icon: <MdMenuBook /> },
                 { labelKey: 'link.islamic_history', href: '/dashboard/sejarah', icon: <MdTimeline /> },
+                { labelKey: 'link.tokoh', href: '/dashboard/tokoh', icon: <BsPeopleFill /> },
+                { labelKey: 'link.peta', href: '/dashboard/peta', icon: <MdExplore /> },
                 { labelKey: 'link.manasik', href: '/dashboard/manasik', icon: <MdOutlineDirectionsWalk /> },
                 { labelKey: 'link.blog', href: '/dashboard/blog', icon: <BsNewspaper /> },
             ],
@@ -220,7 +223,7 @@ const DashboardLayout = ({ children }) => {
                     }`}
                 >
                     <Link
-                        href='/'
+                        href='/dashboard'
                         title="Thullaabul 'Ilmi"
                         className={`flex items-center group ${
                             isCollapsed ? 'justify-center' : 'gap-2.5'

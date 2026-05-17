@@ -29,7 +29,7 @@ const sections = [
       {
         Icon: Clock3,
         key: 'prayer',
-        subtitle: 'Jadwal, log harian, dan pengingat',
+        subtitle: 'Jadwal, pengingat, dan pengaturan waktu',
         title: 'Jadwal Sholat',
         view: 'prayer',
       },
