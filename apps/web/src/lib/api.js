@@ -629,6 +629,8 @@ export const achievementApi = {
 };
 
 export const quranApi = {
+    bySurahPage: (surahNumber, page = 0, size = 300) =>
+        fetch(`${API_URL}/api/v1/ayah/surah/number/${surahNumber}?page=${page}&size=${size}`),
     byPage: (page) => fetch(`${API_URL}/api/v1/ayah/page/${page}`),
     byHizb: (hizb) => fetch(`${API_URL}/api/v1/ayah/hizb/${hizb}`),
 };

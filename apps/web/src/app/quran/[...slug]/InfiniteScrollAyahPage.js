@@ -160,6 +160,7 @@ const InfiniteScrollAyahPage = ({ params, searchParams, basePath = '/quran/surah
 							<SurahAudioPlayer
 								surahNumber={surah.number}
 								surahName={surahTitle}
+								totalAyahs={surah.number_of_ayahs}
 							/>
 						</div>
 					)}
