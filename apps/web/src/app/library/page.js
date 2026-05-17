@@ -36,6 +36,13 @@ const PROGRESS_LABELS = {
     completed: 'Selesai',
 };
 
+const PROGRESS_FILTERS = [
+    { value: 'planned', label: 'Rencana' },
+    { value: 'reading', label: 'Dibaca' },
+    { value: 'paused', label: 'Dijeda' },
+    { value: 'completed', label: 'Selesai' },
+];
+
 const uniqueValues = (items, key) =>
     Array.from(new Set(items.map((item) => item?.[key]).filter(Boolean))).sort();
 
@@ -57,6 +64,7 @@ export const LibraryContent = ({ basePath = '/library', showProgressSummary = fa
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('');
     const [level, setLevel] = useState('');
+    const [progressStatus, setProgressStatus] = useState('');
     const [progressItems, setProgressItems] = useState([]);
     const [progressLoading, setProgressLoading] = useState(false);
 
@@ -108,9 +116,18 @@ export const LibraryContent = ({ basePath = '/library', showProgressSummary = fa
 
     const categories = useMemo(() => uniqueValues(books, 'category'), [books]);
     const levels = useMemo(() => uniqueValues(books, 'level'), [books]);
+    const progressByBookId = useMemo(() => {
+        const next = {};
+        progressItems.forEach((progress) => {
+            const bookId = progress?.library_book_id ?? progress?.book?.id ?? progress?.Book?.id;
+            if (bookId) next[String(bookId)] = progress;
+        });
+        return next;
+    }, [progressItems]);
     const filteredBooks = useMemo(() => {
         const query = search.trim().toLowerCase();
         return books.filter((book) => {
+            const progress = progressByBookId[String(book.id)];
             const text = [book.title, book.author, book.description, book.tags, book.category, book.level]
                 .filter(Boolean)
                 .join(' ')
@@ -118,9 +135,10 @@ export const LibraryContent = ({ basePath = '/library', showProgressSummary = fa
             const matchesSearch = !query || text.includes(query);
             const matchesCategory = !category || book.category === category;
             const matchesLevel = !level || book.level === level;
-            return matchesSearch && matchesCategory && matchesLevel;
+            const matchesProgress = !progressStatus || progress?.status === progressStatus;
+            return matchesSearch && matchesCategory && matchesLevel && matchesProgress;
         });
-    }, [books, category, level, search]);
+    }, [books, category, level, progressByBookId, progressStatus, search]);
 
     return (
         <div className={isWide ? 'w-full px-4' : 'container mx-auto max-w-5xl px-4'}>
@@ -194,7 +212,13 @@ export const LibraryContent = ({ basePath = '/library', showProgressSummary = fa
                 </section>
             )}
 
-            <div className='mb-5 grid gap-3 md:grid-cols-[1fr_auto_auto]'>
+            <div
+                className={`mb-5 grid gap-3 ${
+                    showProgressSummary && isAuthenticated
+                        ? 'md:grid-cols-[1fr_auto_auto_auto]'
+                        : 'md:grid-cols-[1fr_auto_auto]'
+                }`}
+            >
                 <div className='flex items-center gap-2 rounded-xl border border-emerald-100 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900'>
                     <BsSearch className='shrink-0 text-gray-400' />
                     <input
@@ -228,6 +252,20 @@ export const LibraryContent = ({ basePath = '/library', showProgressSummary = fa
                         </option>
                     ))}
                 </select>
+                {showProgressSummary && isAuthenticated && (
+                    <select
+                        className='rounded-xl border border-emerald-100 bg-white px-3 py-2 text-sm text-gray-700 outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100'
+                        onChange={(event) => setProgressStatus(event.target.value)}
+                        value={progressStatus}
+                    >
+                        <option value=''>Semua progress</option>
+                        {PROGRESS_FILTERS.map((item) => (
+                            <option key={item.value} value={item.value}>
+                                {item.label}
+                            </option>
+                        ))}
+                    </select>
+                )}
             </div>
 
             {loading && <SkeletonInline rows={4} />}
@@ -251,31 +289,46 @@ export const LibraryContent = ({ basePath = '/library', showProgressSummary = fa
             )}
 
             <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
-                {filteredBooks.map((book) => (
-                    <Link
-                        className='group flex h-full flex-col rounded-xl border border-emerald-100 bg-white p-4 shadow-sm transition hover:border-emerald-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-700'
-                        href={`${basePath}/${book.slug}`}
-                        key={book.id ?? book.slug}
-                    >
-                        <div className='mb-4 flex items-start justify-between gap-3'>
-                            <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'>
-                                <BsBook />
+                {filteredBooks.map((book) => {
+                    const progress = progressByBookId[String(book.id)];
+                    return (
+                        <Link
+                            className='group flex h-full flex-col rounded-xl border border-emerald-100 bg-white p-4 shadow-sm transition hover:border-emerald-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-700'
+                            href={`${basePath}/${book.slug}`}
+                            key={book.id ?? book.slug}
+                        >
+                            <div className='mb-4 flex items-start justify-between gap-3'>
+                                <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'>
+                                    <BsBook />
+                                </div>
+                                {book.source_url && (
+                                    <BsBoxArrowUpRight className='mt-1 text-gray-300 transition group-hover:text-emerald-600 dark:text-slate-600 dark:group-hover:text-emerald-300' />
+                                )}
                             </div>
-                            {book.source_url && (
-                                <BsBoxArrowUpRight className='mt-1 text-gray-300 transition group-hover:text-emerald-600 dark:text-slate-600 dark:group-hover:text-emerald-300' />
+                            {showProgressSummary && isAuthenticated && progress && (
+                                <div className='mb-3 flex flex-wrap items-center gap-2'>
+                                    <span className='rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200'>
+                                        {PROGRESS_LABELS[progress.status] ?? progress.status ?? 'Dibaca'}
+                                    </span>
+                                    {progress.current_page ? (
+                                        <span className='text-[11px] font-medium text-gray-500 dark:text-gray-400'>
+                                            Hal. {progress.current_page}
+                                        </span>
+                                    ) : null}
+                                </div>
                             )}
-                        </div>
-                        <h2 className='text-base font-bold leading-snug text-emerald-950 dark:text-white'>
-                            {book.title}
-                        </h2>
-                        <p className='mt-2 line-clamp-3 flex-1 text-sm leading-6 text-gray-600 dark:text-gray-300'>
-                            {book.description}
-                        </p>
-                        <div className='mt-4 border-t border-gray-100 pt-3 dark:border-slate-800'>
-                            <BookMeta book={book} />
-                        </div>
-                    </Link>
-                ))}
+                            <h2 className='text-base font-bold leading-snug text-emerald-950 dark:text-white'>
+                                {book.title}
+                            </h2>
+                            <p className='mt-2 line-clamp-3 flex-1 text-sm leading-6 text-gray-600 dark:text-gray-300'>
+                                {book.description}
+                            </p>
+                            <div className='mt-4 border-t border-gray-100 pt-3 dark:border-slate-800'>
+                                <BookMeta book={book} />
+                            </div>
+                        </Link>
+                    );
+                })}
             </div>
         </div>
     );
