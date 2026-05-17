@@ -76,6 +76,7 @@ These route patterns are part of the current journey contract:
 | Quran/Hadith cross-reference | Quran detail bottom sheet | Hadith detail tab | Mobile now exposes Munasabah and Hadith-Ayah references from Quran detail, and Ayat Terkait from Hadith detail. Cross-reference rows navigate to the related Quran/Hadith screen. |
 | Tafsir kitab comparison | `/tafsir/:slug` | `/dashboard/tafsir/:slug` | Web keeps the full selector/comparison controls. Mobile detail view now exposes `Semua`, `Kemenag`, and `Al-Mishbah` modes with stacked comparison so the journey remains readable on small screens. |
 | Zakat/Faraidh saved history | `/zakat/history`, `/faraidh` | `/dashboard/zakat/history`, `/dashboard/faraidh` | Mobile calculators now keep local device history without login and merge it with backend history when the user is authenticated, matching the web local + account-sync journey. |
+| Jadwal Sholat adzan behavior | `/jadwal-sholat` | `/dashboard/jadwal-sholat` | Mobile now has countdown, foreground prayer-time notification, optional adzan audio toggle, reminder scheduling, offline schedule cache, and manual correction controls. |
 
 Closed historical gaps:
 
@@ -92,7 +93,6 @@ should stay visible for future planning:
 
 | Feature | Delta |
 | --- | --- |
-| Jadwal Sholat | Web has richer adzan/audio behavior; mobile has schedule, retry/cache, and location handling but audio parity is still a separate enhancement. |
 | Achievements and Stats | Web has dedicated dashboard pages; mobile exposes profile/feature surfaces but not the same chart-heavy layout. |
 
 ## Mobile Rendering Model

@@ -31,62 +31,62 @@
 ## 2. Adzan Audio + Countdown — L (3 sub-tasks)
 
 **Web ref:** `apps/web/src/app/jadwal-sholat/page.js`
-**Existing mobile:** `PrayerScreen.js` — jadwal + reminder notif (tanpa audio adzan)
+**Existing mobile:** `PrayerScreen.js` — jadwal + countdown + reminder notif + optional audio adzan
 
 ### [F-2.1] Countdown timer (S)
-- [ ] Di `PrayerScreen.js`, compute `nextPrayer` dari schedule times
-- [ ] Tampilkan countdown `HH:MM:DS` menuju next prayer
-- [ ] Update tiap detik via `useEffect` + `setInterval`
+- [x] Di `PrayerScreen.js`, compute `nextPrayer` dari schedule times
+- [x] Tampilkan countdown `HH:MM:DS` menuju next prayer
+- [x] Update tiap detik via `useEffect` + `setInterval`
 
 ### [F-2.2] Adzan audio player (M)
-- [ ] Import `expo-audio` (already in package.json)
-- [ ] Play adzan mp3 saat countdown reaches 0 (waktu sholat masuk)
-- [ ] Opsional: stop button, atau auto-stop setelah 30 detik
-- [ ] Fallback: kalo audio gagal load, silent skip (jangan crash)
+- [x] Import `expo-audio` (already in package.json)
+- [x] Play adzan mp3 saat countdown reaches 0 (waktu sholat masuk) jika toggle audio aktif
+- [x] Opsional: stop button, atau auto-stop setelah 30 detik
+- [x] Fallback: kalo audio gagal load, silent skip (jangan crash)
 
 ### [F-2.3] Browser Notification API parity (M)
-- [ ] Saat waktu sholat masuk (mobile foreground), show local notification via `expo-notifications` dengan title "Waktu Sholat: Subuh" + body
-- [ ] Integrasi dengan `schedulePrayerReminders()` existing
+- [x] Saat waktu sholat masuk (mobile foreground), show local notification via `expo-notifications` dengan title "Waktu Sholat: Subuh" + body
+- [x] Integrasi dengan `schedulePrayerReminders()` existing
 
 ---
 
 ## 3. Zakat Multi-Tab + Riwayat — L (3 sub-tasks)
 
 **Web ref:** `/zakat` (6 tabs: maal, penghasilan, emas, perak, pertanian, ternak) + `/zakat/history`
-**Existing mobile:** `type: 'zakat'` di `localTools` — hanya zakat maal sederhana
+**Existing mobile:** `type: 'zakat'` di `localTools` — multi-tab + riwayat lokal/akun
 
 ### [F-3.1] API calls zakat (S)
-- [ ] Tambah di `src/api/personal.js` atau `explore.js`: `saveKalkulasiZakat()`, `getKalkulasiZakat()`, `deleteKalkulasiZakat()`
-- [ ] Endpoint: `POST /api/v1/zakat/kalkulasi`, `GET /api/v1/zakat/kalkulasi`, `GET /api/v1/zakat/gold-price`
+- [x] Tambah di `src/api/personal.js` atau `explore.js`: `saveKalkulasiZakat()`, `getKalkulasiZakat()`, `deleteKalkulasiZakat()`
+- [x] Endpoint: `POST /api/v1/zakat/kalkulasi`, `GET /api/v1/zakat/kalkulasi`
 
 ### [F-3.2] Multi-tab calculator (M)
-- [ ] Upgrade `renderFeatureContent()` case `zakat`: tambah tab selector (horizontal pills/carousel) untuk 6 jenis
-- [ ] Tiap tab: form input spesifik + hasil kalkulasi 2.5%
+- [x] Upgrade `renderFeatureContent()` case `zakat`: tambah tab selector (horizontal pills/carousel) untuk 6 jenis
+- [x] Tiap tab: form input spesifik + hasil kalkulasi 2.5%
 - [ ] Auto-fetch gold price dari API untuk tab emas
 
 ### [F-3.3] Save + history (M)
-- [ ] Tombol "Simpan" di tiap tab → POST ke BE
-- [ ] Tab "Riwayat" di ujung — fetch GET + list saved calculations
-- [ ] Swipe-to-delete atau tombol hapus per item
-- [ ] Test: save flow, history list, delete
+- [x] Tombol "Simpan" di tiap tab → POST ke BE saat login atau AsyncStorage saat guest
+- [x] Tab "Riwayat" di ujung — merge GET + local history
+- [x] Swipe-to-delete atau tombol hapus per item
+- [x] Test: save flow, history list, delete
 
 ---
 
 ## 4. Faraidh + Dual-Sync — M (2 sub-tasks)
 
 **Web ref:** `/faraidh` (calculator + localStorage + BE sync + Musytarakah + print)
-**Existing mobile:** `type: 'faraidh'` di `localTools` — calculator sederhana tanpa save
+**Existing mobile:** `type: 'faraidh'` di `localTools` — calculator + save/history lokal/akun
 
 ### [F-4.1] Faraidh save API (S)
-- [ ] Tambah di `api/personal.js` atau `explore.js`: `saveFaraidh()`, `getFaraidhHistory()`, `deleteFaraidh()`
-- [ ] Endpoint: `POST /api/v1/faraidh/simpan`, `GET /api/v1/faraidh/simpan`
+- [x] Tambah di `api/personal.js` atau `explore.js`: `saveFaraidh()`, `getFaraidhHistory()`, `deleteFaraidh()`
+- [x] Endpoint: `POST /api/v1/faraidh/simpan`, `GET /api/v1/faraidh/simpan`
 
 ### [F-4.2] Upgrade faraidh feature (M)
-- [ ] Port `lib/faraidh.js` logic ke mobile (bagian Musytarakah: suami+ibu+2+saudaraL share 1/3)
-- [ ] Tambah tombol "Simpan" → POST ke BE
-- [ ] Tambah tombol "Riwayat" → list saved calculations
-- [ ] AsyncStorage cache sebagai fallback offline
-- [ ] Test: Musytarakah case, save/load, delete
+- [x] Port `lib/faraidh.js` logic ke mobile (bagian Musytarakah: suami+ibu+2+saudaraL share 1/3)
+- [x] Tambah tombol "Simpan" → POST ke BE saat login atau AsyncStorage saat guest
+- [x] Tambah tombol "Riwayat" → list saved calculations
+- [x] AsyncStorage cache sebagai fallback offline
+- [x] Test: Musytarakah case, save/load, delete
 
 ---
 

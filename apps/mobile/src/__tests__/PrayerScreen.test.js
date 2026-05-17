@@ -85,6 +85,7 @@ jest.mock('../storage/preferences', () => ({
     prayerMethod: 'prayer-method',
     prayerMadhab: 'prayer-madhab',
     prayerAdjustments: 'prayer-adjustments',
+    prayerAdzanAudioEnabled: 'prayer-adzan-audio-enabled',
     prayerReminderEnabled: 'prayer-reminder-enabled',
     prayerReminderLeadMinutes: 'prayer-reminder-lead-minutes',
     prayerReminderPrayers: 'prayer-reminder-prayers',
@@ -98,6 +99,7 @@ jest.mock('../utils/prayerNotifications', () => ({
   cancelPrayerReminders: jest.fn(),
   notificationsSupported: jest.fn(() => true),
   schedulePrayerReminders: jest.fn(),
+  showPrayerTimeNotification: jest.fn(),
 }));
 
 import { PrayerScreen } from '../screens/PrayerScreen';
@@ -292,6 +294,35 @@ describe('PrayerScreen', () => {
       expect(writePreference).toHaveBeenCalledWith(
         'prayer-method',
         'mwl',
+      );
+    });
+  });
+
+  test('adzan audio toggle persists preference', async () => {
+    getPrayerTimes.mockResolvedValue(mockPrayerTimes);
+    getPrayerOfflineOverview.mockResolvedValue({
+      supported: false,
+      days: 0,
+    });
+
+    const { getByText, getAllByText } = await renderPrayerScreen();
+
+    await waitFor(() => {
+      expect(getByText('Subuh')).toBeTruthy();
+    });
+
+    fireEvent.press(getByText('Buka pengaturan sholat'));
+
+    await waitFor(() => {
+      expect(getByText('Audio Adzan')).toBeTruthy();
+    });
+
+    fireEvent.press(getAllByText('Mati')[1]);
+
+    await waitFor(() => {
+      expect(writePreference).toHaveBeenCalledWith(
+        'prayer-adzan-audio-enabled',
+        true,
       );
     });
   });

@@ -1,5 +1,11 @@
 import { Platform } from 'react-native';
-import { notificationsSupported, cancelPrayerReminders, schedulePrayerReminders, PRAYER_REMINDER_CHANNEL_ID } from '../utils/prayerNotifications';
+import {
+  notificationsSupported,
+  cancelPrayerReminders,
+  schedulePrayerReminders,
+  showPrayerTimeNotification,
+  PRAYER_REMINDER_CHANNEL_ID,
+} from '../utils/prayerNotifications';
 
 const mockScheduleNotificationAsync = jest.fn(() => Promise.resolve('mock-id-1'));
 const mockCancelScheduledNotificationAsync = jest.fn(() => Promise.resolve());
@@ -93,6 +99,23 @@ describe('schedulePrayerReminders', () => {
     expect(result.status).toBe('scheduled');
     expect(result.scheduled).toHaveLength(1);
     expect(result.scheduled[0].prayer).toBe('fajr');
+  });
+});
+
+describe('showPrayerTimeNotification', () => {
+  test('shows immediate prayer time notification', async () => {
+    mockGetPermissionsAsync.mockResolvedValue({ granted: true });
+
+    const result = await showPrayerTimeNotification({ label: 'Subuh', prayer: 'fajr' });
+
+    expect(result.status).toBe('shown');
+    expect(mockScheduleNotificationAsync).toHaveBeenCalledWith({
+      content: expect.objectContaining({
+        body: 'Sudah masuk waktu Subuh.',
+        title: 'Waktu Sholat: Subuh',
+      }),
+      trigger: null,
+    });
   });
 });
 

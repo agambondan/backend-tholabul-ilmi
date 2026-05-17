@@ -140,3 +140,27 @@ export const schedulePrayerReminders = async ({
 
   return { scheduled, status: 'scheduled' };
 };
+
+export const showPrayerTimeNotification = async ({ label, prayer }) => {
+  const permission = await ensurePrayerNotificationPermission();
+  if (!permission.granted) {
+    return { status: permission.reason ?? 'denied' };
+  }
+
+  const nativeNotifications = getNotifications();
+  if (!nativeNotifications) {
+    return { status: 'unsupported' };
+  }
+
+  const id = await nativeNotifications.scheduleNotificationAsync({
+    content: {
+      title: `Waktu Sholat: ${label}`,
+      body: `Sudah masuk waktu ${label}.`,
+      data: { prayer, type: 'prayer_time' },
+      sound: true,
+    },
+    trigger: null,
+  });
+
+  return { id, status: 'shown' };
+};

@@ -16,7 +16,12 @@ import {
 } from '../storage/offlineContent';
 import { preferenceKeys, readPreference, writePreference } from '../storage/preferences';
 import { colors, radius, spacing } from '../theme';
-import { cancelPrayerReminders, notificationsSupported, schedulePrayerReminders } from '../utils/prayerNotifications';
+import {
+  cancelPrayerReminders,
+  notificationsSupported,
+  schedulePrayerReminders,
+  showPrayerTimeNotification,
+} from '../utils/prayerNotifications';
 
 const scheduleRows = [
   ['imsak', 'Imsak'],
@@ -84,6 +89,7 @@ export function PrayerScreen({ isActive, navigation }) {
   const [madhab, setMadhab] = useState('shafi');
   const [adjustments, setAdjustments] = useState(defaultAdjustments);
   const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [adzanAudioEnabled, setAdzanAudioEnabled] = useState(false);
   const [reminderLeadMinutes, setReminderLeadMinutes] = useState(10);
   const [reminderPrayers, setReminderPrayers] = useState(defaultReminderPrayers);
   const [notificationIds, setNotificationIds] = useState([]);
@@ -101,6 +107,8 @@ export function PrayerScreen({ isActive, navigation }) {
   const playerRef = useRef(null);
   const adzanTimerRef = useRef(null);
   const countdownRef = useRef(null);
+  const lastPrayerAlertRef = useRef('');
+  const nextPrayerRef = useRef(null);
 
   useEffect(() => {
     if (navigation?.current?.view === 'settings') {
@@ -293,7 +301,17 @@ export function PrayerScreen({ isActive, navigation }) {
     return next;
   };
 
+  const updateNextPrayerCountdown = useCallback(() => {
+    const next = findNextPrayer();
+    if (!next) return null;
+    nextPrayerRef.current = next.key;
+    setNextPrayerKey(next.key);
+    setCountdown(next.remaining);
+    return next;
+  }, [prayers, adjustments]);
+
   const playAdzan = useCallback(async (prayerKey) => {
+    if (!adzanAudioEnabled) return;
     try {
       await setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true });
       const fileName = prayerKey === 'fajr' ? 'subuh' : 'standard';
@@ -308,7 +326,7 @@ export function PrayerScreen({ isActive, navigation }) {
       if (adzanTimerRef.current) clearTimeout(adzanTimerRef.current);
       adzanTimerRef.current = setTimeout(() => stopAdzan(), 30000);
     } catch {}
-  }, []);
+  }, [adzanAudioEnabled]);
 
   const stopAdzan = useCallback(() => {
     if (adzanTimerRef.current) clearTimeout(adzanTimerRef.current);
@@ -318,27 +336,31 @@ export function PrayerScreen({ isActive, navigation }) {
     setAdzanPlaying(false);
   }, []);
 
-  const nextPrayerRef = useRef(null);
   useEffect(() => {
     if (!prayers) return;
-    const next = findNextPrayer();
-    if (next) {
-      nextPrayerRef.current = next.key;
-      setNextPrayerKey(next.key);
-      setCountdown(next.remaining);
-    }
+    updateNextPrayerCountdown();
     clearInterval(countdownRef.current);
     countdownRef.current = setInterval(() => {
       setCountdown((prev) => (prev !== null && prev > 0) ? prev - 1 : prev);
     }, 1000);
     return () => clearInterval(countdownRef.current);
-  }, [prayers, adjustments]);
+  }, [prayers, adjustments, updateNextPrayerCountdown]);
 
   useEffect(() => {
     if (countdown === 0 && prayers && nextPrayerRef.current) {
-      playAdzan(nextPrayerRef.current);
+      const prayerKey = nextPrayerRef.current;
+      const alertKey = `${today()}:${prayerKey}`;
+      if (lastPrayerAlertRef.current !== alertKey) {
+        lastPrayerAlertRef.current = alertKey;
+        const label = prayerLabels[prayerKey] ?? 'Sholat';
+        showPrayerTimeNotification({ label, prayer: prayerKey }).catch(() => {});
+        playAdzan(prayerKey);
+      }
+      const nextTimer = setTimeout(() => updateNextPrayerCountdown(), 1200);
+      return () => clearTimeout(nextTimer);
     }
-  }, [countdown, prayers]);
+    return undefined;
+  }, [countdown, playAdzan, prayers, updateNextPrayerCountdown]);
 
   const formatCountdown = (secs) => {
     if (secs === null) return '--:--:--';
@@ -410,6 +432,13 @@ export function PrayerScreen({ isActive, navigation }) {
     if (reminderEnabled) {
       await syncPrayerReminders({ leadMinutes: minutes, silent: true });
     }
+  };
+
+  const toggleAdzanAudio = async () => {
+    const next = !adzanAudioEnabled;
+    setAdzanAudioEnabled(next);
+    await writePreference(preferenceKeys.prayerAdzanAudioEnabled, next);
+    setMessage(next ? 'Audio adzan aktif saat aplikasi terbuka.' : 'Audio adzan dinonaktifkan.');
   };
 
   const toggleReminderPrayer = async (key) => {
@@ -507,11 +536,12 @@ export function PrayerScreen({ isActive, navigation }) {
       readPreference(preferenceKeys.prayerMethod, 'kemenag'),
       readPreference(preferenceKeys.prayerMadhab, 'shafi'),
       readPreference(preferenceKeys.prayerAdjustments, defaultAdjustments),
+      readPreference(preferenceKeys.prayerAdzanAudioEnabled, false),
       readPreference(preferenceKeys.prayerReminderEnabled, false),
       readPreference(preferenceKeys.prayerReminderLeadMinutes, 10),
       readPreference(preferenceKeys.prayerReminderPrayers, defaultReminderPrayers),
       readPreference(preferenceKeys.prayerReminderIds, []),
-    ]).then(([savedMethod, savedMadhab, savedAdjustments, savedReminderEnabled, savedLeadMinutes, savedReminderPrayers, savedNotificationIds]) => {
+    ]).then(([savedMethod, savedMadhab, savedAdjustments, savedAdzanAudioEnabled, savedReminderEnabled, savedLeadMinutes, savedReminderPrayers, savedNotificationIds]) => {
       if (!mounted) return;
       if (methods.some(([key]) => key === savedMethod)) {
         setMethod(savedMethod);
@@ -523,6 +553,7 @@ export function PrayerScreen({ isActive, navigation }) {
         ...defaultAdjustments,
         ...(savedAdjustments && typeof savedAdjustments === 'object' ? savedAdjustments : {}),
       });
+      setAdzanAudioEnabled(Boolean(savedAdzanAudioEnabled));
       setReminderEnabled(Boolean(savedReminderEnabled));
       if (reminderLeadOptions.includes(savedLeadMinutes)) {
         setReminderLeadMinutes(savedLeadMinutes);
@@ -620,6 +651,23 @@ export function PrayerScreen({ isActive, navigation }) {
             >
               <Text style={[styles.toggleText, reminderEnabled ? styles.methodTextActive : null]}>
                 {reminderEnabled ? 'Aktif' : 'Mati'}
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.reminderHeader}>
+            <View>
+              <Text style={styles.prayerLabel}>Audio Adzan</Text>
+              <Text style={styles.originalTime}>
+                {adzanAudioEnabled ? 'Diputar saat waktu masuk dan aplikasi terbuka' : 'Nonaktif'}
+              </Text>
+            </View>
+            <Pressable
+              onPress={toggleAdzanAudio}
+              style={[styles.toggleButton, adzanAudioEnabled ? styles.toggleButtonActive : null]}
+            >
+              <Text style={[styles.toggleText, adzanAudioEnabled ? styles.methodTextActive : null]}>
+                {adzanAudioEnabled ? 'Aktif' : 'Mati'}
               </Text>
             </Pressable>
           </View>
