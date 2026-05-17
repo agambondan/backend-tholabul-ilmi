@@ -30,6 +30,12 @@ import { Screen } from '../components/Screen';
 import { useFeedback } from '../context/FeedbackContext';
 import { useSession } from '../context/SessionContext';
 import { FeatureCatalog, findFeatureByKey, isPaginatedFeature, LOCAL_TOOL_TYPES } from './explore/FeatureCatalog';
+import {
+  deleteCalculatorHistory,
+  mergeCalculatorHistory,
+  readCalculatorHistory,
+  saveCalculatorHistory,
+} from '../storage/calculatorHistory';
 import { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinnedFeature } from '../storage/recentFeatures';
 import { arabicTypography } from '../styles/arabicTypography';
 import { colors, radius, spacing } from '../theme';
@@ -1607,21 +1613,29 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       ];
 
       const handleZakatSave = async (jenis, namaJenis, jumlahZakat, nilaiHarta = 0, nisabVal = 0) => {
-        if (!session?.token || jumlahZakat <= 0) return;
+        if (jumlahZakat <= 0) return;
         setZakatSaving(true);
         setZakatSavedMsg('');
+        const payload = {
+          jenis,
+          nama_jenis: namaJenis,
+          jumlah_zakat: jumlahZakat,
+          nilai_harta: nilaiHarta,
+          nisab: nisabVal,
+          rate: 2.5,
+          haul: true,
+          catatan: '',
+        };
         try {
-          await saveKalkulasiZakat({
-            jenis,
-            nama_jenis: namaJenis,
-            jumlah_zakat: jumlahZakat,
-            nilai_harta: nilaiHarta,
-            nisab: nisabVal,
-            rate: 2.5,
-            haul: true,
-            catatan: '',
-          });
-          setZakatSavedMsg('Tersimpan!');
+          if (session?.token) {
+            await saveKalkulasiZakat(payload);
+            setZakatSavedMsg('Tersimpan ke akun.');
+            loadZakatHistory();
+          } else {
+            const created = await saveCalculatorHistory('zakat', payload);
+            setZakatHistory((current) => mergeCalculatorHistory(current, [created]));
+            setZakatSavedMsg('Tersimpan di perangkat.');
+          }
         } catch {
           setZakatSavedMsg('Gagal menyimpan');
         }
@@ -1631,12 +1645,25 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       };
 
       const loadZakatHistory = useCallback(async () => {
-        if (!session?.token) return;
         try {
-          const items = await getKalkulasiZakat();
-          setZakatHistory(items);
+          const localItems = await readCalculatorHistory('zakat');
+          const remoteItems = session?.token ? await getKalkulasiZakat() : [];
+          setZakatHistory(mergeCalculatorHistory(remoteItems, localItems));
         } catch { /* silent */ }
       }, [session?.token]);
+
+      const handleDeleteZakat = async (item) => {
+        try {
+          if (item?.is_local || `${item?.id ?? ''}`.startsWith('local-zakat-')) {
+            await deleteCalculatorHistory('zakat', item.id);
+          } else {
+            await deleteKalkulasiZakat(item.id);
+          }
+          loadZakatHistory();
+        } catch {
+          showError('Riwayat zakat gagal dihapus.');
+        }
+      };
 
       useEffect(() => {
         if (zakatTab === 6) loadZakatHistory();
@@ -1825,8 +1852,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
             <>
               <Text style={styles.body}>Riwayat kalkulasi zakat tersimpan.</Text>
               {!session?.token ? (
-                <Text style={[styles.statusNote, { marginTop: spacing.sm }]}>Buka Profil untuk masuk dan melihat riwayat.</Text>
-              ) : zakatHistory.length === 0 ? (
+                <Text style={[styles.statusNote, { marginTop: spacing.sm }]}>
+                  Masuk untuk sinkronisasi akun. Riwayat lokal tetap tersimpan di perangkat ini.
+                </Text>
+              ) : null}
+              {zakatHistory.length === 0 ? (
                 <Text style={[styles.statusNote, { marginTop: spacing.sm }]}>Belum ada riwayat.</Text>
               ) : (
                 <ScrollView style={{ maxHeight: 300 }}>
@@ -1835,9 +1865,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontWeight: '700', color: colors.ink }}>{item.nama_jenis}</Text>
                         <Text style={[styles.resultValue, { fontSize: 13 }]}>{formatCurrency(item.jumlah_zakat)}</Text>
+                        <Text style={{ fontSize: 11, color: item.is_local ? colors.muted : colors.primary }}>
+                          {item.is_local ? 'Perangkat ini' : 'Akun tersinkron'}
+                        </Text>
                         <Text style={{ fontSize: 11, color: colors.muted }}>{new Date(item.created_at ?? item.createdAt).toLocaleDateString('id-ID')}</Text>
                       </View>
-                      <Pressable onPress={async () => { try { await deleteKalkulasiZakat(item.id); loadZakatHistory(); } catch { /* silent */ } }} style={[styles.heirButton, { borderColor: colors.danger }]}>
+                      <Pressable onPress={() => handleDeleteZakat(item)} style={[styles.heirButton, { borderColor: colors.danger }]}>
                         <Text style={[styles.heirButtonText, { color: colors.danger }]}>Hapus</Text>
                       </Pressable>
                     </View>
@@ -1887,27 +1920,29 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       const calculation = distributable > 0 ? calculateFaraidh(faraidh.heirs, distributable) : null;
 
       const handleSaveFaraidh = async () => {
-        if (!session?.token) {
-          showInfo('Buka Profil untuk masuk dan menyimpan kalkulasi.');
-          return;
-        }
         setSavingFaraidh(true);
+        const payload = {
+          wealth,
+          debt: debts,
+          funeral: 0,
+          will: bequest,
+          heirs_json: JSON.stringify(faraidh.heirs),
+          result_summary: calculation
+            ? calculation.rows.map((r) => {
+                const label = HEIR_LABELS[r.key]?.idn ?? r.key;
+                return `${label}: ${Math.round(r.share * 100)}%`;
+              }).join(', ')
+            : '',
+          catatan: faraidhCatatan,
+        };
         try {
-          await saveFaraidh({
-            wealth,
-            debt: debts,
-            funeral: 0,
-            will: bequest,
-            heirs_json: JSON.stringify(faraidh.heirs),
-            result_summary: calculation
-              ? calculation.rows.map((r) => {
-                  const label = HEIR_LABELS[r.key]?.idn ?? r.key;
-                  return `${label}: ${Math.round(r.share * 100)}%`;
-                }).join(', ')
-              : '',
-            catatan: faraidhCatatan,
-          });
-          showSuccess('Kalkulasi faraidh tersimpan.');
+          if (session?.token) {
+            await saveFaraidh(payload);
+            showSuccess('Kalkulasi faraidh tersimpan ke akun.');
+          } else {
+            await saveCalculatorHistory('faraidh', payload);
+            showSuccess('Kalkulasi faraidh tersimpan di perangkat.');
+          }
           setFaraidhCatatan('');
         } catch (err) {
           showError(err?.message ?? 'Gagal menyimpan.');
@@ -1917,13 +1952,10 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       };
 
       const handleLoadFaraidhHistory = async () => {
-        if (!session?.token) {
-          showInfo('Buka Profil untuk melihat riwayat.');
-          return;
-        }
         try {
-          const items = await getFaraidhHistory();
-          setFaraidhHistory(items);
+          const localItems = await readCalculatorHistory('faraidh');
+          const remoteItems = session?.token ? await getFaraidhHistory() : [];
+          setFaraidhHistory(mergeCalculatorHistory(remoteItems, localItems));
           setShowFaraidhHistory(true);
         } catch {
           showError('Riwayat belum bisa dimuat.');
@@ -1932,7 +1964,11 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
 
       const handleDeleteFaraidh = async (id) => {
         try {
-          await deleteFaraidh(id);
+          if (`${id ?? ''}`.startsWith('local-faraidh-')) {
+            await deleteCalculatorHistory('faraidh', id);
+          } else {
+            await deleteFaraidh(id);
+          }
           setFaraidhHistory((current) => current.filter((item) => item.id !== id));
           showSuccess('Item riwayat dihapus.');
         } catch {
@@ -1955,8 +1991,9 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
               Riwayat Faraidh
             </CardTitle>
             {!session?.token ? (
-              <Text style={styles.body}>Buka Profil untuk masuk dan melihat riwayat kalkulasi.</Text>
-            ) : faraidhHistory.length === 0 ? (
+              <Text style={styles.body}>Masuk untuk sinkronisasi akun. Riwayat lokal tetap tersimpan di perangkat ini.</Text>
+            ) : null}
+            {faraidhHistory.length === 0 ? (
               <Text style={styles.body}>Belum ada kalkulasi yang tersimpan.</Text>
             ) : (
               faraidhHistory.map((item) => (
@@ -1966,6 +2003,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
                     {item.result_summary ? (
                       <Text style={styles.detailLine}>{item.result_summary}</Text>
                     ) : null}
+                    <Text style={styles.detailLine}>{item.is_local ? 'Perangkat ini' : 'Akun tersinkron'}</Text>
                     <Text style={styles.detailLine}>
                       {new Date(item.created_at ?? item.createdAt ?? '').toLocaleDateString('id-ID')}
                     </Text>
@@ -2102,9 +2140,9 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
               accessibilityLabel="Simpan kalkulasi faraidh"
               accessibilityRole="button"
               android_ripple={{ color: 'rgba(255,255,255,0.16)', borderless: false }}
-              disabled={!session?.token || savingFaraidh || distributable <= 0}
+              disabled={savingFaraidh || distributable <= 0}
               onPress={handleSaveFaraidh}
-              style={[styles.primaryButton, styles.formPrimaryButton, (!session?.token || savingFaraidh || distributable <= 0) && styles.disabledButton]}
+              style={[styles.primaryButton, styles.formPrimaryButton, (savingFaraidh || distributable <= 0) && styles.disabledButton]}
             >
               <Text style={styles.primaryButtonText}>
                 {savingFaraidh ? 'Menyimpan...' : 'Simpan'}
