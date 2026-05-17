@@ -12,6 +12,8 @@ tercampur.
   status backend/API.
 - `docs/features/` menyimpan status implementasi per feature atau milestone
   lintas mobile, web, dan API.
+- `docs/features/feature-manifest.json` menyimpan source of truth feature
+  discovery lintas public web, dashboard, dan mobile.
 
 ## Struktur
 
@@ -29,6 +31,9 @@ tercampur.
 - ketika sudah closed, pindahkan atau tulis versi final ke `done/` dan ubah
   status menjadi `DONE`.
 - jika feature menyentuh mobile dan backend, catat keduanya secara eksplisit.
+- jika feature menyentuh discovery, route, CTA, mobile catalog, atau dashboard
+  journey, update `feature-manifest.json` dan jalankan
+  `node scripts/check-feature-parity.js`.
 - jika masih belum sempat diverifikasi di device/API/web, jangan tulis `DONE`.
 - gunakan [TEMPLATE.md](./TEMPLATE.md) untuk feature baru.
 
@@ -45,4 +50,3 @@ tercampur.
 - `VERIFIED`: implementasi sudah hijau, tetapi masih mungkin ikut bergerak.
 - `DONE`: feature sudah ditutup.
 - `ON_HOLD`: ditunda dengan alasan eksplisit.
-

@@ -225,7 +225,8 @@ Completed: `2026-05-17`
 
 Priority: `P1`
 Area: `apps/web`, `apps/mobile`, `docs`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -252,8 +253,23 @@ Status: `TODO`
 
 ### Verification
 
-- Jalankan script parity check.
-- Review output check untuk route web dan feature key mobile.
+- `node --check scripts/check-feature-parity.js` - `PASS`
+- `node -e "JSON.parse(require('fs').readFileSync('docs/features/feature-manifest.json','utf8')); console.log('manifest-json-ok')"` - `PASS`
+- `node scripts/check-feature-parity.js` - `PASS`
+  - manifest features: `49`
+  - mobile feature keys: `42`
+  - web app routes scanned: `141`
+
+### Implementation Notes
+
+- Source of truth dibuat di `docs/features/feature-manifest.json`.
+- Panduan workflow wajib ditambahkan di `docs/features/FEATURE_MANIFEST.md`
+  dan di-link dari `docs/features/README.md`.
+- Script `scripts/check-feature-parity.js` memvalidasi field wajib, route web
+  public/dashboard, format `mobileRoute`, dan key mobile baru yang belum masuk
+  manifest.
+- Alias terdokumentasi untuk drift nama seperti web `/peta` dan mobile
+  `historical-map`, serta `muroja-ah` vs `murojaah`.
 
 ## Task 7 - Web Performance Pass
 
