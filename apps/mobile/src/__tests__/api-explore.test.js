@@ -48,12 +48,16 @@ describe('explore api', () => {
           translation: { ar: 'نص', idn: 'Makna' },
         },
         kemenag: { text_idn: 'Tafsir Kemenag' },
+        ibnu_katsir: { text_idn: 'Tafsir Al-Mishbah' },
       });
       expect(result.title).toBe('Ayat 1');
       expect(result.arabic).toBe('نص');
       expect(result.body).toBe('Makna');
       expect(result.meta).toContain('Al-Fatihah');
+      expect(result.meta).toContain('Tafsir Kemenag');
+      expect(result.meta).toContain('Tafsir Al-Mishbah');
       expect(result.tafsir).toBe('Tafsir Kemenag');
+      expect(result.secondaryTafsir).toBe('Tafsir Al-Mishbah');
     });
 
     test('normalizes jarh/tadil item', () => {

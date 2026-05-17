@@ -52,6 +52,10 @@ const pickTafsirText = (translation = {}) =>
     translation.idn,
     translation.en,
   );
+const TAFSIR_SOURCE_LABELS = {
+  kemenag: 'Tafsir Kemenag',
+  secondary: 'Tafsir Al-Mishbah',
+};
 
 const formatJarhTadilJenis = (value) => {
   if (value === 'jarh') return 'Jarh';
@@ -94,7 +98,11 @@ export const normalizeExploreItem = (item, index = 0) => {
       title: `Ayat ${ayahNumber}`,
       arabic: pickText(ayahTranslation.ar, ayahTranslation.arab, ayah?.arabic, item?.arabic),
       body: pickText(ayahTranslation.idn, ayahTranslation.en, item?.translation),
-      meta: joinMeta(surahName, primaryTafsir ? 'Jalalain' : '', secondaryTafsir ? 'Quraish Shihab' : ''),
+      meta: joinMeta(
+        surahName,
+        primaryTafsir ? TAFSIR_SOURCE_LABELS.kemenag : '',
+        secondaryTafsir ? TAFSIR_SOURCE_LABELS.secondary : '',
+      ),
       raw: item,
       secondaryTafsir,
       tafsir: primaryTafsir,

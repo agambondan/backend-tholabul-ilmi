@@ -58,6 +58,15 @@ import { HistoricalMapContent } from './HistoricalMapScreen';
 const quizOptions = ['A', 'B', 'C', 'D'];
 
 const EXPLORE_PAGE_SIZE = 20;
+const TAFSIR_SOURCE_LABELS = {
+  kemenag: 'Tafsir Kemenag',
+  secondary: 'Tafsir Al-Mishbah',
+};
+const TAFSIR_MODES = [
+  { key: 'all', label: 'Semua' },
+  { key: 'kemenag', label: 'Kemenag' },
+  { key: 'mishbah', label: 'Al-Mishbah' },
+];
 
 const PRAYER_ITEMS = [
   { key: 'subuh', label: 'Subuh' },
@@ -310,6 +319,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       setUserWirdForm(emptyUserWirdForm);
       setError('');
       setAsmaulFlashcardRevealed(false);
+      setTafsirMode('all');
       loadingMoreRef.current = false;
       setPagination({ page: 0, hasMore: false, loadingMore: false });
       setFocusDictionaryInput(Boolean(options.focusSearch && feature?.type === 'kamus'));
@@ -724,6 +734,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     setSelectedSurahNumber(surahNumber);
     setSelectedItem(null);
     setActiveNoteRef('');
+    setTafsirMode('all');
     setError('');
     setLoading(true);
     setPagination({ page: 0, hasMore: false, loadingMore: false });
@@ -936,7 +947,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           ) : null}
           {item.tafsir ? (
             <View style={styles.tafsirPanel}>
-              <Text style={styles.tafsirSource}>Tafsir Jalalain</Text>
+              <Text style={styles.tafsirSource}>{TAFSIR_SOURCE_LABELS.kemenag}</Text>
               <Text numberOfLines={4} style={styles.tafsirText}>{item.tafsir}</Text>
             </View>
           ) : null}
@@ -1144,16 +1155,6 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     );
   };
 
-  const tafsirModes = [
-    { key: 'all', label: 'Semua' },
-    { key: 'jalalain', label: 'Jalalain' },
-    { key: 'quraish', label: 'Quraish' },
-  ];
-  const tafsirLayouts = [
-    { key: 'stacked', label: 'Tumpuk' },
-    { key: 'side', label: 'Samping' },
-  ];
-  const [tafsirLayout, setTafsirLayout] = useState('stacked');
   const isTafsirDetail = activeFeature?.type === 'surah-content';
   const hasBothTafsir = isTafsirDetail && selectedItem?.tafsir && selectedItem?.secondaryTafsir;
 
@@ -1162,12 +1163,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     const ref = getItemRef(activeFeature, selectedItem);
     const noteKey = refKey(ref.refType, ref.refId);
 
-    const renderTafsirPanel = (tafsirText, source, isSecondary) => {
+    const renderTafsirPanel = (tafsirText, sourceLabel, isSecondary) => {
       if (!tafsirText) return null;
       return (
         <View style={[styles.detailTafsirPanel, isSecondary && styles.tafsirPanelSecondary]}>
           <Text style={[styles.tafsirSource, isSecondary && styles.tafsirSourceSecondary]}>
-            Tafsir {source}
+            {sourceLabel}
           </Text>
           <Text style={styles.detailBody}>{tafsirText}</Text>
         </View>
@@ -1176,30 +1177,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
 
     const renderTafsirContent = () => {
       if (!isTafsirDetail) return null;
-      if (hasBothTafsir && tafsirLayout === 'side' && (tafsirMode === 'all' || tafsirMode === 'jalalain' || tafsirMode === 'quraish')) {
-        const showFirst = tafsirMode === 'all' || tafsirMode === 'jalalain';
-        const showSecond = tafsirMode === 'all' || tafsirMode === 'quraish';
-        return (
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            {showFirst ? (
-              <View style={{ flex: 1 }}>
-                {renderTafsirPanel(selectedItem.tafsir, 'Jalalain', false)}
-              </View>
-            ) : null}
-            {showSecond ? (
-              <View style={{ flex: 1 }}>
-                {renderTafsirPanel(selectedItem.secondaryTafsir, 'Quraish Shihab', true)}
-              </View>
-            ) : null}
-          </View>
-        );
-      }
-      if (tafsirMode === 'jalalain') return renderTafsirPanel(selectedItem.tafsir, 'Jalalain', false);
-      if (tafsirMode === 'quraish') return renderTafsirPanel(selectedItem.secondaryTafsir, 'Quraish Shihab', true);
+      if (tafsirMode === 'kemenag') return renderTafsirPanel(selectedItem.tafsir, TAFSIR_SOURCE_LABELS.kemenag, false);
+      if (tafsirMode === 'mishbah') return renderTafsirPanel(selectedItem.secondaryTafsir, TAFSIR_SOURCE_LABELS.secondary, true);
       return (
         <>
-          {renderTafsirPanel(selectedItem.tafsir, 'Jalalain', false)}
-          {renderTafsirPanel(selectedItem.secondaryTafsir, 'Quraish Shihab', true)}
+          {renderTafsirPanel(selectedItem.tafsir, TAFSIR_SOURCE_LABELS.kemenag, false)}
+          {renderTafsirPanel(selectedItem.secondaryTafsir, TAFSIR_SOURCE_LABELS.secondary, true)}
         </>
       );
     };
@@ -1228,22 +1211,12 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
           {hasBothTafsir ? (
             <View style={{ marginBottom: spacing.sm }}>
               <View style={{ flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs }}>
-                {tafsirModes.map((m) => (
+                {TAFSIR_MODES.map((m) => (
                   <ActionPill
                     key={m.key}
                     active={tafsirMode === m.key}
                     label={m.label}
                     onPress={() => setTafsirMode(m.key)}
-                  />
-                ))}
-              </View>
-              <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-                {tafsirLayouts.map((l) => (
-                  <ActionPill
-                    key={l.key}
-                    active={tafsirLayout === l.key}
-                    label={l.label}
-                    onPress={() => setTafsirLayout(l.key)}
                   />
                 ))}
               </View>

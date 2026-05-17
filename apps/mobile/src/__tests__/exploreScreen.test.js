@@ -229,6 +229,7 @@ import { ExploreScreen } from '../screens/ExploreScreen';
 const { useSession } = require('../context/SessionContext');
 const { useFeedback } = require('../context/FeedbackContext');
 const exploreApi = require('../api/explore');
+const clientApi = require('../api/client');
 const personalApi = require('../api/personal');
 const { readPinnedFeatures, readRecentFeatures, rememberFeatureOpen, togglePinnedFeature } = require('../storage/recentFeatures');
 
@@ -390,6 +391,62 @@ describe('ExploreScreen', () => {
     await waitFor(() => {
       expect(togglePinnedFeature).toHaveBeenCalled();
     });
+  });
+
+  test('opens tafsir detail with kitab selector and stacked comparison', async () => {
+    clientApi.getSurahs.mockResolvedValueOnce([
+      { number: 1, name: 'Al-Fatihah', latin: 'Al-Fatihah' },
+    ]);
+    exploreApi.getFeatureItemPage.mockResolvedValueOnce({
+      items: [
+        {
+          id: 'tafsir-1',
+          title: 'Ayat 1',
+          arabic: 'بِسْمِ اللّٰهِ',
+          body: 'Dengan nama Allah',
+          meta: 'Al-Fatihah · Tafsir Kemenag · Tafsir Al-Mishbah',
+          tafsir: 'Kemenag detail',
+          secondaryTafsir: 'Al-Mishbah detail',
+          raw: { ayah_id: 1 },
+        },
+      ],
+      meta: { hasMore: false },
+    });
+
+    const { getByText, getAllByTestId, queryByText } = await renderExploreScreen();
+
+    fireEvent.press(getByText('Tafsir'));
+
+    await waitFor(() => {
+      expect(clientApi.getSurahs).toHaveBeenCalled();
+      expect(getByText('1. Al-Fatihah')).toBeTruthy();
+    });
+
+    fireEvent.press(getByText('1. Al-Fatihah'));
+
+    await waitFor(() => {
+      expect(exploreApi.getFeatureItemPage).toHaveBeenCalledWith(
+        expect.objectContaining({ endpoint: '/api/v1/tafsir/surah/1' }),
+        { page: 0, size: 20 },
+      );
+      expect(getByText('Ayat 1')).toBeTruthy();
+      expect(getByText('Tafsir Kemenag')).toBeTruthy();
+    });
+
+    fireEvent.press(getAllByTestId('content-card')[0]);
+
+    await waitFor(() => {
+      expect(getByText('Semua')).toBeTruthy();
+      expect(getByText('Kemenag')).toBeTruthy();
+      expect(getByText('Al-Mishbah')).toBeTruthy();
+      expect(getByText('Kemenag detail')).toBeTruthy();
+      expect(getByText('Al-Mishbah detail')).toBeTruthy();
+    });
+
+    fireEvent.press(getByText('Al-Mishbah'));
+
+    expect(queryByText('Kemenag detail')).toBeNull();
+    expect(getByText('Al-Mishbah detail')).toBeTruthy();
   });
 
   test('shows profile action button when no feature is active', async () => {
