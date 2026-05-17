@@ -275,7 +275,8 @@ Completed: `2026-05-17`
 
 Priority: `P1`
 Area: `apps/web`
-Status: `TODO`
+Status: `VERIFIED`
+Completed: `2026-05-17`
 
 ### Scope
 
@@ -293,8 +294,29 @@ Status: `TODO`
 
 ### Verification
 
-- `cd apps/web && npm run build`
-- Bundle/performance check sesuai tooling yang tersedia.
+- `node --check apps/web/next.config.js` - `PASS`
+- `node --check apps/web/src/app/page.js` - `PASS`
+- `node --check apps/web/src/app/HomePageClient.js` - `PASS`
+- `node --check apps/web/src/app/quran/[...slug]/AyahPage.js` - `PASS`
+- `cd apps/web && npm run build` - `PASS`
+  - Warning root lockfile/Turbopack tidak muncul lagi.
+- `rg -n "html2canvas" apps/web/src/app apps/web/src/components` - `PASS`
+  - Semua pemakaian `html2canvas` yang tersisa sudah lewat dynamic import.
+
+### Implementation Notes
+
+- `apps/web/next.config.js` sekarang mem-pin `turbopack.root` dan
+  `outputFileTracingRoot` ke folder `apps/web`, sesuai struktur app yang punya
+  lockfile sendiri.
+- Landing root `apps/web/src/app/page.js` sudah menjadi server component
+  wrapper, sementara UI interaktif lama dipindah ke
+  `apps/web/src/app/HomePageClient.js`.
+- Quran detail tidak lagi static import `html2canvas`; library screenshot baru
+  dimuat saat CTA `Copy Image` diklik.
+- Audit `use client` menemukan masih banyak route public/dashboard yang
+  content-heavy tetapi client-rendered. Refactor penuh route tersebut terlalu
+  lebar untuk Task 7 dan sebaiknya dipisah menjadi follow-up performance slice
+  setelah mobile performance pass.
 
 ## Task 8 - Mobile Quran And Explore Performance Pass
 

@@ -11,7 +11,6 @@ import { CopyImageToClipboard, CopyToClipboard } from '@/lib/copy';
 import { getLocalizedTranslation } from '@/lib/translation';
 import { useQuranFont } from '@/lib/useQuranFont';
 import classNames from 'classnames';
-import html2canvas from 'html2canvas';
 import { useEffect, useRef, useState } from 'react';
 import {
     BsBook,
@@ -312,15 +311,19 @@ const AyahPage = ({ surah, ayah, newLimit, isLast, hafalanMode = 'off', selected
                                         onClick={() => {
                                             SetSettingPopUp(false);
                                             setTimeout(() => {
-                                                html2canvas(
-                                                    document.getElementById(
-                                                        `${surah.translation.latin_en}-${ayah.number}`
+                                                import('html2canvas')
+                                                    .then(({ default: html2canvas }) =>
+                                                        html2canvas(
+                                                            document.getElementById(
+                                                                `${surah.translation.latin_en}-${ayah.number}`
+                                                            )
+                                                        )
                                                     )
-                                                ).then((canvas) => {
-                                                    CopyImageToClipboard(canvas);
-                                                    SetIsCopied(true);
-                                                    setTimeout(() => SetIsCopied(false), 1000);
-                                                });
+                                                    .then((canvas) => {
+                                                        CopyImageToClipboard(canvas);
+                                                        SetIsCopied(true);
+                                                        setTimeout(() => SetIsCopied(false), 1000);
+                                                    });
                                             }, 1000);
                                         }}
                                     >
