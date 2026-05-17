@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "check:feature-parity": "node ../../scripts/check-feature-parity.js",
     "lint": "eslint .",
     "test:e2e": "playwright test",
     "test": "jest",

@@ -1,6 +1,6 @@
 # Follow-up Journey CTA Sync Task Breakdown
 
-Status: `IN_PROGRESS`
+Status: `VERIFIED`
 Tanggal: `2026-05-17`
 Source Review: `docs/reviews/2026-05-17-followup-journey-cta-sync-review.md`
 
@@ -66,7 +66,7 @@ Status: `VERIFIED`
 
 Priority: `P2`
 Area: `docs`
-Status: `TODO`
+Status: `VERIFIED`
 
 ### Scope
 
@@ -80,13 +80,17 @@ Status: `TODO`
 
 ### Verification
 
-- Route/feature matrix cocok dengan `docs/features/feature-manifest.json`.
+- PASS: `docs/WEB_MOBILE_SYNC.md` refreshed from the current manifest baseline.
+- PASS: Historical missing-feature notes for Tokoh, Peta, and Forum moved to
+  closed baseline section.
+- PASS: Current remaining deltas are behavior-depth differences, not
+  route-missing findings.
 
 ## Task 16 - Route Parity Smoke Script
 
 Priority: `P2`
 Area: `apps/web`, `docs`
-Status: `TODO`
+Status: `VERIFIED`
 
 ### Scope
 
@@ -98,13 +102,16 @@ Status: `TODO`
 
 ### Verification
 
-- Script/test route parity lulus di CI lokal.
+- PASS: `node scripts/check-feature-parity.js`
+- PASS: `cd apps/web && npm run check:feature-parity`
+- PASS: Active feature with public route must declare a dashboard route.
+- PASS: Child/action routes are treated as part of their manifest parent route.
 
 ## Task 17 - Manifest Utility Surfaces
 
 Priority: `P3`
 Area: `docs/features/feature-manifest.json`
-Status: `TODO`
+Status: `VERIFIED`
 
 ### Scope
 
@@ -119,4 +126,8 @@ Status: `TODO`
 
 ### Verification
 
-- Parity script tidak perlu hardcode exception route utility.
+- PASS: `utilityRoutes` added to `docs/features/feature-manifest.json`.
+- PASS: `/`, `/contact`, `/profile`, `/dashboard`, `/dashboard/profile`,
+  auth, dev, and system metadata routes are categorized explicitly.
+- PASS: Parity script uses `utilityRoutes` instead of hardcoded route utility
+  exceptions.

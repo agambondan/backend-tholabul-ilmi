@@ -5,6 +5,122 @@
     "mobileRouteFormat": "tab:<tab>, feature:<mobileFeatureKey>, ibadah:<internalView>, or internal:<view>",
     "notes": "Use aliases to document route/key drift such as peta on web and historical-map on mobile."
   },
+  "utilityRoutes": [
+    {
+      "key": "home",
+      "title": "Landing Page",
+      "route": "/",
+      "surface": "public",
+      "purpose": "Public entry point and feature discovery surface.",
+      "status": "active"
+    },
+    {
+      "key": "contact",
+      "title": "Contact",
+      "route": "/contact",
+      "surface": "public",
+      "purpose": "Public support and contact handoff.",
+      "status": "active"
+    },
+    {
+      "key": "profile-handoff",
+      "title": "Profile Handoff",
+      "route": "/profile",
+      "surface": "public",
+      "purpose": "Public account/profile handoff route outside the dashboard shell.",
+      "status": "active"
+    },
+    {
+      "key": "dashboard-home",
+      "title": "Dashboard Home",
+      "route": "/dashboard",
+      "surface": "dashboard",
+      "purpose": "Private user landing page inside the dashboard shell.",
+      "status": "active",
+      "authRequired": true
+    },
+    {
+      "key": "dashboard-profile",
+      "title": "Dashboard Profile",
+      "route": "/dashboard/profile",
+      "surface": "dashboard",
+      "purpose": "Private account and profile settings inside the dashboard shell.",
+      "status": "active",
+      "authRequired": true
+    },
+    {
+      "key": "login",
+      "title": "Login",
+      "route": "/auth/login",
+      "surface": "auth",
+      "purpose": "Authentication entry for protected web and dashboard journeys.",
+      "status": "active"
+    },
+    {
+      "key": "register",
+      "title": "Register",
+      "route": "/auth/register",
+      "surface": "auth",
+      "purpose": "Account creation entry for protected web and dashboard journeys.",
+      "status": "active"
+    },
+    {
+      "key": "dev",
+      "title": "Developer Tools",
+      "route": "/dev",
+      "surface": "dev",
+      "purpose": "Developer-only utility surface.",
+      "status": "active"
+    },
+    {
+      "key": "apple-icon",
+      "title": "Apple Icon",
+      "route": "/apple-icon",
+      "surface": "system",
+      "purpose": "Generated metadata asset route.",
+      "status": "active"
+    },
+    {
+      "key": "icon",
+      "title": "App Icon",
+      "route": "/icon",
+      "surface": "system",
+      "purpose": "Generated metadata asset route.",
+      "status": "active"
+    },
+    {
+      "key": "manifest",
+      "title": "Web Manifest",
+      "route": "/manifest.webmanifest",
+      "surface": "system",
+      "purpose": "PWA metadata route.",
+      "status": "active"
+    },
+    {
+      "key": "og",
+      "title": "Open Graph Image",
+      "route": "/og",
+      "surface": "system",
+      "purpose": "Generated Open Graph image route.",
+      "status": "active"
+    },
+    {
+      "key": "robots",
+      "title": "Robots",
+      "route": "/robots.txt",
+      "surface": "system",
+      "purpose": "Search crawler policy route.",
+      "status": "active"
+    },
+    {
+      "key": "sitemap",
+      "title": "Sitemap",
+      "route": "/sitemap.xml",
+      "surface": "system",
+      "purpose": "Search crawler sitemap route.",
+      "status": "active"
+    }
+  ],
   "features": [
     {
       "key": "quran",

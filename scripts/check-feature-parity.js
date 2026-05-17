@@ -19,8 +19,10 @@ const requiredFields = [
   'searchable',
   'status',
 ];
+const requiredUtilityFields = ['key', 'title', 'route', 'surface', 'purpose', 'status'];
 
 const validStatuses = new Set(['active', 'mobile-only', 'web-only', 'planned', 'deprecated']);
+const validUtilitySurfaces = new Set(['public', 'dashboard', 'admin', 'auth', 'dev', 'system']);
 const knownTabs = new Set(['home', 'quran', 'hadith', 'ibadah', 'belajar', 'profile']);
 const knownIbadahViews = new Set(['prayer', 'qibla', 'settings', 'khatam']);
 const knownInternalViews = new Set(['global-search', 'feature-directory']);
@@ -36,24 +38,6 @@ const ignoredMobileKeys = new Set([
   'referensi',
   'evaluasi',
   'personal-ringkas',
-]);
-const ignoredPublicRoutes = new Set([
-  '/',
-  '/_not-found',
-  '/apple-icon',
-  '/auth/login',
-  '/auth/register',
-  '/contact',
-  '/dev',
-  '/forum/ask',
-  '/icon',
-  '/manifest.webmanifest',
-  '/og',
-  '/profile',
-  '/quran/page-mushaf',
-  '/robots.txt',
-  '/sitemap.xml',
-  '/zakat/history',
 ]);
 
 const readJson = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -71,9 +55,36 @@ const routeToPagePath = (route) => {
   return path.join(appRoot, ...segments, 'page.js');
 };
 
+const routeToFileCandidates = (route) => {
+  const normalized = normalizeRoute(route);
+  if (!normalized || typeof normalized !== 'string' || !normalized.startsWith('/')) return [];
+  const segments = normalized.split('/').filter(Boolean);
+  const pagePath = routeToPagePath(normalized);
+  const routeHandlerPath = path.join(appRoot, ...segments, 'route.js');
+
+  const metadataFileMap = {
+    '/apple-icon': 'apple-icon.js',
+    '/icon': 'icon.js',
+    '/manifest.webmanifest': 'manifest.js',
+    '/robots.txt': 'robots.js',
+    '/sitemap.xml': 'sitemap.js',
+  };
+
+  const candidates = [pagePath, routeHandlerPath];
+  if (metadataFileMap[normalized]) {
+    candidates.push(path.join(appRoot, metadataFileMap[normalized]));
+  }
+  return candidates.filter(Boolean);
+};
+
 const routeExists = (route) => {
-  const pagePath = routeToPagePath(route);
-  return Boolean(pagePath && fs.existsSync(pagePath));
+  return routeToFileCandidates(route).some((candidate) => fs.existsSync(candidate));
+};
+
+const routeDiagnosticPath = (route) => {
+  const candidates = routeToFileCandidates(route);
+  if (!candidates.length) return '<invalid route>';
+  return candidates.map((candidate) => path.relative(repoRoot, candidate)).join(' or ');
 };
 
 const listPageRoutes = (dir, prefix = '') => {
@@ -121,17 +132,27 @@ const mobileRouteExists = (mobileRoute, mobileFeatureKeys) => {
   return false;
 };
 
-const publicRouteNeedsManifest = (route) => {
-  if (!route || ignoredPublicRoutes.has(route)) return false;
+const isChildRouteOfManifestRoute = (route, manifestRoutes) => {
+  for (const manifestRoute of manifestRoutes) {
+    if (!manifestRoute || manifestRoute === '/') continue;
+    if (route.startsWith(`${manifestRoute}/`)) return true;
+  }
+  return false;
+};
+
+const publicRouteNeedsManifest = (route, manifestRoutes) => {
+  if (!route || route === '/' || route === '/_not-found') return false;
   if (route.includes('[')) return false;
   if (route.startsWith('/admin')) return false;
   if (route.startsWith('/dashboard')) return false;
+  if (isChildRouteOfManifestRoute(route, manifestRoutes)) return false;
   return route.split('/').filter(Boolean).length <= 2;
 };
 
 const main = () => {
   const manifest = readJson(manifestPath);
   const features = manifest.features ?? [];
+  const utilityRoutes = Array.isArray(manifest.utilityRoutes) ? manifest.utilityRoutes : [];
   const mobileFeatureKeys = parseMobileFeatureKeys();
   const allWebRoutes = listPageRoutes(appRoot);
   const errors = [];
@@ -139,9 +160,52 @@ const main = () => {
   const manifestKeys = new Set();
   const manifestAliasKeys = new Set();
   const manifestRoutes = new Set();
+  const utilityKeys = new Set();
+  const utilityRouteSet = new Set();
 
   if (!Array.isArray(features) || features.length === 0) {
     errors.push('Manifest must contain a non-empty features array.');
+  }
+
+  if (!Array.isArray(utilityRoutes)) {
+    errors.push('Manifest utilityRoutes must be an array.');
+  }
+
+  for (const utility of utilityRoutes) {
+    for (const field of requiredUtilityFields) {
+      if (!(field in utility)) {
+        errors.push(`${utility.key ?? '<unknown utility>'}: missing required utility field ${field}.`);
+      }
+    }
+
+    if (utilityKeys.has(utility.key)) {
+      errors.push(`${utility.key}: duplicate utility route key.`);
+    }
+    utilityKeys.add(utility.key);
+
+    if (!validUtilitySurfaces.has(utility.surface)) {
+      errors.push(`${utility.key}: invalid utility surface ${utility.surface}.`);
+    }
+
+    if (!validStatuses.has(utility.status)) {
+      errors.push(`${utility.key}: invalid utility status ${utility.status}.`);
+    }
+
+    const route = normalizeRoute(utility.route);
+    if (!route || typeof route !== 'string' || !route.startsWith('/')) {
+      errors.push(`${utility.key}: route must start with "/".`);
+      continue;
+    }
+
+    if (utilityRouteSet.has(route)) {
+      errors.push(`${utility.key}: duplicate utility route ${route}.`);
+    }
+    utilityRouteSet.add(route);
+    manifestRoutes.add(route);
+
+    if (!routeExists(route)) {
+      errors.push(`${utility.key}: utility route ${route} does not resolve to ${routeDiagnosticPath(route)}.`);
+    }
   }
 
   for (const feature of features) {
@@ -179,9 +243,17 @@ const main = () => {
         if (!route.startsWith('/')) {
           errors.push(`${feature.key}: ${routeField} must start with "/".`);
         } else if (!routeExists(route)) {
-          errors.push(`${feature.key}: ${routeField} ${route} does not resolve to apps/web/src/app${route}/page.js.`);
+          errors.push(`${feature.key}: ${routeField} ${route} does not resolve to ${routeDiagnosticPath(route)}.`);
         }
       }
+    }
+
+    if (
+      feature.status === 'active' &&
+      feature.publicWebRoute &&
+      !feature.dashboardWebRoute
+    ) {
+      errors.push(`${feature.key}: active feature with publicWebRoute must declare a dashboardWebRoute wrapper.`);
     }
 
     if (!mobileRouteExists(feature.mobileRoute, mobileFeatureKeys)) {
@@ -195,7 +267,7 @@ const main = () => {
     }
   }
 
-  for (const route of allWebRoutes.filter(publicRouteNeedsManifest)) {
+  for (const route of allWebRoutes.filter((candidate) => publicRouteNeedsManifest(candidate, manifestRoutes))) {
     if (!manifestRoutes.has(route)) {
       warnings.push(`Public route ${route} is not mapped directly in the feature manifest.`);
     }
@@ -214,6 +286,7 @@ const main = () => {
 
   console.log('Feature parity check passed.');
   console.log(`- manifest features: ${features.length}`);
+  console.log(`- manifest utility routes: ${utilityRoutes.length}`);
   console.log(`- mobile feature keys: ${mobileFeatureKeys.size}`);
   console.log(`- web app routes scanned: ${allWebRoutes.length}`);
 };
