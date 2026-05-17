@@ -233,7 +233,7 @@ beforeEach(() => {
   });
 });
 
-const mockNavigation = { setBack: jest.fn(), clearBack: jest.fn() };
+const mockNavigation = { setBack: jest.fn(), clearBack: jest.fn(), closeAndOpen: jest.fn() };
 
 const renderQuranScreen = async (props = {}) => {
   const view = render(
@@ -450,7 +450,7 @@ describe('QuranScreen', () => {
       {
         id: 'm-1',
         ayahFrom: mockAyah(1, 1),
-        ayahTo: mockAyah(2, 1),
+        ayahTo: mockAyah(1, 2, { surahName: 'Al-Baqarah' }),
         description: 'Keterkaitan tema hidayah antar ayat.',
       },
     ]);
@@ -465,6 +465,14 @@ describe('QuranScreen', () => {
       expect(client.getMunasabahForAyah).toHaveBeenCalledWith(1);
       expect(getByText('Keterkaitan tema hidayah antar ayat.')).toBeTruthy();
     });
+
+    fireEvent.press(getByText('Al-Fatihah · Ayat 1 → Al-Baqarah · Ayat 1'));
+
+    expect(mockNavigation.closeAndOpen).toHaveBeenCalledWith('quran', 'quran', {
+      ayahId: 1,
+      ayahNumber: 1,
+      surahNumber: 2,
+    });
   });
 
   it('renders hadith cross references from ayah detail bottom sheet', async () => {
@@ -472,7 +480,7 @@ describe('QuranScreen', () => {
       {
         id: 'ha-1',
         catatan: 'Rujukan niat.',
-        hadith: { book: 'Shahih Bukhari', number: 1, translation: 'Setiap amal tergantung niat.' },
+        hadith: { id: 10, book: 'Shahih Bukhari', number: 1, translation: 'Setiap amal tergantung niat.' },
       },
     ]);
 
@@ -485,6 +493,12 @@ describe('QuranScreen', () => {
     await waitFor(() => {
       expect(client.getHadithsForAyah).toHaveBeenCalledWith(1);
       expect(getByText('Setiap amal tergantung niat.')).toBeTruthy();
+    });
+
+    fireEvent.press(getByText('Shahih Bukhari · 1'));
+
+    expect(mockNavigation.closeAndOpen).toHaveBeenCalledWith('quran', 'hadith', {
+      hadithId: 10,
     });
   });
 });

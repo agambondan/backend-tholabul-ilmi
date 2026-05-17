@@ -640,6 +640,38 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
         }
     };
 
+    const openRelatedAyah = (item) => {
+        const target = item?.ayahTo ?? item?.ayahFrom;
+        if (!target?.id && !target?.number) return;
+
+        setMunasabahModal((current) => ({ ...current, visible: false }));
+        if (navigation?.closeAndOpen) {
+            navigation.closeAndOpen('quran', 'quran', {
+                ayahId: target.id,
+                ayahNumber: target.number,
+                surahNumber: target.surahNumber,
+            });
+            return;
+        }
+
+        if (
+            Number(target.surahNumber) === Number(selectedSurah?.number) ||
+            !target.surahNumber
+        ) {
+            openAyahDetail(target);
+        }
+    };
+
+    const openRelatedHadith = (item) => {
+        const hadith = item?.hadith;
+        if (!hadith?.id) return;
+
+        setHadithAyahModal((current) => ({ ...current, visible: false }));
+        navigation?.closeAndOpen?.('quran', 'hadith', {
+            hadithId: hadith.id,
+        });
+    };
+
     const load = useCallback(async () => {
         setLoading(true);
         const items = await getSurahs();
@@ -2157,7 +2189,14 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                     <Text style={styles.referenceEmpty}>{error}</Text>
                 ) : null}
                 {items.map((item) => (
-                    <View key={item.id} style={styles.referenceItem}>
+                    <Pressable
+                        accessibilityLabel="Buka ayat terkait"
+                        accessibilityRole="button"
+                        android_ripple={{ color: 'rgba(91, 110, 91, 0.08)', borderless: false }}
+                        key={item.id}
+                        onPress={() => openRelatedAyah(item)}
+                        style={styles.referenceItem}
+                    >
                         {item.ayahFrom && item.ayahTo ? (
                             <Text style={styles.referenceTitle}>
                                 {item.ayahFrom.surahName} · Ayat {item.ayahFrom.number} → {item.ayahTo.surahName} · Ayat {item.ayahTo.number}
@@ -2168,7 +2207,8 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                             </Text>
                         ) : null}
                         <Text style={styles.referenceBody}>{item.description}</Text>
-                    </View>
+                        <Text style={styles.referenceMeta}>Ketuk untuk membuka ayat.</Text>
+                    </Pressable>
                 ))}
             </AppModalSheet>
         );
@@ -2191,7 +2231,15 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                     <Text style={styles.referenceEmpty}>{error}</Text>
                 ) : null}
                 {items.map((item) => (
-                    <View key={item.id} style={styles.referenceItem}>
+                    <Pressable
+                        accessibilityLabel="Buka hadis terkait"
+                        accessibilityRole="button"
+                        android_ripple={{ color: 'rgba(91, 110, 91, 0.08)', borderless: false }}
+                        disabled={!item.hadith?.id}
+                        key={item.id}
+                        onPress={() => openRelatedHadith(item)}
+                        style={styles.referenceItem}
+                    >
                         {item.hadith ? (
                             <Text style={styles.referenceTitle}>
                                 {item.hadith.book || 'Hadis'} · {item.hadith.number || ''}
@@ -2203,7 +2251,10 @@ export function QuranScreen({ deepLinkTarget, isActive, navigation }) {
                         {item.catatan ? (
                             <Text style={styles.referenceMeta}>{item.catatan}</Text>
                         ) : null}
-                    </View>
+                        {item.hadith?.id ? (
+                            <Text style={styles.referenceMeta}>Ketuk untuk membuka detail hadis.</Text>
+                        ) : null}
+                    </Pressable>
                 ))}
             </AppModalSheet>
         );

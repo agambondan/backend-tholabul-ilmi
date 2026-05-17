@@ -73,6 +73,7 @@ These route patterns are part of the current journey contract:
 | Feature | Public | Dashboard | Notes |
 | --- | --- | --- | --- |
 | Hadith by book number | `/hadith/:slug/:number` | `/dashboard/hadith/:slug/:number` | Canonical numbered detail page, backed by `GET /api/v1/hadiths/book/:slug/number/:number`. The Indonesian spelling alias `/hadits/:slug/:number` redirects to the canonical public route. |
+| Quran/Hadith cross-reference | Quran detail bottom sheet | Hadith detail tab | Mobile now exposes Munasabah and Hadith-Ayah references from Quran detail, and Ayat Terkait from Hadith detail. Cross-reference rows navigate to the related Quran/Hadith screen. |
 
 Closed historical gaps:
 
@@ -93,7 +94,6 @@ should stay visible for future planning:
 | Zakat | Web supports richer save/history flows; mobile calculator exists but is lighter. |
 | Faraidh | Web has richer sync/print/special-case handling; mobile calculator exists but is lighter. |
 | Tafsir | Web has richer kitab comparison controls; mobile currently prioritizes compact reading flow. |
-| Munasabah and Hadith-Ayah | Web detail pages expose richer cross-reference contexts; mobile reader/detail flows still need compact bottom-sheet/page-detail parity. |
 | Achievements and Stats | Web has dedicated dashboard pages; mobile exposes profile/feature surfaces but not the same chart-heavy layout. |
 
 ## Mobile Rendering Model
