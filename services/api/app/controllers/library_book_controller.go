@@ -1,7 +1,10 @@
 package controllers
 
 import (
+	"strconv"
+
 	"github.com/agambondan/islamic-explorer/app/lib"
+	"github.com/agambondan/islamic-explorer/app/model"
 	service "github.com/agambondan/islamic-explorer/app/services"
 	"github.com/gofiber/fiber/v2"
 )
@@ -9,6 +12,9 @@ import (
 type LibraryBookController interface {
 	FindAll(ctx *fiber.Ctx) error
 	FindBySlug(ctx *fiber.Ctx) error
+	Create(ctx *fiber.Ctx) error
+	Update(ctx *fiber.Ctx) error
+	Delete(ctx *fiber.Ctx) error
 }
 
 type libraryBookController struct {
@@ -49,4 +55,71 @@ func (c *libraryBookController) FindBySlug(ctx *fiber.Ctx) error {
 		return lib.ErrorNotFound(ctx)
 	}
 	return lib.OK(ctx, book)
+}
+
+// @Summary Create library book
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param body body model.CreateLibraryBookRequest true "Library book data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 500 {object} lib.Response
+// @Router /library/books [post]
+func (c *libraryBookController) Create(ctx *fiber.Ctx) error {
+	req := new(model.CreateLibraryBookRequest)
+	if err := lib.BodyParser(ctx, req); err != nil {
+		return lib.ErrorBadRequest(ctx, err)
+	}
+	book, err := c.svc.Create(req)
+	if err != nil {
+		return lib.ErrorInternal(ctx)
+	}
+	return lib.OK(ctx, book)
+}
+
+// @Summary Update library book
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Library book ID"
+// @Param body body model.CreateLibraryBookRequest true "Library book data"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /library/books/{id} [put]
+func (c *libraryBookController) Update(ctx *fiber.Ctx) error {
+	id, err := strconv.Atoi(ctx.Params("id"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, "invalid id")
+	}
+	req := new(model.CreateLibraryBookRequest)
+	if err := lib.BodyParser(ctx, req); err != nil {
+		return lib.ErrorBadRequest(ctx, err)
+	}
+	book, err := c.svc.Update(id, req)
+	if err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx, book)
+}
+
+// @Summary Delete library book
+// @Tags Belajar
+// @Accept json
+// @Produce json
+// @Param id path int true "Library book ID"
+// @Success 200 {object} lib.Response
+// @Failure 400 {object} lib.Response
+// @Failure 404 {object} lib.Response
+// @Router /library/books/{id} [delete]
+func (c *libraryBookController) Delete(ctx *fiber.Ctx) error {
+	id, err := strconv.Atoi(ctx.Params("id"))
+	if err != nil {
+		return lib.ErrorBadRequest(ctx, "invalid id")
+	}
+	if err := c.svc.Delete(id); err != nil {
+		return lib.ErrorNotFound(ctx)
+	}
+	return lib.OK(ctx)
 }

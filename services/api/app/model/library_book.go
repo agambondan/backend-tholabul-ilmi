@@ -30,3 +30,20 @@ type LibraryBook struct {
 	Tags        string            `json:"tags" gorm:"type:varchar(500)"`
 	Status      LibraryBookStatus `json:"status" gorm:"type:varchar(30);default:'published';index"`
 }
+
+type CreateLibraryBookRequest struct {
+	Title       string            `json:"title" validate:"required,max=256"`
+	Slug        string            `json:"slug" validate:"max=256"`
+	Author      string            `json:"author" validate:"max=256"`
+	Description string            `json:"description" validate:"max=5000"`
+	Category    string            `json:"category" validate:"max=100"`
+	Level       string            `json:"level" validate:"max=50"`
+	Language    string            `json:"language" validate:"max=50"`
+	Format      LibraryBookFormat `json:"format"`
+	SourceURL   string            `json:"source_url" validate:"max=700"`
+	CoverURL    string            `json:"cover_url" validate:"max=700"`
+	License     string            `json:"license" validate:"max=256"`
+	Pages       int               `json:"pages"`
+	Tags        string            `json:"tags" validate:"max=500"`
+	Status      LibraryBookStatus `json:"status"`
+}

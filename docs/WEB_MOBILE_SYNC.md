@@ -22,7 +22,7 @@ Feature parity check passed.
 - manifest features: 50
 - manifest utility routes: 14
 - mobile feature keys: 43
-- web app routes scanned: 150
+- web app routes scanned: 151
 ```
 
 ## Current Parity Rule

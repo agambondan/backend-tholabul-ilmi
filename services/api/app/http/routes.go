@@ -335,8 +335,11 @@ func Handle(app *fiber.App, repo *repository.Repositories) {
 	master.Delete("/feed/:id", jwt, newFeedController.Delete)
 
 	// Library Books / Perpustakaan Ilmu (public)
+	master.Post("/library/books", admin, newLibraryBookController.Create)
 	master.Get("/library/books", newLibraryBookController.FindAll)
 	master.Get("/library/books/:slug", newLibraryBookController.FindBySlug)
+	master.Put("/library/books/:id", admin, newLibraryBookController.Update)
+	master.Delete("/library/books/:id", admin, newLibraryBookController.Delete)
 
 	// Bookmark
 	master.Post("/bookmarks", jwt, newBookmarkController.Add)

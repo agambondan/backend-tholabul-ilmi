@@ -41,6 +41,7 @@ const NAV = [
     { href: '/admin/dzikir', labelKey: 'admin.nav.dhikr', icon: <BsRepeat /> },
     { href: '/admin/asmaul-husna', labelKey: 'admin.nav.asmaul', icon: <BsStar /> },
     { href: '/admin/kajian', labelKey: 'admin.nav.studies', icon: <BsCameraVideo /> },
+    { href: '/admin/library', labelKey: 'admin.nav.library', icon: <BsBook /> },
     { href: '/admin/kamus', labelKey: 'admin.nav.dictionary', icon: <BsBook /> },
     { href: '/admin/quiz', labelKey: 'admin.nav.quiz', icon: <BsQuestionCircle /> },
     { href: '/admin/sejarah', labelKey: 'admin.nav.history', icon: <BsClock /> },

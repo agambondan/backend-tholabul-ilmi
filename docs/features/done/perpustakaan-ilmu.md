@@ -16,6 +16,11 @@ Last updated: 2026-05-17
 - Added dashboard routes:
   - `/dashboard/library`
   - `/dashboard/library/:slug`
+- Added admin management:
+  - `/admin/library`
+  - `POST /api/v1/library/books`
+  - `PUT /api/v1/library/books/:id`
+  - `DELETE /api/v1/library/books/:id`
 - Added mobile Explore feature key `library` that reads the same backend catalog.
 - Added `library_book` references for notes and bookmarks so users can keep study notes from library detail journeys.
 
@@ -24,6 +29,7 @@ Last updated: 2026-05-17
 - Public users can browse the same catalog without login.
 - Dashboard users stay inside `/dashboard/library` for list and detail flows.
 - Mobile uses the existing feature-level list/detail pattern and opens external source URLs from the detail action.
+- Admins can create draft/published resources, edit metadata, attach source/cover URLs, and remove outdated entries.
 - PDF files are not mirrored yet. The current MVP stores external source URLs and license notes so uploaded PDFs can be added later only after source/license verification.
 
 ## Sync Contract

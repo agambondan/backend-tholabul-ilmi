@@ -10,7 +10,11 @@ import (
 type LibraryBookRepository interface {
 	FindAll(ctx *fiber.Ctx, category string, level string, search string) *paginate.Page
 	FindBySlug(slug string) (*model.LibraryBook, error)
+	FindBySlugAny(slug string) (*model.LibraryBook, error)
 	FindManyByIDs(ids []int) ([]model.LibraryBook, error)
+	Create(book *model.LibraryBook) (*model.LibraryBook, error)
+	Update(id int, book *model.LibraryBook) (*model.LibraryBook, error)
+	Delete(id int) error
 }
 
 type libraryBookRepo struct {
@@ -58,6 +62,15 @@ func (r *libraryBookRepo) FindBySlug(slug string) (*model.LibraryBook, error) {
 	return &book, nil
 }
 
+func (r *libraryBookRepo) FindBySlugAny(slug string) (*model.LibraryBook, error) {
+	var book model.LibraryBook
+	err := r.db.Where("slug = ?", slug).First(&book).Error
+	if err != nil {
+		return nil, err
+	}
+	return &book, nil
+}
+
 func (r *libraryBookRepo) FindManyByIDs(ids []int) ([]model.LibraryBook, error) {
 	var books []model.LibraryBook
 	if len(ids) == 0 {
@@ -65,4 +78,42 @@ func (r *libraryBookRepo) FindManyByIDs(ids []int) ([]model.LibraryBook, error) 
 	}
 	err := r.db.Where("id IN ? AND status = ?", ids, model.LibraryBookStatusPublished).Find(&books).Error
 	return books, err
+}
+
+func (r *libraryBookRepo) Create(book *model.LibraryBook) (*model.LibraryBook, error) {
+	if err := r.db.Create(book).Error; err != nil {
+		return nil, err
+	}
+	return book, nil
+}
+
+func (r *libraryBookRepo) Update(id int, book *model.LibraryBook) (*model.LibraryBook, error) {
+	var existing model.LibraryBook
+	if err := r.db.First(&existing, id).Error; err != nil {
+		return nil, err
+	}
+	updates := map[string]interface{}{
+		"title":       book.Title,
+		"slug":        book.Slug,
+		"author":      book.Author,
+		"description": book.Description,
+		"category":    book.Category,
+		"level":       book.Level,
+		"language":    book.Language,
+		"format":      book.Format,
+		"source_url":  book.SourceURL,
+		"cover_url":   book.CoverURL,
+		"license":     book.License,
+		"pages":       book.Pages,
+		"tags":        book.Tags,
+		"status":      book.Status,
+	}
+	if err := r.db.Model(&existing).Updates(updates).Error; err != nil {
+		return nil, err
+	}
+	return &existing, nil
+}
+
+func (r *libraryBookRepo) Delete(id int) error {
+	return r.db.Delete(&model.LibraryBook{}, id).Error
 }
