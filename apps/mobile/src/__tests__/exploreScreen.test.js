@@ -41,8 +41,11 @@ jest.mock('../api/personal', () => ({
   deleteBookmark: jest.fn(),
   deleteUserWird: jest.fn(),
   getBookmarks: jest.fn(),
+  getLibraryProgress: jest.fn(),
+  getLibraryProgressList: jest.fn(),
   getTodayPrayerLog: jest.fn(),
   getUserWirds: jest.fn(),
+  saveLibraryProgress: jest.fn(),
   savePrayerLog: jest.fn(),
   updateUserWird: jest.fn(),
 }));
@@ -190,6 +193,7 @@ jest.mock('../data/mobileFeatures', () => {
     { key: 'notes', title: 'Catatan', subtitle: 'Catatan pribadi', group: 'Personal', type: 'notes' },
     { key: 'community-feed', title: 'Komunitas', subtitle: 'Refleksi', group: 'Ilmu', type: 'feed' },
     { key: 'kajian', title: 'Kajian', subtitle: 'Sesi belajar', group: 'Ilmu', type: 'list', endpoint: '/api/v1/kajian' },
+    { key: 'library', title: 'Perpustakaan', subtitle: 'Kitab dan bahan belajar', group: 'Ilmu', type: 'list', endpoint: '/api/v1/library/books?page=0&size=20' },
     { key: 'tasbih', title: 'Tasbih', subtitle: 'Penghitung', group: 'Alat', type: 'tasbih' },
     { key: 'siroh', title: 'Siroh', subtitle: 'Biografi Nabi', group: 'Ilmu', type: 'list', endpoint: '/api/v1/siroh' },
     { key: 'user-wird', title: 'Wirid Saya', subtitle: 'Wirid pribadi', group: 'Bacaan', type: 'user-wird' },
@@ -206,7 +210,7 @@ jest.mock('../data/mobileFeatures', () => {
       key: 'referensi',
       label: 'Referensi',
       meta: 'Kamus dan katalog',
-      features: allFeatures.filter((f) => ['kamus', 'tafsir', 'asmaul-flashcard'].includes(f.key)),
+      features: allFeatures.filter((f) => ['kamus', 'tafsir', 'asmaul-flashcard', 'library'].includes(f.key)),
     },
     {
       key: 'evaluasi',
@@ -376,6 +380,44 @@ describe('ExploreScreen', () => {
 
     fireEvent.press(getByText('Lihat arti'));
     expect(getByText('Maha Pengasih')).toBeTruthy();
+  });
+
+  test('filters library list by saved progress status', async () => {
+    useSession.mockReturnValue({
+      ...mockUseSession(),
+      session: { token: 'abc' },
+      user: { id: '1', name: 'Test', email: 'test@test.com' },
+    });
+    personalApi.getBookmarks.mockResolvedValue([]);
+    personalApi.getLibraryProgressList.mockResolvedValue([
+      { id: 1, library_book_id: 10, status: 'reading', current_page: 12 },
+      { id: 2, library_book_id: 20, status: 'completed', current_page: 80 },
+    ]);
+    exploreApi.getFeatureItemPage.mockResolvedValueOnce({
+      items: [
+        { id: 10, title: 'Buku Dibaca', body: 'Sedang belajar', raw: { id: 10 } },
+        { id: 20, title: 'Buku Selesai', body: 'Sudah selesai', raw: { id: 20 } },
+      ],
+      meta: { hasMore: false },
+    });
+
+    const { getByText, getByTestId, queryByText } = await renderExploreScreen();
+
+    fireEvent.press(getByText('Perpustakaan'));
+
+    await waitFor(() => {
+      expect(exploreApi.getFeatureItemPage).toHaveBeenCalled();
+      expect(personalApi.getLibraryProgressList).toHaveBeenCalled();
+      expect(getByText('Buku Dibaca')).toBeTruthy();
+      expect(getByText('Buku Selesai')).toBeTruthy();
+    });
+
+    fireEvent.press(getByTestId('pill-Selesai'));
+
+    await waitFor(() => {
+      expect(queryByText('Buku Dibaca')).toBeNull();
+      expect(getByText('Buku Selesai')).toBeTruthy();
+    });
   });
 
   test('toggle pinned feature calls togglePinnedFeature', async () => {

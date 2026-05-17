@@ -229,6 +229,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const [activeNoteRef, setActiveNoteRef] = useState('');
   const [libraryProgress, setLibraryProgress] = useState(null);
   const [libraryProgressMap, setLibraryProgressMap] = useState({});
+  const [libraryProgressFilter, setLibraryProgressFilter] = useState('');
   const [libraryProgressDraft, setLibraryProgressDraft] = useState({ currentPage: '', note: '', status: 'reading' });
   const [libraryProgressMessage, setLibraryProgressMessage] = useState('');
   const [libraryProgressSaving, setLibraryProgressSaving] = useState(false);
@@ -335,6 +336,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       setAnswers({});
       setSelectedItem(null);
       setActiveNoteRef('');
+      setLibraryProgressFilter('');
       setFeedComments([]);
       setCommentDraft('');
       setEditingUserWirdId('');
@@ -1288,6 +1290,33 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     } finally {
       setLibraryProgressSaving(false);
     }
+  };
+
+  const renderLibraryProgressFilters = () => {
+    if (activeFeature?.key !== 'library' || !session?.token) return null;
+    const trackedCount = Object.keys(libraryProgressMap).length;
+    if (!trackedCount) return null;
+
+    return (
+      <Card style={styles.libraryFilterPanel}>
+        <CardTitle meta={`${trackedCount} buku terlacak`}>Filter Progress</CardTitle>
+        <View style={styles.libraryStatusRow}>
+          <ActionPill
+            active={!libraryProgressFilter}
+            label="Semua"
+            onPress={() => setLibraryProgressFilter('')}
+          />
+          {LIBRARY_PROGRESS_STATUSES.map((status) => (
+            <ActionPill
+              active={libraryProgressFilter === status.key}
+              key={status.key}
+              label={status.label}
+              onPress={() => setLibraryProgressFilter(status.key)}
+            />
+          ))}
+        </View>
+      </Card>
+    );
   };
 
   const renderDetailScreen = () => {
@@ -2704,6 +2733,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
     setSelectedItem(null);
     setError('');
     setActiveNoteRef('');
+    setLibraryProgressFilter('');
     if (returnRoute?.tab && returnRoute?.view) {
       navigation?.open?.(returnRoute.tab, returnRoute.view, { returnTab: null });
     }
@@ -2719,6 +2749,14 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
   const screenSubtitle = activeFeature
     ? ['Belajar', activeFeature.group, activeFeature.subtitle].filter(Boolean).join(' · ')
     : 'Kajian, referensi Islam, dan fitur personal.';
+  const visibleItems =
+    activeFeature?.key === 'library' && libraryProgressFilter
+      ? items.filter((item) => {
+          const bookId = item?.raw?.id ?? item?.id;
+          const progress = bookId ? libraryProgressMap[String(bookId)] : null;
+          return progress?.status === libraryProgressFilter;
+        })
+      : items;
   const listFooter = (
     <>
       {pagination.loadingMore ? (
@@ -2740,7 +2778,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       title={screenTitle}
       subtitle={screenSubtitle}
       onEndReached={shouldLoadMore ? loadMoreFeature : undefined}
-      listData={activeFeature ? items : undefined}
+      listData={activeFeature ? visibleItems : undefined}
       listFooter={activeFeature ? listFooter : undefined}
       listKeyExtractor={(item, index) => `${getExploreItemKey(item)}-${index}`}
       renderListItem={({ item, index }) => renderItem(item, index)}
@@ -2778,6 +2816,7 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
       )}
 
       {renderFeatureContent()}
+      {renderLibraryProgressFilters()}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {loading ? <ActivityIndicator color={colors.primary} style={styles.loader} /> : null}
@@ -2798,6 +2837,9 @@ export function ExploreScreen({ deepLinkTarget, isActive, navigation, onOpenTab 
                   ? 'Belum ada wirid pribadi. Tambahkan bacaan pertamamu dari form di atas.'
                   : 'Belum ada data untuk fitur ini.'}
         </Text>
+      ) : null}
+      {!loading && activeFeature?.key === 'library' && libraryProgressFilter && items.length > 0 && visibleItems.length === 0 ? (
+        <Text style={styles.empty}>Belum ada buku dengan status {getLibraryProgressLabel(libraryProgressFilter)}.</Text>
       ) : null}
       {!loading && activeFeature?.type === 'surah-content' && selectedSurahNumber && !error && !items.length ? (
         <Text style={styles.empty}>Tafsir untuk surah ini belum tersedia. Coba pilih surah lain.</Text>
@@ -3082,6 +3124,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: spacing.md,
     padding: spacing.md,
+  },
+  libraryFilterPanel: {
+    marginBottom: spacing.md,
   },
   libraryStatusRow: {
     flexDirection: 'row',
